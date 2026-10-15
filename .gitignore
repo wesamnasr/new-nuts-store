@@ -1,0 +1,7 @@
+node_modules
+.next
+.agents
+.vercel
+*.log
+test_*.mjs
+stress_*.mjs

@@ -1,0 +1,447 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   GROUP 1: 3 LIGHT THEMES WITH DARK FONTS (ثيمات فاتحة بخطوط غامقة)
+   ========================================================================== */
+
+/* 1. كريمي الرمال والفستق (فاتح • خط بني غامق) */
+:root,
+[data-theme="royal_roastery"] {
+  --brand-50: 245 235 217;
+  --brand-100: 237 221 194;
+  --brand-200: 222 198 160;
+  --brand-300: 199 165 117;
+  --brand-400: 173 128 74;
+  --brand-500: 148 98 46;
+  --brand-600: 122 74 29;
+  --brand-700: 97 55 20;
+  --brand-800: 74 39 14;
+  --brand-900: 54 26 9;
+  --brand-950: 36 16 5;
+
+  --pistachio-50: 232 245 228;
+  --pistachio-100: 205 232 197;
+  --pistachio-500: 46 125 50;
+  --pistachio-600: 35 102 39;
+  --pistachio-700: 24 77 27;
+
+  --gold-400: 245 158 11;
+  --gold-500: 217 119 6;
+  --gold-600: 180 83 9;
+
+  --surface-bg: #f5ebd9;
+  --surface-card: #fffdf9;
+  --surface-card-alpha: rgba(255, 253, 249, 0.95);
+  --surface-input: #faf3e6;
+  --text-strong: #241005;
+  --text-body: #4a2511;
+  --text-accent: #8c4a19;
+  --border-main: #dec6a0;
+}
+
+/* 2. أزرق سماوي ملكي (فاتح • خط كحلي غامق) */
+[data-theme="modern_minimal"] {
+  --brand-50: 226 238 252;
+  --brand-100: 204 225 249;
+  --brand-200: 169 204 244;
+  --brand-300: 122 174 235;
+  --brand-400: 74 139 220;
+  --brand-500: 37 99 235;
+  --brand-600: 29 78 216;
+  --brand-700: 23 58 148;
+  --brand-800: 17 42 102;
+  --brand-900: 12 29 69;
+  --brand-950: 7 19 46;
+
+  --pistachio-50: 224 247 244;
+  --pistachio-100: 186 237 230;
+  --pistachio-500: 13 148 136;
+  --pistachio-600: 15 118 110;
+  --pistachio-700: 17 94 89;
+
+  --gold-400: 56 189 248;
+  --gold-500: 2 132 199;
+  --gold-600: 3 105 161;
+
+  --surface-bg: #e2eefc;
+  --surface-card: #f8fbff;
+  --surface-card-alpha: rgba(248, 251, 255, 0.95);
+  --surface-input: #eef5fd;
+  --text-strong: #07132e;
+  --text-body: #173a6a;
+  --text-accent: #1d4ed8;
+  --border-main: #a9ccf4;
+}
+
+/* 3. البوتيك الحرفي للمحمصة (Artisanal Roastery & Pantry — DESIGN.md) */
+[data-theme="levant_heritage"] {
+  --brand-50: 250 247 242;   /* #FAF7F2 Oat Linen (Base Canvas) */
+  --brand-100: 243 236 224;  /* #F3ECE0 Roasted Husk (Recessed Surface) */
+  --brand-200: 230 220 206;  /* #E6DCCE Subtle Borders & Rules */
+  --brand-300: 209 196 189;  /* #D1C4BD Outline Variant */
+  --brand-400: 156 139 126;  /* #9C8B7E Toasted Almond (Muted Text) */
+  --brand-500: 129 85 31;    /* #81551F Secondary Deep Caramel */
+  --brand-600: 78 69 64;     /* #4E4540 On Surface Variant */
+  --brand-700: 104 87 75;    /* #68574B Warm Earth Gray (Secondary Text) */
+  --brand-800: 55 43 35;     /* #372B23 Primary Container */
+  --brand-900: 35 26 19;     /* #231A13 Dark Roast Charcoal */
+  --brand-950: 28 19 13;     /* #1C130D Roasted Espresso (Primary Anchor) */
+
+  --pistachio-50: 244 249 245;  /* #F4F9F5 Soft Botanical Tint */
+  --pistachio-100: 188 239 196; /* #BCEFC4 Tertiary Container */
+  --pistachio-500: 78 124 89;   /* #4E7C59 Raw Pistachio Green */
+  --pistachio-600: 34 80 48;    /* #225030 Tertiary Deep Pistachio */
+  --pistachio-700: 0 33 12;     /* #00210C On Tertiary Fixed */
+
+  --gold-400: 255 196 131;   /* #FFC483 Secondary Container */
+  --gold-500: 200 147 87;    /* #C89357 Amber Caramel (Interactive Highlight) */
+  --gold-600: 129 85 31;     /* #81551F Deep Caramel */
+
+  --surface-bg: #FAF7F2;
+  --surface-card: #FFFFFF;
+  --surface-card-alpha: rgba(250, 247, 242, 0.88);
+  --surface-input: #F3ECE0;
+  --text-strong: #1C130D;
+  --text-body: #68574B;
+  --text-accent: #C89357;
+  --border-main: #E6DCCE;
+}
+
+/* ==========================================================================
+   GROUP 2: 3 DARK THEMES WITH LIGHT FONTS (ثيمات غامقة بخطوط فاتحة)
+   ========================================================================== */
+
+/* 4. الفحم الملكي والذهب (غامق • خط أبيض وذهبي فاتح) */
+[data-theme="midnight_obsidian"] {
+  --brand-50: 24 29 42;
+  --brand-100: 34 41 58;
+  --brand-200: 51 61 84;
+  --brand-300: 75 89 120;
+  --brand-400: 148 163 184;
+  --brand-500: 203 213 225;
+  --brand-600: 251 191 36;
+  --brand-700: 217 119 6;
+  --brand-800: 30 36 51;
+  --brand-900: 21 25 36;
+  --brand-950: 11 13 19;
+
+  --pistachio-50: 20 38 32;
+  --pistachio-100: 29 56 46;
+  --pistachio-500: 52 211 153;
+  --pistachio-600: 16 185 129;
+  --pistachio-700: 110 231 183;
+
+  --gold-400: 252 211 77;
+  --gold-500: 245 158 11;
+  --gold-600: 217 119 6;
+
+  --surface-bg: #0b0d13;
+  --surface-card: #151924;
+  --surface-card-alpha: rgba(21, 25, 36, 0.95);
+  --surface-input: #0f131c;
+  --text-strong: #f8fafc;
+  --text-body: #cbd5e1;
+  --text-accent: #fbbf24;
+  --border-main: rgba(251, 191, 36, 0.25);
+}
+
+/* 5. الزمرد الليلي العميق (غامق • خط نعناعي وعاجي فاتح) */
+[data-theme="emerald_palace"] {
+  --brand-50: 11 54 40;
+  --brand-100: 16 74 55;
+  --brand-200: 25 102 76;
+  --brand-300: 42 138 105;
+  --brand-400: 110 231 183;
+  --brand-500: 52 211 153;
+  --brand-600: 16 185 129;
+  --brand-700: 5 150 105;
+  --brand-800: 13 61 45;
+  --brand-900: 8 43 32;
+  --brand-950: 4 26 19;
+
+  --pistachio-50: 12 61 44;
+  --pistachio-100: 19 84 61;
+  --pistachio-500: 52 211 153;
+  --pistachio-600: 16 185 129;
+  --pistachio-700: 167 243 208;
+
+  --gold-400: 110 231 183;
+  --gold-500: 16 185 129;
+  --gold-600: 5 150 105;
+
+  --surface-bg: #041a13;
+  --surface-card: #092b20;
+  --surface-card-alpha: rgba(9, 43, 32, 0.95);
+  --surface-input: #062118;
+  --text-strong: #ecfdf5;
+  --text-body: #a7f3d0;
+  --text-accent: #34d399;
+  --border-main: rgba(52, 211, 153, 0.28);
+}
+
+/* 6. المخمل البنفسجي الملكي (غامق • خط لؤلؤي وكهرماني فاتح) */
+[data-theme="saffron_velvet"] {
+  --brand-50: 45 19 74;
+  --brand-100: 62 27 102;
+  --brand-200: 88 39 140;
+  --brand-300: 126 58 194;
+  --brand-400: 216 180 254;
+  --brand-500: 232 121 249;
+  --brand-600: 245 158 11;
+  --brand-700: 192 38 211;
+  --brand-800: 56 22 92;
+  --brand-900: 36 14 61;
+  --brand-950: 19 7 34;
+
+  --pistachio-50: 54 22 77;
+  --pistachio-100: 76 31 107;
+  --pistachio-500: 232 121 249;
+  --pistachio-600: 192 38 211;
+  --pistachio-700: 245 208 254;
+
+  --gold-400: 251 191 36;
+  --gold-500: 245 158 11;
+  --gold-600: 217 119 6;
+
+  --surface-bg: #130722;
+  --surface-card: #210e38;
+  --surface-card-alpha: rgba(33, 14, 56, 0.95);
+  --surface-input: #18092b;
+  --text-strong: #fdf4ff;
+  --text-body: #f5d0fe;
+  --text-accent: #fbbf24;
+  --border-main: rgba(232, 121, 249, 0.28);
+}
+
+html {
+  font-size: 14px;
+  scroll-behavior: smooth;
+  overflow-x: clip;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (min-width: 640px) {
+  html {
+    font-size: 14.5px;
+  }
+}
+
+@media (min-width: 1280px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+body {
+  color: var(--text-strong);
+  background-color: var(--surface-bg);
+  min-height: 100vh;
+  max-width: 100vw;
+  overflow-x: clip;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* ==========================================================================
+   LIGHT THEMES ENFORCEMENT ([data-mode="light"])
+   Ensures all 3 Light Themes have tinted light cards and crisp dark fonts
+   ========================================================================== */
+[data-mode="light"] body {
+  background-color: var(--surface-bg) !important;
+  color: var(--text-strong) !important;
+}
+
+[data-mode="light"] .bg-white {
+  background-color: var(--surface-card) !important;
+  color: var(--text-strong);
+}
+
+[data-mode="light"] .text-brand-950,
+[data-mode="light"] .text-brand-900 {
+  color: var(--text-strong);
+}
+
+[data-mode="light"] .text-brand-800,
+[data-mode="light"] .text-brand-700 {
+  color: var(--text-body);
+}
+
+/* Convert dark banners/headers on subpages & footer to light surfaces with dark text in Light Mode */
+[data-mode="light"] footer.bg-brand-950 {
+  background-color: rgb(var(--brand-100)) !important;
+  color: var(--text-strong) !important;
+  border-top: 2px solid rgb(var(--brand-300)) !important;
+}
+
+[data-mode="light"] footer.bg-brand-950 .text-white,
+[data-mode="light"] footer.bg-brand-950 .text-brand-100,
+[data-mode="light"] footer.bg-brand-950 .text-brand-200,
+[data-mode="light"] footer.bg-brand-950 .text-brand-300 {
+  color: var(--text-strong) !important;
+}
+
+[data-mode="light"] footer.bg-brand-950 .text-gold-400 {
+  color: var(--text-accent) !important;
+}
+
+/* ==========================================================================
+   ARTISANAL ROASTERY & PANTRY (DESIGN.md) SPECIFIC RULES ([data-theme="levant_heritage"])
+   ========================================================================== */
+[data-theme="levant_heritage"] {
+  font-variant-numeric: tabular-nums;
+}
+
+[data-theme="levant_heritage"] header {
+  background-color: rgba(250, 247, 242, 0.88) !important;
+  backdrop-filter: blur(12px) !important;
+  border-bottom-color: #E6DCCE !important;
+}
+
+[data-theme="levant_heritage"] .theme-product-card {
+  background-color: #FFFFFF !important;
+  border: 1px solid #E6DCCE !important;
+  box-shadow: none !important;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease !important;
+}
+
+[data-theme="levant_heritage"] .theme-product-card:hover {
+  transform: translateY(-2px);
+  border-color: #C89357 !important;
+  box-shadow: 0 10px 25px -5px rgba(28, 19, 13, 0.07), 0 8px 10px -6px rgba(28, 19, 13, 0.04) !important;
+}
+
+/* ==========================================================================
+   DARK THEMES ENFORCEMENT ([data-mode="dark"])
+   Transforms all 3 Dark Themes into full dark mode with bright light fonts
+   ========================================================================== */
+[data-mode="dark"] body {
+  background-color: var(--surface-bg) !important;
+  color: var(--text-strong) !important;
+}
+
+[data-mode="dark"] .bg-white {
+  background-color: var(--surface-card) !important;
+  color: var(--text-strong) !important;
+}
+
+[data-mode="dark"] .bg-white\/95,
+[data-mode="dark"] .bg-white\/90 {
+  background-color: var(--surface-card-alpha) !important;
+  color: var(--text-strong) !important;
+}
+
+[data-mode="dark"] .text-brand-950,
+[data-mode="dark"] .text-brand-900 {
+  color: var(--text-strong) !important;
+}
+
+[data-mode="dark"] .text-brand-800,
+[data-mode="dark"] .text-brand-700 {
+  color: var(--text-body) !important;
+}
+
+[data-mode="dark"] .text-brand-600 {
+  color: var(--text-accent) !important;
+}
+
+/* Keep dark contrast text when placed directly inside bright gold/amber buttons */
+[data-mode="dark"] .bg-gold-500.text-brand-950,
+[data-mode="dark"] .bg-gold-400.text-brand-950,
+[data-mode="dark"] .from-gold-400.text-brand-950,
+[data-mode="dark"] .bg-amber-500.text-brand-950 {
+  color: #0b0d13 !important;
+}
+
+[data-mode="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+[data-mode="dark"] select,
+[data-mode="dark"] textarea {
+  background-color: var(--surface-input) !important;
+  color: var(--text-strong) !important;
+  border-color: var(--border-main) !important;
+}
+
+[data-mode="dark"] input::placeholder,
+[data-mode="dark"] textarea::placeholder {
+  color: var(--text-body) !important;
+  opacity: 0.65;
+}
+
+/* ==========================================================================
+   Border Radius Geometry Presets (rounded | sharp | pill)
+   ========================================================================== */
+[data-radius="sharp"] .rounded-3xl,
+[data-radius="sharp"] .rounded-2xl,
+[data-radius="sharp"] .rounded-xl {
+  border-radius: 0.2rem !important;
+}
+
+[data-radius="sharp"] .rounded-lg,
+[data-radius="sharp"] .rounded-md {
+  border-radius: 0.125rem !important;
+}
+
+[data-radius="pill"] .rounded-2xl {
+  border-radius: 1.65rem !important;
+}
+
+[data-radius="pill"] .rounded-xl {
+  border-radius: 1.25rem !important;
+}
+
+[data-radius="pill"] .rounded-lg {
+  border-radius: 1rem !important;
+}
+
+/* ==========================================================================
+   Card Style Presets (classic | editorial | soft_elevated)
+   ========================================================================== */
+[data-card-style="editorial"] .theme-product-card {
+  border-width: 2px !important;
+  border-color: var(--border-main) !important;
+  box-shadow: 4px 4px 0px 0px rgb(var(--brand-900) / 0.12) !important;
+}
+
+[data-card-style="editorial"] .theme-product-card:hover {
+  border-color: rgb(var(--gold-500)) !important;
+  box-shadow: 6px 6px 0px 0px rgb(var(--gold-500) / 0.25) !important;
+}
+
+[data-card-style="soft_elevated"] .theme-product-card {
+  border-color: var(--border-main) !important;
+  box-shadow: 0 10px 28px -6px rgba(0, 0, 0, 0.14), 0 4px 10px -4px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-card-style="soft_elevated"] .theme-product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 36px -8px rgba(0, 0, 0, 0.22), 0 6px 14px -4px rgb(var(--gold-500) / 0.2) !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(var(--brand-100));
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--brand-400));
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--brand-700));
+}
+
+/* Hide scrollbars for horizontal touch carousels/tabs on mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

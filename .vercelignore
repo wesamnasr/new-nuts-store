@@ -1,0 +1,8 @@
+node_modules
+.next
+.agents
+.git
+*.log
+scripts
+test_*.mjs
+stress_*.mjs

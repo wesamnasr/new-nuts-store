@@ -1,0 +1,790 @@
+{
+  "settings": {
+    "storeName": "محمصة الواحة الذهبية",
+    "tagline": "أفخر أنواع المكسرات الطازجة محمصة يومياً بحب وعناية",
+    "announcementText": "🔥 شحن مجاني لجميع المحافظات للطلبات فوق 1000 ج.م | استخدم كود NUTS10 لخصم 10% على أول طلب!",
+    "whatsappNumber": "201100699524",
+    "supportPhone": "01100699524",
+    "freeShippingThreshold": 1000,
+    "instapayAddress": "elwaha.nuts@instapay",
+    "vodafoneCashNumber": "01100699524",
+    "address": "القاهرة - مدينة نصر - شارع عباس العقاد",
+    "workingHours": "يومياً من 10 صباحاً حتى 12 منتصف الليل",
+    "adminPassword": "admin",
+    "pageContent": {
+      "showAnnouncementBar": false,
+      "headerSubtitle": "مكسرات فاخرة • تحميص يومي طازج",
+      "logoEmoji": "🌰",
+      "heroBadge": "محمصة طازجة يومياً • نخب أول مستورد 100%",
+      "heroTitlePrefix": "طعم القرمشة الفاخرة من",
+      "heroTitleHighlight": "البندق والفستق وعين الجمل",
+      "heroTitleSuffix": "لحد باب بيتك",
+      "heroDescription": "نختار لك أجود حبات المكسرات من مزارع تركيا وكاليفورنيا وتشيلي، نحمصها يومياً بالهواء الساخن بدون أي زيوت ونغلفها حرارياً لتصلك بأعلى قرمشة وطراوة.",
+      "heroImage": "/images/products/royal-mix.jpg",
+      "heroPrimaryCtaText": "كوّن علبتك بنفسك الآن",
+      "heroSecondaryCtaText": "تسوق المكسرات",
+      "heroBoxesCtaText": "بوكسات الملكي",
+      "heroFeaturedProductId": "prod-royal-mix-1",
+      "heroFeaturedBadge": "الأكثر طلباً للضيافة",
+      "heroFeaturedTitle": "بوكس المشكل الملكي VIP",
+      "heroFeaturedSubtitle": "فستق + بندق تركي + كاجو جامبو + عين جمل + لوز",
+      "heroStats": [
+        {
+          "value": "100%",
+          "label": "ضمان طراوة وتحميص اليوم"
+        },
+        {
+          "value": "+4,500",
+          "label": "عميل سعيد في مصر"
+        },
+        {
+          "value": "24 ساعة",
+          "label": "توصيل سريع ومغلف حرارياً"
+        }
+      ],
+      "showCustomBoxBanner": true,
+      "customBoxBannerBadge": "ميزة تفاعلية جديدة وحصرية",
+      "customBoxBannerTitle": "كوّن علبتك بنفسك على ذوقك! 🥜✨",
+      "customBoxBannerDesc": "اختر حجم البوكس المفضل لك (500 جم أو 1 كجم أو 2 كجم)، وحدد نسب أصناف المكسرات التي تحبها ودرجة تحميص كل صنف حتى تكتمل علبتك 100% مع حساب السعر الفعلي لحظياً!",
+      "customBoxBannerPills": [
+        "📦 أحجام: 500 جم • 1 كجم • 2 كجم",
+        "⚖️ تقسيم حر للنسب أو توزيع متساوٍ بضغطة زر",
+        "🔥 اختيار التحميص لكل صنف داخل العلبة"
+      ],
+      "customBoxBannerCta": "ابدأ تكوين علبتك الآن",
+      "showMixedBoxesSection": true,
+      "mixedBoxesBadge": "توفير حتى 15% + تغليف هدايا فاخر",
+      "mixedBoxesTitle": "بوكسات المشكل الملكي والهدايا",
+      "mixedBoxesDesc": "تشكيلات متوازنة تجمع أفخر أنواع الفستق والبندق والكاجو واللوز وعين الجمل في عبوات محكمة الغلق تشرفك في الضيافة والهدايا.",
+      "mixedBoxesGiftNote": "✨ إمكانية إضافة كارت إهداء مجاني عند كتابة ملاحظة في صفحة إتمام الطلب!",
+      "showCouponsSection": true,
+      "couponsBannerBadge": "🎁 عروض وكوبونات خصم فعالة الآن",
+      "couponsBannerTitle": "انسخ كود الخصم واستخدمه في السلة لتوفير فوري!",
+      "showTrustSection": true,
+      "trustSectionSubheading": "لماذا يثق بنا الآلاف؟",
+      "trustSectionTitle": "سر الجودة والقرمشة في كل حبة",
+      "trustFeatures": [
+        {
+          "id": "tf-1",
+          "icon": "🔥",
+          "title": "تحميص يومي بالطلب",
+          "description": "لا نخزن مكسرات محمصة لفترات طويلة؛ يتم التحميص يومياً بكميات مدروسة لضمان وصولها إليك دافئة ومقرمشة."
+        },
+        {
+          "id": "tf-2",
+          "icon": "🌿",
+          "title": "فرز أول خالٍ من الشوائب",
+          "description": "نستورد أعلى درجات الفرز (فستق جامبو مفتوح، بندق تركي غيرسون، كاجو W180، وعين جمل تشيلي أبيض)."
+        },
+        {
+          "id": "tf-3",
+          "icon": "🛡️",
+          "title": "عبوات حفظ الطراوة",
+          "description": "تغليف غذائي مبطن بطبقة عازلة للرطوبة والضوء مع سحاب محكم الغلق لإعادة الإغلاق بعد كل استخدام."
+        },
+        {
+          "id": "tf-4",
+          "icon": "💯",
+          "title": "ضمان الاستبدال الفوري",
+          "description": "رضاك مضمون 100%! يحق لك معاينة الطلب عند الاستلام وفي حال وجود أي ملاحظة نستبدله لك فوراً بدون أي تكلفة."
+        }
+      ],
+      "customBoxPageBadge": "ميزة تفاعلية حصرية • محمصة الواحة الذهبية",
+      "customBoxPageTitle": "كوّن علبتك المشكلة على ذوقك",
+      "customBoxPageDesc": "اختر حجم العلبة المفضل لديك، وحدد نسب أصناف المكسرات الفاخرة ودرجة التحميص لكل صنف حتى تكتمل سعة العلبة 100% مع حساب السعر اللحظي بدقة.",
+      "trackOrderPageBadge": "📦 متابعة الطلبات لحظة بلحظة",
+      "trackOrderPageTitle": "تتبع حالة طلبك",
+      "trackOrderPageDesc": "أدخل رقم الطلب (مثال: NUT-1001) أو رقم الموبايل الذي قمت بالطلب به لمعرفة مرحلة التحميص والتوصيل.",
+      "checkoutPageTitle": "إتمام الطلب والتوصيل",
+      "checkoutPageDesc": "أدخل بيانات العنوان واختر وسيلة الدفع المناسبة لك ليصلك طلبك طازجاً ومقرمشاً",
+      "enableCod": true,
+      "enableInstapay": true,
+      "enableVodafoneCash": true,
+      "footerDescription": "وجهتك الأولى لأفخر أنواع المكسرات المستوردة الطازجة من البندق التركي، الفستق الأمريكي الجامبو، عين الجمل التشيلي، الكاجو الملكي، وبوكسات الهدايا الفاخرة.",
+      "footerFeatures": [
+        {
+          "id": "ff-1",
+          "icon": "Sparkles",
+          "title": "تحميص يومي طازج 100%",
+          "description": "نحمص المكسرات يومياً بالهواء الساخن بدون أي زيوت مهدرجة للحفاظ على الطعم والقرمشة."
+        },
+        {
+          "id": "ff-2",
+          "icon": "ShieldCheck",
+          "title": "تغليف حراري محكم الغلق",
+          "description": "عبوات صحية بسحاب (Zip-lock) تحفظ المكسرات طازجة ومقرمشة لأطول فترة ممكنة."
+        },
+        {
+          "id": "ff-3",
+          "icon": "Truck",
+          "title": "شحن سريع لجميع المحافظات",
+          "description": "توصيل لحد باب البيت مع الدفع عند الاستلام أو عبر إنستا باي وفودافون كاش."
+        }
+      ],
+      "showFloatingWhatsapp": true,
+      "floatingWhatsappText": "اطلب أو استفسر واتساب",
+      "floatingWhatsappMessage": "أحتاج مساعدة في اختيار وطلب المكسرات."
+    },
+    "themeConfig": {
+      "themeId": "levant_heritage",
+      "heroLayout": "split",
+      "navbarStyle": "classic",
+      "cardStyle": "classic",
+      "borderRadius": "rounded",
+      "showThemeSwitcher": true
+    }
+  },
+  "categories": [
+    {
+      "id": "cat-luxury-nuts",
+      "name": "المكسرات الفاخرة",
+      "slug": "luxury-nuts",
+      "description": "بندق، فستق، عين جمل، كاجو ولوز نخب أول مستورد وطازج",
+      "icon": "Nut",
+      "image": "/images/products/pistachio.jpg"
+    },
+    {
+      "id": "cat-mixed-boxes",
+      "name": "بوكسات المشكل والهدايا",
+      "slug": "mixed-boxes",
+      "description": "تشكيلات ملكية وبوكسات هدايا فاخرة للمناسبات والعزومات",
+      "icon": "Gift",
+      "image": "/images/products/royal-mix.jpg"
+    },
+    {
+      "id": "cat-dried-fruits",
+      "name": "فواكه مجففة وتمور",
+      "slug": "dried-fruits",
+      "description": "تمور ملكية محشوة بالمكسرات، قراصيا، مشمشية، تين وزبيب فاخر",
+      "icon": "Apple",
+      "image": "/images/products/stuffed-dates.jpg"
+    },
+    {
+      "id": "cat-snacks",
+      "name": "تسالي ومقرمشات",
+      "slug": "snacks",
+      "description": "فول سوداني حلواني، لب سوبر، ذرة محمصة ومقرمشات بنكهات مميزة",
+      "icon": "Sparkles",
+      "image": "/images/products/savory-snacks.jpg"
+    }
+  ],
+  "products": [
+    {
+      "id": "prod-pistachio-1",
+      "slug": "jumbo-pistachio-usa",
+      "name": "فستق أمريكي جامبو محمص",
+      "subtitle": "حبة كبيرة مفتوحة مقرمشة ونكهة غنية لا تقاوم",
+      "categoryId": "cat-luxury-nuts",
+      "description": "فستق أمريكي جامبو نخب أول، يتم تحميصه يومياً بدرجة حرارة مدروسة للحفاظ على الزيوت الطبيعية والقرمشة المثالية. خالٍ من الحبات المغلقة ومفرز بعناية فائقة.",
+      "image": "/images/products/pistachio.jpg",
+      "badge": "الأكثر مبيعاً",
+      "origin": "أمريكي جامبو نخب أول",
+      "nutritionalHighlight": "غني بالبروتين النباتي ومضادات الأكسدة وفيتامين B6",
+      "caloriesPer100g": 562,
+      "proteinPer100g": "20 جم",
+      "roastOptions": [
+        "محمص مملح",
+        "محمص بدون ملح",
+        "نيء طبيعي"
+      ],
+      "weights": [
+        {
+          "id": "w-250",
+          "label": "250 جم (ربع كيلو)",
+          "weightGrams": 250,
+          "price": 215,
+          "originalPrice": 240
+        },
+        {
+          "id": "w-500",
+          "label": "500 جم (نصف كيلو)",
+          "weightGrams": 500,
+          "price": 420,
+          "originalPrice": 470
+        },
+        {
+          "id": "w-1000",
+          "label": "1 كجم (كيلو كامل)",
+          "weightGrams": 1000,
+          "price": 820,
+          "originalPrice": 920
+        }
+      ],
+      "inStock": true,
+      "featured": true,
+      "rating": 4.9,
+      "reviewsCount": 128,
+      "reviews": [
+        {
+          "id": "r1",
+          "customerName": "أحمد عبد الرحمن",
+          "rating": 5,
+          "comment": "الفستق طازج جداً ومقرمش ومفيش ولا حباية مقفولة، التغليف ممتاز بيحفظ الطراوة.",
+          "date": "منذ يومين",
+          "verified": true
+        },
+        {
+          "id": "r2",
+          "customerName": "نهى محمود",
+          "rating": 5,
+          "comment": "أحسن محمصة جربتها أونلاين، التحميص بدون ملح طعمه طبيعي وتحفة.",
+          "date": "منذ أسبوع",
+          "verified": true
+        }
+      ]
+    },
+    {
+      "id": "prod-hazelnut-1",
+      "slug": "turkish-hazelnut-peeled",
+      "name": "بندق تركي مقشر فاخر",
+      "subtitle": "بندق غيرسون التركي الأصلي بحجم كبير وطعم غني",
+      "categoryId": "cat-luxury-nuts",
+      "description": "بندق تركي مقشر من أجود مزارع البحر الأسود في تركيا، متاح محمص ذهبي مقرمش أو نيء طبيعي للحلويات والتناول الصحي اليومي.",
+      "image": "/images/products/hazelnut.jpg",
+      "badge": "تحميص اليوم",
+      "origin": "تركي فاخر (غيرسون)",
+      "nutritionalHighlight": "مصدر ممتاز لفيتامين E والدهون الصحية للقلب والذاكرة",
+      "caloriesPer100g": 628,
+      "proteinPer100g": "15 جم",
+      "roastOptions": [
+        "محمص بدون ملح",
+        "محمص مملح",
+        "نيء طبيعي"
+      ],
+      "weights": [
+        {
+          "id": "w-250",
+          "label": "250 جم (ربع كيلو)",
+          "weightGrams": 250,
+          "price": 185,
+          "originalPrice": 210
+        },
+        {
+          "id": "w-500",
+          "label": "500 جم (نصف كيلو)",
+          "weightGrams": 500,
+          "price": 360,
+          "originalPrice": 400
+        },
+        {
+          "id": "w-1000",
+          "label": "1 كجم (كيلو كامل)",
+          "weightGrams": 1000,
+          "price": 700,
+          "originalPrice": 780
+        }
+      ],
+      "inStock": true,
+      "featured": true,
+      "rating": 4.8,
+      "reviewsCount": 94,
+      "reviews": [
+        {
+          "id": "r3",
+          "customerName": "مريم طارق",
+          "rating": 5,
+          "comment": "البندق التركي ريحته وطعمه يجننوا، واضح إنه لسه متحمص طازة.",
+          "date": "منذ 3 أيام",
+          "verified": true
+        }
+      ]
+    },
+    {
+      "id": "prod-walnut-1",
+      "slug": "chilean-walnut-halves",
+      "name": "عين جمل تشيلي أنصاف (فراشة)",
+      "subtitle": "لون فاتح ذهبي وطعم كريمي بدون أي مرارة",
+      "categoryId": "cat-luxury-nuts",
+      "description": "عين جمل تشيلي نخب أول (أنصاف كاملة فاتحة اللون)، يتميز بطعمه الحلو الكريمي وخلوه التام من المرارة. مثالي للتركيز وتقوية الذاكرة وللأطفال.",
+      "image": "/images/products/walnut.jpg",
+      "badge": "غذاء الذكاء",
+      "origin": "تشيلي نخب أول (Extra Light)",
+      "nutritionalHighlight": "أعلى مصدر نباتي لأحماض أوميجا-3 الداعمة لصحة الدماغ",
+      "caloriesPer100g": 654,
+      "proteinPer100g": "15.2 جم",
+      "roastOptions": [
+        "نيء طبيعي",
+        "محمص بدون ملح"
+      ],
+      "weights": [
+        {
+          "id": "w-250",
+          "label": "250 جم (ربع كيلو)",
+          "weightGrams": 250,
+          "price": 165,
+          "originalPrice": 185
+        },
+        {
+          "id": "w-500",
+          "label": "500 جم (نصف كيلو)",
+          "weightGrams": 500,
+          "price": 320,
+          "originalPrice": 360
+        },
+        {
+          "id": "w-1000",
+          "label": "1 كجم (كيلو كامل)",
+          "weightGrams": 1000,
+          "price": 620,
+          "originalPrice": 700
+        }
+      ],
+      "inStock": true,
+      "featured": true,
+      "rating": 4.9,
+      "reviewsCount": 112,
+      "reviews": [
+        {
+          "id": "r4",
+          "customerName": "د. كريم سامي",
+          "rating": 5,
+          "comment": "عين الجمل لونه أبيض فاتح ومفيش فيه أي طعم مر نهائياً، جودة ممتازة.",
+          "date": "منذ 5 أيام",
+          "verified": true
+        }
+      ]
+    },
+    {
+      "id": "prod-cashew-1",
+      "slug": "jumbo-vietnamese-cashew-w180",
+      "name": "كاجو جامبو ملكي (W180)",
+      "subtitle": "أكبر مقاس حبة كاجو بقوام زبدي وقرمشة فاخرة",
+      "categoryId": "cat-luxury-nuts",
+      "description": "كاجو جامبو مقاس W180 الملكي، محمص بعناية بدون زيوت مهدرجة ليمنحك القرمشة الذهبية مع القوام الزبدي الغني.",
+      "image": "/images/products/cashew.jpg",
+      "badge": "حجم جامبو ملكي",
+      "origin": "فيتنامي / هندي ملكي W180",
+      "nutritionalHighlight": "غني بالماغنسيوم والزنك والحديد لتعزيز المناعة والطاقة",
+      "caloriesPer100g": 553,
+      "proteinPer100g": "18.2 جم",
+      "roastOptions": [
+        "محمص مملح",
+        "محمص بدون ملح",
+        "مدخن بالتوابل",
+        "نيء طبيعي"
+      ],
+      "weights": [
+        {
+          "id": "w-250",
+          "label": "250 جم (ربع كيلو)",
+          "weightGrams": 250,
+          "price": 195,
+          "originalPrice": 220
+        },
+        {
+          "id": "w-500",
+          "label": "500 جم (نصف كيلو)",
+          "weightGrams": 500,
+          "price": 380,
+          "originalPrice": 430
+        },
+        {
+          "id": "w-1000",
+          "label": "1 كجم (كيلو كامل)",
+          "weightGrams": 1000,
+          "price": 740,
+          "originalPrice": 840
+        }
+      ],
+      "inStock": true,
+      "featured": true,
+      "rating": 4.9,
+      "reviewsCount": 145
+    },
+    {
+      "id": "prod-almond-1",
+      "slug": "california-golden-almonds",
+      "name": "لوز كاليفورنيا ذهبي جامبو",
+      "subtitle": "حبات لوز منتقاة بعناية غنية بالألياف والبروتين",
+      "categoryId": "cat-luxury-nuts",
+      "description": "لوز أمريكي كاليفورنيا حبة كبيرة مقرمشة، مثالي كسناك صحي للرياضيين والدايت أو مع القهوة الصباحية.",
+      "image": "/images/products/almond.jpg",
+      "badge": "صحي للدايت",
+      "origin": "كاليفورنيا - أمريكا",
+      "nutritionalHighlight": "غني بالألياف وفيتامين E والكالسيوم والبروتين لبناء العضلات",
+      "caloriesPer100g": 579,
+      "proteinPer100g": "21.2 جم",
+      "roastOptions": [
+        "محمص بدون ملح",
+        "محمص مملح",
+        "مدخن بالتوابل",
+        "نيء طبيعي"
+      ],
+      "weights": [
+        {
+          "id": "w-250",
+          "label": "250 جم (ربع كيلو)",
+          "weightGrams": 250,
+          "price": 160,
+          "originalPrice": 180
+        },
+        {
+          "id": "w-500",
+          "label": "500 جم (نصف كيلو)",
+          "weightGrams": 500,
+          "price": 310,
+          "originalPrice": 350
+        },
+        {
+          "id": "w-1000",
+          "label": "1 كجم (كيلو كامل)",
+          "weightGrams": 1000,
+          "price": 600,
+          "originalPrice": 680
+        }
+      ],
+      "inStock": true,
+      "featured": false,
+      "rating": 4.8,
+      "reviewsCount": 79
+    },
+    {
+      "id": "prod-royal-mix-1",
+      "slug": "royal-vip-mixed-nuts-box",
+      "name": "بوكس المشكل الملكي VIP (5 أصناف فاخرة)",
+      "subtitle": "فستق + كاجو جامبو + بندق تركي + لوز كاليفورنيا + عين جمل",
+      "categoryId": "cat-mixed-boxes",
+      "description": "التشكيلة الأكثر طلباً! مزيج متوازن بعناية بنسبة متساوية من 5 أنواع مكسرات فاخرة (بدون فول سوداني أو لب): فستق أمريكي، كاجو جامبو، بندق تركي، لوز أمريكي، وعين جمل تشيلي في علبة محكمة الغلق تحفظ القرمشة.",
+      "image": "/images/products/royal-mix.jpg",
+      "badge": "توفير + هدية مثالية",
+      "origin": "تشكيلة ملكية مستوردة 100%",
+      "nutritionalHighlight": "مزيج متكامل من الفيتامينات والمعادن والأوميجا 3 والطاقة",
+      "caloriesPer100g": 590,
+      "proteinPer100g": "19 جم",
+      "roastOptions": [
+        "محمص مملح",
+        "محمص بدون ملح",
+        "نيء طبيعي",
+        "مدخن بالتوابل"
+      ],
+      "weights": [
+        {
+          "id": "w-500",
+          "label": "بوكس 500 جم (نصف كيلو)",
+          "weightGrams": 500,
+          "price": 375,
+          "originalPrice": 430
+        },
+        {
+          "id": "w-1000",
+          "label": "بوكس 1 كجم العائلي",
+          "weightGrams": 1000,
+          "price": 720,
+          "originalPrice": 840
+        },
+        {
+          "id": "w-2000",
+          "label": "بوكس الضيافة الملكي 2 كجم",
+          "weightGrams": 2000,
+          "price": 1390,
+          "originalPrice": 1650
+        }
+      ],
+      "inStock": true,
+      "featured": true,
+      "rating": 5,
+      "reviewsCount": 214,
+      "reviews": [
+        {
+          "id": "r5",
+          "customerName": "مهندس طارق الشناوي",
+          "rating": 5,
+          "comment": "البوكس الملكي يشرف جداً في الضيافة والهدايا، النسب متساوية فعلاً وكل صنف أحلى من التاني.",
+          "date": "منذ يوم",
+          "verified": true
+        }
+      ]
+    },
+    {
+      "id": "prod-energy-mix-1",
+      "slug": "healthy-fitness-mix-box",
+      "name": "بوكس الطاقة والرشاقة (مكسرات نيئة وفواكه مجففة)",
+      "subtitle": "عين جمل + لوز + كاجو + بندق + توت بري وزبيب ذهبي",
+      "categoryId": "cat-mixed-boxes",
+      "description": "مصمم خصيصاً لمحبي الأكل الصحي والرياضيين والطلاب، يجمع بين المكسرات النيئة غير المملحة والفواكه المجففة الطبيعية لمنحك طاقة مستدامة وتركيز عالي طوال اليوم.",
+      "image": "/images/products/energy-mix.jpg",
+      "badge": "طبيعي 100%",
+      "origin": "تشكيلة صحية بدون ملح أو سكر مضاف",
+      "nutritionalHighlight": "طاقة فورية وألياف طبيعية بدون أي أملاح أو مواد حافظة",
+      "caloriesPer100g": 510,
+      "proteinPer100g": "16.5 جم",
+      "roastOptions": [
+        "نيء طبيعي",
+        "محمص بدون ملح"
+      ],
+      "weights": [
+        {
+          "id": "w-500",
+          "label": "بوكس 500 جم",
+          "weightGrams": 500,
+          "price": 330,
+          "originalPrice": 375
+        },
+        {
+          "id": "w-1000",
+          "label": "بوكس 1 كجم",
+          "weightGrams": 1000,
+          "price": 630,
+          "originalPrice": 720
+        }
+      ],
+      "inStock": true,
+      "featured": false,
+      "rating": 4.9,
+      "reviewsCount": 63
+    },
+    {
+      "id": "prod-dates-stuffed-1",
+      "slug": "royal-medjool-dates-stuffed-nuts",
+      "name": "تمر مجدول ملكي محشو بالمكسرات الفاخرة",
+      "subtitle": "حبات تمر مجدول جامبو محشوة باللوز والفستق والكاجو وعين الجمل",
+      "categoryId": "cat-dried-fruits",
+      "description": "تمر مجدول ملكي طري وفاخر، منزوع النوى ومحشو يدوياً بحبات كاملة من الفستق واللوز المحمص وعين الجمل والكاجو. مثالي مع القهوة العربية وكهدية راقية.",
+      "image": "/images/products/stuffed-dates.jpg",
+      "badge": "ضيافة فاخرة",
+      "origin": "تمر مجدول ملكي + مكسرات مستوردة",
+      "nutritionalHighlight": "غني بالحديد والبوتاسيوم والسكريات الطبيعية الصحية",
+      "caloriesPer100g": 390,
+      "proteinPer100g": "8.5 جم",
+      "roastOptions": [
+        "تشكيلة فاخرة"
+      ],
+      "weights": [
+        {
+          "id": "w-500",
+          "label": "علبة 500 جم فاخرة",
+          "weightGrams": 500,
+          "price": 245,
+          "originalPrice": 280
+        },
+        {
+          "id": "w-1000",
+          "label": "علبة 1 كجم ملكية",
+          "weightGrams": 1000,
+          "price": 460,
+          "originalPrice": 530
+        }
+      ],
+      "inStock": true,
+      "featured": true,
+      "rating": 4.9,
+      "reviewsCount": 88
+    },
+    {
+      "id": "prod-apricot-prunes-1",
+      "slug": "turkish-dried-apricots-and-prunes",
+      "name": "مشمشية تركي جامبو وقراصيا فاخرة",
+      "subtitle": "فواكه مجففة طبيعية طرية وغنية بالفيتامينات",
+      "categoryId": "cat-dried-fruits",
+      "description": "مشمشية تركي مقاس جامبو رقم 1 مع قراصيا مستوردة منزوعة النوى، طرية جداً وبطعم طبيعي غني ومثالية للتناول المباشر أو الحلويات.",
+      "image": "/images/products/apricots-prunes.jpg",
+      "origin": "تركي مستورد نخب أول",
+      "nutritionalHighlight": "غنية بالحديد والألياف وفيتامين A",
+      "caloriesPer100g": 241,
+      "proteinPer100g": "3.4 جم",
+      "roastOptions": [
+        "نيء طبيعي"
+      ],
+      "weights": [
+        {
+          "id": "w-250",
+          "label": "250 جم",
+          "weightGrams": 250,
+          "price": 115,
+          "originalPrice": 135
+        },
+        {
+          "id": "w-500",
+          "label": "500 جم",
+          "weightGrams": 500,
+          "price": 220,
+          "originalPrice": 260
+        },
+        {
+          "id": "w-1000",
+          "label": "1 كجم",
+          "weightGrams": 1000,
+          "price": 420,
+          "originalPrice": 490
+        }
+      ],
+      "inStock": true,
+      "featured": false,
+      "rating": 4.7,
+      "reviewsCount": 47
+    },
+    {
+      "id": "prod-savory-mix-1",
+      "slug": "crunchy-cheese-smoked-snacks-mix",
+      "name": "ميكس تسالي ومقرمشات السهرة الفاخر",
+      "subtitle": "فول سوداني حلواني + ذرة أسباني مقرمشة + مقرمشات بالجبنة والباربكيو",
+      "categoryId": "cat-snacks",
+      "description": "تشكيلة السهرة واللمات العائلية! تجمع بين السوداني الحلواني المحمص، الذرة الأسباني المقرمشة، الحمص، والمقرمشات المخبوزة بنكهات الجبنة والمدخن.",
+      "image": "/images/products/savory-snacks.jpg",
+      "badge": "سناك العائلة",
+      "origin": "تحميص يومي طازج",
+      "nutritionalHighlight": "قرمشة طازجة محمصة بالهواء الساخن بأقل نسبة دهون",
+      "caloriesPer100g": 460,
+      "proteinPer100g": "14 جم",
+      "roastOptions": [
+        "محمص مملح",
+        "مدخن بالتوابل"
+      ],
+      "weights": [
+        {
+          "id": "w-500",
+          "label": "500 جم (نصف كيلو)",
+          "weightGrams": 500,
+          "price": 110,
+          "originalPrice": 130
+        },
+        {
+          "id": "w-1000",
+          "label": "1 كجم (كيلو عائلي)",
+          "weightGrams": 1000,
+          "price": 205,
+          "originalPrice": 245
+        }
+      ],
+      "inStock": true,
+      "featured": false,
+      "rating": 4.8,
+      "reviewsCount": 91
+    }
+  ],
+  "shippingRates": [
+    {
+      "id": "ship-1",
+      "governorate": "القاهرة والجيزة",
+      "price": 50,
+      "estimatedDays": "خلال 24 ساعة"
+    },
+    {
+      "id": "ship-2",
+      "governorate": "الإسكندرية",
+      "price": 60,
+      "estimatedDays": "1 - 2 يوم عمل"
+    },
+    {
+      "id": "ship-3",
+      "governorate": "الدلتا والقناة (المنصورة، طنطا، الزقازيق، الإسماعيلية، بورسعيد)",
+      "price": 65,
+      "estimatedDays": "1 - 2 يوم عمل"
+    },
+    {
+      "id": "ship-4",
+      "governorate": "محافظات الصعيد (بني سويف، المنيا، أسيوط، سوهاج)",
+      "price": 80,
+      "estimatedDays": "2 - 3 أيام عمل"
+    },
+    {
+      "id": "ship-5",
+      "governorate": "الأقصر وأسوان والبحر الأحمر وجنوب سيناء",
+      "price": 95,
+      "estimatedDays": "2 - 4 أيام عمل"
+    }
+  ],
+  "coupons": [
+    {
+      "id": "coup-1",
+      "code": "NUTS10",
+      "discountType": "percentage",
+      "value": 10,
+      "minOrderAmount": 300,
+      "active": true,
+      "description": "خصم 10% على جميع الطلبات فوق 300 ج.م"
+    },
+    {
+      "id": "coup-2",
+      "code": "WELCOME50",
+      "discountType": "fixed",
+      "value": 50,
+      "minOrderAmount": 500,
+      "active": true,
+      "description": "خصم 50 جنيه للطلبات فوق 500 ج.م"
+    }
+  ],
+  "orders": [
+    {
+      "id": "ord-1001",
+      "orderNumber": "NUT-1001",
+      "customerName": "محمد عادل الشافعي",
+      "customerPhone": "01012345678",
+      "governorate": "القاهرة والجيزة",
+      "address": "التجمع الخامس - الحي الثاني - فيلا 42",
+      "notes": "يرجى الاتصال قبل الوصول بنصف ساعة",
+      "items": [
+        {
+          "cartItemId": "prod-royal-mix-1-w-1000-محمص مملح",
+          "productId": "prod-royal-mix-1",
+          "productName": "بوكس المشكل الملكي VIP (5 أصناف فاخرة)",
+          "productImage": "/images/products/royal-mix.jpg",
+          "weightId": "w-1000",
+          "weightLabel": "بوكس 1 كجم العائلي",
+          "roastOption": "محمص مملح",
+          "unitPrice": 720,
+          "quantity": 1
+        },
+        {
+          "cartItemId": "prod-hazelnut-1-w-500-محمص بدون ملح",
+          "productId": "prod-hazelnut-1",
+          "productName": "بندق تركي مقشر فاخر",
+          "productImage": "/images/products/hazelnut.jpg",
+          "weightId": "w-500",
+          "weightLabel": "500 جم (نصف كيلو)",
+          "roastOption": "محمص بدون ملح",
+          "unitPrice": 360,
+          "quantity": 1
+        }
+      ],
+      "subtotal": 1080,
+      "shippingCost": 0,
+      "discountAmount": 108,
+      "couponCode": "NUTS10",
+      "total": 972,
+      "paymentMethod": "cod",
+      "status": "roasting_packing",
+      "createdAt": "2026-10-14T09:22:22.218Z"
+    },
+    {
+      "id": "ord-1002",
+      "orderNumber": "NUT-1002",
+      "customerName": "سارة حسام الدين",
+      "customerPhone": "01123456789",
+      "governorate": "الإسكندرية",
+      "address": "سموحة - شارع فوزي معاذ - برج النخيل شقة 8",
+      "items": [
+        {
+          "cartItemId": "prod-pistachio-1-w-500-محمص مملح",
+          "productId": "prod-pistachio-1",
+          "productName": "فستق أمريكي جامبو محمص",
+          "productImage": "/images/products/pistachio.jpg",
+          "weightId": "w-500",
+          "weightLabel": "500 جم (نصف كيلو)",
+          "roastOption": "محمص مملح",
+          "unitPrice": 420,
+          "quantity": 1
+        },
+        {
+          "cartItemId": "prod-walnut-1-w-500-نيء طبيعي",
+          "productId": "prod-walnut-1",
+          "productName": "عين جمل تشيلي أنصاف (فراشة)",
+          "productImage": "/images/products/walnut.jpg",
+          "weightId": "w-500",
+          "weightLabel": "500 جم (نصف كيلو)",
+          "roastOption": "نيء طبيعي",
+          "unitPrice": 320,
+          "quantity": 1
+        }
+      ],
+      "subtotal": 740,
+      "shippingCost": 60,
+      "discountAmount": 0,
+      "total": 800,
+      "paymentMethod": "instapay",
+      "paymentReference": "تحويل إنستا باي من سارة حسام - رقم مرجعي 983412",
+      "status": "delivered",
+      "createdAt": "2026-10-13T10:52:22.218Z"
+    }
+  ]
+}
