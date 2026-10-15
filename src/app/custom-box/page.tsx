@@ -353,9 +353,9 @@ export default function CustomBoxPage() {
   const isAddToCartEnabled = calculationResult.isValid && totalPercentage === 100 && calculationResult.totalPrice > 0;
 
   return (
-    <div className="max-w-6xl mx-auto px-3 sm:px-5 lg:px-6 py-5 space-y-5 pb-16">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4 pb-14">
       {/* Breadcrumbs */}
-      <nav className="flex items-center gap-1.5 text-xs font-bold text-brand-600">
+      <nav className="flex items-center gap-1.5 text-[11px] font-bold text-brand-600">
         <Link href="/" className="hover:text-brand-900 transition flex items-center gap-1">
           <span>الرئيسية</span>
         </Link>
@@ -364,23 +364,23 @@ export default function CustomBoxPage() {
       </nav>
 
       {/* Hero Header Banner */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-brand-950 via-brand-900 to-brand-850 text-white rounded-2xl p-4 sm:p-5 shadow-md border border-gold-500/30">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="space-y-1">
-            <div className="inline-flex items-center gap-1.5 bg-gold-500/20 border border-gold-400/40 text-gold-400 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold">
-              <Sparkles className="w-3 h-3" />
+      <section className="relative overflow-hidden bg-gradient-to-br from-brand-950 via-brand-900 to-brand-850 text-white rounded-xl p-3.5 sm:p-4 shadow-sm border border-gold-500/30">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+          <div className="space-y-0.5">
+            <div className="inline-flex items-center gap-1 bg-gold-500/20 border border-gold-400/40 text-gold-400 px-2 py-0.5 rounded-full text-[10px] font-bold">
+              <Sparkles className="w-2.5 h-2.5" />
               <span>{pageContent.customBoxPageBadge}</span>
             </div>
-            <h1 className="text-lg sm:text-2xl font-black leading-tight">
+            <h1 className="text-base sm:text-xl font-extrabold leading-tight">
               {pageContent.customBoxPageTitle}
             </h1>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5 text-[11px] shrink-0">
+          <div className="flex flex-wrap items-center gap-1.5 text-[10.5px] shrink-0">
             <button
               type="button"
               onClick={handleEqualSplit}
-              className="bg-white/10 hover:bg-white/20 text-white font-bold px-3 py-2 rounded-xl border border-white/20 transition cursor-pointer"
+              className="bg-white/10 hover:bg-white/20 text-white font-bold px-2.5 py-1.5 rounded-lg border border-white/20 transition cursor-pointer"
             >
               توزيع متساوي (100%)
             </button>
@@ -388,9 +388,9 @@ export default function CustomBoxPage() {
               <button
                 type="button"
                 onClick={handleClearMix}
-                className="bg-red-500/20 hover:bg-red-500/30 text-red-200 font-bold px-2.5 py-2 rounded-xl border border-red-400/30 transition flex items-center gap-1 cursor-pointer"
+                className="bg-red-500/20 hover:bg-red-500/30 text-red-200 font-bold px-2 py-1.5 rounded-lg border border-red-400/30 transition flex items-center gap-1 cursor-pointer"
               >
-                <RotateCcw className="w-3 h-3" />
+                <RotateCcw className="w-2.5 h-2.5" />
                 <span>تفريغ العلبة</span>
               </button>
             )}
@@ -399,15 +399,15 @@ export default function CustomBoxPage() {
       </section>
 
       {/* Ready-Made Mix Presets Bar (One-Click Templates) */}
-      <section className="bg-white rounded-2xl p-3.5 sm:p-4 border border-brand-200 shadow-xs space-y-2.5">
+      <section className="bg-white rounded-xl p-3 border border-brand-200 shadow-2xs space-y-2">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs sm:text-sm font-black text-brand-950 flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-gold-500" />
+          <h2 className="text-xs font-extrabold text-brand-950 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-gold-500" />
             <span>قوالب خلطات جاهزة بضغطة واحدة (يمكنك التعديل عليها بحرية):</span>
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
           {MIX_PRESETS.map((preset) => {
             const isActive = activePresetId === preset.id;
             return (
@@ -415,15 +415,15 @@ export default function CustomBoxPage() {
                 key={preset.id}
                 type="button"
                 onClick={() => handleApplyPreset(preset)}
-                className={`p-2.5 rounded-xl border text-right transition flex flex-col justify-between gap-1 cursor-pointer ${
+                className={`p-2 rounded-lg border text-right transition flex flex-col justify-between gap-0.5 cursor-pointer ${
                   isActive
-                    ? 'bg-brand-900 text-white border-brand-900 shadow-sm ring-2 ring-gold-400/40'
+                    ? 'bg-brand-900 text-white border-brand-900 shadow-2xs ring-1 ring-gold-400/40'
                     : 'bg-brand-50/70 hover:bg-brand-100/70 text-brand-950 border-brand-200'
                 }`}
               >
                 <div className="flex items-center justify-between gap-1">
                   <span
-                    className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-full ${
+                    className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded-full ${
                       isActive
                         ? 'bg-gold-500 text-brand-950'
                         : 'bg-amber-100 text-brand-900'
@@ -431,11 +431,11 @@ export default function CustomBoxPage() {
                   >
                     {preset.badge}
                   </span>
-                  {isActive && <Check className="w-3.5 h-3.5 text-gold-400 shrink-0" />}
+                  {isActive && <Check className="w-3 h-3 text-gold-400 shrink-0" />}
                 </div>
-                <div className="font-black text-xs leading-snug mt-0.5">{preset.title}</div>
+                <div className="font-extrabold text-[11px] leading-snug mt-0.5">{preset.title}</div>
                 <div
-                  className={`text-[10px] leading-snug ${
+                  className={`text-[9.5px] leading-snug line-clamp-1 ${
                     isActive ? 'text-brand-200' : 'text-brand-600'
                   }`}
                 >
@@ -448,18 +448,18 @@ export default function CustomBoxPage() {
       </section>
 
       {/* Sticky Mobile & Tablet Live Box Progress Bar (< lg) */}
-      <div className="lg:hidden sticky top-[96px] z-20 bg-brand-950/95 backdrop-blur-md text-white rounded-2xl p-3 border border-gold-500/40 shadow-xl space-y-2">
+      <div className="lg:hidden sticky top-[82px] z-20 bg-brand-950/95 backdrop-blur-md text-white rounded-xl p-2.5 border border-gold-500/40 shadow-lg space-y-1.5">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5 text-xs font-black">
+            <div className="flex items-center gap-1.5 text-[11px] font-extrabold">
               <span className="text-gold-400">
                 الامتلاء: {totalPercentage}%
               </span>
-              <span className="text-[10px] text-brand-200 font-bold">
+              <span className="text-[9.5px] text-brand-200 font-semibold">
                 ({totalGramsAllocated}/{boxSizeGrams} جم)
               </span>
             </div>
-            <div className="text-[10px] text-brand-200">
+            <div className="text-[9.5px] text-brand-200">
               السعر التقديري:{' '}
               <strong className="text-white">
                 {calculationResult.isValid ? calculationResult.totalPrice : currentAccumulatedPrice} ج.م
@@ -470,7 +470,7 @@ export default function CustomBoxPage() {
           <div className="flex items-center gap-1.5 shrink-0">
             <a
               href="#box-summary"
-              className="bg-white/15 hover:bg-white/25 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition"
+              className="bg-white/15 hover:bg-white/25 text-white text-[9.5px] font-bold px-2 py-1 rounded-md transition"
             >
               معاينة الصينية ↓
             </a>
@@ -478,9 +478,9 @@ export default function CustomBoxPage() {
               <button
                 type="button"
                 onClick={handleAddToCart}
-                className="bg-gold-500 hover:bg-gold-400 text-brand-950 text-[10px] font-black px-3 py-1.5 rounded-lg shadow flex items-center gap-1 cursor-pointer"
+                className="bg-gold-500 hover:bg-gold-400 text-brand-950 text-[9.5px] font-extrabold px-2.5 py-1 rounded-md shadow flex items-center gap-1 cursor-pointer"
               >
-                <ShoppingBag className="w-3 h-3" />
+                <ShoppingBag className="w-2.5 h-2.5" />
                 <span>أضف للسلة</span>
               </button>
             )}
@@ -488,7 +488,7 @@ export default function CustomBoxPage() {
         </div>
 
         {/* Mini Segmented Progress Bar */}
-        <div className="h-2 w-full bg-white/15 rounded-full overflow-hidden flex gap-0.5 p-0.5">
+        <div className="h-1.5 w-full bg-white/15 rounded-full overflow-hidden flex gap-0.5 p-0.5">
           {activePortions.map((portion) => {
             const nutColor = NUT_COLORS[portion.product.id] || DEFAULT_NUT_COLOR;
             return (
@@ -503,19 +503,19 @@ export default function CustomBoxPage() {
       </div>
 
       {/* Main Workspace: 8 cols configuration + 4 cols sticky sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* RIGHT COLUMN: Configuration Sections (8 cols) */}
-        <div className="lg:col-span-8 space-y-5">
+        <div className="lg:col-span-8 space-y-4">
           {/* FEATURE 1: Box Size Selector */}
-          <section className="bg-white rounded-2xl p-3.5 sm:p-4 border border-brand-200 shadow-sm space-y-2.5">
-            <h2 className="text-xs sm:text-sm font-black text-brand-950 flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-brand-900 text-gold-400 text-[10px] flex items-center justify-center font-bold">
+          <section className="bg-white rounded-xl p-3 border border-brand-200 shadow-2xs space-y-2">
+            <h2 className="text-xs font-extrabold text-brand-950 flex items-center gap-1.5">
+              <span className="w-4 h-4 rounded-full bg-brand-900 text-gold-400 text-[9.5px] flex items-center justify-center font-bold">
                 1
               </span>
               اختر حجم العلبة
             </h2>
 
-            <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+            <div className="grid grid-cols-3 gap-2">
               {([
                 {
                   size: 500 as const,
@@ -542,31 +542,31 @@ export default function CustomBoxPage() {
                     key={box.size}
                     type="button"
                     onClick={() => setBoxSizeGrams(box.size)}
-                    className={`relative p-2.5 sm:p-3 rounded-xl border text-right transition-all flex items-center justify-between gap-1.5 cursor-pointer ${
+                    className={`relative p-2 sm:p-2.5 rounded-lg border text-right transition-all flex items-center justify-between gap-1.5 cursor-pointer ${
                       isSelected
-                        ? 'bg-amber-50/70 border-gold-500 ring-1 ring-gold-400/30 shadow-xs'
+                        ? 'bg-amber-50/70 border-gold-500 ring-1 ring-gold-400/30 shadow-2xs'
                         : 'bg-brand-50/50 border-brand-200 hover:border-brand-400'
                     }`}
                   >
                     {box.badge && (
-                      <span className="absolute -top-2 left-1.5 sm:left-2 bg-brand-900 text-gold-400 text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-2xs whitespace-nowrap">
+                      <span className="absolute -top-2 left-1.5 bg-brand-900 text-gold-400 text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-2xs whitespace-nowrap">
                         {box.badge}
                       </span>
                     )}
                     <div className="min-w-0">
-                      <div className="text-xs sm:text-sm font-black text-brand-950">{box.label}</div>
-                      <div className="text-[9px] sm:text-[10px] font-bold text-brand-600 truncate">
+                      <div className="text-xs font-extrabold text-brand-950">{box.label}</div>
+                      <div className="text-[9px] font-semibold text-brand-600 truncate">
                         {box.sub}
                       </div>
                     </div>
                     <div
-                      className={`w-4 h-4 rounded-full hidden sm:flex items-center justify-center border shrink-0 ${
+                      className={`w-3.5 h-3.5 rounded-full hidden sm:flex items-center justify-center border shrink-0 ${
                         isSelected
                           ? 'bg-gold-500 border-gold-600 text-brand-950 font-bold'
                           : 'border-brand-300 bg-white'
                       }`}
                     >
-                      {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                      {isSelected && <Check className="w-2 h-2 stroke-[3]" />}
                     </div>
                   </button>
                 );
@@ -575,17 +575,17 @@ export default function CustomBoxPage() {
           </section>
 
           {/* FEATURE 2: Nut, Dried Fruit & Snack Variety Selection Grid */}
-          <section className="space-y-3">
+          <section className="space-y-2.5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <h2 className="text-xs sm:text-sm font-black text-brand-950 flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-brand-900 text-gold-400 text-[10px] flex items-center justify-center font-bold shrink-0">
+              <h2 className="text-xs font-extrabold text-brand-950 flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full bg-brand-900 text-gold-400 text-[9.5px] flex items-center justify-center font-bold shrink-0">
                   2
                 </span>
                 <span>اختر الأصناف ودرجة التحميص والنسبة (إجمالي 100%)</span>
               </h2>
 
               {/* Category Filter Tabs for Box Builder */}
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:pb-0 sm:flex-wrap">
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-0.5 sm:pb-0 sm:flex-wrap">
                 {([
                   { id: 'all', label: `كل الأصناف (${boxEligibleProducts.length})` },
                   { id: 'cat-luxury-nuts', label: '🥜 مكسرات فاخرة' },
@@ -596,7 +596,7 @@ export default function CustomBoxPage() {
                     key={tab.id}
                     type="button"
                     onClick={() => setSelectedBuilderCategory(tab.id)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold whitespace-nowrap shrink-0 transition cursor-pointer ${
+                    className={`px-2 py-1 rounded-md text-[10px] font-bold whitespace-nowrap shrink-0 transition cursor-pointer ${
                       selectedBuilderCategory === tab.id
                         ? 'bg-brand-900 text-gold-400 shadow-2xs'
                         : 'bg-white text-brand-800 border border-brand-200 hover:bg-brand-50'
@@ -608,7 +608,7 @@ export default function CustomBoxPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
               {displayedProducts.map((product) => {
                 const currentAlloc = allocations[product.id] || {
                   percentage: 0,
@@ -623,30 +623,30 @@ export default function CustomBoxPage() {
                 return (
                   <div
                     key={product.id}
-                    className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden flex flex-col justify-between shadow-xs ${
+                    className={`bg-white rounded-xl border transition-all duration-300 overflow-hidden flex flex-col justify-between shadow-2xs ${
                       isSelected
-                        ? 'border-gold-500 shadow-md ring-1 ring-gold-400/30'
+                        ? 'border-gold-500 shadow-sm ring-1 ring-gold-400/30'
                         : 'border-brand-200 hover:border-brand-300'
                     }`}
                   >
                     {/* Card Top: Image + Details */}
-                    <div className="p-3 flex gap-3">
-                      <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-brand-100 shrink-0">
+                    <div className="p-2.5 flex gap-2.5">
+                      <div className="relative w-11 h-11 rounded-lg overflow-hidden bg-brand-100 shrink-0">
                         <img
                           src={getSafeImageUrl(product.image)}
                           alt={product.name}
                           className="w-full h-full object-cover"
                         />
                         {isSelected && (
-                          <div className="absolute top-1 right-1 bg-gold-500 text-brand-950 rounded-full p-0.5 shadow">
-                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          <div className="absolute top-0.5 right-0.5 bg-gold-500 text-brand-950 rounded-full p-0.5 shadow">
+                            <Check className="w-2 h-2 stroke-[3]" />
                           </div>
                         )}
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-1">
-                          <h3 className="text-xs sm:text-sm font-black text-brand-950 truncate">
+                          <h3 className="text-[11.5px] font-extrabold text-brand-950 truncate">
                             {product.name}
                           </h3>
                           {isSelected && (
@@ -656,16 +656,16 @@ export default function CustomBoxPage() {
                               className="text-red-500 hover:text-red-700 p-0.5 cursor-pointer shrink-0"
                               title="إزالة الصنف"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-3 h-3" />
                             </button>
                           )}
                         </div>
-                        <div className="text-[10px] text-brand-600 mt-0.5">
+                        <div className="text-[9.5px] text-brand-600 mt-0.5">
                           {product.origin} • <span className="font-bold text-brand-900">{basePriceForBox} ج.م</span>/{boxSizeGrams >= 1000 ? `${boxSizeGrams / 1000} كجم` : `${boxSizeGrams} جم`}
                         </div>
 
                         {/* Roast Selector Chips */}
-                        <div className="flex flex-wrap gap-1 mt-2">
+                        <div className="flex flex-wrap gap-1 mt-1.5">
                           {product.roastOptions.map((roast) => {
                             const active = currentAlloc.roast === roast;
                             return (
@@ -673,7 +673,7 @@ export default function CustomBoxPage() {
                                 key={roast}
                                 type="button"
                                 onClick={() => handleRoastChange(product.id, roast)}
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-md border transition cursor-pointer ${
+                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded border transition cursor-pointer ${
                                   active
                                     ? 'bg-brand-900 text-gold-400 border-brand-900'
                                     : 'bg-brand-50 text-brand-800 border-brand-200 hover:bg-brand-100'
@@ -688,10 +688,10 @@ export default function CustomBoxPage() {
                     </div>
 
                     {/* Unified Compact Portion Control Bar */}
-                    <div className="px-3 py-2.5 bg-brand-50/60 border-t border-brand-100 space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-bold text-brand-800">النسبة والوزن:</span>
-                        <span className="font-black text-brand-950">
+                    <div className="px-2.5 py-2 bg-brand-50/60 border-t border-brand-100 space-y-1">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="font-bold text-brand-800">النسبة:</span>
+                        <span className="font-extrabold text-brand-950">
                           {percentage}%{' '}
                           {isSelected && (
                             <span className="text-pistachio-700 font-bold">
@@ -701,12 +701,12 @@ export default function CustomBoxPage() {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => handleStepPercentage(product.id, -10)}
                           disabled={percentage <= 0}
-                          className="px-2 py-1 rounded-lg border border-brand-200 bg-white hover:bg-brand-100 text-brand-900 font-extrabold text-[11px] transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-0.5 cursor-pointer shrink-0"
+                          className="px-1.5 py-0.5 rounded border border-brand-200 bg-white hover:bg-brand-100 text-brand-900 font-extrabold text-[10px] transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-0.5 cursor-pointer shrink-0"
                         >
                           <Minus className="w-2.5 h-2.5" />
                           <span>10%</span>
@@ -726,7 +726,7 @@ export default function CustomBoxPage() {
                           type="button"
                           onClick={() => handleStepPercentage(product.id, 10)}
                           disabled={remainingPercentage <= 0}
-                          className="px-2 py-1 rounded-lg border border-brand-200 bg-white hover:bg-brand-100 text-brand-900 font-extrabold text-[11px] transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-0.5 cursor-pointer shrink-0"
+                          className="px-1.5 py-0.5 rounded border border-brand-200 bg-white hover:bg-brand-100 text-brand-900 font-extrabold text-[10px] transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-0.5 cursor-pointer shrink-0"
                         >
                           <Plus className="w-2.5 h-2.5" />
                           <span>10%</span>
@@ -741,21 +741,21 @@ export default function CustomBoxPage() {
         </div>
 
         {/* LEFT COLUMN: Sticky Summary Sidebar (4 cols) */}
-        <div id="box-summary" className="lg:col-span-4 scroll-mt-28">
-          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-brand-200 shadow-lg sticky top-20 space-y-4">
-            <div className="border-b border-brand-100 pb-3 flex items-center justify-between">
-              <h3 className="text-sm font-black text-brand-950 flex items-center gap-1.5">
-                <Package className="w-4 h-4 text-gold-500" />
+        <div id="box-summary" className="lg:col-span-4 scroll-mt-24">
+          <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-brand-200 shadow-md sticky top-16 space-y-3">
+            <div className="border-b border-brand-100 pb-2.5 flex items-center justify-between">
+              <h3 className="text-xs sm:text-sm font-extrabold text-brand-950 flex items-center gap-1.5">
+                <Package className="w-3.5 h-3.5 text-gold-500" />
                 <span>ملخص العلبة</span>
               </h3>
-              <span className="text-[11px] font-black bg-brand-100 text-brand-900 px-2.5 py-0.5 rounded-lg">
+              <span className="text-[10px] font-extrabold bg-brand-100 text-brand-900 px-2 py-0.5 rounded-md">
                 {boxSizeGrams >= 1000 ? `${boxSizeGrams / 1000} كجم` : `${boxSizeGrams} جم`}
               </span>
             </div>
 
             {/* Visual Box Gauge & Dynamic Capacity Meter */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[11px] font-black">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-[10.5px] font-extrabold">
                 <span className="text-brand-950">الامتلاء:</span>
                 <span
                   className={
@@ -771,7 +771,7 @@ export default function CustomBoxPage() {
               </div>
 
               {/* Segmented Horizontal Progress Bar */}
-              <div className="h-3.5 w-full bg-brand-100 rounded-lg overflow-hidden border border-brand-200 flex p-0.5 gap-0.5">
+              <div className="h-3 w-full bg-brand-100 rounded-md overflow-hidden border border-brand-200 flex p-0.5 gap-0.5">
                 {activePortions.map((portion) => {
                   const nutColor = NUT_COLORS[portion.product.id] || DEFAULT_NUT_COLOR;
                   return (
@@ -788,15 +788,15 @@ export default function CustomBoxPage() {
 
             {/* Tri-state Arabic Validation Feedback */}
             {totalPercentage === 0 && (
-              <div className="bg-brand-50 border border-brand-200 rounded-xl p-2.5 text-[11px] text-brand-800 flex items-start gap-2">
-                <Info className="w-3.5 h-3.5 text-brand-600 shrink-0 mt-0.5" />
+              <div className="bg-brand-50 border border-brand-200 rounded-lg p-2 text-[10px] text-brand-800 flex items-start gap-1.5">
+                <Info className="w-3 h-3 text-brand-600 shrink-0 mt-0.5" />
                 <p>ابدأ باختيار أصناف المكسرات من القائمة وتحديد نسب كل صنف لتعبئة العلبة.</p>
               </div>
             )}
 
             {totalPercentage > 0 && totalPercentage < 100 && (
-              <div className="bg-amber-50 border border-amber-300 rounded-xl p-2.5 text-[11px] text-amber-900 flex items-start gap-2">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="bg-amber-50 border border-amber-300 rounded-lg p-2 text-[10px] text-amber-900 flex items-start gap-1.5">
+                <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0 mt-0.5" />
                 <p>
                   متبقي <strong>{remainingPercentage}%</strong> لاكتمال العلبة ({remainingGrams} جم). يرجى إكمال السعة إلى 100% لإضافة العلبة للسلة.
                 </p>
@@ -804,8 +804,8 @@ export default function CustomBoxPage() {
             )}
 
             {totalPercentage === 100 && (
-              <div className="bg-pistachio-50 border border-pistachio-400 rounded-xl p-2.5 text-[11px] text-pistachio-900 flex items-start gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-pistachio-600 shrink-0 mt-0.5" />
+              <div className="bg-pistachio-50 border border-pistachio-400 rounded-lg p-2 text-[10px] text-pistachio-900 flex items-start gap-1.5">
+                <CheckCircle2 className="w-3 h-3 text-pistachio-600 shrink-0 mt-0.5" />
                 <p>
                   العلبة مكتملة 100% وجاهزة للإضافة 🎉 ({boxSizeGrams} جم). يمكنك الآن إضافتها مباشرة إلى السلة!
                 </p>
@@ -813,8 +813,8 @@ export default function CustomBoxPage() {
             )}
 
             {totalPercentage > 100 && (
-              <div className="bg-red-50 border border-red-300 rounded-xl p-2.5 text-[11px] text-red-900 flex items-start gap-2">
-                <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
+              <div className="bg-red-50 border border-red-300 rounded-lg p-2 text-[10px] text-red-900 flex items-start gap-1.5">
+                <AlertTriangle className="w-3 h-3 text-red-600 shrink-0 mt-0.5" />
                 <p>
                   تجاوزت سعة العلبة بمقدار {excessPercentage}%! يرجى تقليل النسب لتصبح 100%.
                 </p>
@@ -823,25 +823,25 @@ export default function CustomBoxPage() {
 
             {/* Visual Divided Box Tray Preview */}
             {activePortions.length > 0 && (
-              <div className="space-y-2 border-t border-brand-100 pt-3">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-black text-brand-950 flex items-center gap-1">
+              <div className="space-y-1.5 border-t border-brand-100 pt-2.5">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="font-extrabold text-brand-950 flex items-center gap-1">
                     <span>🍱</span>
                     <span>معاينة صينية العلبة المقسمة:</span>
                   </span>
-                  <span className="text-[10px] font-bold text-brand-600">
+                  <span className="text-[9.5px] font-bold text-brand-600">
                     {activePortions.length} حجرات
                   </span>
                 </div>
 
-                <div className="bg-gradient-to-br from-brand-900 via-brand-950 to-brand-900 p-2 rounded-2xl border-2 border-gold-500/40 shadow-inner">
-                  <div className="grid grid-cols-2 gap-1.5">
+                <div className="bg-gradient-to-br from-brand-900 via-brand-950 to-brand-900 p-1.5 rounded-xl border border-gold-500/40 shadow-inner">
+                  <div className="grid grid-cols-2 gap-1">
                     {activePortions.map((portion) => {
                       const weight = Math.round((boxSizeGrams * portion.percentage) / 100);
                       return (
                         <div
                           key={portion.product.id}
-                          className="relative h-16 rounded-xl overflow-hidden border border-gold-400/30 bg-brand-800 group"
+                          className="relative h-14 rounded-lg overflow-hidden border border-gold-400/30 bg-brand-800 group"
                         >
                           <img
                             src={getSafeImageUrl(portion.product.image)}
@@ -849,11 +849,11 @@ export default function CustomBoxPage() {
                             className="w-full h-full object-cover opacity-85"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-                          <span className="absolute top-1 left-1 bg-gold-500 text-brand-950 text-[9px] font-black px-1.5 py-0.5 rounded-md shadow">
+                          <span className="absolute top-1 left-1 bg-gold-500 text-brand-950 text-[8.5px] font-extrabold px-1 py-0.2 rounded shadow">
                             {portion.percentage}%
                           </span>
-                          <div className="absolute bottom-1 inset-x-1.5 text-white">
-                            <div className="text-[10px] font-extrabold truncate leading-tight">
+                          <div className="absolute bottom-1 inset-x-1 text-white">
+                            <div className="text-[9.5px] font-bold truncate leading-tight">
                               {portion.product.name}
                             </div>
                             <div className="text-[8px] text-amber-200 truncate">
@@ -864,8 +864,8 @@ export default function CustomBoxPage() {
                       );
                     })}
                     {remainingPercentage > 0 && (
-                      <div className="h-16 rounded-xl border border-dashed border-gold-400/40 bg-white/5 flex flex-col items-center justify-center text-center p-1">
-                        <span className="text-[10px] font-extrabold text-gold-400">
+                      <div className="h-14 rounded-lg border border-dashed border-gold-400/40 bg-white/5 flex flex-col items-center justify-center text-center p-1">
+                        <span className="text-[9.5px] font-bold text-gold-400">
                           + مساحة متبقية {remainingPercentage}%
                         </span>
                         <span className="text-[8px] text-brand-200">
@@ -877,12 +877,12 @@ export default function CustomBoxPage() {
                 </div>
 
                 {/* Live Mix Nutrition Meter */}
-                <div className="bg-pistachio-50/70 border border-pistachio-200 rounded-xl p-2 flex items-center justify-between text-[10px]">
-                  <span className="font-extrabold text-pistachio-800 flex items-center gap-1">
-                    <Flame className="w-3 h-3 text-pistachio-600" />
-                    <span>القيمة الغذائية (لكل 100 جم):</span>
+                <div className="bg-pistachio-50/70 border border-pistachio-200 rounded-lg p-1.5 flex items-center justify-between text-[9.5px]">
+                  <span className="font-bold text-pistachio-800 flex items-center gap-1">
+                    <Flame className="w-2.5 h-2.5 text-pistachio-600" />
+                    <span>لكل 100 جم:</span>
                   </span>
-                  <div className="flex items-center gap-2 font-black text-brand-950">
+                  <div className="flex items-center gap-1.5 font-extrabold text-brand-950">
                     <span>⚡ {mixNutritionStats.caloriesPer100g} سعر</span>
                     <span>•</span>
                     <span className="text-pistachio-700">
@@ -894,12 +894,12 @@ export default function CustomBoxPage() {
             )}
 
             {/* Itemized List of Selected Nuts */}
-            <div className="space-y-1.5 border-t border-brand-100 pt-3">
-              <h4 className="text-[11px] font-black text-brand-900">تفاصيل الأوزان والأسعار:</h4>
+            <div className="space-y-1.5 border-t border-brand-100 pt-2.5">
+              <h4 className="text-[10.5px] font-extrabold text-brand-900">تفاصيل الأوزان والأسعار:</h4>
               {activePortions.length === 0 ? (
-                <p className="text-[11px] text-brand-500 italic">لم يتم اختيار أي أصناف بعد</p>
+                <p className="text-[10px] text-brand-500 italic">لم يتم اختيار أي أصناف بعد</p>
               ) : (
-                <div className="space-y-1.5 max-h-48 overflow-y-auto pl-1">
+                <div className="space-y-1 max-h-40 overflow-y-auto pl-1">
                   {activePortions.map((portion) => {
                     const weight = Math.round((boxSizeGrams * portion.percentage) / 100);
                     const basePrice = getProductBasePriceForBox(portion.product, boxSizeGrams);
@@ -907,25 +907,25 @@ export default function CustomBoxPage() {
                     return (
                       <div
                         key={portion.product.id}
-                        className="flex items-center justify-between text-[11px] bg-brand-50 p-2 rounded-lg border border-brand-100"
+                        className="flex items-center justify-between text-[10px] bg-brand-50 p-1.5 rounded-lg border border-brand-100"
                       >
-                        <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
                           <img
                             src={getSafeImageUrl(portion.product.image)}
                             alt={portion.product.name}
-                            className="w-7 h-7 rounded-md object-cover shrink-0"
+                            className="w-6 h-6 rounded object-cover shrink-0"
                           />
                           <div className="min-w-0">
-                            <div className="font-extrabold text-brand-950 truncate">
+                            <div className="font-bold text-brand-950 truncate">
                               {portion.product.name}
                             </div>
-                            <div className="text-[10px] text-brand-600">
+                            <div className="text-[9px] text-brand-600">
                               {portion.roastOption} • {portion.percentage}% ({weight} جم)
                             </div>
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <div className="font-black text-brand-950">{price} ج.م</div>
+                          <div className="font-extrabold text-brand-950">{price} ج.م</div>
                         </div>
                       </div>
                     );
@@ -935,18 +935,18 @@ export default function CustomBoxPage() {
             </div>
 
             {/* Live Total Price in EGP */}
-            <div className="border-t border-brand-200 pt-3 space-y-1.5">
-              <div className="flex justify-between items-center text-[11px] text-brand-700">
+            <div className="border-t border-brand-200 pt-2.5 space-y-1">
+              <div className="flex justify-between items-center text-[10px] text-brand-700">
                 <span>تغليف علبة فاخرة محكمة:</span>
                 <span className="font-bold text-pistachio-700">مجاناً 🎁</span>
               </div>
-              <div className="flex justify-between items-center pt-1.5 border-t border-brand-100">
-                <span className="text-xs font-black text-brand-950">السعر الإجمالي للعلبة:</span>
+              <div className="flex justify-between items-center pt-1 border-t border-brand-100">
+                <span className="text-[11px] font-extrabold text-brand-950">السعر الإجمالي للعلبة:</span>
                 <div className="text-right">
-                  <span className="text-xl font-black text-pistachio-700">
+                  <span className="text-base sm:text-lg font-extrabold text-pistachio-700">
                     {calculationResult.isValid ? calculationResult.totalPrice : currentAccumulatedPrice} ج.م
                   </span>
-                  <span className="block text-[9px] text-brand-500">
+                  <span className="block text-[8.5px] text-brand-500">
                     {calculationResult.isValid ? 'شامل الضريبة والعلبة الفاخرة' : 'سعر تقديري حتى اكتمال 100%'}
                   </span>
                 </div>
@@ -958,13 +958,13 @@ export default function CustomBoxPage() {
               type="button"
               onClick={handleAddToCart}
               disabled={!isAddToCartEnabled}
-              className={`w-full py-2.5 px-4 rounded-xl font-black text-xs shadow-lg transition-all flex items-center justify-center gap-2 ${
+              className={`w-full py-2 px-3 rounded-xl font-extrabold text-[11px] shadow-md transition-all flex items-center justify-center gap-1.5 ${
                 isAddToCartEnabled
-                  ? 'bg-gradient-to-l from-brand-800 to-brand-950 hover:from-brand-900 hover:to-brand-950 text-white active:scale-95 shadow-brand-900/30 cursor-pointer'
+                  ? 'bg-gradient-to-l from-brand-800 to-brand-950 hover:from-brand-900 hover:to-brand-950 text-white active:scale-95 shadow-brand-900/20 cursor-pointer'
                   : 'bg-brand-200 text-brand-400 cursor-not-allowed shadow-none'
               }`}
             >
-              <ShoppingBag className="w-4 h-4 text-gold-400" />
+              <ShoppingBag className="w-3.5 h-3.5 text-gold-400" />
               <span>
                 {totalPercentage === 100
                   ? `أضف العلبة المشكلة إلى السلة • ${calculationResult.totalPrice} ج.م`

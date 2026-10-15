@@ -46,14 +46,14 @@ export default function Navbar() {
       {/* Top Promotional Announcement Bar */}
       {pageContent.showAnnouncementBar && (
         <div
-          className={`text-[11px] sm:text-xs py-1.5 px-3 border-b ${
+          className={`text-[10px] sm:text-[11px] py-1 px-3 border-b ${
             isDarkTheme
               ? 'bg-brand-950 text-white border-gold-500/20'
-              : 'bg-brand-200 text-brand-950 border-brand-300 font-bold'
+              : 'bg-brand-200 text-brand-950 border-brand-300 font-semibold'
           }`}
         >
-          <div className="max-w-6xl mx-auto flex items-center justify-center gap-1.5 font-extrabold text-center">
-            <Sparkles className="w-3.5 h-3.5 text-gold-500 shrink-0" />
+          <div className="max-w-7xl mx-auto flex items-center justify-center gap-1.5 font-bold text-center">
+            <Sparkles className="w-3 h-3 text-gold-500 shrink-0" />
             <span>
               {settings?.announcementText ||
                 '🔥 شحن مجاني لجميع المحافظات للطلبات فوق 1000 ج.م | استخدم كود NUTS10 لخصم 10%'}
@@ -66,42 +66,42 @@ export default function Navbar() {
       <div
         className={
           isFloating
-            ? 'max-w-6xl mx-auto px-3 sm:px-5 pt-2'
+            ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-1.5'
             : isDarkRoyal
-              ? 'bg-brand-950 text-white border-b border-gold-500/30 shadow-md'
-              : 'bg-brand-50/95 backdrop-blur-md border-b border-brand-200'
+              ? 'bg-brand-950 text-white border-b border-gold-500/30 shadow-xs'
+              : 'bg-brand-50/95 backdrop-blur-md border-b border-brand-200/80'
         }
       >
         <div
-          className={`max-w-6xl mx-auto px-3 sm:px-5 lg:px-6 h-14 sm:h-16 flex items-center justify-between gap-3 transition-all ${
+          className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-12 sm:h-14 flex items-center justify-between gap-3 transition-all ${
             isFloating
-              ? 'bg-white/95 backdrop-blur-md border border-brand-200 shadow-lg rounded-2xl'
+              ? 'bg-white/95 backdrop-blur-md border border-brand-200 shadow-md rounded-xl'
               : ''
           }`}
         >
           {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group min-w-0">
+          <Link href="/" className="flex items-center gap-2 group min-w-0">
             <div
-              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shadow-sm border shrink-0 group-hover:scale-105 transition ${
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shadow-2xs border shrink-0 group-hover:scale-105 transition ${
                 isDarkRoyal
                   ? 'bg-gold-500 text-brand-950 border-gold-400'
                   : 'bg-gradient-to-br from-brand-800 via-brand-900 to-brand-950 border-gold-500/40'
               }`}
             >
-              <span className="text-base sm:text-lg" role="img" aria-label="nuts">
+              <span className="text-sm sm:text-base" role="img" aria-label="nuts">
                 {pageContent.logoEmoji || '🌰'}
               </span>
             </div>
             <div className="min-w-0">
               <span
-                className={`text-sm sm:text-base lg:text-lg font-extrabold tracking-tight block leading-tight truncate ${
+                className={`text-xs sm:text-sm lg:text-base font-extrabold tracking-tight block leading-tight truncate ${
                   isDarkRoyal ? 'text-white' : 'text-brand-950'
                 }`}
               >
                 {settings?.storeName || 'محمصة الواحة الذهبية'}
               </span>
               <span
-                className={`text-[10px] font-medium hidden sm:block truncate ${
+                className={`text-[9.5px] font-medium hidden sm:block truncate ${
                   isDarkRoyal ? 'text-gold-400' : 'text-brand-700'
                 }`}
               >
@@ -112,7 +112,7 @@ export default function Navbar() {
 
           {/* Desktop Links (Streamlined to distinct destinations) */}
           <nav
-            className={`hidden lg:flex items-center gap-5 text-xs font-bold ${
+            className={`hidden lg:flex items-center gap-6 text-[11px] font-bold ${
               isDarkRoyal ? 'text-brand-100' : 'text-brand-900'
             }`}
           >
@@ -132,9 +132,9 @@ export default function Navbar() {
             </Link>
             <Link
               href="/custom-box"
-              className={`transition py-1 px-2.5 rounded-lg flex items-center gap-1 text-[11px] font-black shadow-xs ${
+              className={`transition py-1 px-2.5 rounded-lg flex items-center gap-1 text-[10.5px] font-extrabold shadow-2xs ${
                 pathname === '/custom-box'
-                  ? 'bg-gold-500 text-brand-950 border border-gold-400 ring-2 ring-gold-400/30'
+                  ? 'bg-gold-500 text-brand-950 border border-gold-400 ring-1 ring-gold-400/30'
                   : isDarkRoyal
                     ? 'bg-white/10 text-gold-400 hover:bg-white/20 border border-gold-400/40'
                     : 'bg-gold-500/15 text-brand-950 hover:bg-gold-500/25 border border-gold-400/40'
@@ -164,7 +164,7 @@ export default function Navbar() {
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               onClick={() => setIsCartOpen(true)}
-              className={`relative flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl shadow-sm hover:shadow transition active:scale-95 cursor-pointer ${
+              className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg shadow-2xs hover:shadow-xs transition active:scale-95 cursor-pointer ${
                 isDarkRoyal
                   ? 'bg-gold-500 hover:bg-gold-400 text-brand-950'
                   : 'bg-brand-900 hover:bg-brand-950 text-white'
@@ -173,11 +173,11 @@ export default function Navbar() {
             >
               <div className="relative">
                 <ShoppingBag
-                  className={`w-4 h-4 ${isDarkRoyal ? 'text-brand-950' : 'text-gold-400'}`}
+                  className={`w-3.5 h-3.5 ${isDarkRoyal ? 'text-brand-950' : 'text-gold-400'}`}
                 />
                 {cartCount > 0 && (
                   <span
-                    className={`absolute -top-1.5 -right-1.5 text-[10px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center shadow ${
+                    className={`absolute -top-1.5 -right-1.5 text-[9px] font-extrabold w-3.5 h-3.5 rounded-full flex items-center justify-center shadow ${
                       isDarkRoyal
                         ? 'bg-brand-950 text-gold-400'
                         : 'bg-gold-500 text-brand-950'
@@ -189,14 +189,14 @@ export default function Navbar() {
               </div>
               <div className="text-right hidden sm:block">
                 <span
-                  className={`text-[10px] block leading-none ${
+                  className={`text-[9px] block leading-none ${
                     isDarkRoyal ? 'text-brand-900 font-bold' : 'text-brand-200'
                   }`}
                 >
                   السلة
                 </span>
                 <span
-                  className={`text-xs font-extrabold ${
+                  className={`text-[11px] font-extrabold ${
                     isDarkRoyal ? 'text-brand-950' : 'text-white'
                   }`}
                 >
@@ -207,23 +207,23 @@ export default function Navbar() {
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={`lg:hidden p-2 rounded-lg border cursor-pointer ${
+              className={`lg:hidden p-1.5 rounded-lg border cursor-pointer ${
                 isDarkRoyal
                   ? 'border-white/20 text-white hover:bg-white/10'
                   : 'border-brand-200 text-brand-900 hover:bg-brand-100'
               }`}
               aria-label="القائمة"
             >
-              {mobileMenuOpen ? <X className="w-4 h-4 sm:w-5 sm:h-5" /> : <Menu className="w-4 h-4 sm:w-5 sm:h-5" />}
+              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>
           </div>
         </div>
 
         {/* One-Tap Mobile & Tablet Quick Navigation Strip */}
         <div
-          className={`lg:hidden px-3 py-1.5 flex items-center justify-between gap-1.5 overflow-x-auto no-scrollbar border-t ${
+          className={`lg:hidden px-3 py-1 flex items-center justify-between gap-1.5 overflow-x-auto no-scrollbar border-t ${
             isFloating
-              ? 'mt-1.5 bg-white/95 backdrop-blur-md rounded-xl border border-brand-200 shadow-xs'
+              ? 'mt-1 bg-white/95 backdrop-blur-md rounded-xl border border-brand-200 shadow-xs'
               : isDarkRoyal
                 ? 'border-white/10 bg-brand-900/60'
                 : 'border-brand-200/70 bg-white/60'
@@ -231,7 +231,7 @@ export default function Navbar() {
         >
           <Link
             href="/"
-            className={`flex-1 text-center py-1 px-2 rounded-lg text-[11px] font-extrabold whitespace-nowrap transition ${
+            className={`flex-1 text-center py-1 px-2 rounded-md text-[10px] font-bold whitespace-nowrap transition ${
               pathname === '/'
                 ? isDarkRoyal
                   ? 'bg-gold-500 text-brand-950 shadow-2xs'
@@ -245,7 +245,7 @@ export default function Navbar() {
           </Link>
           <Link
             href="/custom-box"
-            className={`flex-1 text-center py-1 px-2 rounded-lg text-[11px] font-extrabold whitespace-nowrap flex items-center justify-center gap-1 transition ${
+            className={`flex-1 text-center py-1 px-2 rounded-md text-[10px] font-bold whitespace-nowrap flex items-center justify-center gap-1 transition ${
               pathname === '/custom-box'
                 ? 'bg-gold-500 text-brand-950 shadow-2xs'
                 : isDarkRoyal
@@ -253,12 +253,12 @@ export default function Navbar() {
                   : 'bg-amber-50 text-brand-950 border border-gold-400/40'
             }`}
           >
-            <Sparkles className="w-3 h-3 text-gold-500 shrink-0" />
+            <Sparkles className="w-2.5 h-2.5 text-gold-500 shrink-0" />
             <span>كوّن علبتك</span>
           </Link>
           <Link
             href="/track-order"
-            className={`flex-1 text-center py-1 px-2 rounded-lg text-[11px] font-extrabold whitespace-nowrap transition ${
+            className={`flex-1 text-center py-1 px-2 rounded-md text-[10px] font-bold whitespace-nowrap transition ${
               pathname === '/track-order'
                 ? isDarkRoyal
                   ? 'bg-gold-500 text-brand-950 shadow-2xs'

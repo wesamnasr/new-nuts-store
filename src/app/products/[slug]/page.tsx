@@ -97,7 +97,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
   }
 
   const category = db.categories.find((c) => c.id === product.categoryId);
-  const relatedProducts = getRelatedProducts(product, 4);
+  const relatedProducts = getRelatedProducts(product, 5);
   const minPrice = Math.min(...product.weights.map((w) => w.price));
 
   // JSON-LD Structured Data Schema for Google Rich Snippets

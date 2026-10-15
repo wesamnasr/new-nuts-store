@@ -346,22 +346,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     >
       {children}
       {/* Floating Toast Notifications */}
-      <div className="fixed bottom-4 left-4 z-[100] flex flex-col gap-1.5 max-w-xs w-full pointer-events-none px-3 sm:px-0">
+      <div className="fixed bottom-3.5 left-3.5 z-[100] flex flex-col gap-1 max-w-[260px] w-full pointer-events-none px-3 sm:px-0">
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className="pointer-events-auto bg-brand-950 text-white px-3 py-2.5 rounded-xl shadow-xl border border-gold-500/40 flex items-center justify-between gap-2.5"
+            className="pointer-events-auto bg-brand-950 text-white px-2.5 py-2 rounded-xl shadow-lg border border-gold-500/40 flex items-center justify-between gap-2"
           >
             <div>
-              <p className="font-bold text-xs text-gold-400">{toast.title}</p>
+              <p className="font-bold text-[11px] text-gold-400">{toast.title}</p>
               {toast.subtitle && (
-                <p className="text-[11px] text-brand-100 mt-0.5">{toast.subtitle}</p>
+                <p className="text-[10px] text-brand-100 mt-0.5">{toast.subtitle}</p>
               )}
             </div>
             {toast.showCartButton && (
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="text-[11px] bg-gold-500 hover:bg-gold-600 text-brand-950 font-bold px-2.5 py-1 rounded-lg shrink-0 transition"
+                className="text-[10px] bg-gold-500 hover:bg-gold-600 text-brand-950 font-bold px-2 py-1 rounded-lg shrink-0 transition"
               >
                 عرض السلة
               </button>

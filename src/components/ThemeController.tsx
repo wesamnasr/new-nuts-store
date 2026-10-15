@@ -55,20 +55,20 @@ export default function ThemeController() {
   return (
     <>
       {/* Floating Theme Studio Trigger Button (Bottom-Left) */}
-      <div className="fixed bottom-4 left-4 z-40 flex items-center gap-2">
+      <div className="fixed bottom-3.5 left-3.5 z-40 flex items-center gap-1.5">
         <button
           onClick={() => setOpen((prev) => !prev)}
-          className="group bg-brand-950 hover:bg-brand-900 text-white px-3.5 py-2.5 rounded-full shadow-xl border-2 border-gold-500/60 flex items-center gap-2 transition-all hover:scale-105"
+          className="group bg-brand-950 hover:bg-brand-900 text-white px-2.5 py-2 rounded-full shadow-lg border border-gold-500/60 flex items-center gap-1.5 transition-all hover:scale-105"
           title="تغيير ثيم وشكل الموقع"
         >
-          <span className="w-6 h-6 rounded-full bg-gradient-to-tr from-gold-500 to-amber-300 text-brand-950 flex items-center justify-center shadow-xs">
-            <Palette className="w-3.5 h-3.5" />
+          <span className="w-5 h-5 rounded-full bg-gradient-to-tr from-gold-500 to-amber-300 text-brand-950 flex items-center justify-center shadow-xs">
+            <Palette className="w-3 h-3" />
           </span>
           <div className="text-right hidden sm:block">
-            <span className="block text-[10px] text-gold-400 font-extrabold leading-none">
+            <span className="block text-[9px] text-gold-400 font-extrabold leading-none">
               مظهر وثيم الموقع
             </span>
-            <span className="block text-[11px] font-black text-white leading-tight mt-0.5">
+            <span className="block text-[10px] font-black text-white leading-tight mt-0.5">
               {currentPreset.name}
             </span>
           </div>
@@ -78,33 +78,33 @@ export default function ThemeController() {
       {/* Slide-Over Theme & Layout Studio Modal */}
       {open && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white text-brand-950 w-full max-w-md h-full overflow-y-auto shadow-2xl border-r border-brand-200 flex flex-col justify-between">
+          <div className="bg-white text-brand-950 w-full max-w-sm h-full overflow-y-auto shadow-2xl border-r border-brand-200 flex flex-col justify-between">
             {/* Header */}
             <div>
-              <div className="sticky top-0 z-10 bg-brand-950 text-white px-4 py-3.5 flex items-center justify-between border-b border-gold-500/30">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-gold-500 text-brand-950 flex items-center justify-center font-black">
-                    <Palette className="w-4 h-4" />
+              <div className="sticky top-0 z-10 bg-brand-950 text-white px-3.5 py-2.5 flex items-center justify-between border-b border-gold-500/30">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-gold-500 text-brand-950 flex items-center justify-center font-black">
+                    <Palette className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <h3 className="text-xs sm:text-sm font-black flex items-center gap-1.5">
+                    <h3 className="text-xs font-black flex items-center gap-1">
                       <span>استوديو الثيمات وتخطيط الموقع</span>
-                      <Sparkles className="w-3.5 h-3.5 text-gold-400" />
+                      <Sparkles className="w-3 h-3 text-gold-400" />
                     </h3>
-                    <p className="text-[10px] text-brand-200">
+                    <p className="text-[9.5px] text-brand-200">
                       غيّر ألوان وهندسة وتخطيط الموقع بالكامل بضغطة زر
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setOpen(false)}
-                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition"
+                  className="p-1 rounded-lg bg-white/10 hover:bg-white/20 text-white transition"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              <div className="p-4 space-y-5">
+              <div className="p-3.5 space-y-4">
                 {/* 1. Theme Presets (3 Light + 3 Dark) */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">

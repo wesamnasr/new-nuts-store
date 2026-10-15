@@ -35,13 +35,13 @@ export default function FloatingWhatsApp() {
       href={url}
       target="_blank"
       rel="noreferrer"
-      className={`fixed right-3.5 sm:right-4 z-40 flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe5d] text-white px-3 py-2.5 sm:py-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 ${
-        isStickyCartVisible ? 'bottom-20 lg:bottom-4' : 'bottom-4'
+      className={`fixed right-3 sm:right-3.5 z-40 flex items-center gap-1.5 bg-[#25D366] hover:bg-[#1ebe5d] text-white px-2.5 py-2 sm:py-1.5 rounded-full shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 ${
+        isStickyCartVisible ? 'bottom-16 lg:bottom-3.5' : 'bottom-3.5'
       }`}
       aria-label="تواصل معنا عبر واتساب"
     >
-      <MessageCircle className="w-4 h-4 fill-white" />
-      <span className="text-[11px] font-extrabold hidden sm:inline">
+      <MessageCircle className="w-3.5 h-3.5 fill-white" />
+      <span className="text-[10px] font-bold hidden sm:inline">
         {pageContent.floatingWhatsappText}
       </span>
     </a>

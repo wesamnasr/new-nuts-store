@@ -1192,30 +1192,30 @@ export default function AdminDashboardPage() {
 
       {/* RIGHT-HAND RTL SIDEBAR NAVIGATION */}
       <aside
-        className={`fixed lg:sticky top-0 right-0 z-50 lg:z-30 h-screen w-64 bg-brand-950 text-white border-l border-gold-500/25 flex flex-col justify-between transition-transform duration-300 ${
+        className={`fixed lg:sticky top-0 right-0 z-50 lg:z-30 h-screen w-56 bg-brand-950 text-white border-l border-gold-500/25 flex flex-col justify-between transition-transform duration-300 ${
           sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Top Brand Identity */}
-        <div className="p-4 border-b border-white/10 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 text-brand-950 flex items-center justify-center font-black text-lg shrink-0 shadow">
+        <div className="p-3 border-b border-white/10 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 text-brand-950 flex items-center justify-center font-black text-sm shrink-0 shadow-xs">
               {cmsDraft.logoEmoji || '🌰'}
             </div>
             <div className="min-w-0">
-              <h2 className="text-xs font-black text-white truncate">{settings.storeName}</h2>
+              <h2 className="text-[11px] font-black text-white truncate">{settings.storeName}</h2>
             </div>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-1.5 rounded-lg bg-white/10 text-white hover:bg-white/20"
+            className="lg:hidden p-1 rounded-lg bg-white/10 text-white hover:bg-white/20"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
         {/* Navigation Links List */}
-        <nav className="flex-1 overflow-y-auto p-2.5 space-y-1">
+        <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
@@ -1225,13 +1225,13 @@ export default function AdminDashboardPage() {
                   setActiveTab(item.id);
                   setSidebarOpen(false);
                 }}
-                className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-right transition group ${
+                className={`w-full flex items-center justify-between gap-1.5 px-2.5 py-2 rounded-xl text-right transition group ${
                   isActive
-                    ? 'bg-gradient-to-l from-gold-500 to-gold-400 text-brand-950 font-black shadow-md'
+                    ? 'bg-gradient-to-l from-gold-500 to-gold-400 text-brand-950 font-black shadow-xs'
                     : 'text-brand-100 hover:bg-white/10 font-bold'
                 }`}
               >
-                <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
                   <span
                     className={`shrink-0 ${
                       isActive ? 'text-brand-950' : 'text-gold-400 group-hover:scale-110 transition'
@@ -1239,12 +1239,12 @@ export default function AdminDashboardPage() {
                   >
                     {item.icon}
                   </span>
-                  <div className="text-xs leading-tight truncate">{item.label}</div>
+                  <div className="text-[11px] leading-tight truncate">{item.label}</div>
                 </div>
 
                 {item.badge !== undefined && (
                   <span
-                    className={`text-[10px] font-black px-1.5 py-0.5 rounded-md shrink-0 ${
+                    className={`text-[9.5px] font-black px-1.5 py-0.5 rounded-md shrink-0 ${
                       isActive
                         ? 'bg-brand-950 text-gold-400'
                         : item.badgeColor || 'bg-white/10 text-brand-100'
@@ -1259,13 +1259,13 @@ export default function AdminDashboardPage() {
         </nav>
 
         {/* Bottom Sidebar Footer Actions */}
-        <div className="p-3 border-t border-white/10 space-y-1.5 bg-brand-950/90">
+        <div className="p-2.5 border-t border-white/10 space-y-1.5 bg-brand-950/90">
           <Link
             href="/"
-            className="w-full bg-pistachio-600/20 hover:bg-pistachio-600/30 border border-pistachio-500/40 text-pistachio-100 text-xs font-extrabold px-3 py-2 rounded-xl flex items-center justify-between transition"
+            className="w-full bg-pistachio-600/20 hover:bg-pistachio-600/30 border border-pistachio-500/40 text-pistachio-100 text-[11px] font-extrabold px-2.5 py-1.5 rounded-xl flex items-center justify-between transition"
           >
             <span>معاينة المتجر الحي</span>
-            <ExternalLink className="w-3.5 h-3.5 text-pistachio-400" />
+            <ExternalLink className="w-3 h-3 text-pistachio-400" />
           </Link>
 
           <div className="grid grid-cols-2 gap-1.5">
@@ -1276,7 +1276,7 @@ export default function AdminDashboardPage() {
                   'تمت استعادة البيانات الافتراضية للمتجر'
                 )
               }
-              className="bg-white/10 hover:bg-white/15 text-brand-100 text-[11px] font-bold px-2.5 py-1.5 rounded-xl flex items-center justify-center gap-1 transition border border-white/10"
+              className="bg-white/10 hover:bg-white/15 text-brand-100 text-[10px] font-bold px-2 py-1.5 rounded-xl flex items-center justify-center gap-1 transition border border-white/10"
               title="استعادة البيانات الافتراضية"
             >
               <RotateCcw className="w-3 h-3 text-gold-400" />
@@ -1285,7 +1285,7 @@ export default function AdminDashboardPage() {
 
             <button
               onClick={handleLogout}
-              className="bg-red-500/20 hover:bg-red-500/30 text-red-200 hover:text-white text-[11px] font-extrabold px-2.5 py-1.5 rounded-xl flex items-center justify-center gap-1 transition border border-red-500/30"
+              className="bg-red-500/20 hover:bg-red-500/30 text-red-200 hover:text-white text-[10px] font-extrabold px-2 py-1.5 rounded-xl flex items-center justify-center gap-1 transition border border-red-500/30"
             >
               <LogOut className="w-3 h-3" />
               <span>خروج</span>
@@ -1298,21 +1298,21 @@ export default function AdminDashboardPage() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Sticky Admin Topbar */}
         <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-brand-200 shadow-2xs">
-          <div className="px-3 sm:px-6 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2.5">
+          <div className="px-3 sm:px-5 py-2 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-xl bg-brand-950 text-gold-400 shrink-0 cursor-pointer"
+                className="lg:hidden p-1.5 rounded-xl bg-brand-950 text-gold-400 shrink-0 cursor-pointer"
                 aria-label="فتح القائمة الجانبية"
               >
-                <Menu className="w-4 h-4" />
+                <Menu className="w-3.5 h-3.5" />
               </button>
               <div className="flex items-center gap-1.5 min-w-0">
-                <h1 className="text-xs sm:text-base font-black text-brand-950 truncate">
+                <h1 className="text-xs sm:text-sm font-black text-brand-950 truncate">
                   {currentNav.label}
                 </h1>
                 {saving && (
-                  <span className="text-[10px] bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full animate-pulse shrink-0">
+                  <span className="text-[9.5px] bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full animate-pulse shrink-0">
                     جاري الحفظ...
                   </span>
                 )}
@@ -1322,7 +1322,7 @@ export default function AdminDashboardPage() {
             <div className="flex items-center gap-1.5 shrink-0">
               <Link
                 href="/"
-                className="lg:hidden bg-pistachio-50 hover:bg-pistachio-100 text-pistachio-800 border border-pistachio-200 text-[10px] font-extrabold px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition"
+                className="lg:hidden bg-pistachio-50 hover:bg-pistachio-100 text-pistachio-800 border border-pistachio-200 text-[10px] font-extrabold px-2 py-1 rounded-xl flex items-center gap-1 transition"
               >
                 <span>المتجر</span>
                 <ExternalLink className="w-3 h-3" />
@@ -1332,16 +1332,16 @@ export default function AdminDashboardPage() {
                   setActiveTab('products');
                   openCreateProductModal();
                 }}
-                className="bg-brand-900 hover:bg-brand-950 text-white text-[10px] sm:text-[11px] font-extrabold px-3 py-1.5 rounded-xl flex items-center gap-1 transition shadow-2xs cursor-pointer"
+                className="bg-brand-900 hover:bg-brand-950 text-white text-[10px] sm:text-[11px] font-extrabold px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition shadow-2xs cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5 text-gold-400 shrink-0" />
+                <Plus className="w-3 h-3 text-gold-400 shrink-0" />
                 <span>إضافة منتج</span>
               </button>
             </div>
           </div>
 
           {/* Mobile & Tablet Horizontal Quick-Switch Tab Bar */}
-          <div className="lg:hidden flex items-center gap-1.5 overflow-x-auto no-scrollbar px-3 py-2 bg-brand-50/90 border-t border-brand-100">
+          <div className="lg:hidden flex items-center gap-1 overflow-x-auto no-scrollbar px-3 py-1.5 bg-brand-50/90 border-t border-brand-100">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
@@ -1349,7 +1349,7 @@ export default function AdminDashboardPage() {
                   key={item.id}
                   type="button"
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] whitespace-nowrap shrink-0 transition cursor-pointer ${
+                  className={`flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] whitespace-nowrap shrink-0 transition cursor-pointer ${
                     isActive
                       ? 'bg-brand-950 text-gold-400 font-black shadow-2xs'
                       : 'bg-white text-brand-800 border border-brand-200 font-bold hover:bg-brand-100'
@@ -1359,7 +1359,7 @@ export default function AdminDashboardPage() {
                   <span>{item.label}</span>
                   {item.badge !== undefined && (
                     <span
-                      className={`text-[9px] font-black px-1.5 py-0.5 rounded-md ${
+                      className={`text-[8.5px] font-black px-1 py-0.5 rounded-md ${
                         isActive ? 'bg-gold-500 text-brand-950' : 'bg-brand-100 text-brand-800'
                       }`}
                     >
@@ -1373,102 +1373,102 @@ export default function AdminDashboardPage() {
         </header>
 
         {/* Dynamic Module Container */}
-        <main className="p-3 sm:p-6 space-y-5 max-w-6xl w-full mx-auto">
+        <main className="p-3 sm:p-5 space-y-4 max-w-7xl w-full mx-auto">
           {/* ================================================================= */}
           {/* MODULE 1: OVERVIEW & ANALYTICS                                    */}
           {/* ================================================================= */}
           {activeTab === 'overview' && (
-            <div className="space-y-5">
+            <div className="space-y-4">
               {/* 6 KPI Summary Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                <div className="bg-white p-3.5 rounded-2xl border border-brand-200 shadow-2xs">
-                  <div className="flex items-center justify-between text-brand-600 text-[11px] font-bold">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
+                <div className="bg-white p-3 rounded-2xl border border-brand-200 shadow-2xs">
+                  <div className="flex items-center justify-between text-brand-600 text-[10px] font-bold">
                     <span>إجمالي الإيرادات</span>
-                    <TrendingUp className="w-4 h-4 text-pistachio-600" />
+                    <TrendingUp className="w-3.5 h-3.5 text-pistachio-600" />
                   </div>
-                  <div className="text-base sm:text-lg font-black text-brand-950 mt-1">
+                  <div className="text-sm sm:text-base font-black text-brand-950 mt-0.5">
                     {totalRevenue} ج.م
                   </div>
-                  <div className="text-[10px] text-pistachio-700 font-semibold mt-0.5">
+                  <div className="text-[9.5px] text-pistachio-700 font-semibold mt-0.5">
                     من {validOrders.length} طلبات مؤكدة
                   </div>
                 </div>
 
-                <div className="bg-white p-3.5 rounded-2xl border border-brand-200 shadow-2xs">
-                  <div className="flex items-center justify-between text-brand-600 text-[11px] font-bold">
+                <div className="bg-white p-3 rounded-2xl border border-brand-200 shadow-2xs">
+                  <div className="flex items-center justify-between text-brand-600 text-[10px] font-bold">
                     <span>طلبات جارية</span>
-                    <Clock className="w-4 h-4 text-amber-600" />
+                    <Clock className="w-3.5 h-3.5 text-amber-600" />
                   </div>
-                  <div className="text-base sm:text-lg font-black text-brand-950 mt-1">
+                  <div className="text-sm sm:text-base font-black text-brand-950 mt-0.5">
                     {activeOrdersCount}
                   </div>
-                  <div className="text-[10px] text-brand-600 mt-0.5">قيد التحضير أو التوصيل</div>
+                  <div className="text-[9.5px] text-brand-600 mt-0.5">قيد التحضير أو التوصيل</div>
                 </div>
 
-                <div className="bg-white p-3.5 rounded-2xl border border-brand-200 shadow-2xs">
-                  <div className="flex items-center justify-between text-brand-600 text-[11px] font-bold">
+                <div className="bg-white p-3 rounded-2xl border border-brand-200 shadow-2xs">
+                  <div className="flex items-center justify-between text-brand-600 text-[10px] font-bold">
                     <span>طلبات مكتملة</span>
-                    <CheckCircle2 className="w-4 h-4 text-pistachio-600" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-pistachio-600" />
                   </div>
-                  <div className="text-base sm:text-lg font-black text-brand-950 mt-1">
+                  <div className="text-sm sm:text-base font-black text-brand-950 mt-0.5">
                     {deliveredOrdersCount}
                   </div>
-                  <div className="text-[10px] text-brand-600 mt-0.5">تم تسليمها للعملاء</div>
+                  <div className="text-[9.5px] text-brand-600 mt-0.5">تم تسليمها للعملاء</div>
                 </div>
 
-                <div className="bg-white p-3.5 rounded-2xl border border-brand-200 shadow-2xs">
-                  <div className="flex items-center justify-between text-brand-600 text-[11px] font-bold">
+                <div className="bg-white p-3 rounded-2xl border border-brand-200 shadow-2xs">
+                  <div className="flex items-center justify-between text-brand-600 text-[10px] font-bold">
                     <span>متوسط قيمة الطلب</span>
-                    <ShoppingBag className="w-4 h-4 text-brand-700" />
+                    <ShoppingBag className="w-3.5 h-3.5 text-brand-700" />
                   </div>
-                  <div className="text-base sm:text-lg font-black text-brand-950 mt-1">
+                  <div className="text-sm sm:text-base font-black text-brand-950 mt-0.5">
                     {averageOrderValue} ج.م
                   </div>
-                  <div className="text-[10px] text-brand-600 mt-0.5">شحن مجاني فوق {settings.freeShippingThreshold}</div>
+                  <div className="text-[9.5px] text-brand-600 mt-0.5">شحن مجاني فوق {settings.freeShippingThreshold}</div>
                 </div>
 
-                <div className="bg-white p-3.5 rounded-2xl border border-brand-200 shadow-2xs">
-                  <div className="flex items-center justify-between text-brand-600 text-[11px] font-bold">
+                <div className="bg-white p-3 rounded-2xl border border-brand-200 shadow-2xs">
+                  <div className="flex items-center justify-between text-brand-600 text-[10px] font-bold">
                     <span>المنتجات والأقسام</span>
-                    <Layers className="w-4 h-4 text-brand-700" />
+                    <Layers className="w-3.5 h-3.5 text-brand-700" />
                   </div>
-                  <div className="text-base sm:text-lg font-black text-brand-950 mt-1">
+                  <div className="text-sm sm:text-base font-black text-brand-950 mt-0.5">
                     {products.length} صنف
                   </div>
-                  <div className="text-[10px] text-brand-600 mt-0.5">
+                  <div className="text-[9.5px] text-brand-600 mt-0.5">
                     موزعة على {categories.length} أقسام
                   </div>
                 </div>
 
-                <div className="bg-white p-3.5 rounded-2xl border border-brand-200 shadow-2xs">
-                  <div className="flex items-center justify-between text-brand-600 text-[11px] font-bold">
+                <div className="bg-white p-3 rounded-2xl border border-brand-200 shadow-2xs">
+                  <div className="flex items-center justify-between text-brand-600 text-[10px] font-bold">
                     <span>التقييم العام</span>
-                    <Star className="w-4 h-4 text-gold-500 fill-gold-500" />
+                    <Star className="w-3.5 h-3.5 text-gold-500 fill-gold-500" />
                   </div>
-                  <div className="text-base sm:text-lg font-black text-brand-950 mt-1">
+                  <div className="text-sm sm:text-base font-black text-brand-950 mt-0.5">
                     {averageStoreRating} / 5
                   </div>
-                  <div className="text-[10px] text-brand-600 mt-0.5">
+                  <div className="text-[9.5px] text-brand-600 mt-0.5">
                     {allReviewsFlattened.length} تقييم مسجل
                   </div>
                 </div>
               </div>
 
               {/* Order Status Pipeline Breakdown */}
-              <div className="bg-white p-4 rounded-2xl border border-brand-200 shadow-2xs space-y-3">
+              <div className="bg-white p-3.5 rounded-2xl border border-brand-200 shadow-2xs space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs sm:text-sm font-black text-brand-950">
+                  <h3 className="text-xs font-black text-brand-950">
                     مراحل تنفيذ الطلبات (اضغط لفلترة الطلبات)
                   </h3>
                   <button
                     onClick={() => setActiveTab('orders')}
-                    className="text-[11px] font-bold text-brand-700 hover:text-brand-950 underline"
+                    className="text-[10.5px] font-bold text-brand-700 hover:text-brand-950 underline"
                   >
                     عرض كل الطلبات ({orders.length})
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                   {(Object.keys(STATUS_LABELS) as OrderStatus[]).map((stKey) => {
                     const count = orders.filter((o) => o.status === stKey).length;
                     const info = STATUS_LABELS[stKey];
@@ -1479,13 +1479,13 @@ export default function AdminDashboardPage() {
                           setOrderStatusFilter(stKey);
                           setActiveTab('orders');
                         }}
-                        className="p-3 rounded-xl border border-brand-200 hover:border-brand-700 bg-brand-50/60 hover:bg-brand-100/60 text-right transition space-y-1"
+                        className="p-2.5 rounded-xl border border-brand-200 hover:border-brand-700 bg-brand-50/60 hover:bg-brand-100/60 text-right transition space-y-0.5"
                       >
                         <div className="flex items-center justify-between">
-                          <span className={`w-2.5 h-2.5 rounded-full ${info.dotClass}`} />
-                          <span className="text-base font-black text-brand-950">{count}</span>
+                          <span className={`w-2 h-2 rounded-full ${info.dotClass}`} />
+                          <span className="text-sm font-black text-brand-950">{count}</span>
                         </div>
-                        <div className="text-[11px] font-extrabold text-brand-800 truncate">
+                        <div className="text-[10px] font-extrabold text-brand-800 truncate">
                           {info.label}
                         </div>
                       </button>
@@ -1495,11 +1495,11 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Quick Control Center Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
                 {/* Latest Orders Data Table */}
-                <div className="lg:col-span-2 bg-white p-4 rounded-2xl border border-brand-200 shadow-2xs space-y-3">
+                <div className="lg:col-span-2 bg-white p-3.5 rounded-2xl border border-brand-200 shadow-2xs space-y-2.5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="text-xs sm:text-sm font-black text-brand-950">
+                    <h3 className="text-xs font-black text-brand-950">
                       جدول أحدث الطلبات الواردة
                     </h3>
                     <div className="flex items-center gap-2">
