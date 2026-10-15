@@ -2,6 +2,10 @@ node_modules
 .next
 .agents
 .vercel
+.npm-cache
 *.log
 test_*.mjs
 stress_*.mjs
+
+.vercel
+.env*
