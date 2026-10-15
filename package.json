@@ -10,6 +10,7 @@
     "test": "node scripts/verify.mjs"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.2.0",
     "lucide-react": "^0.460.0",
     "next": "15.5.28",
     "react": "^19.0.0",

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, saveDb, initialDatabase } from '@/lib/db';
+import { getDbAsync, saveDbAsync, initialDatabase } from '@/lib/db';
 import { verifyAdminRequest, sanitizePublicStoreData, generateAdminToken } from '@/lib/auth';
 import { getResolvedPageContent, getResolvedThemeConfig } from '@/lib/defaults';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-  const db = getDb();
+  const db = await getDbAsync();
   if (request) {
     const auth = verifyAdminRequest(request);
     if (auth.isAuthenticated) {
@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const db = await getDbAsync();
     const auth = verifyAdminRequest(request);
     if (!auth.isAuthenticated) {
       return NextResponse.json(
@@ -29,10 +30,9 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const db = getDb();
 
     if (body.action === 'reset_demo') {
-      saveDb(initialDatabase);
+      await saveDbAsync(initialDatabase);
       return NextResponse.json(initialDatabase);
     }
 
@@ -86,7 +86,7 @@ export async function PUT(request: NextRequest) {
       db.orders = body.orders;
     }
 
-    saveDb(db);
+    await saveDbAsync(db);
     const response = NextResponse.json(db);
 
     if (rotatedToken) {

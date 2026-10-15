@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, saveDb } from '@/lib/db';
+import { getDbAsync, saveDbAsync } from '@/lib/db';
 import { ProductReview, ReviewSubmissionResponse } from '@/types/store';
 import { validateReviewInput, recalculateProductRating } from '@/lib/reviews';
 
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get('productId');
 
-    const db = getDb();
+    const db = await getDbAsync();
     if (productId) {
       const product = db.products.find((p) => p.id === productId);
       if (!product) {
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     const { productId, customerName, rating, comment } = validation.sanitized;
 
     // 2. Database Lookup
-    const db = getDb();
+    const db = await getDbAsync();
     const product = db.products.find((p) => p.id === productId);
     if (!product) {
       return NextResponse.json<ReviewSubmissionResponse>(
@@ -97,8 +97,8 @@ export async function POST(request: NextRequest) {
     product.rating = newRating;
     product.reviewsCount = newCount;
 
-    // Save synchronously
-    saveDb(db);
+    // Save to Neon Postgres & local cache
+    await saveDbAsync(db);
 
     // 6. Return HTTP 201 Created
     return NextResponse.json<ReviewSubmissionResponse>(

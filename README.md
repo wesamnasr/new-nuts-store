@@ -52,7 +52,7 @@
 - **Language:** TypeScript 5
 - **Styling:** Tailwind CSS 3 + خط `Cairo` العربي من Google Fonts
 - **Icons:** Lucide React
-- **Storage:** JSON Database (`data/store-db.json` محلياً مع دعم تلقائي لبيئة Serverless على Vercel)
+- **Database & Storage:** **Neon Serverless Postgres** (`@neondatabase/serverless` عبر `DATABASE_URL` على Vercel لحفظ دائم لجميع بيانات المتجر والطلبات والتقييمات، مع تراجع تلقائي إلى `data/store-db.json` عند التشغيل المحلي بدون اتصال سحابي)
 - **Testing:** Node.js Test Runner (`scripts/verify.mjs` - 54 اختباراً آلياً شاملاً)
 
 ---

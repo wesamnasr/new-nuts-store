@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getDb } from '@/lib/db';
+import { getDbAsync } from '@/lib/db';
 import { getSafeImageUrl } from '@/lib/defaults';
 import { resolveProductBySlug, getRelatedProducts } from '@/lib/slugs';
 import ProductDetailClient from './ProductDetailClient';
@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
  * Generate Static Params for build-time pre-rendering
  */
 export async function generateStaticParams() {
-  const db = getDb();
+  const db = await getDbAsync();
   const products = db.products || [];
   return products.flatMap((p) => [
     { slug: p.slug },
@@ -31,6 +31,7 @@ export async function generateMetadata({
   params,
 }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
+  await getDbAsync();
   const product = resolveProductBySlug(slug);
 
   if (!product) {
@@ -88,13 +89,13 @@ export async function generateMetadata({
 
 export default async function ProductDetailPage({ params }: ProductPageProps) {
   const { slug } = await params;
+  const db = await getDbAsync();
   const product = resolveProductBySlug(slug);
 
   if (!product) {
     notFound();
   }
 
-  const db = getDb();
   const category = db.categories.find((c) => c.id === product.categoryId);
   const relatedProducts = getRelatedProducts(product, 4);
   const minPrice = Math.min(...product.weights.map((w) => w.price));

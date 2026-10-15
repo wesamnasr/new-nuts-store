@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDbAsync } from '@/lib/db';
 import { generateAdminToken, verifyAdminRequest, extractAdminToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  await getDbAsync();
   const auth = verifyAdminRequest(request);
   if (!auth.isAuthenticated) {
     return NextResponse.json({ authenticated: false, error: auth.error }, { status: 401 });
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'كلمة المرور غير صحيحة' }, { status: 401 });
     }
 
-    const db = getDb();
+    const db = await getDbAsync();
     const configuredPassword = db.settings?.adminPassword || 'admin';
 
     if (password !== configuredPassword) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, saveDb } from '@/lib/db';
+import { getDbAsync, saveDbAsync } from '@/lib/db';
 import { Order, OrderStatus, CartItem, Product } from '@/types/store';
 import { validateEgyptianPhone, validateCoupon } from '@/lib/validation';
 import { calculateCustomBoxPrice } from '@/lib/pricing';
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q')?.trim();
 
-  const db = getDb();
+  const db = await getDbAsync();
   if (query) {
     const normalized = query.toLowerCase();
     const queryDigits = query.replace(/[\s\-\(\)\+]/g, '');
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const db = getDb();
+    const db = await getDbAsync();
 
     // 1. Validate required basic fields
     if (!body.customerName?.trim() || !body.customerPhone?.trim() || !body.address?.trim()) {
@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
     };
 
     db.orders.unshift(newOrder);
-    saveDb(db);
+    await saveDbAsync(db);
 
     return NextResponse.json({ order: newOrder }, { status: 201 });
   } catch (error) {
@@ -232,6 +232,7 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    const db = await getDbAsync();
     const auth = verifyAdminRequest(request);
     if (!auth.isAuthenticated) {
       return NextResponse.json(
@@ -247,7 +248,6 @@ export async function PATCH(request: NextRequest) {
       notes?: string;
     };
 
-    const db = getDb();
     const orderIndex = db.orders.findIndex((o) => o.id === orderId);
     if (orderIndex === -1) {
       return NextResponse.json({ error: 'الطلب غير موجود' }, { status: 404 });
@@ -259,7 +259,7 @@ export async function PATCH(request: NextRequest) {
     if (typeof notes === 'string') {
       db.orders[orderIndex].notes = notes;
     }
-    saveDb(db);
+    await saveDbAsync(db);
 
     return NextResponse.json({ order: db.orders[orderIndex] });
   } catch (error) {
@@ -270,6 +270,7 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const db = await getDbAsync();
     const auth = verifyAdminRequest(request);
     if (!auth.isAuthenticated) {
       return NextResponse.json(
@@ -284,13 +285,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'معرف الطلب مطلوب' }, { status: 400 });
     }
 
-    const db = getDb();
     if (orderId === 'all') {
       db.orders = [];
     } else {
       db.orders = db.orders.filter((o) => o.id !== orderId);
     }
-    saveDb(db);
+    await saveDbAsync(db);
 
     return NextResponse.json({ success: true, orders: db.orders });
   } catch (error) {

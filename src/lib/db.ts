@@ -1,6 +1,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { neon, NeonQueryFunction } from '@neondatabase/serverless';
 import { DatabaseSchema } from '@/types/store';
 import {
   DEFAULT_PAGE_CONTENT,
@@ -16,6 +17,17 @@ const TMP_DB_PATH = path.join(os.tmpdir(), 'new-nuts-store-db.json');
 declare global {
   // eslint-disable-next-line no-var
   var __newNutsMemoryDb: DatabaseSchema | undefined;
+  // eslint-disable-next-line no-var
+  var __newNutsTableReady: boolean | undefined;
+}
+
+function getPostgresUrl(): string | undefined {
+  return (
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.STORAGE_URL ||
+    undefined
+  );
 }
 
 export const initialDatabase: DatabaseSchema = {
@@ -510,6 +522,11 @@ function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
 
 function ensureDbFile(): DatabaseSchema {
   try {
+    // If cloud Postgres is configured and already cached in memory during this request, prefer it
+    if (getPostgresUrl() && globalThis.__newNutsMemoryDb) {
+      return globalThis.__newNutsMemoryDb;
+    }
+
     // On Vercel/read-only environments, if a newer copy exists in /tmp, prefer it
     if (process.env.VERCEL && fs.existsSync(TMP_DB_PATH)) {
       const rawTmp = fs.readFileSync(TMP_DB_PATH, 'utf-8');
@@ -576,3 +593,78 @@ export function saveDb(data: DatabaseSchema): void {
     console.error('Failed to write database file to /tmp:', err);
   }
 }
+
+async function ensurePostgresTable(sql: NeonQueryFunction<false, false>): Promise<void> {
+  if (globalThis.__newNutsTableReady) return;
+  await sql`
+    CREATE TABLE IF NOT EXISTS store_state (
+      id TEXT PRIMARY KEY,
+      data JSONB NOT NULL,
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  globalThis.__newNutsTableReady = true;
+}
+
+export async function getDbAsync(): Promise<DatabaseSchema> {
+  const pgUrl = getPostgresUrl();
+  if (!pgUrl) {
+    return getDb();
+  }
+
+  try {
+    const sql = neon(pgUrl);
+    await ensurePostgresTable(sql);
+
+    const rows = await sql`SELECT data FROM store_state WHERE id = 'main' LIMIT 1`;
+    if (Array.isArray(rows) && rows.length > 0 && rows[0]?.data) {
+      const parsed =
+        typeof rows[0].data === 'string'
+          ? (JSON.parse(rows[0].data) as DatabaseSchema)
+          : (rows[0].data as DatabaseSchema);
+      const normalized = normalizeDatabase(parsed);
+      globalThis.__newNutsMemoryDb = normalized;
+      return normalized;
+    }
+
+    // Seed initial database state into Neon Postgres on first access
+    const seed = ensureDbFile();
+    const serialized = JSON.stringify(seed);
+    await sql`
+      INSERT INTO store_state (id, data, updated_at)
+      VALUES ('main', ${serialized}::jsonb, NOW())
+      ON CONFLICT (id) DO NOTHING
+    `;
+    globalThis.__newNutsMemoryDb = seed;
+    return seed;
+  } catch (err) {
+    console.error('Neon Postgres read error, falling back to local/tmp DB:', err);
+    return getDb();
+  }
+}
+
+export async function saveDbAsync(data: DatabaseSchema): Promise<void> {
+  const normalized = normalizeDatabase(data);
+  saveDb(normalized);
+
+  const pgUrl = getPostgresUrl();
+  if (!pgUrl) {
+    return;
+  }
+
+  try {
+    const sql = neon(pgUrl);
+    await ensurePostgresTable(sql);
+    const serialized = JSON.stringify(normalized);
+    await sql`
+      INSERT INTO store_state (id, data, updated_at)
+      VALUES ('main', ${serialized}::jsonb, NOW())
+      ON CONFLICT (id) DO UPDATE
+      SET data = EXCLUDED.data,
+          updated_at = NOW()
+    `;
+  } catch (err) {
+    console.error('Failed to persist store state to Neon Postgres:', err);
+  }
+}
+
