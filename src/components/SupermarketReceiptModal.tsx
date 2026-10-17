@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Printer, X, MessageCircle } from 'lucide-react';
 import { Order, PosShift, StoreSettings } from '@/types/store';
-import { formatWhatsAppPhone } from '@/lib/defaults';
+import { formatWhatsAppPhone } from '@/lib/validation';
 
 export interface StickerPreviewData {
   title: string;

@@ -3,10 +3,11 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { Category } from '@/types/store';
+import { Category, Product } from '@/types/store';
 
 interface CategoriesGridSectionProps {
   categories: Category[];
+  products?: Product[];
 }
 
 const CATEGORY_STYLES: Record<
