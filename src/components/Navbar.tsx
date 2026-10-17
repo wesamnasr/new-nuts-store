@@ -47,7 +47,9 @@ export default function Navbar() {
   if (
     pathname?.startsWith('/admin') ||
     pathname?.startsWith('/pos') ||
-    pathname?.startsWith('/cashier')
+    pathname?.startsWith('/cashier') ||
+    pathname?.startsWith('/supplier') ||
+    pathname?.startsWith('/accountant')
   ) {
     return null;
   }
@@ -100,12 +102,6 @@ export default function Navbar() {
                 </span>
               </div>
               <div className="hidden md:flex items-center gap-1.5 shrink-0">
-                <Link
-                  href="/pos"
-                  className="inline-flex items-center gap-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full text-[10px] font-extrabold transition"
-                >
-                  <span>⚖️ كاشير المحل POS</span>
-                </Link>
                 <button
                   type="button"
                   onClick={handleInstallPwa}

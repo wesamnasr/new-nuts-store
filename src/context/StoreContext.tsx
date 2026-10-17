@@ -159,7 +159,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const refreshStore = useCallback(async () => {
     try {
-      const res = await fetch('/api/store', { cache: 'no-store' });
+      const headers: Record<string, string> = {};
+      if (typeof window !== 'undefined') {
+        try {
+          const savedToken =
+            sessionStorage.getItem('admin_token') ||
+            sessionStorage.getItem('hafsa_pos_token_v1') ||
+            '';
+          if (savedToken) {
+            headers['Authorization'] = `Bearer ${savedToken}`;
+            headers['x-admin-token'] = savedToken;
+          }
+        } catch {}
+      }
+      const res = await fetch('/api/store', { cache: 'no-store', headers });
       if (res.ok) {
         const data: DatabaseSchema = await res.json();
         setStoreData(data);

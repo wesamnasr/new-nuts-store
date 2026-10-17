@@ -421,7 +421,16 @@ export interface StoreThemeConfig {
   showThemeSwitcher: boolean;
 }
 
-export type AdminRole = 'super_admin' | 'store_manager' | 'promo_partner';
+export type AdminRole =
+  | 'super_admin'
+  | 'admin'
+  | 'supplier'
+  | 'cashier'
+  | 'accountant'
+  | 'store_manager'
+  | 'promo_partner';
+
+export type SystemRole = AdminRole | 'customer';
 
 export interface StoreSettings {
   storeName: string;
@@ -445,6 +454,9 @@ export interface StoreSettings {
   metaPixelId?: string;
   tiktokPixelId?: string;
   adminPassword?: string;
+  supplierPassword?: string;
+  cashierPassword?: string;
+  accountantPassword?: string;
   managerPassword?: string;
   promoPartnerPassword?: string;
   wesamAdminPassword?: string;

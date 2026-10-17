@@ -2146,6 +2146,9 @@
     "vodafoneCashNumber": "01100699524",
     "wesamAdminPassword": "wesam",
     "promoPartnerPassword": "promo",
+    "supplierPassword": "supplier",
+    "cashierPassword": "cashier",
+    "accountantPassword": "accountant",
     "freeShippingThreshold": 300,
     "villageMinOrderAmount": 200,
     "vipMinOrderForCashback": 150

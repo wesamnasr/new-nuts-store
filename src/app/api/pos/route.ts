@@ -16,30 +16,74 @@ import {
 } from '@/lib/pricing';
 import { validateEgyptianPhone } from '@/lib/validation';
 import { getSafeImageUrl } from '@/lib/defaults';
+import { verifyAdminRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+function sanitizeOrderForCashier(order: Order): Order {
+  const copy = { ...order };
+  delete copy.rawCostTotal;
+  delete copy.netProfitEgp;
+  if (Array.isArray(copy.items)) {
+    copy.items = copy.items.map((item) => {
+      const itemCopy = { ...item };
+      delete itemCopy.rawCostEgp;
+      return itemCopy;
+    });
+  }
+  return copy;
+}
+
+function sanitizeShiftForCashier(shift: PosShift | null): PosShift | null {
+  if (!shift) return null;
+  const copy = { ...shift };
+  delete (copy as any).totalRawCost;
+  delete (copy as any).totalNetProfit;
+  return copy;
+}
+
+export async function GET(request?: Request) {
   try {
+    const auth = request
+      ? verifyAdminRequest(request)
+      : { isAuthenticated: false, role: undefined };
+
+    if (auth.isAuthenticated && auth.role === 'supplier') {
+      return NextResponse.json(
+        { error: 'عزل الأدوار: المورد غير مصرح له بالدخول إلى نظام الكاشير (403 Forbidden)' },
+        { status: 403 }
+      );
+    }
+
+    const canSeeProfits =
+      auth.isAuthenticated &&
+      (auth.role === 'super_admin' || auth.role === 'accountant');
+
     const db = await getDbAsync();
-    const posShifts = db.posShifts || [];
+    const rawShifts = db.posShifts || [];
     const posExpenses = db.posExpenses || [];
-    const activeShift = posShifts.find((s) => s.status === 'open') || posShifts[0] || null;
+    const rawActiveShift = rawShifts.find((s) => s.status === 'open') || rawShifts[0] || null;
 
     const allOrders = db.orders || [];
-    const recentPosOrders = allOrders
+    const rawRecentPosOrders = allOrders
       .filter((o) => o.orderSource === 'pos' || o.orderNumber?.startsWith('POS-'))
       .slice(0, 40);
-    const onlineQueueOrders = allOrders
+    const rawOnlineQueueOrders = allOrders
       .filter((o) => o.orderSource !== 'pos' && !o.orderNumber?.startsWith('POS-'))
       .slice(0, 40);
 
     return NextResponse.json({
-      activeShift,
-      posShifts,
+      activeShift: canSeeProfits ? rawActiveShift : sanitizeShiftForCashier(rawActiveShift),
+      posShifts: canSeeProfits
+        ? rawShifts
+        : rawShifts.map((s) => sanitizeShiftForCashier(s)!),
       posExpenses,
-      recentPosOrders,
-      onlineQueueOrders,
+      recentPosOrders: canSeeProfits
+        ? rawRecentPosOrders
+        : rawRecentPosOrders.map(sanitizeOrderForCashier),
+      onlineQueueOrders: canSeeProfits
+        ? rawOnlineQueueOrders
+        : rawOnlineQueueOrders.map(sanitizeOrderForCashier),
       vipMembers: db.vipMembers || [],
     });
   } catch (error) {
@@ -53,6 +97,17 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const auth = verifyAdminRequest(request);
+    if (auth.isAuthenticated && auth.role === 'supplier') {
+      return NextResponse.json(
+        { error: 'عزل الأدوار: المورد غير مصرح له بإصدار فواتير الكاشير (403 Forbidden)' },
+        { status: 403 }
+      );
+    }
+    const canSeeProfits =
+      auth.isAuthenticated &&
+      (auth.role === 'super_admin' || auth.role === 'accountant');
+
     const body = await request.json();
     const action = body.action || 'create_invoice';
     const db = await getDbAsync();
@@ -103,7 +158,10 @@ export async function POST(request: Request) {
 
       db.posShifts.unshift(newShift);
       await saveDbAsync(db);
-      return NextResponse.json({ success: true, activeShift: newShift });
+      return NextResponse.json({
+        success: true,
+        activeShift: canSeeProfits ? newShift : sanitizeShiftForCashier(newShift),
+      });
     }
 
     // 2. CLOSE ACTIVE SHIFT (Z-REPORT)
@@ -134,7 +192,7 @@ export async function POST(request: Request) {
       await saveDbAsync(db);
       return NextResponse.json({
         success: true,
-        closedShift: activeShift,
+        closedShift: canSeeProfits ? activeShift : sanitizeShiftForCashier(activeShift),
       });
     }
 
@@ -174,7 +232,9 @@ export async function POST(request: Request) {
       return NextResponse.json({
         success: true,
         expense: newExpense,
-        activeShift: activeShift || null,
+        activeShift: canSeeProfits
+          ? activeShift || null
+          : sanitizeShiftForCashier(activeShift || null),
       });
     }
 
@@ -190,7 +250,10 @@ export async function POST(request: Request) {
       }
       order.status = status;
       await saveDbAsync(db);
-      return NextResponse.json({ success: true, order });
+      return NextResponse.json({
+        success: true,
+        order: canSeeProfits ? order : sanitizeOrderForCashier(order),
+      });
     }
 
     // 5. CREATE IN-STORE POS INVOICE (DEFAULT ACTION)
@@ -418,9 +481,11 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: true,
-        order: createdOrder,
+        order: canSeeProfits ? createdOrder : sanitizeOrderForCashier(createdOrder),
         updatedVipMember,
-        activeShift: activeShift || null,
+        activeShift: canSeeProfits
+          ? activeShift || null
+          : sanitizeShiftForCashier(activeShift || null),
       },
       { status: 201 }
     );

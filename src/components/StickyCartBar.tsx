@@ -29,7 +29,9 @@ export default function StickyCartBar() {
   if (
     pathname?.startsWith('/admin') ||
     pathname?.startsWith('/pos') ||
-    pathname?.startsWith('/cashier')
+    pathname?.startsWith('/cashier') ||
+    pathname?.startsWith('/supplier') ||
+    pathname?.startsWith('/accountant')
   ) {
     return null;
   }

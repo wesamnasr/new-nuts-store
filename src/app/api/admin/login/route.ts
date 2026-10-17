@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbAsync } from '@/lib/db';
-import { generateAdminToken, verifyAdminRequest, extractAdminToken } from '@/lib/auth';
+import {
+  generateAdminToken,
+  verifyAdminRequest,
+  extractAdminToken,
+  getRolePasswordFromSettings,
+  normalizeAdminRole,
+} from '@/lib/auth';
 import { AdminRole } from '@/types/store';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +18,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ authenticated: false, error: auth.error }, { status: 401 });
   }
   const token = extractAdminToken(request);
-  return NextResponse.json({ success: true, authenticated: true, token });
+  return NextResponse.json({
+    success: true,
+    authenticated: true,
+    token,
+    role: auth.role || 'super_admin',
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -26,25 +37,71 @@ export async function POST(request: NextRequest) {
 
     const db = await getDbAsync();
     const configuredPassword = db.settings?.adminPassword || 'admin';
+    const supplierPass = db.settings?.supplierPassword || 'supplier';
+    const cashierPass = db.settings?.cashierPassword || 'cashier';
+    const accountantPass = db.settings?.accountantPassword || 'accountant';
     const managerPass = db.settings?.managerPassword || 'manager';
     const promoPass = db.settings?.promoPartnerPassword || 'promo';
     const wesamPass = db.settings?.wesamAdminPassword || 'wesam';
 
     let matchedRole: AdminRole | null = null;
-    if (password === configuredPassword || password === wesamPass) {
-      matchedRole = requestedRole || 'super_admin';
-    } else if (password === managerPass) {
-      matchedRole = 'store_manager';
-    } else if (password === promoPass) {
-      matchedRole = 'promo_partner';
+
+    if (requestedRole) {
+      const normalizedReq = normalizeAdminRole(requestedRole);
+      if (normalizedReq === 'super_admin') {
+        if (password === configuredPassword || password === wesamPass) {
+          matchedRole = 'super_admin';
+        }
+      } else if (normalizedReq === 'supplier') {
+        if (password === supplierPass) {
+          matchedRole = 'supplier';
+        }
+      } else if (normalizedReq === 'cashier') {
+        if (password === cashierPass) {
+          matchedRole = 'cashier';
+        }
+      } else if (normalizedReq === 'accountant') {
+        if (password === accountantPass) {
+          matchedRole = 'accountant';
+        }
+      } else if (normalizedReq === 'store_manager') {
+        if (password === managerPass) {
+          matchedRole = 'store_manager';
+        }
+      } else if (normalizedReq === 'promo_partner') {
+        if (password === promoPass) {
+          matchedRole = 'promo_partner';
+        }
+      }
+    } else {
+      if (password === configuredPassword || password === wesamPass) {
+        matchedRole = 'super_admin';
+      } else if (password === supplierPass) {
+        matchedRole = 'supplier';
+      } else if (password === cashierPass) {
+        matchedRole = 'cashier';
+      } else if (password === accountantPass) {
+        matchedRole = 'accountant';
+      } else if (password === managerPass) {
+        matchedRole = 'store_manager';
+      } else if (password === promoPass) {
+        matchedRole = 'promo_partner';
+      }
     }
 
     if (!matchedRole) {
       return NextResponse.json({ error: 'كلمة المرور غير صحيحة' }, { status: 401 });
     }
 
-    // Sign with primary configuredPassword so verifyAdminToken remains 100% compatible
-    const session = generateAdminToken(configuredPassword);
+    const roleSigningSecret =
+      matchedRole === 'super_admin'
+        ? configuredPassword
+        : getRolePasswordFromSettings(db.settings, matchedRole);
+
+    const session =
+      matchedRole === 'super_admin'
+        ? generateAdminToken(configuredPassword)
+        : generateAdminToken(roleSigningSecret, matchedRole);
 
     const response = NextResponse.json({
       success: true,
@@ -69,3 +126,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'حدث خطأ أثناء تسجيل الدخول' }, { status: 500 });
   }
 }
+

@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 import {
+  AdminRole,
   CartItem,
   Order,
   OrderStatus,
@@ -61,11 +62,25 @@ import { getSafeImageUrl } from '@/lib/defaults';
 import { formatWhatsAppPhone, validateEgyptianPhone } from '@/lib/validation';
 import SupermarketReceiptModal from '@/components/SupermarketReceiptModal';
 
+const ADMIN_SESSION_STORAGE_KEY = 'nuts_admin_session';
+
 export default function HafsaPosCashierPage() {
   const { storeData, refreshStore, showToast } = useStore();
   const products = storeData?.products || [];
   const categories = storeData?.categories || [];
   const settings = storeData?.settings;
+
+  // Cashier & Staff Role Isolation Auth State
+  const [posAuthChecking, setPosAuthChecking] = useState<boolean>(true);
+  const [posAuthenticated, setPosAuthenticated] = useState<boolean>(false);
+  const [posRole, setPosRole] = useState<AdminRole>('cashier');
+  const [posToken, setPosToken] = useState<string>('');
+  const [posLoginRole, setPosLoginRole] = useState<AdminRole>('cashier');
+  const [posLoginPassword, setPosLoginPassword] = useState<string>('');
+  const [posLoginError, setPosLoginError] = useState<string>('');
+
+  // Cashier is strictly isolated from wholesale raw costs and net profits
+  const canSeeProfits = posRole === 'super_admin' || posRole === 'accountant';
 
   // Workspace Mode Tabs
   const [activeTab, setActiveTab] = useState<
@@ -148,9 +163,14 @@ export default function HafsaPosCashierPage() {
     'raw_materials' | 'packaging' | 'utilities' | 'delivery_rider' | 'other'
   >('packaging');
 
-  const fetchPosData = useCallback(async () => {
+  const fetchPosData = useCallback(async (overrideToken?: string) => {
     try {
-      const res = await fetch('/api/pos', { cache: 'no-store' });
+      const tokenToUse = overrideToken ?? posToken;
+      const headers: Record<string, string> = {};
+      if (tokenToUse) {
+        headers['Authorization'] = `Bearer ${tokenToUse}`;
+      }
+      const res = await fetch('/api/pos', { cache: 'no-store', headers });
       if (res.ok) {
         const data = await res.json();
         setActiveShift(data.activeShift || null);
@@ -165,11 +185,103 @@ export default function HafsaPosCashierPage() {
     } catch (e) {
       console.error('Failed to load POS data', e);
     }
-  }, []);
+  }, [posToken]);
 
   useEffect(() => {
-    fetchPosData();
+    const verifyPosSession = async () => {
+      try {
+        let savedToken = '';
+        let savedRole: AdminRole | undefined;
+        const raw = localStorage.getItem(ADMIN_SESSION_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.token && parsed?.expiresAt > Date.now()) {
+            savedToken = parsed.token;
+            savedRole = parsed.role;
+          }
+        }
+        const headers: Record<string, string> = {};
+        if (savedToken) {
+          headers['Authorization'] = `Bearer ${savedToken}`;
+        }
+        const res = await fetch('/api/admin/login', { headers, cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          const verifiedRole: AdminRole = data.role || savedRole || 'super_admin';
+          if (verifiedRole === 'supplier' || verifiedRole === 'promo_partner') {
+            setPosAuthenticated(false);
+            setPosRole(verifiedRole);
+            setPosLoginError(
+              'عزل الأدوار: حساب المورد معزول تماماً عن شاشة الكاشير ونقطة البيع. يرجى تسجيل الدخول بحساب الكاشير.'
+            );
+          } else {
+            setPosToken(data.token || savedToken);
+            setPosRole(verifiedRole);
+            setPosAuthenticated(true);
+            await fetchPosData(data.token || savedToken);
+          }
+        } else {
+          setPosAuthenticated(false);
+        }
+      } catch {
+        setPosAuthenticated(false);
+      } finally {
+        setPosAuthChecking(false);
+      }
+    };
+    verifyPosSession();
   }, [fetchPosData]);
+
+  const handlePosLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPosLoginError('');
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: posLoginPassword,
+          role: posLoginRole,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setPosLoginError(data.error || 'كلمة مرور الكاشير غير صحيحة');
+        return;
+      }
+      const role: AdminRole = data.role || posLoginRole;
+      if (role === 'supplier' || role === 'promo_partner') {
+        setPosLoginError('عزل الأدوار: هذا الحساب غير مصرح له بفتح شاشة الكاشير');
+        return;
+      }
+      localStorage.setItem(
+        ADMIN_SESSION_STORAGE_KEY,
+        JSON.stringify({
+          token: data.token,
+          expiresAt: data.expiresAt,
+          role,
+        })
+      );
+      setPosToken(data.token);
+      setPosRole(role);
+      setPosAuthenticated(true);
+      setPosLoginPassword('');
+      await fetchPosData(data.token);
+      showToast('⚖️ تم فتح نقطة بيع الكاشير بنجاح');
+    } catch {
+      setPosLoginError('تعذر الاتصال بالخادم');
+    }
+  };
+
+  const handlePosLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+    } catch {}
+    localStorage.removeItem(ADMIN_SESSION_STORAGE_KEY);
+    setPosToken('');
+    setPosAuthenticated(false);
+    setPosLoginPassword('');
+  };
 
   // Select first product in scale panel when products load
   useEffect(() => {
@@ -474,6 +586,14 @@ export default function HafsaPosCashierPage() {
       : Math.max(0, Number(cashTenderedInput) || 0);
   const changeDue = Math.max(0, effectiveCashTendered - posNetTotal);
 
+  const getPosAuthHeaders = (): Record<string, string> => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (posToken) {
+      headers['Authorization'] = `Bearer ${posToken}`;
+    }
+    return headers;
+  };
+
   // Issue & Print POS Invoice
   const handleCompletePosInvoice = async () => {
     if (posItems.length === 0) {
@@ -484,7 +604,7 @@ export default function HafsaPosCashierPage() {
     try {
       const res = await fetch('/api/pos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getPosAuthHeaders(),
         body: JSON.stringify({
           action: 'create_invoice',
           items: posItems,
@@ -550,7 +670,7 @@ export default function HafsaPosCashierPage() {
     try {
       const res = await fetch('/api/pos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getPosAuthHeaders(),
         body: JSON.stringify({
           action: 'open_shift',
           cashierName: newShiftCashier,
@@ -573,7 +693,7 @@ export default function HafsaPosCashierPage() {
     try {
       const res = await fetch('/api/pos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getPosAuthHeaders(),
         body: JSON.stringify({
           action: 'close_shift',
           actualClosingCash: closingActualCash,
@@ -596,7 +716,7 @@ export default function HafsaPosCashierPage() {
     try {
       const res = await fetch('/api/pos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getPosAuthHeaders(),
         body: JSON.stringify({
           action: 'add_expense',
           title: expenseTitle,
@@ -619,7 +739,7 @@ export default function HafsaPosCashierPage() {
     try {
       const res = await fetch('/api/pos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getPosAuthHeaders(),
         body: JSON.stringify({
           action: 'update_order_status',
           orderId,
@@ -634,6 +754,118 @@ export default function HafsaPosCashierPage() {
     } catch {}
   };
 
+  if (posAuthChecking) {
+    return (
+      <div className="min-h-screen bg-[#231710] text-[#FAF6F0] flex items-center justify-center p-6">
+        <div className="text-center space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-[#D4AF37] text-[#231710] flex items-center justify-center font-black text-2xl mx-auto animate-pulse">
+            ⚖️
+          </div>
+          <p className="font-cairo font-black text-sm text-[#D4AF37]">
+            جاري التحقق من صلاحية الكاشير وعزل الأدوار...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!posAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#231710] via-[#1B110B] to-[#231710] text-[#FAF6F0] flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-[#FAF6F0] text-[#231710] rounded-3xl border-2 border-[#D4AF37] p-6 sm:p-8 shadow-2xl space-y-5">
+          <div className="text-center space-y-2">
+            <div className="w-14 h-14 rounded-2xl bg-[#231710] text-[#D4AF37] border-2 border-[#D4AF37] flex items-center justify-center text-2xl mx-auto shadow-md">
+              ⚖️
+            </div>
+            <span className="inline-block bg-[#3B6E4C]/15 text-[#3B6E4C] border border-[#3B6E4C]/30 px-3 py-0.5 rounded-full text-[11px] font-black">
+              نظام عزل الأدوار • بوابة الكاشير المستقلة
+            </span>
+            <h1 className="font-cairo font-black text-xl text-[#231710]">
+              نقطة بيع وميزان محمصة حفصة (POS)
+            </h1>
+            <p className="text-xs text-[#6E5D4F] leading-relaxed">
+              هذه البوابة مخصصة ومحمية لدور <strong>الكاشير</strong> فقط (معزولة تماماً عن المتجر الخارجي وعن تكاليف المورد والأرباح الصافية وإعدادات المدير).
+            </p>
+          </div>
+
+          <form onSubmit={handlePosLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-black text-[#231710] mb-1.5">
+                اختر الدور للدخول إلى نقطة البيع:
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'cashier' as AdminRole, label: '⚖️ الكاشير', desc: 'بيع وتجهيز فقط' },
+                  { id: 'accountant' as AdminRole, label: '📊 المحاسب', desc: 'مراجعة الدرج' },
+                  { id: 'super_admin' as AdminRole, label: '👑 الأدمن', desc: 'إشراف كامل' },
+                ].map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => {
+                      setPosLoginRole(r.id);
+                      setPosLoginError('');
+                    }}
+                    className={`p-2.5 rounded-xl border text-center transition cursor-pointer ${
+                      posLoginRole === r.id
+                        ? 'bg-[#231710] text-[#D4AF37] border-[#D4AF37] shadow-sm'
+                        : 'bg-white text-[#231710] border-[#E6DFD3] hover:border-[#C88A4B]'
+                    }`}
+                  >
+                    <div className="font-cairo font-black text-xs">{r.label}</div>
+                    <div className="text-[10px] opacity-80">{r.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-black text-[#231710] mb-1.5">
+                كلمة مرور {posLoginRole === 'cashier' ? 'الكاشير' : posLoginRole === 'accountant' ? 'المحاسب' : 'الأدمن'}:
+              </label>
+              <input
+                type="password"
+                value={posLoginPassword}
+                onChange={(e) => setPosLoginPassword(e.target.value)}
+                placeholder={
+                  posLoginRole === 'cashier'
+                    ? 'أدخل كلمة مرور الكاشير (الافتراضية: cashier)'
+                    : posLoginRole === 'accountant'
+                      ? 'أدخل كلمة مرور المحاسب (الافتراضية: accountant)'
+                      : 'أدخل كلمة مرور الأدمن (الافتراضية: admin)'
+                }
+                className="w-full bg-white border-2 border-[#E6DFD3] focus:border-[#D4AF37] rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none"
+                autoFocus
+              />
+            </div>
+
+            {posLoginError && (
+              <div className="bg-[#B83B2B]/10 border border-[#B83B2B]/40 text-[#B83B2B] text-xs font-bold p-3 rounded-xl">
+                ⚠️ {posLoginError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-[#231710] hover:bg-[#3a261a] text-[#D4AF37] font-cairo font-black text-sm py-3 rounded-xl shadow-md transition cursor-pointer"
+            >
+              فتح شاشة الكاشير والميزان الآن
+            </button>
+          </form>
+
+          <div className="pt-3 border-t border-[#E6DFD3] flex items-center justify-between text-xs font-bold">
+            <Link href="/" className="text-[#6E5D4F] hover:text-[#231710]">
+              ← واجهة المشتري (المتجر العام)
+            </Link>
+            <Link href="/admin" className="text-[#C88A4B] hover:underline">
+              بوابة الأدوار الأخرى (الأدمن / المورد / المحاسب)
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#FAF6F0] text-[#231710] pb-20">
       {/* ===================================================================== */}
@@ -646,12 +878,16 @@ export default function HafsaPosCashierPage() {
               ⚖️
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h1 className="font-cairo font-black text-base sm:text-lg text-[#D4AF37]">
                   نظام كاشير وميزان محمصة حفصة الذكي (POS)
                 </h1>
                 <span className="bg-[#3B6E4C] text-white text-[10px] font-black px-2.5 py-0.5 rounded-full">
-                  فرع بني مزار • أمام مسجد الزراعيين
+                  {posRole === 'cashier'
+                    ? '🛡️ دور الكاشير (معزول عن التكاليف والأرباح)'
+                    : posRole === 'accountant'
+                      ? '📊 دور المحاسب (مراجعة مالية)'
+                      : '👑 دور الأدمن (إشراف كامل)'}
                 </span>
               </div>
               <p className="text-[11px] text-[#FAF6F0]/80">
@@ -719,13 +955,23 @@ export default function HafsaPosCashierPage() {
               <span>تقفيل الدرج والـ Z-Report</span>
             </button>
 
-            <Link
-              href="/admin"
-              className="px-3 py-2 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/15 text-[#D4AF37] border border-[#D4AF37]/40 flex items-center gap-1"
+            {canSeeProfits && (
+              <Link
+                href="/admin"
+                className="px-3 py-2 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/15 text-[#D4AF37] border border-[#D4AF37]/40 flex items-center gap-1"
+              >
+                <span>لوحة الإدارة</span>
+                <ArrowRight className="w-3.5 h-3.5 rotate-180" />
+              </Link>
+            )}
+
+            <button
+              type="button"
+              onClick={handlePosLogout}
+              className="px-3 py-2 rounded-xl text-xs font-bold bg-[#B83B2B]/25 hover:bg-[#B83B2B]/40 text-red-200 border border-[#B83B2B]/50 cursor-pointer"
             >
-              <span>لوحة الإدارة</span>
-              <ArrowRight className="w-3.5 h-3.5 rotate-180" />
-            </Link>
+              خروج الكاشير
+            </button>
           </div>
         </div>
       </div>
@@ -1145,10 +1391,21 @@ export default function HafsaPosCashierPage() {
                         </span>
                       </div>
                       <div className="bg-white/5 rounded-xl p-2">
-                        <span className="text-[10px] text-[#FAF6F0]/70 block">صافي الربح</span>
-                        <span className="font-cairo font-black text-xs text-white">
-                          +{scaleCalculation.netProfitEgp} ج ({scaleCalculation.marginPercent}%)
-                        </span>
+                        {canSeeProfits ? (
+                          <>
+                            <span className="text-[10px] text-[#FAF6F0]/70 block">صافي الربح</span>
+                            <span className="font-cairo font-black text-xs text-white">
+                              +{scaleCalculation.netProfitEgp} ج ({scaleCalculation.marginPercent}%)
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-[10px] text-[#FAF6F0]/70 block">سعر الكيلو</span>
+                            <span className="font-cairo font-black text-xs text-white">
+                              {scaleProduct.pricePerKg || 400} ج.م/كجم
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -1541,7 +1798,7 @@ export default function HafsaPosCashierPage() {
                   </div>
                 )}
 
-                {posItems.length > 0 && (
+                {canSeeProfits && posItems.length > 0 && (
                   <div
                     className={`px-2.5 py-1.5 rounded-xl text-[10.5px] font-black flex items-center justify-between ${
                       posNetProfit > 0
@@ -1691,7 +1948,7 @@ export default function HafsaPosCashierPage() {
               </button>
               <button
                 type="button"
-                onClick={fetchPosData}
+                onClick={() => fetchPosData()}
                 className="bg-[#231710] text-[#D4AF37] px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -1847,7 +2104,7 @@ export default function HafsaPosCashierPage() {
                       <span className="font-cairo font-black text-sm text-[#3B6E4C] block">
                         الإجمالي: {ord.total} ج.م
                       </span>
-                      {ord.netProfitEgp !== undefined && (
+                      {canSeeProfits && ord.netProfitEgp !== undefined && (
                         <span className="text-[10.5px] font-bold text-[#6E5D4F]">
                           صافي الربح: +{ord.netProfitEgp} ج.م
                         </span>
@@ -1883,7 +2140,9 @@ export default function HafsaPosCashierPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <span className="text-xs font-black text-[#D4AF37] block">
-                    تقرير درج الكاشير الحي وصافي ربح شيت عرفات (Z-Report Live)
+                    {canSeeProfits
+                      ? 'تقرير درج الكاشير الحي وصافي ربح شيت عرفات (Z-Report Live)'
+                      : 'تقرير درج الكاشير الحي وجرد النقدية الفعلي (Z-Report Live)'}
                   </span>
                   <h2 className="font-cairo font-black text-xl text-white">
                     {activeShift.shiftNumber} — {activeShift.shiftPeriod} ({activeShift.cashierName})
@@ -1934,14 +2193,25 @@ export default function HafsaPosCashierPage() {
                     {activeShift.expectedCashInDrawer} ج.م
                   </span>
                 </div>
-                <div className="bg-[#3B6E4C]/25 rounded-2xl p-3 border border-[#3B6E4C]">
-                  <span className="text-[11px] text-[#FAF6F0] font-bold block">
-                    صافي الربح الفعلي (بعد التكلفة)
-                  </span>
-                  <span className="font-cairo font-black text-xl text-[#3B6E4C]">
-                    +{activeShift.totalNetProfit} ج.م
-                  </span>
-                </div>
+                {canSeeProfits && typeof activeShift.totalNetProfit === 'number' ? (
+                  <div className="bg-[#3B6E4C]/25 rounded-2xl p-3 border border-[#3B6E4C]">
+                    <span className="text-[11px] text-[#FAF6F0] font-bold block">
+                      صافي الربح الفعلي (بعد التكلفة)
+                    </span>
+                    <span className="font-cairo font-black text-xl text-[#3B6E4C]">
+                      +{activeShift.totalNetProfit} ج.م
+                    </span>
+                  </div>
+                ) : (
+                  <div className="bg-white/10 rounded-2xl p-3 border border-white/15">
+                    <span className="text-[11px] text-[#FAF6F0]/75 block">
+                      عدد فواتير الوردية
+                    </span>
+                    <span className="font-cairo font-black text-xl text-white">
+                      {activeShift.ordersCount} فاتورة
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -2107,6 +2377,7 @@ export default function HafsaPosCashierPage() {
           mode={printMode}
           settings={settings}
           autoPrintOnMount={true}
+          showProfit={canSeeProfits}
           onClose={() => {
             setPrintedOrder(null);
             setStickerPreviewItem(null);

@@ -22,6 +22,20 @@ import { verifyAdminRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+function stripOrderCosts(order: Order): Order {
+  const copy = { ...order };
+  delete copy.rawCostTotal;
+  delete copy.netProfitEgp;
+  if (Array.isArray(copy.items)) {
+    copy.items = copy.items.map((item) => {
+      const itemCopy = { ...item };
+      delete itemCopy.rawCostEgp;
+      return itemCopy;
+    });
+  }
+  return copy;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q')?.trim();
@@ -30,19 +44,30 @@ export async function GET(request: NextRequest) {
   if (query) {
     const normalized = query.toLowerCase();
     const queryDigits = query.replace(/[\s\-\(\)\+]/g, '');
-    const matched = db.orders.filter((o) => {
-      const orderNumMatch = o.orderNumber.toLowerCase() === normalized;
-      const orderPhoneDigits = o.customerPhone.replace(/[\s\-\(\)\+]/g, '');
-      const phoneMatch =
-        queryDigits.length >= 8 &&
-        (orderPhoneDigits.endsWith(queryDigits) || queryDigits.endsWith(orderPhoneDigits));
-      return orderNumMatch || phoneMatch;
-    });
+    const matched = db.orders
+      .filter((o) => {
+        const orderNumMatch = o.orderNumber.toLowerCase() === normalized;
+        const orderPhoneDigits = o.customerPhone.replace(/[\s\-\(\)\+]/g, '');
+        const phoneMatch =
+          queryDigits.length >= 8 &&
+          (orderPhoneDigits.endsWith(queryDigits) || queryDigits.endsWith(orderPhoneDigits));
+        return orderNumMatch || phoneMatch;
+      })
+      .map(stripOrderCosts);
     return NextResponse.json({ orders: matched });
   }
 
   const auth = verifyAdminRequest(request);
   if (auth.isAuthenticated) {
+    // Role 2: Supplier is isolated from customer orders
+    if (auth.role === 'supplier' || auth.role === 'promo_partner') {
+      return NextResponse.json({ orders: [] });
+    }
+    // Role 3: Cashier sees orders for preparation/delivery without raw cost or net profit
+    if (auth.role === 'cashier' || auth.role === 'store_manager') {
+      return NextResponse.json({ orders: db.orders.map(stripOrderCosts) });
+    }
+    // Role 1 (Admin) & Role 4 (Accountant) see full financial order details
     return NextResponse.json({ orders: db.orders });
   }
 
@@ -489,6 +514,13 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    if (auth.role === 'supplier' || auth.role === 'promo_partner') {
+      return NextResponse.json(
+        { error: 'عزل الأدوار: هذا الدور غير مصرح له بتعديل حالات الطلبات (403 Forbidden)' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { orderId, status, notes } = body as {
       orderId: string;
@@ -509,7 +541,12 @@ export async function PATCH(request: NextRequest) {
     }
     await saveDbAsync(db);
 
-    return NextResponse.json({ order: db.orders[orderIndex] });
+    const returnedOrder =
+      auth.role === 'cashier' || auth.role === 'store_manager'
+        ? stripOrderCosts(db.orders[orderIndex])
+        : db.orders[orderIndex];
+
+    return NextResponse.json({ order: returnedOrder });
   } catch (error) {
     console.error('Error updating order status:', error);
     return NextResponse.json({ error: 'فشل تحديث حالة الطلب' }, { status: 500 });
@@ -524,6 +561,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(
         { error: 'غير مصرح لك بالوصول (401 Unauthorized)' },
         { status: 401 }
+      );
+    }
+
+    // Only Super Admin / Admin can delete orders
+    if (auth.role && auth.role !== 'super_admin') {
+      return NextResponse.json(
+        { error: 'عزل الأدوار: حذف الطلبات متاح للأدمن (المدير) فقط (403 Forbidden)' },
+        { status: 403 }
       );
     }
 
@@ -546,3 +591,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'فشل حذف الطلب' }, { status: 500 });
   }
 }
+

@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Printer, X, MessageCircle } from 'lucide-react';
 import { Order, PosShift, StoreSettings } from '@/types/store';
-import { formatWhatsAppPhone } from '@/lib/defaults';
+import { formatWhatsAppPhone } from '@/lib/validation';
 
 export interface StickerPreviewData {
   title: string;
@@ -22,6 +22,7 @@ interface SupermarketReceiptModalProps {
   mode?: 'receipt' | 'sticker' | 'zreport';
   settings?: StoreSettings;
   autoPrintOnMount?: boolean;
+  showProfit?: boolean;
   onClose: () => void;
 }
 
@@ -32,6 +33,7 @@ export default function SupermarketReceiptModal({
   mode = 'receipt',
   settings,
   autoPrintOnMount = false,
+  showProfit = false,
   onClose,
 }: SupermarketReceiptModalProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
@@ -326,10 +328,12 @@ export default function SupermarketReceiptModal({
                     <span>النقدية بالدرج:</span>
                     <span>{shift.expectedCashInDrawer} ج.م</span>
                   </div>
-                  <div className="sr-row sr-bold">
-                    <span>صافي الربح الفعلي:</span>
-                    <span>+{shift.totalNetProfit} ج.م</span>
-                  </div>
+                  {showProfit && typeof shift.totalNetProfit === 'number' && (
+                    <div className="sr-row sr-bold">
+                      <span>صافي الربح الفعلي:</span>
+                      <span>+{shift.totalNetProfit} ج.م</span>
+                    </div>
+                  )}
                 </div>
                 <hr className="sr-divider" />
                 <div className="sr-center text-[9.5px]">

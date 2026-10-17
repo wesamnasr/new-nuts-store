@@ -58,6 +58,7 @@ import {
   NavbarStyle,
   CardStyle,
   BorderRadiusStyle,
+  AdminRole,
 } from '@/types/store';
 import { generateOrdersCsv } from '@/lib/csv';
 import { formatWhatsAppPhone } from '@/lib/validation';
@@ -69,6 +70,8 @@ import {
   DEFAULT_THEME_CONFIG,
 } from '@/lib/defaults';
 import HafsaOperationsStudio from '@/components/admin/HafsaOperationsStudio';
+import SupplierIsolationPortal from '@/components/admin/SupplierIsolationPortal';
+import AccountantIsolationPortal from '@/components/admin/AccountantIsolationPortal';
 import SupermarketReceiptModal from '@/components/SupermarketReceiptModal';
 
 const LOCAL_PRODUCT_IMAGES: Array<{ url: string; label: string }> = [
@@ -125,11 +128,61 @@ type AdminTab =
   | 'orders'
   | 'products'
   | 'categories'
+  | 'supply_portal'
+  | 'accounting_portal'
+  | 'cashier_portal'
   | 'operations'
   | 'shipping'
   | 'coupons'
   | 'reviews'
   | 'settings';
+
+function getDefaultTabForRole(role: AdminRole): AdminTab {
+  if (role === 'supplier') return 'supply_portal';
+  if (role === 'accountant') return 'accounting_portal';
+  if (role === 'cashier') return 'cashier_portal';
+  return 'overview';
+}
+
+const ROLE_PORTAL_META: Record<
+  'super_admin' | 'supplier' | 'accountant' | 'cashier',
+  {
+    title: string;
+    badge: string;
+    defaultHint: string;
+    description: string;
+    badgeClass: string;
+  }
+> = {
+  super_admin: {
+    title: '👑 الأدمن (المدير العام)',
+    badge: 'صلاحية كاملة',
+    defaultHint: 'الافتراضية: admin',
+    description: 'تحكم كامل بالمتجر، الأسعار، الطلبات، التقارير، وكلمات مرور الأدوار',
+    badgeClass: 'bg-gold-500 text-brand-950',
+  },
+  supplier: {
+    title: '📦 المورد (إدارة التوريد)',
+    badge: 'عزل التوريد والمخزون',
+    defaultHint: 'الافتراضية: supplier',
+    description: 'تحديث تكاليف التوريد (شيت الجملة)، التغليف، المنشأ، وتوافر المخزون فقط',
+    badgeClass: 'bg-amber-500 text-brand-950',
+  },
+  accountant: {
+    title: '📊 المحاسب (المراجعة المالية)',
+    badge: 'عزل مالي ومحاسبي',
+    defaultHint: 'الافتراضية: accountant',
+    description: 'مراجعة الإيرادات، تكلفة البضاعة المباعة، صافي الأرباح، وجرد الورديات Z-Report',
+    badgeClass: 'bg-pistachio-500 text-brand-950',
+  },
+  cashier: {
+    title: '⚖️ الكاشير (نقطة البيع POS)',
+    badge: 'عزل الكاشير والمبيعات',
+    defaultHint: 'الافتراضية: cashier',
+    description: 'شاشة الميزان والبيع المباشر وتجهيز طلبات الأونلاين دون كشف تكلفة الجملة أو صافي الربح',
+    badgeClass: 'bg-sky-400 text-brand-950',
+  },
+};
 
 const ALL_ROAST_OPTIONS: RoastOption[] = [
   'محمص مملح',
@@ -178,10 +231,14 @@ export default function AdminDashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Authentication State
+  // Authentication & Role Isolation State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [adminToken, setAdminToken] = useState<string>('');
+  const [currentRole, setCurrentRole] = useState<AdminRole>('super_admin');
+  const [selectedLoginRole, setSelectedLoginRole] = useState<
+    'super_admin' | 'supplier' | 'accountant' | 'cashier'
+  >('super_admin');
   const [loginPassword, setLoginPassword] = useState<string>('');
   const [loginError, setLoginError] = useState<string>('');
   const [loginSubmitting, setLoginSubmitting] = useState<boolean>(false);
@@ -257,8 +314,11 @@ export default function AdminDashboardPage() {
     storeData?.settings.announcementText || ''
   );
 
-  // Password Change State
+  // Password Change State (for all isolated roles)
   const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [newSupplierPassword, setNewSupplierPassword] = useState('');
+  const [newCashierPassword, setNewCashierPassword] = useState('');
+  const [newAccountantPassword, setNewAccountantPassword] = useState('');
   const [showPasswordText, setShowPasswordText] = useState(false);
 
   // Sync CMS & Theme draft when storeData loads/updates
@@ -269,6 +329,21 @@ export default function AdminDashboardPage() {
       setAnnouncementDraft(storeData.settings.announcementText || '');
     }
   }, [storeData?.settings]);
+
+  // Pre-select login role if visiting /supplier or /accountant or ?role=
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const path = window.location.pathname;
+    const params = new URLSearchParams(window.location.search);
+    const qRole = params.get('role');
+    if (path.startsWith('/supplier') || qRole === 'supplier') {
+      setSelectedLoginRole('supplier');
+    } else if (path.startsWith('/accountant') || qRole === 'accountant') {
+      setSelectedLoginRole('accountant');
+    } else if (qRole === 'cashier') {
+      setSelectedLoginRole('cashier');
+    }
+  }, []);
 
   // Check admin session on mount via lightweight GET /api/admin/login
   useEffect(() => {
@@ -291,6 +366,9 @@ export default function AdminDashboardPage() {
         if (res.ok) {
           const data = await res.json();
           if (data.authenticated && isMounted) {
+            const resolvedRole: AdminRole = data.role || 'super_admin';
+            setCurrentRole(resolvedRole);
+            setActiveTab(getDefaultTabForRole(resolvedRole));
             setIsAuthenticated(true);
             const activeToken = data.token || savedToken || '';
             if (activeToken) {
@@ -336,18 +414,28 @@ export default function AdminDashboardPage() {
       const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: loginPassword }),
+        body: JSON.stringify({
+          password: loginPassword,
+          role: selectedLoginRole,
+        }),
       });
       const data = await res.json();
       if (res.ok && data.success && data.token) {
+        const resolvedRole: AdminRole = data.role || selectedLoginRole;
         sessionStorage.setItem('admin_token', data.token);
+        if (resolvedRole === 'cashier' || resolvedRole === 'super_admin') {
+          sessionStorage.setItem('hafsa_pos_token_v1', data.token);
+          sessionStorage.setItem('hafsa_pos_role_v1', resolvedRole);
+        }
         setAdminToken(data.token);
+        setCurrentRole(resolvedRole);
+        setActiveTab(getDefaultTabForRole(resolvedRole));
         setIsAuthenticated(true);
         setLoginPassword('');
         await refreshStore();
-        showToast('تم تسجيل الدخول إلى لوحة التحكم بنجاح');
+        showToast(data.message || 'تم تسجيل الدخول بنجاح');
       } else {
-        setLoginError(data.error || 'كلمة المرور غير صحيحة');
+        setLoginError(data.error || 'كلمة المرور غير صحيحة لهذا الدور');
       }
     } catch {
       setLoginError('فشل الاتصال بالخادم. يرجى المحاولة لاحقاً');
@@ -364,6 +452,8 @@ export default function AdminDashboardPage() {
       console.error(e);
     }
     sessionStorage.removeItem('admin_token');
+    sessionStorage.removeItem('hafsa_pos_token_v1');
+    sessionStorage.removeItem('hafsa_pos_role_v1');
     setAdminToken('');
     setIsAuthenticated(false);
     await refreshStore();
@@ -584,16 +674,72 @@ export default function AdminDashboardPage() {
   }
 
   if (!isAuthenticated) {
+    const activeRoleMeta = ROLE_PORTAL_META[selectedLoginRole];
     return (
       <div className="min-h-screen bg-gradient-to-br from-brand-950 via-brand-900 to-brand-950 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-sm bg-white rounded-2xl p-6 border border-gold-500/30 shadow-2xl space-y-4">
+        <div className="w-full max-w-lg bg-white rounded-3xl p-6 border border-gold-500/30 shadow-2xl space-y-4">
           <div className="text-center space-y-1.5">
-            <div className="w-12 h-12 bg-brand-950 text-gold-400 rounded-xl mx-auto flex items-center justify-center shadow-md border border-gold-500/30">
-              <Lock className="w-6 h-6" />
+            <div className="w-12 h-12 bg-brand-950 text-gold-400 rounded-2xl mx-auto flex items-center justify-center shadow-md border border-gold-500/30">
+              <ShieldCheck className="w-6 h-6" />
             </div>
-            <h1 className="text-xl font-black text-brand-950">بوابة الإدارة الشاملة</h1>
+            <h1 className="text-xl font-black text-brand-950">
+              بوابة عزل الأدوار والصلاحيات
+            </h1>
             <p className="text-[11px] text-brand-600">
-              {settings?.storeName || 'محمصة الواحة الذهبية'} — أدخل كلمة المرور للتحكم الكامل في النظام
+              {settings?.storeName || 'محمصة حفصة للبن والمكسرات'} — اختر الدور الوظيفي وأدخل كلمة المرور الخاصة به
+            </p>
+          </div>
+
+          {/* 4 Staff Roles Selector Grid */}
+          <div className="grid grid-cols-2 gap-2">
+            {(
+              ['super_admin', 'supplier', 'accountant', 'cashier'] as const
+            ).map((rKey) => {
+              const meta = ROLE_PORTAL_META[rKey];
+              const isSelected = selectedLoginRole === rKey;
+              return (
+                <button
+                  key={rKey}
+                  type="button"
+                  onClick={() => {
+                    setSelectedLoginRole(rKey);
+                    setLoginError('');
+                  }}
+                  className={`p-3 rounded-2xl border text-right transition cursor-pointer ${
+                    isSelected
+                      ? 'bg-brand-950 text-white border-gold-500 shadow-md'
+                      : 'bg-brand-50/70 hover:bg-brand-100 text-brand-900 border-brand-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-xs font-black">{meta.title}</span>
+                  </div>
+                  <div
+                    className={`text-[10px] mt-1 leading-snug ${
+                      isSelected ? 'text-brand-200' : 'text-brand-600'
+                    }`}
+                  >
+                    {meta.badge}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Selected Role Isolation Description */}
+          <div className="bg-brand-50 border border-brand-200 rounded-2xl p-3 text-right space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-brand-950">
+                {activeRoleMeta.title}
+              </span>
+              <span
+                className={`text-[10px] font-black px-2 py-0.5 rounded-full ${activeRoleMeta.badgeClass}`}
+              >
+                {activeRoleMeta.badge}
+              </span>
+            </div>
+            <p className="text-[11px] text-brand-700 leading-relaxed">
+              {activeRoleMeta.description}
             </p>
           </div>
 
@@ -607,40 +753,45 @@ export default function AdminDashboardPage() {
           <form onSubmit={handleLogin} className="space-y-3">
             <div>
               <label className="block text-[11px] font-bold text-brand-900 mb-1">
-                كلمة مرور لوحة التحكم
+                كلمة مرور {activeRoleMeta.title} ({activeRoleMeta.defaultHint})
               </label>
               <input
                 type="password"
                 required
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder="أدخل كلمة المرور (الافتراضية: admin)"
-                className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2 text-xs font-bold text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-900"
+                placeholder={`أدخل كلمة المرور (${activeRoleMeta.defaultHint})`}
+                className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2.5 text-xs font-bold text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-900"
               />
             </div>
 
             <button
               type="submit"
               disabled={loginSubmitting}
-              className="w-full bg-brand-900 hover:bg-brand-950 text-white font-black text-xs py-2.5 rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
+              className="w-full bg-brand-900 hover:bg-brand-950 text-white font-black text-xs py-2.5 rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
             >
               {loginSubmitting ? (
-                <span>جاري التحقق...</span>
+                <span>جاري التحقق من صلاحية الدور...</span>
               ) : (
                 <>
                   <KeyRound className="w-3.5 h-3.5 text-gold-400" />
-                  <span>دخول لوحة التحكم</span>
+                  <span>دخول {activeRoleMeta.title}</span>
                 </>
               )}
             </button>
           </form>
 
-          <div className="text-center pt-2 border-t border-brand-100">
+          {/* 5th Role: External Buyer Storefront Link */}
+          <div className="pt-3 border-t border-brand-100 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+            <span className="font-bold text-brand-600">
+              🛒 الدور الخامس (المستخدم الخارجي / المشتري):
+            </span>
             <Link
               href="/"
-              className="text-[11px] font-bold text-brand-600 hover:text-brand-950 underline"
+              className="font-black text-pistachio-700 hover:text-pistachio-800 underline flex items-center gap-1"
             >
-              العودة إلى المتجر الرئيسي
+              <span>الانتقال إلى واجهة المتجر والشراء للعملاء</span>
+              <ExternalLink className="w-3 h-3" />
             </Link>
           </div>
         </div>
@@ -1105,37 +1256,77 @@ export default function AdminDashboardPage() {
     );
   };
 
-  // Sidebar navigation config
-  const navItems: Array<{
+  const isFullAdmin =
+    currentRole === 'super_admin' ||
+    currentRole === 'admin' ||
+    currentRole === 'store_manager' ||
+    currentRole === 'promo_partner';
+
+  // Sidebar navigation config isolated strictly by role
+  const allNavItems: Array<{
     id: AdminTab;
     label: string;
     icon: React.ReactNode;
     badge?: string | number;
     badgeColor?: string;
+    roles: AdminRole[];
   }> = [
     {
       id: 'overview',
       label: 'النظرة العامة والإحصائيات',
       icon: <LayoutDashboard className="w-4 h-4" />,
+      roles: ['super_admin', 'admin', 'store_manager'],
+    },
+    {
+      id: 'supply_portal',
+      label: 'بوابة المورد والتوريد',
+      icon: <Truck className="w-4 h-4" />,
+      badge: `${products.length} صنف`,
+      badgeColor: 'bg-amber-500 text-brand-950',
+      roles: ['super_admin', 'admin', 'supplier'],
+    },
+    {
+      id: 'accounting_portal',
+      label: 'بوابة المحاسب والجرد المالي',
+      icon: <TrendingUp className="w-4 h-4" />,
+      badge: 'مالي',
+      badgeColor: 'bg-pistachio-500 text-brand-950',
+      roles: ['super_admin', 'admin', 'accountant'],
+    },
+    {
+      id: 'cashier_portal',
+      label: 'بوابة الكاشير ونقطة البيع',
+      icon: <ShieldCheck className="w-4 h-4" />,
+      badge: 'POS',
+      badgeColor: 'bg-sky-400 text-brand-950',
+      roles: ['cashier'],
     },
     {
       id: 'orders',
-      label: 'الطلبات والفواتير',
+      label:
+        currentRole === 'accountant'
+          ? 'سجل الفواتير والطلبات المالي'
+          : currentRole === 'cashier'
+          ? 'تجهيز طلبات الموقع الأونلاين'
+          : 'الطلبات والفواتير',
       icon: <Package className="w-4 h-4" />,
       badge: activeOrdersCount > 0 ? `${activeOrdersCount} جاري` : orders.length,
       badgeColor: activeOrdersCount > 0 ? 'bg-amber-500 text-brand-950' : 'bg-white/15 text-white',
+      roles: ['super_admin', 'admin', 'store_manager', 'accountant', 'cashier'],
     },
     {
       id: 'products',
       label: 'المنتجات والأوزان والأسعار',
       icon: <ShoppingBag className="w-4 h-4" />,
       badge: products.length,
+      roles: ['super_admin', 'admin', 'store_manager'],
     },
     {
       id: 'categories',
-      label: 'الأقسام والتصنيفات',
+      label: currentRole === 'supplier' ? 'الأقسام والتصنيفات (عرض)' : 'الأقسام والتصنيفات',
       icon: <Layers className="w-4 h-4" />,
       badge: categories.length,
+      roles: ['super_admin', 'admin', 'store_manager', 'supplier'],
     },
     {
       id: 'operations',
@@ -1143,33 +1334,48 @@ export default function AdminDashboardPage() {
       icon: <Sparkles className="w-4 h-4" />,
       badge: 'الشركاء 4',
       badgeColor: 'bg-gold-500 text-brand-950',
+      roles: ['super_admin', 'admin', 'store_manager', 'promo_partner'],
     },
     {
       id: 'shipping',
       label: 'الشحن والمحافظات',
       icon: <Truck className="w-4 h-4" />,
       badge: shippingRates.length,
+      roles: ['super_admin', 'admin', 'store_manager'],
     },
     {
       id: 'coupons',
       label: 'الكوبونات والعروض',
       icon: <Tag className="w-4 h-4" />,
       badge: coupons.filter((c) => c.active).length,
+      roles: ['super_admin', 'admin', 'promo_partner'],
     },
     {
       id: 'reviews',
       label: 'تقييمات وآراء العملاء',
       icon: <Star className="w-4 h-4" />,
       badge: allReviewsFlattened.length,
+      roles: ['super_admin', 'admin', 'store_manager'],
     },
     {
       id: 'settings',
-      label: 'الإعدادات والأمان والنسخ',
+      label: 'الإعدادات وعزل الأدوار والنسخ',
       icon: <Settings className="w-4 h-4" />,
+      roles: ['super_admin', 'admin'],
     },
   ];
 
+  const navItems = allNavItems.filter((item) => item.roles.includes(currentRole));
   const currentNav = navItems.find((n) => n.id === activeTab) || navItems[0];
+
+  const roleHeaderBadge =
+    currentRole === 'supplier'
+      ? { label: '📦 المورد (عزل التوريد والمخزون)', cls: 'bg-amber-100 text-amber-950 border-amber-300' }
+      : currentRole === 'accountant'
+      ? { label: '📊 المحاسب (عزل المراجعة المالية)', cls: 'bg-pistachio-100 text-pistachio-900 border-pistachio-300' }
+      : currentRole === 'cashier'
+      ? { label: '⚖️ الكاشير (عزل المبيعات بدون تكاليف)', cls: 'bg-sky-100 text-sky-950 border-sky-300' }
+      : { label: '👑 الأدمن (المدير العام)', cls: 'bg-gold-500/20 text-brand-950 border-gold-500/40' };
 
   return (
     <div className="min-h-screen bg-brand-50 flex flex-col lg:flex-row">
@@ -1195,6 +1401,9 @@ export default function AdminDashboardPage() {
             </div>
             <div className="min-w-0">
               <h2 className="text-[11px] font-black text-white truncate">{settings.storeName}</h2>
+              <div className="text-[9.5px] font-bold text-gold-400 truncate">
+                {roleHeaderBadge.label}
+              </div>
             </div>
           </div>
           <button
@@ -1251,13 +1460,15 @@ export default function AdminDashboardPage() {
 
         {/* Bottom Sidebar Footer Actions */}
         <div className="p-2.5 border-t border-white/10 space-y-1.5 bg-brand-950/90">
-          <Link
-            href="/pos"
-            className="w-full bg-gold-500 hover:bg-gold-400 text-brand-950 text-[11px] font-black px-2.5 py-1.5 rounded-xl flex items-center justify-between transition shadow-xs"
-          >
-            <span>⚖️ شاشة الكاشير والميزان POS</span>
-            <ExternalLink className="w-3 h-3 text-brand-950" />
-          </Link>
+          {(isFullAdmin || currentRole === 'cashier') && (
+            <Link
+              href="/pos"
+              className="w-full bg-gold-500 hover:bg-gold-400 text-brand-950 text-[11px] font-black px-2.5 py-1.5 rounded-xl flex items-center justify-between transition shadow-xs"
+            >
+              <span>⚖️ شاشة الكاشير والميزان POS</span>
+              <ExternalLink className="w-3 h-3 text-brand-950" />
+            </Link>
+          )}
 
           <Link
             href="/"
@@ -1267,27 +1478,29 @@ export default function AdminDashboardPage() {
             <ExternalLink className="w-3 h-3 text-pistachio-400" />
           </Link>
 
-          <div className="grid grid-cols-2 gap-1.5">
-            <button
-              onClick={() =>
-                updateStorePayload(
-                  { action: 'reset_demo' },
-                  'تمت استعادة البيانات الافتراضية للمتجر'
-                )
-              }
-              className="bg-white/10 hover:bg-white/15 text-brand-100 text-[10px] font-bold px-2 py-1.5 rounded-xl flex items-center justify-center gap-1 transition border border-white/10"
-              title="استعادة البيانات الافتراضية"
-            >
-              <RotateCcw className="w-3 h-3 text-gold-400" />
-              <span>ضبط افتراضي</span>
-            </button>
+          <div className={isFullAdmin ? 'grid grid-cols-2 gap-1.5' : 'block'}>
+            {isFullAdmin && (
+              <button
+                onClick={() =>
+                  updateStorePayload(
+                    { action: 'reset_demo' },
+                    'تمت استعادة البيانات الافتراضية للمتجر'
+                  )
+                }
+                className="bg-white/10 hover:bg-white/15 text-brand-100 text-[10px] font-bold px-2 py-1.5 rounded-xl flex items-center justify-center gap-1 transition border border-white/10"
+                title="استعادة البيانات الافتراضية"
+              >
+                <RotateCcw className="w-3 h-3 text-gold-400" />
+                <span>ضبط افتراضي</span>
+              </button>
+            )}
 
             <button
               onClick={handleLogout}
-              className="bg-red-500/20 hover:bg-red-500/30 text-red-200 hover:text-white text-[10px] font-extrabold px-2 py-1.5 rounded-xl flex items-center justify-center gap-1 transition border border-red-500/30"
+              className="w-full bg-red-500/20 hover:bg-red-500/30 text-red-200 hover:text-white text-[10px] font-extrabold px-2 py-1.5 rounded-xl flex items-center justify-center gap-1 transition border border-red-500/30"
             >
               <LogOut className="w-3 h-3" />
-              <span>خروج</span>
+              <span>تسجيل خروج</span>
             </button>
           </div>
         </div>
@@ -1306,10 +1519,15 @@ export default function AdminDashboardPage() {
               >
                 <Menu className="w-3.5 h-3.5" />
               </button>
-              <div className="flex items-center gap-1.5 min-w-0">
+              <div className="flex items-center gap-2 min-w-0 flex-wrap">
                 <h1 className="text-xs sm:text-sm font-black text-brand-950 truncate">
-                  {currentNav.label}
+                  {currentNav?.label}
                 </h1>
+                <span
+                  className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${roleHeaderBadge.cls}`}
+                >
+                  {roleHeaderBadge.label}
+                </span>
                 {saving && (
                   <span className="text-[9.5px] bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full animate-pulse shrink-0">
                     جاري الحفظ...
@@ -1319,12 +1537,14 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
-              <Link
-                href="/pos"
-                className="bg-amber-100 hover:bg-amber-200 text-brand-950 border border-amber-300 text-[10px] sm:text-[11px] font-black px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition"
-              >
-                <span>⚖️ الكاشير POS</span>
-              </Link>
+              {(isFullAdmin || currentRole === 'cashier') && (
+                <Link
+                  href="/pos"
+                  className="bg-amber-100 hover:bg-amber-200 text-brand-950 border border-amber-300 text-[10px] sm:text-[11px] font-black px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition"
+                >
+                  <span>⚖️ الكاشير POS</span>
+                </Link>
+              )}
               <Link
                 href="/"
                 className="lg:hidden bg-pistachio-50 hover:bg-pistachio-100 text-pistachio-800 border border-pistachio-200 text-[10px] font-extrabold px-2 py-1 rounded-xl flex items-center gap-1 transition"
@@ -1332,16 +1552,18 @@ export default function AdminDashboardPage() {
                 <span>المتجر</span>
                 <ExternalLink className="w-3 h-3" />
               </Link>
-              <button
-                onClick={() => {
-                  setActiveTab('products');
-                  openCreateProductModal();
-                }}
-                className="bg-brand-900 hover:bg-brand-950 text-white text-[10px] sm:text-[11px] font-extrabold px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition shadow-2xs cursor-pointer"
-              >
-                <Plus className="w-3 h-3 text-gold-400 shrink-0" />
-                <span>إضافة منتج</span>
-              </button>
+              {isFullAdmin && (
+                <button
+                  onClick={() => {
+                    setActiveTab('products');
+                    openCreateProductModal();
+                  }}
+                  className="bg-brand-900 hover:bg-brand-950 text-white text-[10px] sm:text-[11px] font-extrabold px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition shadow-2xs cursor-pointer"
+                >
+                  <Plus className="w-3 h-3 text-gold-400 shrink-0" />
+                  <span>إضافة منتج</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -1379,7 +1601,69 @@ export default function AdminDashboardPage() {
 
         {/* Dynamic Module Container */}
         <main className="p-3 sm:p-5 space-y-4 max-w-7xl w-full mx-auto">
-          {activeTab === 'operations' && (
+          {/* ROLE PORTAL 1: SUPPLIER ISOLATION PORTAL */}
+          {activeTab === 'supply_portal' &&
+            (isFullAdmin || currentRole === 'supplier') && (
+              <SupplierIsolationPortal
+                products={products}
+                categories={categories}
+                saving={saving}
+                onUpdateStorePayload={updateStorePayload}
+              />
+            )}
+
+          {/* ROLE PORTAL 2: ACCOUNTANT ISOLATION PORTAL */}
+          {activeTab === 'accounting_portal' &&
+            (isFullAdmin || currentRole === 'accountant') && (
+              <AccountantIsolationPortal
+                orders={orders}
+                products={products}
+                posShifts={storeData?.posShifts || []}
+                posExpenses={storeData?.posExpenses || []}
+                vipMembers={storeData?.vipMembers || []}
+                settings={settings}
+                onExportOrdersCsv={handleExportCsv}
+                onOpenOrdersTab={() => setActiveTab('orders')}
+              />
+            )}
+
+          {/* ROLE PORTAL 3: CASHIER ISOLATION PORTAL */}
+          {activeTab === 'cashier_portal' && currentRole === 'cashier' && (
+            <div className="bg-gradient-to-l from-brand-950 via-brand-900 to-brand-950 text-white p-6 rounded-3xl border border-gold-500/30 shadow-xl space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <span className="inline-block text-[11px] font-black bg-sky-400 text-brand-950 px-3 py-0.5 rounded-full">
+                    ⚖️ بوابة الكاشير المعزولة (Cashier Isolation)
+                  </span>
+                  <h2 className="text-lg sm:text-xl font-black text-white">
+                    شاشة الكاشير والميزان الرقمي وتجهيز الطلبات
+                  </h2>
+                  <p className="text-xs text-brand-200 max-w-2xl leading-relaxed">
+                    حساب الكاشير معزول تماماً عن تكاليف الجملة (شيت عرفات)، صافي الأرباح، وإعدادات الإدارة. يمكنك فتح شاشة الميزان والباركود للبيع المباشر أو متابعة تجهيز طلبات الموقع الأونلاين.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <Link
+                    href="/pos"
+                    className="bg-gold-500 hover:bg-gold-400 text-brand-950 font-black text-xs px-5 py-3 rounded-2xl flex items-center gap-2 shadow-lg transition"
+                  >
+                    <span>⚖️ فتح شاشة الكاشير والميزان POS</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('orders')}
+                    className="bg-white/10 hover:bg-white/15 border border-white/20 text-white font-extrabold text-xs px-4 py-3 rounded-2xl transition"
+                  >
+                    📦 تجهيز طلبات الأونلاين ({activeOrdersCount} جاري)
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'operations' && isFullAdmin && (
             <HafsaOperationsStudio
               adminToken={adminToken}
               onUpdateStorePayload={updateStorePayload}
@@ -1389,7 +1673,7 @@ export default function AdminDashboardPage() {
           {/* ================================================================= */}
           {/* MODULE 1: OVERVIEW & ANALYTICS                                    */}
           {/* ================================================================= */}
-          {activeTab === 'overview' && (
+          {activeTab === 'overview' && isFullAdmin && (
             <div className="space-y-4">
               {/* 6 KPI Summary Cards */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
@@ -1678,7 +1962,7 @@ export default function AdminDashboardPage() {
                       </button>
                     )}
 
-                    {orders.length > 0 && (
+                    {orders.length > 0 && isFullAdmin && (
                       <button
                         type="button"
                         onClick={handleClearAllOrders}
@@ -1986,6 +2270,17 @@ export default function AdminDashboardPage() {
                                     خصم: -{order.discountAmount} ج.م
                                   </div>
                                 )}
+                                {(isFullAdmin || currentRole === 'accountant') &&
+                                  typeof order.netProfitEgp === 'number' && (
+                                    <div className="mt-1 pt-1 border-t border-brand-100 text-[10px] space-y-0.5">
+                                      <div className="text-amber-800 font-bold">
+                                        تكلفة: {order.rawCostTotal || 0} ج.م
+                                      </div>
+                                      <div className="text-pistachio-700 font-black">
+                                        ربح صافي: +{order.netProfitEgp} ج.م
+                                      </div>
+                                    </div>
+                                  )}
                               </td>
 
                               {/* Status Badge & Selector */}
@@ -1997,20 +2292,22 @@ export default function AdminDashboardPage() {
                                     {st.label}
                                   </span>
                                 </div>
-                                <select
-                                  value={order.status}
-                                  onChange={(e) =>
-                                    handleOrderStatusChange(order.id, e.target.value as OrderStatus)
-                                  }
-                                  className="block w-full bg-brand-50 border border-brand-300 text-brand-950 text-[11px] font-bold rounded-lg px-2 py-1 focus:outline-none"
-                                >
-                                  <option value="pending">قيد المراجعة</option>
-                                  <option value="confirmed">تم التأكيد</option>
-                                  <option value="roasting_packing">جاري التحميص</option>
-                                  <option value="shipped">خرج مع المندوب</option>
-                                  <option value="delivered">تم التسليم</option>
-                                  <option value="cancelled">ملغي</option>
-                                </select>
+                                {currentRole !== 'accountant' && (
+                                  <select
+                                    value={order.status}
+                                    onChange={(e) =>
+                                      handleOrderStatusChange(order.id, e.target.value as OrderStatus)
+                                    }
+                                    className="block w-full bg-brand-50 border border-brand-300 text-brand-950 text-[11px] font-bold rounded-lg px-2 py-1 focus:outline-none"
+                                  >
+                                    <option value="pending">قيد المراجعة</option>
+                                    <option value="confirmed">تم التأكيد</option>
+                                    <option value="roasting_packing">جاري التحميص</option>
+                                    <option value="shipped">خرج مع المندوب</option>
+                                    <option value="delivered">تم التسليم</option>
+                                    <option value="cancelled">ملغي</option>
+                                  </select>
+                                )}
                               </td>
 
                               {/* Actions */}
@@ -2036,13 +2333,15 @@ export default function AdminDashboardPage() {
                                     <MessageCircle className="w-3.5 h-3.5" />
                                   </a>
 
-                                  <button
-                                    onClick={() => handleDeleteOrder(order.id)}
-                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition"
-                                    title="حذف الطلب"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
+                                  {isFullAdmin && (
+                                    <button
+                                      onClick={() => handleDeleteOrder(order.id)}
+                                      className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition"
+                                      title="حذف الطلب"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
                                 </div>
                               </td>
                             </tr>
@@ -2871,11 +3170,12 @@ export default function AdminDashboardPage() {
           {/* MODULE 4: CATEGORIES DATA TABLE WITH FILTERS                      */}
           {/* ================================================================= */}
           {activeTab === 'categories' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <form
-                onSubmit={handleSaveCategory}
-                className="bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 space-y-3 h-fit shadow-2xs"
-              >
+            <div className={`grid grid-cols-1 ${isFullAdmin ? 'lg:grid-cols-3' : ''} gap-4`}>
+              {isFullAdmin && (
+                <form
+                  onSubmit={handleSaveCategory}
+                  className="bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 space-y-3 h-fit shadow-2xs"
+                >
                 <div className="flex items-center justify-between">
                   <h3 className="font-extrabold text-sm text-brand-950">
                     {editingCategory ? `تعديل قسم: ${editingCategory.name}` : '+ إضافة قسم جديد'}
@@ -3003,6 +3303,7 @@ export default function AdminDashboardPage() {
                   {editingCategory ? 'حفظ تعديلات القسم' : '+ إضافة القسم للمتجر'}
                 </button>
               </form>
+              )}
 
               {/* Categories Filter Bar & Data Table */}
               <div className="lg:col-span-2 bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 space-y-3 h-fit shadow-2xs">
@@ -3063,7 +3364,9 @@ export default function AdminDashboardPage() {
                         <th className="p-2.5 whitespace-nowrap">اسم القسم والرابط</th>
                         <th className="p-2.5">الوصف</th>
                         <th className="p-2.5 whitespace-nowrap text-center">عدد المنتجات</th>
-                        <th className="p-2.5 whitespace-nowrap text-center">إجراءات</th>
+                        {isFullAdmin && (
+                          <th className="p-2.5 whitespace-nowrap text-center">إجراءات</th>
+                        )}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-brand-100">
@@ -3090,7 +3393,9 @@ export default function AdminDashboardPage() {
                                 type="button"
                                 onClick={() => {
                                   setProductCategoryFilter(cat.id);
-                                  setActiveTab('products');
+                                  setActiveTab(
+                                    currentRole === 'supplier' ? 'supply_portal' : 'products'
+                                  );
                                 }}
                                 className="text-[11px] bg-brand-100 hover:bg-brand-200 text-brand-900 px-2.5 py-1 rounded-lg font-extrabold transition"
                                 title="عرض منتجات هذا القسم"
@@ -3098,26 +3403,28 @@ export default function AdminDashboardPage() {
                                 {prodCount} صنف ←
                               </button>
                             </td>
-                            <td className="p-2.5 whitespace-nowrap text-center">
-                              <div className="flex items-center justify-center gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingCategory(cat)}
-                                  className="p-1.5 bg-amber-100 hover:bg-amber-200 text-brand-950 rounded-lg"
-                                  title="تعديل القسم"
-                                >
-                                  <Edit3 className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteCategory(cat.id)}
-                                  className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
-                                  title="حذف القسم"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
+                            {isFullAdmin && (
+                              <td className="p-2.5 whitespace-nowrap text-center">
+                                <div className="flex items-center justify-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingCategory(cat)}
+                                    className="p-1.5 bg-amber-100 hover:bg-amber-200 text-brand-950 rounded-lg"
+                                    title="تعديل القسم"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteCategory(cat.id)}
+                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
+                                    title="حذف القسم"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            )}
                           </tr>
                         );
                       })}
@@ -3870,9 +4177,9 @@ export default function AdminDashboardPage() {
           {/* ================================================================= */}
           {/* MODULE 9: STORE SETTINGS, SECURITY & BACKUP                       */}
           {/* ================================================================= */}
-          {activeTab === 'settings' && (
+          {activeTab === 'settings' && isFullAdmin && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Core Identity & Payment Settings Form */}
+              {/* Core Identity, Role Passwords & Payment Settings Form */}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -3904,12 +4211,24 @@ export default function AdminDashboardPage() {
                     ...(newAdminPassword.trim()
                       ? { adminPassword: newAdminPassword.trim() }
                       : {}),
+                    ...(newSupplierPassword.trim()
+                      ? { supplierPassword: newSupplierPassword.trim() }
+                      : {}),
+                    ...(newCashierPassword.trim()
+                      ? { cashierPassword: newCashierPassword.trim() }
+                      : {}),
+                    ...(newAccountantPassword.trim()
+                      ? { accountantPassword: newAccountantPassword.trim() }
+                      : {}),
                   };
                   updateStorePayload(
                     { settings: updatedSettings },
-                    'تم حفظ إعدادات المتجر والأمان بنجاح ✅'
+                    'تم حفظ إعدادات المتجر وكلمات مرور الأدوار بنجاح ✅'
                   );
                   setNewAdminPassword('');
+                  setNewSupplierPassword('');
+                  setNewCashierPassword('');
+                  setNewAccountantPassword('');
                 }}
                 className="lg:col-span-2 bg-white p-4 sm:p-6 rounded-2xl border border-brand-200 shadow-2xs space-y-4"
               >
@@ -4020,30 +4339,89 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
-                {/* Admin Password Update */}
-                <div className="pt-3 border-t border-brand-100">
-                  <label className="block text-[11px] font-extrabold text-brand-900 mb-1">
-                    تغيير كلمة مرور لوحة التحكم (اتركها فارغة للإبقاء على كلمة المرور الحالية)
-                  </label>
-                  <div className="relative max-w-sm">
-                    <input
-                      type={showPasswordText ? 'text' : 'password'}
-                      value={newAdminPassword}
-                      onChange={(e) => setNewAdminPassword(e.target.value)}
-                      placeholder="كلمة مرور جديدة للإدارة..."
-                      className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2 text-xs font-bold"
-                    />
+                {/* 5-Role Isolation & Independent Passwords Section */}
+                <div className="pt-4 border-t border-brand-200 space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-black text-brand-950 flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-gold-500" />
+                        <span>إدارة عزل الأدوار الـ 5 وكلمات المرور المستقلة</span>
+                      </h4>
+                      <p className="text-[10.5px] text-brand-600 mt-0.5">
+                        اترك أي حقل فارغاً للإبقاء على كلمة المرور الحالية الخاصة بذلك الدور.
+                      </p>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setShowPasswordText(!showPasswordText)}
-                      className="absolute left-2.5 top-1/2 -translate-y-1/2 text-brand-500"
+                      className="text-[11px] font-bold text-brand-700 hover:text-brand-950 flex items-center gap-1 bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-200"
                     >
                       {showPasswordText ? (
-                        <EyeOff className="w-4 h-4" />
+                        <>
+                          <EyeOff className="w-3.5 h-3.5" />
+                          <span>إخفاء الكلمات</span>
+                        </>
                       ) : (
-                        <Eye className="w-4 h-4" />
+                        <>
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>إظهار الكلمات</span>
+                        </>
                       )}
                     </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-3 rounded-xl bg-brand-50/70 border border-brand-200 space-y-1">
+                      <label className="block text-[11px] font-extrabold text-brand-950">
+                        1. 👑 كلمة مرور الأدمن (المدير العام)
+                      </label>
+                      <input
+                        type={showPasswordText ? 'text' : 'password'}
+                        value={newAdminPassword}
+                        onChange={(e) => setNewAdminPassword(e.target.value)}
+                        placeholder="كلمة مرور جديدة للأدمن (الافتراضية: admin)..."
+                        className="w-full bg-white border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-bold"
+                      />
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-amber-50/60 border border-amber-200 space-y-1">
+                      <label className="block text-[11px] font-extrabold text-amber-950">
+                        2. 📦 كلمة مرور المورد (بوابة التوريد والمخزون)
+                      </label>
+                      <input
+                        type={showPasswordText ? 'text' : 'password'}
+                        value={newSupplierPassword}
+                        onChange={(e) => setNewSupplierPassword(e.target.value)}
+                        placeholder="كلمة مرور جديدة للمورد (الافتراضية: supplier)..."
+                        className="w-full bg-white border border-amber-200 rounded-xl px-3 py-1.5 text-xs font-bold"
+                      />
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-sky-50/60 border border-sky-200 space-y-1">
+                      <label className="block text-[11px] font-extrabold text-sky-950">
+                        3. ⚖️ كلمة مرور الكاشير (شاشة البيع والميزان POS)
+                      </label>
+                      <input
+                        type={showPasswordText ? 'text' : 'password'}
+                        value={newCashierPassword}
+                        onChange={(e) => setNewCashierPassword(e.target.value)}
+                        placeholder="كلمة مرور جديدة للكاشير (الافتراضية: cashier)..."
+                        className="w-full bg-white border border-sky-200 rounded-xl px-3 py-1.5 text-xs font-bold"
+                      />
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-pistachio-50/60 border border-pistachio-200 space-y-1">
+                      <label className="block text-[11px] font-extrabold text-pistachio-900">
+                        4. 📊 كلمة مرور المحاسب (المراجعة المالية والجرد)
+                      </label>
+                      <input
+                        type={showPasswordText ? 'text' : 'password'}
+                        value={newAccountantPassword}
+                        onChange={(e) => setNewAccountantPassword(e.target.value)}
+                        placeholder="كلمة مرور جديدة للمحاسب (الافتراضية: accountant)..."
+                        className="w-full bg-white border border-pistachio-200 rounded-xl px-3 py-1.5 text-xs font-bold"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -4053,7 +4431,7 @@ export default function AdminDashboardPage() {
                   className="bg-brand-900 hover:bg-brand-950 text-white font-extrabold px-6 py-2.5 rounded-xl text-xs flex items-center gap-1.5 shadow-md"
                 >
                   <CheckCircle2 className="w-4 h-4 text-gold-400" />
-                  <span>حفظ جميع الإعدادات</span>
+                  <span>حفظ جميع الإعدادات وكلمات مرور الأدوار</span>
                 </button>
               </form>
 
