@@ -79,7 +79,17 @@ export function generateOrdersCsv(orders: Order[]): string {
             .join(' + ');
           return `علبة مخصصة ${item.boxCapacityGrams || 1000}جم [${breakdownStr}] × ${item.quantity}`;
         }
-        return `${item.productName} (${item.weightLabel || ''} - ${item.roastOption || ''}) × ${item.quantity}`;
+        if (item.isPartitionedBox && item.partitionedSlots) {
+          const slotsStr = item.partitionedSlots
+            .map((s) => `خانة ${s.slotIndex}: ${s.productName} (${s.roastOption})`)
+            .join(' + ');
+          return `${item.productName} [${slotsStr}] × ${item.quantity}`;
+        }
+        if (item.isCoffeeBlend && item.coffeeBlendSpec) {
+          return `${item.productName} [${item.coffeeBlendSpec.baristaLabel}] × ${item.quantity}`;
+        }
+        const notesSuffix = item.workerNotes ? ` [ملاحظة للعامل: ${item.workerNotes}]` : '';
+        return `${item.productName} (${item.weightLabel || ''} - ${item.roastOption || ''})${notesSuffix} × ${item.quantity}`;
       })
       .join(' | ');
 

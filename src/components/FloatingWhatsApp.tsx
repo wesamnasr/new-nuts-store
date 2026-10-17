@@ -11,7 +11,11 @@ export default function FloatingWhatsApp() {
   const { storeData, cartCount, isCartOpen } = useStore();
   const pathname = usePathname();
 
-  if (pathname?.startsWith('/admin')) {
+  if (
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/pos') ||
+    pathname?.startsWith('/cashier')
+  ) {
     return null;
   }
 

@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+// Force reload webpack cache
 const nextConfig = {
   images: {
     remotePatterns: [

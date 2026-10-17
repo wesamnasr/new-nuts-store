@@ -1,10 +1,57 @@
-export type RoastOption = 'محمص مملح' | 'محمص بدون ملح' | 'نيء طبيعي' | 'مدخن بالتوابل' | 'تشكيلة فاخرة';
+export type RoastOption =
+  | 'محمص مملح'
+  | 'محمص بدون ملح'
+  | 'نيء طبيعي'
+  | 'مدخن بالتوابل'
+  | 'مدخن بالجبنة'
+  | 'تشكيلة فاخرة'
+  | 'تحميص وسط سادة'
+  | 'تحميص وسط محوج'
+  | 'تحميص غامق محوج'
+  | 'تحميص فاتح أشقر'
+  | 'طازج طبيعي 100%'
+  | string;
+
+export type WeightGrams = 125 | 250 | 500 | 1000 | 2000 | number;
+
+export type PartitionedBoxSize = 'roqan_4' | 'family_6' | 'vip_6';
+
+export type CoffeeRoastLevel =
+  | 'فاتح (أشقر)'
+  | 'وسط (مضبوط)'
+  | 'وسط (المزاج المضبوط)'
+  | 'وسط غامق'
+  | 'غامق (إسبريسو)'
+  | 'غامق (عشاق القهوة الثقيلة)'
+  | string;
+
+export type CoffeeSpicingOption =
+  | 'سادة بدون تحويجة'
+  | 'سادة صافي'
+  | 'محوج خفيف بالحبهان'
+  | 'محوج مخصوص بالحبهان والمستكة'
+  | 'محوج مخصوص بحبهان وزر ورد'
+  | 'تحويجة حفصة الملكية بالزعفران والمستكة'
+  | 'محوج ملكي إضافي (حبهان + مستكة + جوزة الطيب + زر ورد)'
+  | string;
+
+export type CoffeeGrindType =
+  | 'ماكينة تركي ناعم'
+  | 'مطحون تركي ناعم (للركوة والكنكة)'
+  | 'إسبريسو وموكا بوت'
+  | 'طحنة إسبريسو وماكينات منزلي'
+  | 'فرنساوي وخشن'
+  | 'طحنة فرنساوي وبالحليب'
+  | 'حبوب صحيحة (بدون طحن)'
+  | 'حصى بدون طحن (حبوب كاملة)'
+  | string;
 
 export interface WeightVariant {
   id: string;
-  label: string;       // e.g., "250 جم", "500 جم", "1 كجم"
-  weightGrams: number; // e.g., 250, 500, 1000
-  price: number;       // Price in EGP
+  label: string;          // e.g., "ثمن 125 جم", "ربع 250 جم", "نصف 500 جم", "كيلو 1000 جم"
+  weightGrams: number;    // 125 | 250 | 500 | 1000 | 2000
+  grams?: number;         // Alias for weightGrams
+  price: number;          // Price in EGP
   originalPrice?: number; // Optional crossed-out price
 }
 
@@ -33,16 +80,23 @@ export interface Product {
   name: string;
   subtitle: string;
   categoryId: string;
+  subCategoryName?: string; // One of the 23 approved Excel sub-categories
+  subCategory?: string;     // Alias for subCategoryName
   description: string;
   image: string;
   gallery?: string[];
-  badge?: string;            // e.g. "الأكثر مبيعاً", "تحميص اليوم", "عرض خاص", "فاخر"
-  origin: string;            // e.g. "تركي فاخر", "أمريكي جامبو", "إيراني أول", "تشيلي"
-  nutritionalHighlight: string; // e.g. "غني بأوميجا 3 ومضادات الأكسدة"
+  badge?: string;            // e.g. "الأكثر مبيعاً", "محمص اليوم", "عرض خاص", "فاخر"
+  origin: string;            // e.g. "تركي فاخر", "أمريكي جامبو", "بني مزار طازج"
+  nutritionalHighlight: string;
   caloriesPer100g: number;
   proteinPer100g: string;
   roastOptions: RoastOption[];
   weights: WeightVariant[];
+  pricePerKg?: number;       // Base Kilo selling price in EGP (auto-computes 125g, 250g, 500g, 1000g)
+  costPerKg?: number;        // Arafat's Excel cost per Kg in EGP (for profit margin protection)
+  packagingCost?: number;    // Packaging cost per unit in EGP
+  barcode?: string;          // Electronic barcode scale PLU / SKU code
+  isSuperVipItem?: boolean;  // Super VIP nuts indicator for partitioned box margin safety
   inStock: boolean;
   featured: boolean;
   rating: number;
@@ -58,6 +112,7 @@ export interface Category {
   description: string;
   icon: string;
   image: string;
+  subCategories?: string[];
 }
 
 export interface ShippingRate {
@@ -65,6 +120,8 @@ export interface ShippingRate {
   governorate: string;
   price: number;
   estimatedDays: string;
+  zoneType?: 'bandar' | 'village' | 'pickup' | 'governorate';
+  minOrderAmount?: number;
 }
 
 export interface Coupon {
@@ -81,50 +138,179 @@ export interface CustomMixItem {
   productId: string;
   productName: string;
   productImage?: string;
-  roastOption: RoastOption;
+  roastOption: RoastOption | string;
   percentage: number;       // e.g. 50 for 50%
   weightGrams: number;      // e.g. 500
   priceContribution: number;// e.g. 410 EGP
+  slotNumber?: number;      // 1..4 or 1..6 for partitioned boxes
+  slotTitle?: string;       // e.g. "الخانة 1: مقرمشات وكريك"
+}
+
+export interface BoxSlotSelection {
+  slotIndex?: number;
+  slotNumber?: number;
+  slotTitle?: string;
+  categoryLabel?: string;
+  productId: string;
+  productName: string;
+  productImage: string;
+  roastOption: RoastOption | string;
+  slotGrams?: number;
+  weightGrams?: number;
+  pricePerKg?: number;
+  costPerKg?: number;
+  isSuperVipItem?: boolean;
+  costContribution?: number;
+  priceContribution?: number;
+}
+
+export interface CustomCoffeeBlendSpec {
+  beanOrigin?: string;
+  brazilianPercent?: number;
+  indianPercent?: number;
+  colombianPercent?: number;
+  habashiPercent?: number;
+  roastLevel: CoffeeRoastLevel;
+  spicing: CoffeeSpicingOption;
+  grindType: CoffeeGrindType;
+  weightGrams: WeightGrams;
+  weightLabel?: string;
+  baristaLabel: string;   // Printable barista spec sticker text
+  customBlendName?: string;
+  notes?: string;
 }
 
 export interface CartItem {
-  cartItemId: string; // product.id + weight.id + roastOption (or custom box id)
+  cartItemId: string; // product.id + weight.id + roastOption (or custom box / coffee id)
   productId: string;
   productName: string;
   productImage: string;
   weightId: string;
   weightLabel: string;
-  roastOption: RoastOption;
+  roastOption: RoastOption | string;
   unitPrice: number;
   quantity: number;
+  rawCostEgp?: number;        // Raw cost from Arafat's sheet for POS profit calculation
+  customWeightGrams?: number; // Exact scale weight in grams (e.g. 185g or 320g)
+  barcodeLabel?: string;      // EAN-13 / Scale barcode string
+  workerNotes?: string; // ملاحظات خاصة للعامل (بدون ملح، تقسيم الربع على كيسين ثمن، إلخ)
   isCustomMix?: boolean;
   boxCapacityGrams?: number; // 500 | 1000 | 2000
   customBreakdown?: CustomMixItem[];
+  isPartitionedBox?: boolean;
+  partitionedBoxSize?: PartitionedBoxSize;
+  partitionedSlots?: BoxSlotSelection[];
+  boxPresetId?: PartitionedBoxSize;
+  boxSlotsCount?: 4 | 6;
+  boxSlots?: BoxSlotSelection[];
+  isCoffeeBlend?: boolean;
+  coffeeBlendSpec?: CustomCoffeeBlendSpec;
 }
 
 export type OrderStatus = 'pending' | 'confirmed' | 'roasting_packing' | 'shipped' | 'delivered' | 'cancelled';
 
-export type PaymentMethod = 'cod' | 'instapay' | 'vodafone_cash';
+export type PaymentMethod = 'cod' | 'instapay' | 'vodafone_cash' | 'vip_wallet';
+
+export type DeliveryMethodType = 'bandar_fast' | 'villages_scheduled' | 'store_pickup';
+
+export type PosOrderType = 'counter_takeaway' | 'glass_bar_dine_in' | 'phone_delivery';
 
 export interface Order {
   id: string;
-  orderNumber: string; // e.g. "NUT-1042"
+  orderNumber: string; // e.g. "NUT-1042" or "POS-1042"
+  orderSource?: 'online' | 'pos';
+  posOrderType?: PosOrderType;
+  chairNumber?: 1 | 2 | 3 | 4; // For the 4-chair glass bar in front of Agricultural Mosque
+  cashierName?: string;
+  shiftId?: string;
   customerName: string;
   customerPhone: string;
   customerAltPhone?: string;
   governorate: string;
   address: string;
   notes?: string;
+  deliveryMethod?: DeliveryMethodType;
+  villageName?: string;
+  deliverySlot?: string;      // "دورة الساعة 2:00 ظهراً" | "دورة الساعة 8:00 مساءً"
+  deliveryBatchSlot?: string; // Alias for deliverySlot
+  pickupTime?: string;        // For Click & Collect in front of Agricultural Mosque
   items: CartItem[];
   subtotal: number;
   shippingCost: number;
   discountAmount: number;
   couponCode?: string;
+  vipRedeemedAmount?: number; // Deducted from customer's VIP wallet
+  vipWalletRedeemed?: number; // Alias for vipRedeemedAmount
+  vipCashbackEarned?: number; // 5% cashback earned on orders >= 150 EGP
   total: number;
+  cashTendered?: number;      // Amount paid in cash at POS drawer
+  changeDue?: number;         // Change returned to customer at POS drawer
+  rawCostTotal?: number;      // Total raw cost from Arafat's sheet
+  netProfitEgp?: number;      // Net profit in EGP on this order/invoice
   paymentMethod: PaymentMethod;
   paymentReference?: string; // phone/handle or screenshot reference for InstaPay / Wallet
   status: OrderStatus;
   createdAt: string;
+}
+
+export interface VipTransaction {
+  id: string;
+  date: string;
+  type: 'earn' | 'redeem' | 'cashier_credit' | 'cashier_debit' | 'earned' | 'redeemed' | 'manual_cashier';
+  amount?: number;
+  amountEgp?: number;
+  orderNumber?: string;
+  description: string;
+}
+
+export interface VipMember {
+  id?: string;
+  membershipCode?: string; // e.g. "HAFSA-VIP-1001"
+  name?: string;
+  customerName?: string;
+  phone: string;          // 01XXXXXXXXX
+  walletBalance?: number; // Cashback balance in EGP
+  pointsBalance: number;  // Cashback balance in EGP
+  totalSpent: number;
+  ordersCount: number;
+  tier: 'Gold VIP' | 'Royal Platinum' | 'gold' | 'platinum';
+  qrCodeValue?: string;
+  joinedAt: string;
+  transactions: VipTransaction[];
+}
+
+export interface FlashPromotionItem {
+  productId: string;
+  productName: string;
+  weightGrams: number;
+  weightLabel: string;
+  quantity: number;
+  unitCost: number;        // Computed from product.costPerKg
+  unitRetailPrice: number; // Computed from product.pricePerKg
+}
+
+export interface FlashPromotion {
+  id: string;
+  title: string;
+  subtitle: string;
+  badge?: string;
+  badgeText?: string;
+  items?: FlashPromotionItem[];
+  bundleItemsSummary?: string;
+  packagingCost?: number;
+  totalRawCost?: number;         // Sum of item costs + packagingCost (from Arafat's sheet)
+  costPrice?: number;            // Alias for totalRawCost
+  originalRetailPrice?: number;
+  originalPrice?: number;        // Alias for originalRetailPrice
+  promoPrice: number;
+  netProfitEgp?: number;         // promoPrice - totalRawCost
+  profitMarginPercent?: number;  // (netProfitEgp / promoPrice) * 100
+  minSafeMarginPercent?: number; // Default 15%
+  isProfitSafe?: boolean;
+  active: boolean;
+  isVipOnly?: boolean;
+  endsAt: string;
+  image: string;
 }
 
 export interface TrustFeatureItem {
@@ -187,12 +373,12 @@ export interface StorePageContent {
   trustSectionTitle: string;
   trustFeatures: TrustFeatureItem[];
 
-  // Custom Box Builder Page (/custom-box)
+  // Custom Box Builder Page (/build-box & /custom-box)
   customBoxPageBadge: string;
   customBoxPageTitle: string;
   customBoxPageDesc: string;
 
-  // Track Order Page (/track-order)
+  // Track Order Page (/track & /track-order)
   trackOrderPageBadge: string;
   trackOrderPageTitle: string;
   trackOrderPageDesc: string;
@@ -203,6 +389,7 @@ export interface StorePageContent {
   enableCod: boolean;
   enableInstapay: boolean;
   enableVodafoneCash: boolean;
+  enableVipWallet?: boolean;
 
   // Footer & Floating WhatsApp
   footerDescription: string;
@@ -234,6 +421,8 @@ export interface StoreThemeConfig {
   showThemeSwitcher: boolean;
 }
 
+export type AdminRole = 'super_admin' | 'store_manager' | 'promo_partner';
+
 export interface StoreSettings {
   storeName: string;
   tagline: string;
@@ -241,13 +430,61 @@ export interface StoreSettings {
   whatsappNumber: string;
   supportPhone: string;
   freeShippingThreshold: number;
+  vipCashbackPercent?: number;       // 5% cashback
+  vipCashbackPercentage?: number;    // Alias for vipCashbackPercent
+  vipMinOrderForCashback?: number;   // 150 EGP
+  villageMinOrderAmount?: number;    // 200 EGP minimum for Bani Mazar villages
+  minOrderVillages?: number;         // Alias for villageMinOrderAmount
+  bandarShippingCost?: number;       // 20 EGP
+  villagesShippingCost?: number;     // 25 EGP
   instapayAddress: string;
   vodafoneCashNumber: string;
   address: string;
   workingHours: string;
+  googleMapsUrl?: string;
+  metaPixelId?: string;
+  tiktokPixelId?: string;
   adminPassword?: string;
+  managerPassword?: string;
+  promoPartnerPassword?: string;
+  wesamAdminPassword?: string;
   pageContent?: StorePageContent;
   themeConfig?: StoreThemeConfig;
+}
+
+export interface PosExpense {
+  id: string;
+  shiftId?: string;
+  title: string;
+  amount: number;
+  category: 'raw_materials' | 'packaging' | 'utilities' | 'delivery_rider' | 'other';
+  notes?: string;
+  createdAt: string;
+}
+
+export interface PosShift {
+  id: string;
+  shiftNumber: string; // e.g. "SHIFT-101"
+  cashierName: string;
+  shiftPeriod: 'الوردية الصباحية' | 'الوردية المسائية' | 'وردية اليوم الكامل';
+  status: 'open' | 'closed';
+  openingCash: number;
+  cashSalesTotal: number;
+  vodafoneCashTotal: number;
+  instapayTotal: number;
+  vipRedeemedTotal: number;
+  vipCashbackIssuedTotal: number;
+  expensesTotal: number;
+  expectedCashInDrawer: number;
+  actualClosingCash?: number;
+  cashDifference?: number;
+  ordersCount: number;
+  totalRevenue: number;
+  totalRawCost: number;
+  totalNetProfit: number;
+  openedAt: string;
+  closedAt?: string;
+  notes?: string;
 }
 
 export interface DatabaseSchema {
@@ -257,11 +494,16 @@ export interface DatabaseSchema {
   shippingRates: ShippingRate[];
   coupons: Coupon[];
   orders: Order[];
+  vipMembers?: VipMember[];
+  promotions?: FlashPromotion[];
+  posShifts?: PosShift[];
+  posExpenses?: PosExpense[];
 }
 
 export interface AdminAuthSession {
   token: string;
   expiresAt: number;
+  role?: AdminRole;
 }
 
 export interface ReviewSubmissionPayload {
@@ -284,4 +526,3 @@ export interface CustomMixPortion {
   percentage: number;
   roastOption: RoastOption;
 }
-

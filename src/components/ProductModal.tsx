@@ -17,6 +17,7 @@ import { useStore } from '@/context/StoreContext';
 import { RoastOption, WeightVariant } from '@/types/store';
 import { getSafeImageUrl } from '@/lib/defaults';
 import { formatWhatsAppPhone } from '@/lib/validation';
+import { getResolvedProductWeights } from '@/lib/pricing';
 
 export default function ProductModal() {
   const { selectedProductModal, setSelectedProductModal, addToCart, storeData } = useStore();
@@ -25,22 +26,25 @@ export default function ProductModal() {
   const [selectedRoast, setSelectedRoast] = useState<RoastOption>('محمص مملح');
   const [quantity, setQuantity] = useState(1);
 
+  const resolvedWeights = React.useMemo(
+    () => (selectedProductModal ? getResolvedProductWeights(selectedProductModal) : []),
+    [selectedProductModal]
+  );
+
   useEffect(() => {
-    if (selectedProductModal) {
-      setSelectedWeight(
-        selectedProductModal.weights[1] || selectedProductModal.weights[0] || null
-      );
+    if (selectedProductModal && resolvedWeights.length > 0) {
+      setSelectedWeight(resolvedWeights[1] || resolvedWeights[0] || null);
       setSelectedRoast(selectedProductModal.roastOptions[0] || 'محمص مملح');
       setQuantity(1);
     }
-  }, [selectedProductModal]);
+  }, [selectedProductModal, resolvedWeights]);
 
   if (!selectedProductModal || !selectedWeight) return null;
 
   const product = selectedProductModal;
   const whatsappNumber = formatWhatsAppPhone(storeData?.settings.whatsappNumber);
 
-  const baseWeight = product.weights[0];
+  const baseWeight = resolvedWeights[0];
   const bulkSavingsEgp =
     baseWeight && selectedWeight.weightGrams > baseWeight.weightGrams
       ? Math.max(

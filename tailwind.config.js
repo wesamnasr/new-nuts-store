@@ -33,9 +33,19 @@ module.exports = {
           500: 'rgb(var(--gold-500) / <alpha-value>)',
           600: 'rgb(var(--gold-600) / <alpha-value>)',
         },
+        hafsa: {
+          ivory: '#FAF6F0',     // Warm Calacatta Ivory (Primary BG)
+          cream: '#F3ECE1',     // Soft Almond Cream (Surface / Cards)
+          espresso: '#231710',  // Deep Espresso Roast (Primary Brand)
+          oak: '#C88A4B',       // Warm Honey Oak (Secondary Warm)
+          gold: '#D4AF37',      // Champagne Backlit Gold (Accent / Gold CTA)
+          pistachio: '#3B6E4C', // Pistachio Green (Success / Fresh)
+          cherry: '#B83B2B',    // Coffee Cherry Red (Promo / Urgency)
+        },
       },
       fontFamily: {
         cairo: ['var(--font-cairo)', 'sans-serif'],
+        tajawal: ['var(--font-tajawal)', 'var(--font-cairo)', 'sans-serif'],
       },
     },
   },

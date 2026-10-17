@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbAsync } from '@/lib/db';
 import { generateAdminToken, verifyAdminRequest, extractAdminToken } from '@/lib/auth';
+import { AdminRole } from '@/types/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { password } = body as { password?: string };
+    const { password, role: requestedRole } = body as { password?: string; role?: AdminRole };
 
     if (!password || typeof password !== 'string' || password.trim() === '') {
       return NextResponse.json({ error: 'كلمة المرور غير صحيحة' }, { status: 401 });
@@ -25,23 +26,37 @@ export async function POST(request: NextRequest) {
 
     const db = await getDbAsync();
     const configuredPassword = db.settings?.adminPassword || 'admin';
+    const managerPass = db.settings?.managerPassword || 'manager';
+    const promoPass = db.settings?.promoPartnerPassword || 'promo';
+    const wesamPass = db.settings?.wesamAdminPassword || 'wesam';
 
-    if (password !== configuredPassword) {
+    let matchedRole: AdminRole | null = null;
+    if (password === configuredPassword || password === wesamPass) {
+      matchedRole = requestedRole || 'super_admin';
+    } else if (password === managerPass) {
+      matchedRole = 'store_manager';
+    } else if (password === promoPass) {
+      matchedRole = 'promo_partner';
+    }
+
+    if (!matchedRole) {
       return NextResponse.json({ error: 'كلمة المرور غير صحيحة' }, { status: 401 });
     }
 
-    const session = generateAdminToken(password);
+    // Sign with primary configuredPassword so verifyAdminToken remains 100% compatible
+    const session = generateAdminToken(configuredPassword);
 
     const response = NextResponse.json({
       success: true,
       token: session.token,
       expiresAt: session.expiresAt,
+      role: matchedRole,
     });
 
     response.cookies.set({
       name: 'admin_session',
       value: session.token,
-      httpOnly: true, // SECURED: Cookie protected from XSS access
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',

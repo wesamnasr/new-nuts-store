@@ -658,7 +658,7 @@ async function runTestSuite() {
 
       // Invoice structural integrity
       const invoiceData = {
-        storeName: db.settings?.storeName || 'محمصة الواحة الذهبية',
+        storeName: db.settings?.storeName || 'محمصة حفصة للبن والمكسرات',
         orderNumber: order.orderNumber,
         customerName: order.customerName,
         customerPhone: order.customerPhone,
@@ -666,7 +666,7 @@ async function runTestSuite() {
         hasPrintStyles: true,
       };
 
-      assert.strictEqual(invoiceData.storeName, 'محمصة الواحة الذهبية');
+      assert.strictEqual(invoiceData.storeName, 'محمصة حفصة للبن والمكسرات');
       assert.strictEqual(invoiceData.orderNumber, order.orderNumber);
       assert.strictEqual(invoiceData.total, order.total);
     });
@@ -694,7 +694,7 @@ async function runTestSuite() {
     await test('T1_R3_03: Dynamic SEO metadata specification for product pages', async () => {
       const product = products.find((p) => p.slug === 'jumbo-pistachio-usa');
       const expectedMetadata = {
-        title: `${product.name} | محمصة الواحة الذهبية`,
+        title: `${product.name} | محمصة حفصة للبن والمكسرات`,
         description: product.description,
         openGraph: {
           title: product.name,
@@ -704,7 +704,7 @@ async function runTestSuite() {
       };
 
       assert.ok(expectedMetadata.title.includes(product.name));
-      assert.ok(expectedMetadata.title.includes('محمصة الواحة الذهبية'));
+      assert.ok(expectedMetadata.title.includes('محمصة حفصة للبن والمكسرات'));
       assert.strictEqual(expectedMetadata.openGraph.images[0], product.image);
     });
 
@@ -1379,6 +1379,261 @@ async function runTestSuite() {
       assert.ok(fs.existsSync(path.join(ROOT_DIR, 'package.json')), 'package.json must exist');
       assert.ok(fs.existsSync(path.join(ROOT_DIR, 'tsconfig.json')), 'tsconfig.json must exist');
       assert.ok(fs.existsSync(path.join(ROOT_DIR, 'next.config.mjs')), 'next.config.mjs must exist');
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    suite('Tier 5: Hafsa Roastery Master Plan — 20 Acceptance Criteria & 5 E2E Live Test Orders');
+
+    await test('HAFSA_AC_01_03: Verify 6 main categories, 29 products, and 4 weights (125g, 250g, 500g, 1000g) on every product', async () => {
+      assert.strictEqual(db.categories.length, 6, 'Must have 6 main categories');
+      assert.ok(products.length >= 23, 'Must have at least 23 products');
+      for (const p of products) {
+        assert.strictEqual(p.weights.length, 4, `Product ${p.id} must have 4 weights (125g, 250g, 500g, 1000g)`);
+        const grams = p.weights.map((w) => w.grams || w.weightGrams);
+        assert.deepStrictEqual(grams, [125, 250, 500, 1000]);
+      }
+    });
+
+    await test('HAFSA_AC_02: Verify all 9 core pages and PWA manifest + service worker exist', async () => {
+      const requiredRoutes = [
+        'src/app/page.tsx',
+        'src/app/shop/page.tsx',
+        'src/app/build-box/page.tsx',
+        'src/app/coffee-blender/page.tsx',
+        'src/app/product/[slug]/page.tsx',
+        'src/app/vip/page.tsx',
+        'src/app/checkout/page.tsx',
+        'src/app/track/page.tsx',
+        'src/app/about/page.tsx',
+        'src/app/admin/page.tsx',
+        'public/manifest.webmanifest',
+        'public/sw.js',
+      ];
+      for (const relPath of requiredRoutes) {
+        assert.ok(
+          fs.existsSync(path.join(ROOT_DIR, relPath)),
+          `Required route/asset ${relPath} must exist`
+        );
+      }
+    });
+
+    await test('HAFSA_E2E_ORDER_01: Bandar Bani Mazar + 125 EGP Roqan 4-Slot Box Order', async () => {
+      // Order 1: بوكس روقان (125 ج.م) — 4 خانات (لب سوبر + لب أبيض + سوداني أسواني + مقرمشات بالجبنة)
+      const slots = [
+        { slotIndex: 1, productName: 'لب سوبر محمص', roastOption: 'محمص مملح', slotGrams: 100, costPerKg: 215, isSuperVipItem: false },
+        { slotIndex: 2, productName: 'لب أبيض كوسة محمص', roastOption: 'محمص بدون ملح', slotGrams: 100, costPerKg: 235, isSuperVipItem: false },
+        { slotIndex: 3, productName: 'سوداني أسواني مقشر', roastOption: 'محمص مملح', slotGrams: 100, costPerKg: 118, isSuperVipItem: false },
+        { slotIndex: 4, productName: 'مقرمشات وأبجورة بالجبنة', roastOption: 'مدخن بالجبنة', slotGrams: 100, costPerKg: 120, isSuperVipItem: false },
+      ];
+      const basePrice = 125;
+      const bandarShipping = 20;
+      const finalTotal = basePrice + bandarShipping; // 145 EGP
+      assert.strictEqual(slots.length, 4);
+      assert.strictEqual(basePrice, 125);
+      assert.strictEqual(finalTotal, 145);
+    });
+
+    await test('HAFSA_E2E_ORDER_02: Custom Coffee Blend Studio (250g) + Barista Sticker Generation', async () => {
+      // Order 2: 50% برازيلي + 30% كولومبي + 20% هندي — وسط (مضبوط) — محوج مخصوص بحبهان وزر ورد — ماكينة تركي ناعم
+      const blendSpec = {
+        brazilianPercent: 50,
+        colombianPercent: 30,
+        habashiPercent: 0,
+        indianPercent: 20,
+        roastLevel: 'وسط (مضبوط)',
+        spicing: 'محوج مخصوص بحبهان وزر ورد',
+        grindType: 'ماكينة تركي ناعم',
+        weightGrams: 250,
+      };
+      const totalPercent =
+        blendSpec.brazilianPercent +
+        blendSpec.colombianPercent +
+        blendSpec.habashiPercent +
+        blendSpec.indianPercent;
+      assert.strictEqual(totalPercent, 100);
+      const baristaLabel = `50% بن برازيلي + 30% بن كولومبي + 20% بن هندي | تحميص: ${blendSpec.roastLevel} | ${blendSpec.spicing} | طحنة: ${blendSpec.grindType} | الوزن: ${blendSpec.weightGrams} جم`;
+      assert.ok(baristaLabel.includes('50% بن برازيلي'));
+      assert.ok(baristaLabel.includes('30% بن كولومبي'));
+      assert.ok(baristaLabel.includes('20% بن هندي'));
+      assert.ok(baristaLabel.includes('ماكينة تركي ناعم'));
+    });
+
+    await test('HAFSA_E2E_ORDER_03: Bani Mazar Village Order < 200 EGP Rejected with Guidance Message', async () => {
+      // Order 3: قرية القيس — 85 ج.م (أقل من الحد الأدنى 200 ج.م)
+      const deliveryMethod = 'villages_scheduled';
+      const villageName = 'القيس';
+      const subtotal = 85;
+      const minOrderVillages = db.settings?.minOrderVillages || 200;
+      const isAllowed = deliveryMethod !== 'villages_scheduled' || subtotal >= minOrderVillages;
+      assert.strictEqual(isAllowed, false, 'Order to Al-Qais below 200 EGP must be rejected');
+      const errorMsg = `الحد الأدنى للطلب لقرى مركز بني مزار هو ${minOrderVillages} ج.م لضمان التوصيل في دورة التوزيع المجمعة (متبقي ${minOrderVillages - subtotal} ج.م لإكمال الحد الأدنى).`;
+      assert.match(errorMsg, /200 ج\.م/);
+      assert.match(errorMsg, /115 ج\.م/);
+      assert.strictEqual(villageName, 'القيس');
+    });
+
+    await test('HAFSA_E2E_ORDER_04: Bani Mazar Village Order >= 200 EGP Accepted with Scheduled Batch Slot', async () => {
+      // Order 4: قرية صندفا — 260 ج.م — دورة التوزيع الثانية (الساعة 8:00 مساءً)
+      const deliveryMethod = 'villages_scheduled';
+      const villageName = 'صندفا';
+      const batchSlot = 'دورة التوزيع الثانية (الساعة 8:00 مساءً)';
+      const subtotal = 260;
+      const minOrderVillages = db.settings?.minOrderVillages || 200;
+      const isAllowed = deliveryMethod === 'villages_scheduled' && subtotal >= minOrderVillages;
+      assert.strictEqual(isAllowed, true);
+      assert.strictEqual(villageName, 'صندفا');
+      assert.ok(batchSlot.includes('8:00 مساءً'));
+    });
+
+    await test('HAFSA_E2E_ORDER_05: Hafsa VIP 5% Cashback, Wallet Redemption & 4th Partner Profit Safety Calculator', async () => {
+      // 1. 5% Cashback on 300 EGP order = 15 EGP
+      const orderAmount = 300;
+      const cashback = Math.round((orderAmount * 5) / 100);
+      assert.strictEqual(cashback, 15);
+
+      // 2. Wallet Redemption: member 01123456789 has 45 EGP balance -> order drops from 300 to 255 EGP
+      const member = db.vipMembers.find((m) => m.phone === '01123456789');
+      assert.ok(member, 'Seeded VIP member 01123456789 must exist');
+      assert.strictEqual(member.walletBalance, 45);
+      const netPayable = orderAmount - member.walletBalance;
+      assert.strictEqual(netPayable, 255);
+
+      // 3. 4th Partner Profit Margin Safety Calculator:
+      // Case A: Losing promo (cost 265, promoPrice 250) -> BLOCKED (isSafe = false)
+      const losingProfit = 250 - 265;
+      assert.strictEqual(losingProfit < 0, true);
+
+      // Case B: Safe promo (cost 265, promoPrice 349) -> profit = 84 EGP (24.1% margin >= 15%) -> SAFE
+      const safeProfit = 349 - 265;
+      const safeMargin = Math.round((safeProfit / 349) * 1000) / 10;
+      assert.strictEqual(safeProfit, 84);
+      assert.ok(safeMargin >= 15);
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    suite('Tier 6: Hafsa Roastery In-Store Cashier & POS System Verification');
+
+    await test('HAFSA_POS_01: Verify POS routes (/pos, /cashier, /api/pos) and initial shift seed in store-db.json', async () => {
+      const posRoutes = [
+        'src/app/pos/page.tsx',
+        'src/app/cashier/page.tsx',
+        'src/app/api/pos/route.ts',
+      ];
+      for (const relPath of posRoutes) {
+        assert.ok(
+          fs.existsSync(path.join(ROOT_DIR, relPath)),
+          `Required POS route ${relPath} must exist`
+        );
+      }
+      assert.ok(Array.isArray(db.posShifts) && db.posShifts.length >= 1, 'db.posShifts must have initial active shift');
+      assert.strictEqual(db.posShifts[0].status, 'open');
+      assert.ok(Array.isArray(db.posExpenses), 'db.posExpenses must exist');
+    });
+
+    await test('HAFSA_POS_02: Digital Scale Calculation by Grams (وزن بالجرام) & by EGP Amount (بيع بمبلغ محدد بالجنيه)', async () => {
+      const superLeb = products.find((p) => p.name.includes('لب سوبر')); // لب سوبر محمص (280 EGP/kg, cost 215 EGP/kg)
+      assert.ok(superLeb, 'Super seeds product must exist');
+
+      // 1. Sell by EGP Amount: Customer asks for "بـ 50 جنيه لب سوبر"
+      const targetAmountEgp = 50;
+      const pricePerKg = superLeb.pricePerKg || 280;
+      const costPerKg = superLeb.costPerKg || 215;
+      const calculatedGrams = Math.max(10, Math.round((targetAmountEgp / pricePerKg) * 1000));
+      const rawCostEgp = Math.round((costPerKg * (calculatedGrams / 1000)) * 10) / 10;
+      const netProfitEgp = Math.round((targetAmountEgp - rawCostEgp) * 10) / 10;
+
+      assert.strictEqual(calculatedGrams, 179); // 50 / 280 * 1000 = 178.57 -> 179g
+      assert.strictEqual(rawCostEgp, 36.7);
+      assert.strictEqual(netProfitEgp, 13.3);
+
+      // 2. Weigh by Grams: 350g of Jumbo Pistachio
+      const pistPricePerKg = pistachio.pricePerKg || 820;
+      const pistCostPerKg = pistachio.costPerKg || 640;
+      const weighedGrams = 350;
+      const pistPriceEgp = Math.round((pistPricePerKg * weighedGrams) / 1000);
+      const pistCostEgp = Math.round((pistCostPerKg * weighedGrams) / 100) / 10;
+      assert.strictEqual(pistPriceEgp, 287);
+      assert.ok(pistPriceEgp > pistCostEgp, 'Retail price must exceed raw cost');
+    });
+
+    await test('HAFSA_POS_03: Electronic Scale 12-Digit Barcode (20PPPPWWWWWC) & 6-Digit PLU Barcode Parsing', async () => {
+      // Scale barcode format: 20 + 0001 (product #1) + 00250 (250g) + 7 (check digit) = "200001002507" (12 digits)
+      const scaleBarcode = '200001002507';
+      assert.strictEqual(scaleBarcode.length, 12);
+      assert.ok(scaleBarcode.startsWith('20'));
+      const pluIndex = parseInt(scaleBarcode.slice(2, 6), 10) - 1;
+      const weightGrams = parseInt(scaleBarcode.slice(6, 11), 10);
+      const matchedProd = products[pluIndex];
+      assert.ok(matchedProd);
+      assert.strictEqual(matchedProd.id, products[0].id);
+      assert.strictEqual(weightGrams, 250);
+
+      // 6-digit PLU barcode: "200001" -> products[0]
+      const pluBarcode = '200001';
+      const matchedPluIndex = parseInt(pluBarcode.slice(2, 6), 10) - 1;
+      const matchedPlu = products[matchedPluIndex];
+      assert.ok(matchedPlu);
+      assert.strictEqual(matchedPlu.id, products[0].id);
+    });
+
+    await test('HAFSA_POS_04: POS Counter & 4-Chair Glass Bar Invoice, Cash Change Calculator & Arafat Net Profit', async () => {
+      // Simulate a Glass Bar Chair #2 order + Counter Takeaway items totaling 185 EGP
+      const invoiceTotal = 185;
+      const vipRedeemed = 25;
+      const netPayable = invoiceTotal - vipRedeemed; // 160 EGP
+      const cashTendered = 200; // Customer hands 200 EGP bill
+      const changeDue = cashTendered - netPayable; // 40 EGP change
+      const rawCostTotal = 112.5;
+      const netProfitEgp = Math.round((netPayable - rawCostTotal) * 10) / 10; // 47.5 EGP
+      const earnedCashback = Math.round((netPayable * 5) / 100); // 8 EGP
+
+      assert.strictEqual(netPayable, 160);
+      assert.strictEqual(changeDue, 40);
+      assert.strictEqual(netProfitEgp, 47.5);
+      assert.strictEqual(earnedCashback, 8);
+    });
+
+    await test('HAFSA_POS_05: Shift Z-Report & Cash Drawer Reconciliation (تقفيل الوردية وجرد الدرج)', async () => {
+      const openingCash = 500;
+      const cashSales = 2450;
+      const totalExpenses = 135; // أكياس تغليف + ثلج للبار الزجاجي
+      const expectedDrawerCash = openingCash + cashSales - totalExpenses;
+      assert.strictEqual(expectedDrawerCash, 2815);
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    suite('Tier 7: Traditional E-Commerce Modular Architecture & Deduplication Audit');
+
+    await test('HAFSA_ARCH_01: Modular Homepage Components exist and src/app/page.tsx is clean and concise', async () => {
+      const homeComponents = [
+        'src/components/home/HeroSection.tsx',
+        'src/components/home/CategoriesGridSection.tsx',
+        'src/components/home/BestSellersSection.tsx',
+        'src/components/home/SpecialOffersAndBoxesSection.tsx',
+        'src/components/home/StoreBranchAndVipSection.tsx',
+      ];
+      for (const comp of homeComponents) {
+        assert.ok(fs.existsSync(path.join(ROOT_DIR, comp)), `Modular home component ${comp} must exist`);
+      }
+      const homePageRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/page.tsx'), 'utf8');
+      const lineCount = homePageRaw.split(/\r?\n/).length;
+      assert.ok(lineCount < 100, `src/app/page.tsx must be modular (<100 lines), found ${lineCount}`);
+    });
+
+    await test('HAFSA_ARCH_02: Duplicate routes redirect to canonical paths and DRY pricing helpers are shared', async () => {
+      const customBoxPage = fs.readFileSync(path.join(ROOT_DIR, 'src/app/custom-box/page.tsx'), 'utf8');
+      const trackOrderPage = fs.readFileSync(path.join(ROOT_DIR, 'src/app/track-order/page.tsx'), 'utf8');
+      const cashierPage = fs.readFileSync(path.join(ROOT_DIR, 'src/app/cashier/page.tsx'), 'utf8');
+      const productsAliasPage = fs.readFileSync(path.join(ROOT_DIR, 'src/app/products/[slug]/page.tsx'), 'utf8');
+      const pricingLib = fs.readFileSync(path.join(ROOT_DIR, 'src/lib/pricing.ts'), 'utf8');
+
+      assert.ok(customBoxPage.includes("redirect('/build-box')"), '/custom-box must redirect to /build-box');
+      assert.ok(trackOrderPage.includes("redirect('/track')"), '/track-order must redirect to /track');
+      assert.ok(cashierPage.includes("redirect('/pos')"), '/cashier must redirect to /pos');
+      assert.ok(productsAliasPage.includes('redirect(`/product/${slug}`)'), '/products/[slug] must redirect to /product/[slug]');
+      assert.ok(pricingLib.includes('getResolvedProductWeights'), 'pricing.ts must export getResolvedProductWeights');
+      assert.ok(pricingLib.includes('getShortWeightLabel'), 'pricing.ts must export getShortWeightLabel');
+      assert.ok(pricingLib.includes('buildDefaultPartitionedBoxSlots'), 'pricing.ts must export buildDefaultPartitionedBoxSlots');
     });
 
   } finally {

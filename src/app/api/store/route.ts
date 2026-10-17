@@ -85,6 +85,12 @@ export async function PUT(request: NextRequest) {
     if (body.orders) {
       db.orders = body.orders;
     }
+    if (body.vipMembers) {
+      db.vipMembers = body.vipMembers;
+    }
+    if (body.promotions) {
+      db.promotions = body.promotions;
+    }
 
     await saveDbAsync(db);
     const response = NextResponse.json(db);

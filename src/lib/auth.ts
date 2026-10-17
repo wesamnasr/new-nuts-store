@@ -123,6 +123,9 @@ export function verifyAdminRequest(req: Request): { isAuthenticated: boolean; er
 export function sanitizePublicStoreData(db: DatabaseSchema): DatabaseSchema {
   const sanitizedSettings = { ...db.settings };
   delete sanitizedSettings.adminPassword;
+  delete sanitizedSettings.managerPassword;
+  delete sanitizedSettings.promoPartnerPassword;
+  delete sanitizedSettings.wesamAdminPassword;
 
   return {
     ...db,

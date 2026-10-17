@@ -1,0 +1,44 @@
+{
+  "name": "محمصة حفصة للبن والمكسرات | HAFSA ROASTERY",
+  "short_name": "محمصة حفصة",
+  "description": "فرعنا الرقمي يعمل 24 ساعة في مركز بني مزار (أمام مسجد الزراعيين) — 24 عين مكسرات وتسالي، 4 صوامع بن، خلية عسل طبيعي، وبوكسات السهرة.",
+  "start_url": "/",
+  "display": "standalone",
+  "dir": "rtl",
+  "lang": "ar-EG",
+  "background_color": "#FAF6F0",
+  "theme_color": "#231710",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/images/products/royal-mix.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/products/pistachio.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["food", "shopping"],
+  "shortcuts": [
+    {
+      "name": "صمّم بوكس السهرة",
+      "short_name": "صمّم بوكسك",
+      "url": "/build-box"
+    },
+    {
+      "name": "توليفة قهوتك",
+      "short_name": "توليفة البن",
+      "url": "/coffee-blender"
+    },
+    {
+      "name": "محفظة حفصة VIP",
+      "short_name": "نادي VIP",
+      "url": "/vip"
+    }
+  ]
+}

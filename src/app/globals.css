@@ -6,39 +6,42 @@
    GROUP 1: 3 LIGHT THEMES WITH DARK FONTS (ثيمات فاتحة بخطوط غامقة)
    ========================================================================== */
 
-/* 1. كريمي الرمال والفستق (فاتح • خط بني غامق) */
+/* 1. الهوية الرسمية لمحمصة حفصة — بني مزار (Warm Calacatta Ivory #FAF6F0 & Deep Espresso #231710) */
 :root,
-[data-theme="royal_roastery"] {
-  --brand-50: 245 235 217;
-  --brand-100: 237 221 194;
-  --brand-200: 222 198 160;
-  --brand-300: 199 165 117;
-  --brand-400: 173 128 74;
-  --brand-500: 148 98 46;
-  --brand-600: 122 74 29;
-  --brand-700: 97 55 20;
-  --brand-800: 74 39 14;
-  --brand-900: 54 26 9;
-  --brand-950: 36 16 5;
+[data-theme="royal_roastery"],
+[data-theme="levant_heritage"] {
+  --brand-50: 250 246 240;   /* #FAF6F0 Warm Calacatta Ivory (Primary BG) */
+  --brand-100: 243 236 225;  /* #F3ECE1 Soft Almond Cream (Surface / Cards) */
+  --brand-200: 230 218 200;  /* #E6DAC8 Warm Almond Border */
+  --brand-300: 214 194 166;  /* #D6C2A6 Soft Oak Tint */
+  --brand-400: 200 138 75;   /* #C88A4B Warm Honey Oak (Secondary Warm) */
+  --brand-500: 200 138 75;   /* #C88A4B Warm Honey Oak */
+  --brand-600: 166 108 52;   /* #A66C34 Deep Oak */
+  --brand-700: 112 75 46;    /* #704B2E Roasted Cinnamon */
+  --brand-800: 66 44 30;     /* #422C1E Medium Roast */
+  --brand-900: 46 30 21;     /* #2E1E15 Dark Espresso */
+  --brand-950: 35 23 16;     /* #231710 Deep Espresso Roast (Primary Brand) */
 
-  --pistachio-50: 232 245 228;
-  --pistachio-100: 205 232 197;
-  --pistachio-500: 46 125 50;
-  --pistachio-600: 35 102 39;
-  --pistachio-700: 24 77 27;
+  --pistachio-50: 238 245 240;  /* #EEF5F0 Soft Pistachio Tint */
+  --pistachio-100: 212 232 218; /* #D4E8DA Light Pistachio */
+  --pistachio-500: 59 110 76;   /* #3B6E4C Pistachio Green (Success / Fresh) */
+  --pistachio-600: 47 90 61;    /* #2F5A3D Deep Pistachio */
+  --pistachio-700: 34 68 45;    /* #22442D Forest Pistachio */
 
-  --gold-400: 245 158 11;
-  --gold-500: 217 119 6;
-  --gold-600: 180 83 9;
+  --gold-400: 226 196 92;    /* #E2C45C Light Champagne Gold */
+  --gold-500: 212 175 55;    /* #D4AF37 Champagne Backlit Gold (Accent / Gold CTA) */
+  --gold-600: 200 138 75;    /* #C88A4B Warm Honey Oak */
 
-  --surface-bg: #f5ebd9;
-  --surface-card: #fffdf9;
-  --surface-card-alpha: rgba(255, 253, 249, 0.95);
-  --surface-input: #faf3e6;
-  --text-strong: #241005;
-  --text-body: #4a2511;
-  --text-accent: #8c4a19;
-  --border-main: #dec6a0;
+  --cherry-500: 184 59 43;   /* #B83B2B Coffee Cherry Red (Promo / Urgency) */
+
+  --surface-bg: #FAF6F0;
+  --surface-card: #F3ECE1;
+  --surface-card-alpha: rgba(250, 246, 240, 0.92);
+  --surface-input: #FFFFFF;
+  --text-strong: #231710;
+  --text-body: #4E3829;
+  --text-accent: #C88A4B;
+  --border-main: #E4D7C5;
 }
 
 /* 2. أزرق سماوي ملكي (فاتح • خط كحلي غامق) */
@@ -73,40 +76,6 @@
   --text-body: #173a6a;
   --text-accent: #1d4ed8;
   --border-main: #a9ccf4;
-}
-
-/* 3. البوتيك الحرفي للمحمصة (Artisanal Roastery & Pantry — DESIGN.md) */
-[data-theme="levant_heritage"] {
-  --brand-50: 250 247 242;   /* #FAF7F2 Oat Linen (Base Canvas) */
-  --brand-100: 243 236 224;  /* #F3ECE0 Roasted Husk (Recessed Surface) */
-  --brand-200: 230 220 206;  /* #E6DCCE Subtle Borders & Rules */
-  --brand-300: 209 196 189;  /* #D1C4BD Outline Variant */
-  --brand-400: 156 139 126;  /* #9C8B7E Toasted Almond (Muted Text) */
-  --brand-500: 129 85 31;    /* #81551F Secondary Deep Caramel */
-  --brand-600: 78 69 64;     /* #4E4540 On Surface Variant */
-  --brand-700: 104 87 75;    /* #68574B Warm Earth Gray (Secondary Text) */
-  --brand-800: 55 43 35;     /* #372B23 Primary Container */
-  --brand-900: 35 26 19;     /* #231A13 Dark Roast Charcoal */
-  --brand-950: 28 19 13;     /* #1C130D Roasted Espresso (Primary Anchor) */
-
-  --pistachio-50: 244 249 245;  /* #F4F9F5 Soft Botanical Tint */
-  --pistachio-100: 188 239 196; /* #BCEFC4 Tertiary Container */
-  --pistachio-500: 78 124 89;   /* #4E7C59 Raw Pistachio Green */
-  --pistachio-600: 34 80 48;    /* #225030 Tertiary Deep Pistachio */
-  --pistachio-700: 0 33 12;     /* #00210C On Tertiary Fixed */
-
-  --gold-400: 255 196 131;   /* #FFC483 Secondary Container */
-  --gold-500: 200 147 87;    /* #C89357 Amber Caramel (Interactive Highlight) */
-  --gold-600: 129 85 31;     /* #81551F Deep Caramel */
-
-  --surface-bg: #FAF7F2;
-  --surface-card: #FFFFFF;
-  --surface-card-alpha: rgba(250, 247, 242, 0.88);
-  --surface-input: #F3ECE0;
-  --text-strong: #1C130D;
-  --text-body: #68574B;
-  --text-accent: #C89357;
-  --border-main: #E6DCCE;
 }
 
 /* ==========================================================================
@@ -268,48 +237,39 @@ body {
   color: var(--text-body);
 }
 
-/* Convert dark banners/headers on subpages & footer to light surfaces with dark text in Light Mode */
-[data-mode="light"] footer.bg-brand-950 {
-  background-color: rgb(var(--brand-100)) !important;
-  color: var(--text-strong) !important;
-  border-top: 2px solid rgb(var(--brand-300)) !important;
-}
-
-[data-mode="light"] footer.bg-brand-950 .text-white,
-[data-mode="light"] footer.bg-brand-950 .text-brand-100,
-[data-mode="light"] footer.bg-brand-950 .text-brand-200,
-[data-mode="light"] footer.bg-brand-950 .text-brand-300 {
-  color: var(--text-strong) !important;
-}
-
-[data-mode="light"] footer.bg-brand-950 .text-gold-400 {
-  color: var(--text-accent) !important;
-}
-
-/* ==========================================================================
-   ARTISANAL ROASTERY & PANTRY (DESIGN.md) SPECIFIC RULES ([data-theme="levant_heritage"])
-   ========================================================================== */
+/* Hafsa Roastery Brand Identity Rules (Warm Calacatta Ivory #FAF6F0, Almond Cream #F3ECE1, Espresso #231710) */
+body,
+[data-theme="royal_roastery"],
 [data-theme="levant_heritage"] {
   font-variant-numeric: tabular-nums;
 }
 
-[data-theme="levant_heritage"] header {
-  background-color: rgba(250, 247, 242, 0.88) !important;
-  backdrop-filter: blur(12px) !important;
-  border-bottom-color: #E6DCCE !important;
+.theme-product-card {
+  background-color: #F3ECE1;
+  border: 1px solid #E4D7C5;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
 
-[data-theme="levant_heritage"] .theme-product-card {
-  background-color: #FFFFFF !important;
-  border: 1px solid #E6DCCE !important;
-  box-shadow: none !important;
-  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease !important;
+.theme-product-card:hover {
+  transform: translateY(-3px);
+  border-color: #D4AF37;
+  box-shadow: 0 12px 28px -6px rgba(35, 23, 16, 0.12), 0 6px 12px -4px rgba(212, 175, 55, 0.18);
 }
 
-[data-theme="levant_heritage"] .theme-product-card:hover {
-  transform: translateY(-2px);
-  border-color: #C89357 !important;
-  box-shadow: 0 10px 25px -5px rgba(28, 19, 13, 0.07), 0 8px 10px -6px rgba(28, 19, 13, 0.04) !important;
+@keyframes marquee-rtl {
+  0% {
+    transform: translateX(-10%);
+  }
+  50% {
+    transform: translateX(10%);
+  }
+  100% {
+    transform: translateX(-10%);
+  }
+}
+
+.animate-promo-pulse {
+  animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* ==========================================================================
@@ -446,3 +406,127 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ==========================================================================
+   SUPERMARKET THERMAL RECEIPT (80mm Roll • Auto-Height by Products Only)
+   ========================================================================== */
+#supermarket-receipt-print-area {
+  width: 100%;
+  max-width: 74mm;
+  margin: 0 auto;
+  background: #ffffff;
+  color: #000000;
+  font-family: 'Tahoma', 'Arial', sans-serif;
+  font-size: 11px;
+  line-height: 1.25;
+  direction: rtl;
+}
+
+.sr-center {
+  text-align: center;
+}
+.sr-left {
+  text-align: left;
+}
+.sr-right {
+  text-align: right;
+}
+.sr-bold {
+  font-weight: 700;
+}
+.sr-black {
+  font-weight: 900;
+}
+.sr-divider {
+  border: 0;
+  border-top: 1px dashed #000000;
+  margin: 4px 0;
+}
+.sr-double-divider {
+  border: 0;
+  border-top: 2px solid #000000;
+  margin: 4px 0;
+}
+.sr-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px;
+  margin: 1.5px 0;
+}
+table.sr-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 3px 0;
+  font-size: 10.5px;
+}
+table.sr-table th {
+  border-top: 1px dashed #000000;
+  border-bottom: 1px dashed #000000;
+  padding: 2.5px 1px;
+  font-weight: 900;
+  text-align: right;
+  color: #000000;
+}
+table.sr-table td {
+  padding: 2.5px 1px;
+  vertical-align: top;
+  border-bottom: 1px dotted #cccccc;
+  color: #000000;
+}
+table.sr-table tr:last-child td {
+  border-bottom: none;
+}
+.sr-sub {
+  font-size: 9.5px;
+  line-height: 1.2;
+  margin-top: 1px;
+  color: #111111;
+}
+.sr-total-box {
+  border-top: 1.5px solid #000000;
+  border-bottom: 1.5px solid #000000;
+  padding: 3px 0;
+  margin: 4px 0;
+  font-size: 13px;
+  font-weight: 900;
+  color: #000000;
+}
+.sr-barcode {
+  font-family: monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-align: center;
+  margin: 4px 0 2px 0;
+  font-weight: 700;
+  color: #000000;
+}
+
+@page {
+  size: 80mm auto;
+  margin: 0mm;
+}
+
+@media print {
+  html,
+  body {
+    width: 80mm !important;
+    min-height: 0 !important;
+    height: fit-content !important;
+    max-height: fit-content !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: hidden !important;
+  }
+
+  header,
+  footer,
+  nav,
+  .no-print,
+  .print\:hidden {
+    display: none !important;
+  }
+}
+

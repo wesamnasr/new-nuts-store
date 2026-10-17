@@ -79,6 +79,7 @@ export default function ProductDetailClient({
     initialProduct.roastOptions[0] || 'محمص مملح'
   );
   const [quantity, setQuantity] = useState<number>(1);
+  const [workerNotes, setWorkerNotes] = useState<string>('');
   const [justAdded, setJustAdded] = useState<boolean>(false);
 
   // Review Form States
@@ -107,7 +108,7 @@ export default function ProductDetailClient({
 
   const handleAddToCart = () => {
     if (!product.inStock) return;
-    addToCart(product, selectedWeight, selectedRoast, quantity);
+    addToCart(product, selectedWeight, selectedRoast, quantity, workerNotes.trim() || undefined);
     setJustAdded(true);
     showToast(
       `تمت إضافة "${product.name}" إلى السلة`,
@@ -118,7 +119,7 @@ export default function ProductDetailClient({
 
   const handleFastCheckout = () => {
     if (!product.inStock) return;
-    addToCart(product, selectedWeight, selectedRoast, quantity);
+    addToCart(product, selectedWeight, selectedRoast, quantity, workerNotes.trim() || undefined);
     showToast(
       `جاري الانتقال لإتمام الطلب فورياً`,
       `${selectedWeight.label} • ${selectedRoast}`
@@ -375,9 +376,9 @@ export default function ProductDetailClient({
           {/* Interactive Weight Variant Selector */}
           <div className="space-y-1.5">
             <label className="text-[10.5px] font-extrabold text-brand-900 block">
-              اختر الوزن المطلوب:
+              1. اختر الوزن المطلوب (ثمن • ربع • نصف • كيلو):
             </label>
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               {product.weights.map((w) => {
                 const isSelected = selectedWeight.id === w.id;
                 return (
@@ -385,16 +386,16 @@ export default function ProductDetailClient({
                     key={w.id}
                     type="button"
                     onClick={() => setSelectedWeight(w)}
-                    className={`py-1.5 px-2 rounded-lg border text-center transition cursor-pointer ${
+                    className={`py-2 px-2 rounded-xl border text-center transition cursor-pointer tabular-nums ${
                       isSelected
-                        ? 'bg-brand-900 text-white border-brand-900 shadow-2xs ring-1 ring-brand-900/20'
-                        : 'bg-white text-brand-900 border-brand-200 hover:border-brand-400'
+                        ? 'bg-[#231710] text-[#FAF6F0] border-[#D4AF37] shadow-xs'
+                        : 'bg-white text-brand-900 border-brand-200 hover:border-[#C88A4B]'
                     }`}
                   >
                     <div className="text-[10.5px] sm:text-[11px] font-extrabold">{w.label}</div>
                     <div
-                      className={`text-[9.5px] sm:text-[10px] font-bold mt-0.5 ${
-                        isSelected ? 'text-gold-400' : 'text-brand-600'
+                      className={`text-[10px] font-black mt-0.5 ${
+                        isSelected ? 'text-[#D4AF37]' : 'text-brand-600'
                       }`}
                     >
                       {w.price} ج.م
@@ -417,7 +418,7 @@ export default function ProductDetailClient({
           {product.roastOptions.length > 0 && (
             <div className="space-y-1">
               <label className="text-[10.5px] font-extrabold text-brand-900 block">
-                2. درجة التحميص / النكهة:
+                2. درجة التحميص / الملح / الطحنة:
               </label>
               <div className="flex flex-wrap gap-1.5">
                 {product.roastOptions.map((roast) => {
@@ -427,9 +428,9 @@ export default function ProductDetailClient({
                       key={roast}
                       type="button"
                       onClick={() => setSelectedRoast(roast)}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition ${
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition cursor-pointer ${
                         isActive
-                          ? 'bg-amber-100 text-brand-950 border-brand-700 shadow-2xs font-extrabold'
+                          ? 'bg-[#231710] text-[#D4AF37] border-[#D4AF37] shadow-2xs font-extrabold'
                           : 'bg-white text-brand-700 border-brand-200 hover:bg-brand-50'
                       }`}
                     >
@@ -441,12 +442,30 @@ export default function ProductDetailClient({
             </div>
           )}
 
-          {/* Stock Availability */}
-          <div className="flex items-center gap-2">
+          {/* Special Worker Notes Field (ملاحظات خاصة للعامل) */}
+          <div className="space-y-1">
+            <label className="text-[10.5px] font-extrabold text-brand-900 block">
+              3. ملاحظات خاصة للعامل في فرع بني مزار (اختياري):
+            </label>
+            <input
+              type="text"
+              value={workerNotes}
+              onChange={(e) => setWorkerNotes(e.target.value)}
+              placeholder="مثال: طحنة ناعمة للكنكة النحاس / تقسيم الوزن في كيسين ربع كيلو..."
+              className="w-full bg-white border border-brand-200 focus:border-[#C88A4B] rounded-xl px-3 py-2 text-xs text-brand-950 focus:outline-none"
+            />
+          </div>
+
+          {/* Freshness & Stock Availability */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-[#231710] bg-[#D4AF37]/20 border border-[#D4AF37] px-2.5 py-0.5 rounded-full">
+              <Flame className="w-3 h-3 text-[#B83B2B]" />
+              محمص اليوم طازجاً في فرع بني مزار
+            </span>
             {product.inStock ? (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                متوفر في المخزون جاهز للشحن الفوري
+                متوفر وجاهز للتوصيل الفوري
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
@@ -778,18 +797,18 @@ export default function ProductDetailClient({
         </div>
       </section>
 
-      {/* Related Products Recommendation */}
+      {/* Smart Cross-Sell Recommendation (يكمل سهرتك مع هذا الصنف) */}
       {relatedProducts.length > 0 && (
         <section className="space-y-3 pt-2">
           <div className="border-b border-brand-200 pb-2.5">
-            <h2 className="text-sm sm:text-base font-extrabold text-brand-950">
-              منتجات مشابهة قد تنال إعجابك
+            <h2 className="font-cairo text-sm sm:text-base font-extrabold text-brand-950">
+              ✨ يكمل سهرتك مع هذا الصنف
             </h2>
             <p className="text-[10.5px] text-brand-600 mt-0.5">
-              أصناف فاخرة أخرى من نفس التصنيف بنكهات وقرمشة مميزة
+              ترشيحات ذكية من محمصة حفصة تناسب ذوقك وتكمل طلبك للشحن المجاني والكاش باك
             </p>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-3.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
             {relatedProducts.map((relProduct) => (
               <ProductCard key={relProduct.id} product={relProduct} />
             ))}
