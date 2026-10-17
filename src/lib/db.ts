@@ -35,8 +35,8 @@ export const initialDatabase: DatabaseSchema =
 function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
   const hasCanonicalCategories =
     Array.isArray(parsed.categories) &&
-    parsed.categories.some((c) => c.id === 'cat-seeds-crackers') &&
-    parsed.categories.some((c) => c.id === 'cat-coffee-bar');
+    parsed.categories.some((c) => c.id === 'cat-snacks') &&
+    parsed.categories.some((c) => c.id === 'cat-coffee-espresso');
 
   if (!hasCanonicalCategories) {
     parsed.categories = structuredClone(initialDatabase.categories);

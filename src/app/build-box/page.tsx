@@ -51,10 +51,14 @@ function BuildBoxStudioContent() {
 
   const products = useMemo(() => {
     const all = storeData?.products || [];
-    return all.filter((p) =>
-      ['cat-luxury-nuts', 'cat-seeds-crackers', 'cat-dates-yameesh', 'cat-sweets-savory'].includes(
-        p.categoryId
-      )
+    return all.filter(
+      (p) =>
+        ![
+          'cat-coffee-espresso',
+          'cat-coffee-bar',
+          'cat-mixed-boxes',
+          'cat-partitioned-boxes',
+        ].includes(p.categoryId)
     );
   }, [storeData?.products]);
 
@@ -79,14 +83,18 @@ function BuildBoxStudioContent() {
   const filteredProducts = useMemo(() => {
     if (categoryFilter === 'all') return products;
     if (categoryFilter === 'seeds') {
-      return products.filter((p) => p.categoryId === 'cat-seeds-crackers');
+      return products.filter((p) =>
+        ['cat-snacks', 'cat-seeds-crackers'].includes(p.categoryId)
+      );
     }
     if (categoryFilter === 'luxury') {
       return products.filter((p) => p.categoryId === 'cat-luxury-nuts');
     }
     if (categoryFilter === 'sweets') {
       return products.filter((p) =>
-        ['cat-dates-yameesh', 'cat-sweets-savory'].includes(p.categoryId)
+        ['cat-choco-candy', 'cat-honey-spices', 'cat-dates-yameesh', 'cat-sweets-savory'].includes(
+          p.categoryId
+        )
       );
     }
     return products;
