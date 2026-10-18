@@ -110,9 +110,25 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').catch(function() {});
-                });
+                var isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                if (isDev) {
+                  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for (var i = 0; i < registrations.length; i++) {
+                      registrations[i].unregister();
+                    }
+                  });
+                  if ('caches' in window) {
+                    caches.keys().then(function(names) {
+                      for (var i = 0; i < names.length; i++) {
+                        caches.delete(names[i]);
+                      }
+                    });
+                  }
+                } else {
+                  window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js').catch(function() {});
+                  });
+                }
               }
             `,
           }}

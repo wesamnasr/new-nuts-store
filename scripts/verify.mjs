@@ -1601,6 +1601,38 @@ async function runTestSuite() {
       assert.strictEqual(expectedDrawerCash, 2815);
     });
 
+    await test('HAFSA_POS_06: 6-Page Modular POS Cashier Architecture (Direct Sales, Boxes, Coffee Blend, Invoices Table, Shift Summary, Online Orders)', async () => {
+      const posModules = [
+        'src/components/pos/PosActiveInvoiceSidebar.tsx',
+        'src/components/pos/PosDirectSalesPage.tsx',
+        'src/components/pos/PosBoxesPage.tsx',
+        'src/components/pos/PosCoffeeBlendPage.tsx',
+        'src/components/pos/PosInvoicesTablePage.tsx',
+        'src/components/pos/PosShiftSummaryPage.tsx',
+        'src/components/pos/PosOnlineOrdersPage.tsx',
+      ];
+      for (const modPath of posModules) {
+        assert.ok(
+          fs.existsSync(path.join(ROOT_DIR, modPath)),
+          `Required POS page module ${modPath} must exist`
+        );
+      }
+      const posPageRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/pos/page.tsx'), 'utf8');
+      for (const pageId of [
+        'direct_sales',
+        'boxes',
+        'coffee_blend',
+        'invoices_table',
+        'shift_summary',
+        'online_orders',
+      ]) {
+        assert.ok(
+          posPageRaw.includes(`'${pageId}'`),
+          `src/app/pos/page.tsx must support page '${pageId}'`
+        );
+      }
+    });
+
     // ─────────────────────────────────────────────────────────────────────────
     suite('Tier 7: Traditional E-Commerce Modular Architecture & Deduplication Audit');
 
