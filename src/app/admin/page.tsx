@@ -144,12 +144,15 @@ function getDefaultTabForRole(role: AdminRole): AdminTab {
   return 'overview';
 }
 
+type SelectableLoginRole = 'super_admin' | 'supplier' | 'accountant' | 'cashier' | 'customer';
+
 const ROLE_PORTAL_META: Record<
-  'super_admin' | 'supplier' | 'accountant' | 'cashier',
+  SelectableLoginRole,
   {
     title: string;
     badge: string;
-    defaultHint: string;
+    defaultUsername: string;
+    defaultPassword: string;
     description: string;
     badgeClass: string;
   }
@@ -157,30 +160,42 @@ const ROLE_PORTAL_META: Record<
   super_admin: {
     title: '👑 الأدمن (المدير العام)',
     badge: 'صلاحية كاملة',
-    defaultHint: 'الافتراضية: admin',
-    description: 'تحكم كامل بالمتجر، الأسعار، الطلبات، التقارير، وكلمات مرور الأدوار',
+    defaultUsername: 'admin_hafsa',
+    defaultPassword: 'Hafsa@Admin2026',
+    description: 'تحكم كامل بالمتجر، الأسعار، الطلبات، التقارير، وبيانات دخول جميع الأدوار',
     badgeClass: 'bg-gold-500 text-brand-950',
   },
   supplier: {
     title: '📦 المورد (إدارة التوريد)',
     badge: 'عزل التوريد والمخزون',
-    defaultHint: 'الافتراضية: supplier',
+    defaultUsername: 'supplier_arafat',
+    defaultPassword: 'Sup#Arafat2026',
     description: 'تحديث تكاليف التوريد (شيت الجملة)، التغليف، المنشأ، وتوافر المخزون فقط',
     badgeClass: 'bg-amber-500 text-brand-950',
-  },
-  accountant: {
-    title: '📊 المحاسب (المراجعة المالية)',
-    badge: 'عزل مالي ومحاسبي',
-    defaultHint: 'الافتراضية: accountant',
-    description: 'مراجعة الإيرادات، تكلفة البضاعة المباعة، صافي الأرباح، وجرد الورديات Z-Report',
-    badgeClass: 'bg-pistachio-500 text-brand-950',
   },
   cashier: {
     title: '⚖️ الكاشير (نقطة البيع POS)',
     badge: 'عزل الكاشير والمبيعات',
-    defaultHint: 'الافتراضية: cashier',
+    defaultUsername: 'cashier_pos',
+    defaultPassword: 'Cash#Pos2026',
     description: 'شاشة الميزان والبيع المباشر وتجهيز طلبات الأونلاين دون كشف تكلفة الجملة أو صافي الربح',
     badgeClass: 'bg-sky-400 text-brand-950',
+  },
+  accountant: {
+    title: '📊 المحاسب (المراجعة المالية)',
+    badge: 'عزل مالي ومحاسبي',
+    defaultUsername: 'accountant_fin',
+    defaultPassword: 'Acc#Fin2026',
+    description: 'مراجعة الإيرادات، تكلفة البضاعة المباعة، صافي الأرباح، وجرد الورديات Z-Report',
+    badgeClass: 'bg-pistachio-500 text-brand-950',
+  },
+  customer: {
+    title: '🛒 المشتري (المستخدم الخارجي)',
+    badge: 'عزل المتجر والشراء فقط',
+    defaultUsername: 'customer_buyer',
+    defaultPassword: 'Cust#Buy2026',
+    description: 'تصفح المتجر، تكوين البوكسات وتوليفة القهوة، إتمام الشراء، وتتبع الطلب برقم الهاتف فقط',
+    badgeClass: 'bg-emerald-400 text-brand-950',
   },
 };
 
@@ -215,7 +230,7 @@ const STATUS_LABELS: Record<OrderStatus, { label: string; badgeClass: string; do
   },
   delivered: {
     label: 'تم التسليم ✅',
-    badgeClass: 'bg-pistachio-100 text-pistachio-700 border-pistachio-200',
+    badgeClass: 'bg-pistachio-100 text-pistachio-700 border-pistachio-300',
     dotClass: 'bg-pistachio-600',
   },
   cancelled: {
@@ -236,9 +251,9 @@ export default function AdminDashboardPage() {
   const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [adminToken, setAdminToken] = useState<string>('');
   const [currentRole, setCurrentRole] = useState<AdminRole>('super_admin');
-  const [selectedLoginRole, setSelectedLoginRole] = useState<
-    'super_admin' | 'supplier' | 'accountant' | 'cashier'
-  >('super_admin');
+  const [currentUsername, setCurrentUsername] = useState<string>('admin_hafsa');
+  const [selectedLoginRole, setSelectedLoginRole] = useState<SelectableLoginRole>('super_admin');
+  const [loginUsername, setLoginUsername] = useState<string>('');
   const [loginPassword, setLoginPassword] = useState<string>('');
   const [loginError, setLoginError] = useState<string>('');
   const [loginSubmitting, setLoginSubmitting] = useState<boolean>(false);
@@ -314,11 +329,17 @@ export default function AdminDashboardPage() {
     storeData?.settings.announcementText || ''
   );
 
-  // Password Change State (for all isolated roles)
+  // Username & Password Change State (for all 5 isolated roles)
+  const [newAdminUsername, setNewAdminUsername] = useState('');
   const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [newSupplierUsername, setNewSupplierUsername] = useState('');
   const [newSupplierPassword, setNewSupplierPassword] = useState('');
+  const [newCashierUsername, setNewCashierUsername] = useState('');
   const [newCashierPassword, setNewCashierPassword] = useState('');
+  const [newAccountantUsername, setNewAccountantUsername] = useState('');
   const [newAccountantPassword, setNewAccountantPassword] = useState('');
+  const [newCustomerUsername, setNewCustomerUsername] = useState('');
+  const [newCustomerPassword, setNewCustomerPassword] = useState('');
   const [showPasswordText, setShowPasswordText] = useState(false);
 
   // Sync CMS & Theme draft when storeData loads/updates
@@ -327,6 +348,11 @@ export default function AdminDashboardPage() {
       setCmsDraft(getResolvedPageContent(storeData.settings));
       setThemeDraft(getResolvedThemeConfig(storeData.settings));
       setAnnouncementDraft(storeData.settings.announcementText || '');
+      setNewAdminUsername(storeData.settings.adminUsername || 'admin_hafsa');
+      setNewSupplierUsername(storeData.settings.supplierUsername || 'supplier_arafat');
+      setNewCashierUsername(storeData.settings.cashierUsername || 'cashier_pos');
+      setNewAccountantUsername(storeData.settings.accountantUsername || 'accountant_fin');
+      setNewCustomerUsername(storeData.settings.customerUsername || 'customer_buyer');
     }
   }, [storeData?.settings]);
 
@@ -342,6 +368,8 @@ export default function AdminDashboardPage() {
       setSelectedLoginRole('accountant');
     } else if (qRole === 'cashier') {
       setSelectedLoginRole('cashier');
+    } else if (qRole === 'customer') {
+      setSelectedLoginRole('customer');
     }
   }, []);
 
@@ -368,6 +396,7 @@ export default function AdminDashboardPage() {
           if (data.authenticated && isMounted) {
             const resolvedRole: AdminRole = data.role || 'super_admin';
             setCurrentRole(resolvedRole);
+            if (data.username) setCurrentUsername(data.username);
             setActiveTab(getDefaultTabForRole(resolvedRole));
             setIsAuthenticated(true);
             const activeToken = data.token || savedToken || '';
@@ -415,27 +444,47 @@ export default function AdminDashboardPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          username: loginUsername.trim(),
           password: loginPassword,
           role: selectedLoginRole,
         }),
       });
       const data = await res.json();
-      if (res.ok && data.success && data.token) {
-        const resolvedRole: AdminRole = data.role || selectedLoginRole;
-        sessionStorage.setItem('admin_token', data.token);
-        if (resolvedRole === 'cashier' || resolvedRole === 'super_admin') {
-          sessionStorage.setItem('hafsa_pos_token_v1', data.token);
-          sessionStorage.setItem('hafsa_pos_role_v1', resolvedRole);
+      if (res.ok && data.success) {
+        if (data.role === 'customer' || selectedLoginRole === 'customer') {
+          try {
+            localStorage.setItem(
+              'customer_auth_session',
+              JSON.stringify({
+                username: data.username || loginUsername.trim(),
+                role: 'customer',
+                loggedInAt: Date.now(),
+              })
+            );
+          } catch {}
+          showToast(`مرحباً بك (${data.username || loginUsername}) في متجر المشتري 🛒`);
+          window.location.href = '/';
+          return;
         }
-        setAdminToken(data.token);
-        setCurrentRole(resolvedRole);
-        setActiveTab(getDefaultTabForRole(resolvedRole));
-        setIsAuthenticated(true);
-        setLoginPassword('');
-        await refreshStore();
-        showToast(data.message || 'تم تسجيل الدخول بنجاح');
+
+        if (data.token) {
+          const resolvedRole: AdminRole = data.role || 'super_admin';
+          sessionStorage.setItem('admin_token', data.token);
+          if (resolvedRole === 'cashier' || resolvedRole === 'super_admin') {
+            sessionStorage.setItem('hafsa_pos_token_v1', data.token);
+            sessionStorage.setItem('hafsa_pos_role_v1', resolvedRole);
+          }
+          setAdminToken(data.token);
+          setCurrentRole(resolvedRole);
+          if (data.username) setCurrentUsername(data.username);
+          setActiveTab(getDefaultTabForRole(resolvedRole));
+          setIsAuthenticated(true);
+          setLoginPassword('');
+          await refreshStore();
+          showToast(data.message || `تم تسجيل الدخول بنجاح (${data.username || resolvedRole})`);
+        }
       } else {
-        setLoginError(data.error || 'كلمة المرور غير صحيحة لهذا الدور');
+        setLoginError(data.error || 'اسم المستخدم أو كلمة المرور غير صحيحة لهذا الدور');
       }
     } catch {
       setLoginError('فشل الاتصال بالخادم. يرجى المحاولة لاحقاً');
@@ -683,17 +732,17 @@ export default function AdminDashboardPage() {
               <ShieldCheck className="w-6 h-6" />
             </div>
             <h1 className="text-xl font-black text-brand-950">
-              بوابة عزل الأدوار والصلاحيات
+              بوابة عزل الأدوار الـ 5 والصلاحيات
             </h1>
             <p className="text-[11px] text-brand-600">
-              {settings?.storeName || 'محمصة حفصة للبن والمكسرات'} — اختر الدور الوظيفي وأدخل كلمة المرور الخاصة به
+              {settings?.storeName || 'محمصة حفصة للبن والمكسرات'} — لكل دور اسم مستخدم وكلمة مرور مستقلان تماماً
             </p>
           </div>
 
-          {/* 4 Staff Roles Selector Grid */}
-          <div className="grid grid-cols-2 gap-2">
+          {/* All 5 Roles Selector Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {(
-              ['super_admin', 'supplier', 'accountant', 'cashier'] as const
+              ['super_admin', 'supplier', 'cashier', 'accountant', 'customer'] as const
             ).map((rKey) => {
               const meta = ROLE_PORTAL_META[rKey];
               const isSelected = selectedLoginRole === rKey;
@@ -705,30 +754,32 @@ export default function AdminDashboardPage() {
                     setSelectedLoginRole(rKey);
                     setLoginError('');
                   }}
-                  className={`p-3 rounded-2xl border text-right transition cursor-pointer ${
+                  className={`p-2.5 rounded-2xl border text-right transition cursor-pointer ${
+                    rKey === 'customer' ? 'col-span-2 sm:col-span-1' : ''
+                  } ${
                     isSelected
                       ? 'bg-brand-950 text-white border-gold-500 shadow-md'
                       : 'bg-brand-50/70 hover:bg-brand-100 text-brand-900 border-brand-200'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-black">{meta.title}</span>
+                    <span className="text-[11px] font-black">{meta.title}</span>
                   </div>
                   <div
-                    className={`text-[10px] mt-1 leading-snug ${
-                      isSelected ? 'text-brand-200' : 'text-brand-600'
+                    className={`text-[9.5px] mt-1 font-mono truncate ${
+                      isSelected ? 'text-gold-400' : 'text-brand-600'
                     }`}
                   >
-                    {meta.badge}
+                    User: {meta.defaultUsername}
                   </div>
                 </button>
               );
             })}
           </div>
 
-          {/* Selected Role Isolation Description */}
-          <div className="bg-brand-50 border border-brand-200 rounded-2xl p-3 text-right space-y-1">
-            <div className="flex items-center justify-between">
+          {/* Selected Role Isolation Description & Quick Credentials Card */}
+          <div className="bg-brand-50 border border-brand-200 rounded-2xl p-3 text-right space-y-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <span className="text-xs font-black text-brand-950">
                 {activeRoleMeta.title}
               </span>
@@ -741,6 +792,28 @@ export default function AdminDashboardPage() {
             <p className="text-[11px] text-brand-700 leading-relaxed">
               {activeRoleMeta.description}
             </p>
+            <div className="pt-2 border-t border-brand-200/80 flex flex-wrap items-center justify-between gap-2 text-[10.5px]">
+              <div className="font-mono text-brand-900 space-x-2 space-x-reverse">
+                <span>
+                  المستخدم: <strong className="text-brand-950">{activeRoleMeta.defaultUsername}</strong>
+                </span>
+                <span>|</span>
+                <span>
+                  المرور: <strong className="text-brand-950">{activeRoleMeta.defaultPassword}</strong>
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginUsername(activeRoleMeta.defaultUsername);
+                  setLoginPassword(activeRoleMeta.defaultPassword);
+                  setLoginError('');
+                }}
+                className="bg-brand-900 hover:bg-brand-950 text-gold-400 font-extrabold px-2.5 py-1 rounded-lg text-[10px] transition cursor-pointer"
+              >
+                تعبئة تلقائية للدور ⚡
+              </button>
+            </div>
           </div>
 
           {loginError && (
@@ -753,15 +826,29 @@ export default function AdminDashboardPage() {
           <form onSubmit={handleLogin} className="space-y-3">
             <div>
               <label className="block text-[11px] font-bold text-brand-900 mb-1">
-                كلمة مرور {activeRoleMeta.title} ({activeRoleMeta.defaultHint})
+                اسم المستخدم ({activeRoleMeta.title})
+              </label>
+              <input
+                type="text"
+                required
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+                placeholder={`مثال: ${activeRoleMeta.defaultUsername}`}
+                className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2.5 text-xs font-mono font-bold text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-900"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-brand-900 mb-1">
+                كلمة المرور ({activeRoleMeta.title})
               </label>
               <input
                 type="password"
                 required
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder={`أدخل كلمة المرور (${activeRoleMeta.defaultHint})`}
-                className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2.5 text-xs font-bold text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-900"
+                placeholder={`مثال: ${activeRoleMeta.defaultPassword}`}
+                className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2.5 text-xs font-mono font-bold text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-900"
               />
             </div>
 
@@ -771,26 +858,26 @@ export default function AdminDashboardPage() {
               className="w-full bg-brand-900 hover:bg-brand-950 text-white font-black text-xs py-2.5 rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
             >
               {loginSubmitting ? (
-                <span>جاري التحقق من صلاحية الدور...</span>
+                <span>جاري التحقق من اسم المستخدم وكلمة المرور...</span>
               ) : (
                 <>
                   <KeyRound className="w-3.5 h-3.5 text-gold-400" />
-                  <span>دخول {activeRoleMeta.title}</span>
+                  <span>تسجيل دخول {activeRoleMeta.title}</span>
                 </>
               )}
             </button>
           </form>
 
-          {/* 5th Role: External Buyer Storefront Link */}
+          {/* Direct Storefront Link */}
           <div className="pt-3 border-t border-brand-100 flex flex-wrap items-center justify-between gap-2 text-[11px]">
             <span className="font-bold text-brand-600">
-              🛒 الدور الخامس (المستخدم الخارجي / المشتري):
+              🛒 أو تصفح المتجر مباشرة كزائر:
             </span>
             <Link
               href="/"
               className="font-black text-pistachio-700 hover:text-pistachio-800 underline flex items-center gap-1"
             >
-              <span>الانتقال إلى واجهة المتجر والشراء للعملاء</span>
+              <span>الانتقال إلى واجهة المتجر والشراء</span>
               <ExternalLink className="w-3 h-3" />
             </Link>
           </div>
@@ -4208,27 +4295,46 @@ export default function AdminDashboardPage() {
                     workingHours: String(formData.get('workingHours') || settings.workingHours),
                     pageContent: cmsDraft,
                     themeConfig: themeDraft,
+                    ...(newAdminUsername.trim()
+                      ? { adminUsername: newAdminUsername.trim() }
+                      : {}),
                     ...(newAdminPassword.trim()
                       ? { adminPassword: newAdminPassword.trim() }
+                      : {}),
+                    ...(newSupplierUsername.trim()
+                      ? { supplierUsername: newSupplierUsername.trim() }
                       : {}),
                     ...(newSupplierPassword.trim()
                       ? { supplierPassword: newSupplierPassword.trim() }
                       : {}),
+                    ...(newCashierUsername.trim()
+                      ? { cashierUsername: newCashierUsername.trim() }
+                      : {}),
                     ...(newCashierPassword.trim()
                       ? { cashierPassword: newCashierPassword.trim() }
+                      : {}),
+                    ...(newAccountantUsername.trim()
+                      ? { accountantUsername: newAccountantUsername.trim() }
                       : {}),
                     ...(newAccountantPassword.trim()
                       ? { accountantPassword: newAccountantPassword.trim() }
                       : {}),
+                    ...(newCustomerUsername.trim()
+                      ? { customerUsername: newCustomerUsername.trim() }
+                      : {}),
+                    ...(newCustomerPassword.trim()
+                      ? { customerPassword: newCustomerPassword.trim() }
+                      : {}),
                   };
                   updateStorePayload(
                     { settings: updatedSettings },
-                    'تم حفظ إعدادات المتجر وكلمات مرور الأدوار بنجاح ✅'
+                    'تم حفظ إعدادات المتجر وأسماء المستخدمين وكلمات المرور للأدوار الـ 5 بنجاح ✅'
                   );
                   setNewAdminPassword('');
                   setNewSupplierPassword('');
                   setNewCashierPassword('');
                   setNewAccountantPassword('');
+                  setNewCustomerPassword('');
                 }}
                 className="lg:col-span-2 bg-white p-4 sm:p-6 rounded-2xl border border-brand-200 shadow-2xs space-y-4"
               >
@@ -4339,16 +4445,16 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
-                {/* 5-Role Isolation & Independent Passwords Section */}
+                {/* 5-Role Isolation & Independent Usernames + Passwords Section */}
                 <div className="pt-4 border-t border-brand-200 space-y-3">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div>
                       <h4 className="text-xs sm:text-sm font-black text-brand-950 flex items-center gap-1.5">
                         <ShieldCheck className="w-4 h-4 text-gold-500" />
-                        <span>إدارة عزل الأدوار الـ 5 وكلمات المرور المستقلة</span>
+                        <span>إدارة عزل الأدوار الـ 5 (اسم مستخدم وكلمة مرور مستقلة لكل دور)</span>
                       </h4>
                       <p className="text-[10.5px] text-brand-600 mt-0.5">
-                        اترك أي حقل فارغاً للإبقاء على كلمة المرور الحالية الخاصة بذلك الدور.
+                        لكل دور وظيفي اسم مستخدم (Username) وكلمة مرور (Password) مختلفان تماماً. اترك حقل كلمة المرور فارغاً للإبقاء على كلمة المرور الحالية.
                       </p>
                     </div>
                     <button
@@ -4359,68 +4465,173 @@ export default function AdminDashboardPage() {
                       {showPasswordText ? (
                         <>
                           <EyeOff className="w-3.5 h-3.5" />
-                          <span>إخفاء الكلمات</span>
+                          <span>إخفاء كلمات المرور</span>
                         </>
                       ) : (
                         <>
                           <Eye className="w-3.5 h-3.5" />
-                          <span>إظهار الكلمات</span>
+                          <span>إظهار كلمات المرور</span>
                         </>
                       )}
                     </button>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="p-3 rounded-xl bg-brand-50/70 border border-brand-200 space-y-1">
+                    {/* Role 1: Super Admin */}
+                    <div className="p-3 rounded-xl bg-brand-50/70 border border-brand-200 space-y-2">
                       <label className="block text-[11px] font-extrabold text-brand-950">
-                        1. 👑 كلمة مرور الأدمن (المدير العام)
+                        1. 👑 الأدمن (المدير العام)
                       </label>
-                      <input
-                        type={showPasswordText ? 'text' : 'password'}
-                        value={newAdminPassword}
-                        onChange={(e) => setNewAdminPassword(e.target.value)}
-                        placeholder="كلمة مرور جديدة للأدمن (الافتراضية: admin)..."
-                        className="w-full bg-white border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-bold"
-                      />
+                      <div>
+                        <span className="block text-[10px] font-bold text-brand-600 mb-0.5">
+                          اسم المستخدم (Username):
+                        </span>
+                        <input
+                          type="text"
+                          value={newAdminUsername}
+                          onChange={(e) => setNewAdminUsername(e.target.value)}
+                          placeholder="admin_hafsa"
+                          className="w-full bg-white border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
+                        />
+                      </div>
+                      <div>
+                        <span className="block text-[10px] font-bold text-brand-600 mb-0.5">
+                          كلمة المرور (الحالية: {settings.adminPassword || 'Hafsa@Admin2026'}):
+                        </span>
+                        <input
+                          type={showPasswordText ? 'text' : 'password'}
+                          value={newAdminPassword}
+                          onChange={(e) => setNewAdminPassword(e.target.value)}
+                          placeholder="كلمة مرور جديدة للأدمن..."
+                          className="w-full bg-white border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
+                        />
+                      </div>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-amber-50/60 border border-amber-200 space-y-1">
+                    {/* Role 2: Supplier */}
+                    <div className="p-3 rounded-xl bg-amber-50/60 border border-amber-200 space-y-2">
                       <label className="block text-[11px] font-extrabold text-amber-950">
-                        2. 📦 كلمة مرور المورد (بوابة التوريد والمخزون)
+                        2. 📦 المورد (بوابة التوريد والمخزون)
                       </label>
-                      <input
-                        type={showPasswordText ? 'text' : 'password'}
-                        value={newSupplierPassword}
-                        onChange={(e) => setNewSupplierPassword(e.target.value)}
-                        placeholder="كلمة مرور جديدة للمورد (الافتراضية: supplier)..."
-                        className="w-full bg-white border border-amber-200 rounded-xl px-3 py-1.5 text-xs font-bold"
-                      />
+                      <div>
+                        <span className="block text-[10px] font-bold text-amber-800 mb-0.5">
+                          اسم المستخدم (Username):
+                        </span>
+                        <input
+                          type="text"
+                          value={newSupplierUsername}
+                          onChange={(e) => setNewSupplierUsername(e.target.value)}
+                          placeholder="supplier_arafat"
+                          className="w-full bg-white border border-amber-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
+                        />
+                      </div>
+                      <div>
+                        <span className="block text-[10px] font-bold text-amber-800 mb-0.5">
+                          كلمة المرور (الحالية: {settings.supplierPassword || 'Sup#Arafat2026'}):
+                        </span>
+                        <input
+                          type={showPasswordText ? 'text' : 'password'}
+                          value={newSupplierPassword}
+                          onChange={(e) => setNewSupplierPassword(e.target.value)}
+                          placeholder="كلمة مرور جديدة للمورد..."
+                          className="w-full bg-white border border-amber-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
+                        />
+                      </div>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-sky-50/60 border border-sky-200 space-y-1">
+                    {/* Role 3: Cashier */}
+                    <div className="p-3 rounded-xl bg-sky-50/60 border border-sky-200 space-y-2">
                       <label className="block text-[11px] font-extrabold text-sky-950">
-                        3. ⚖️ كلمة مرور الكاشير (شاشة البيع والميزان POS)
+                        3. ⚖️ الكاشير (شاشة البيع والميزان POS)
                       </label>
-                      <input
-                        type={showPasswordText ? 'text' : 'password'}
-                        value={newCashierPassword}
-                        onChange={(e) => setNewCashierPassword(e.target.value)}
-                        placeholder="كلمة مرور جديدة للكاشير (الافتراضية: cashier)..."
-                        className="w-full bg-white border border-sky-200 rounded-xl px-3 py-1.5 text-xs font-bold"
-                      />
+                      <div>
+                        <span className="block text-[10px] font-bold text-sky-800 mb-0.5">
+                          اسم المستخدم (Username):
+                        </span>
+                        <input
+                          type="text"
+                          value={newCashierUsername}
+                          onChange={(e) => setNewCashierUsername(e.target.value)}
+                          placeholder="cashier_pos"
+                          className="w-full bg-white border border-sky-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
+                        />
+                      </div>
+                      <div>
+                        <span className="block text-[10px] font-bold text-sky-800 mb-0.5">
+                          كلمة المرور (الحالية: {settings.cashierPassword || 'Cash#Pos2026'}):
+                        </span>
+                        <input
+                          type={showPasswordText ? 'text' : 'password'}
+                          value={newCashierPassword}
+                          onChange={(e) => setNewCashierPassword(e.target.value)}
+                          placeholder="كلمة مرور جديدة للكاشير..."
+                          className="w-full bg-white border border-sky-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
+                        />
+                      </div>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-pistachio-50/60 border border-pistachio-200 space-y-1">
+                    {/* Role 4: Accountant */}
+                    <div className="p-3 rounded-xl bg-pistachio-50/60 border border-pistachio-200 space-y-2">
                       <label className="block text-[11px] font-extrabold text-pistachio-900">
-                        4. 📊 كلمة مرور المحاسب (المراجعة المالية والجرد)
+                        4. 📊 المحاسب (المراجعة المالية والجرد)
                       </label>
-                      <input
-                        type={showPasswordText ? 'text' : 'password'}
-                        value={newAccountantPassword}
-                        onChange={(e) => setNewAccountantPassword(e.target.value)}
-                        placeholder="كلمة مرور جديدة للمحاسب (الافتراضية: accountant)..."
-                        className="w-full bg-white border border-pistachio-200 rounded-xl px-3 py-1.5 text-xs font-bold"
-                      />
+                      <div>
+                        <span className="block text-[10px] font-bold text-pistachio-800 mb-0.5">
+                          اسم المستخدم (Username):
+                        </span>
+                        <input
+                          type="text"
+                          value={newAccountantUsername}
+                          onChange={(e) => setNewAccountantUsername(e.target.value)}
+                          placeholder="accountant_fin"
+                          className="w-full bg-white border border-pistachio-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
+                        />
+                      </div>
+                      <div>
+                        <span className="block text-[10px] font-bold text-pistachio-800 mb-0.5">
+                          كلمة المرور (الحالية: {settings.accountantPassword || 'Acc#Fin2026'}):
+                        </span>
+                        <input
+                          type={showPasswordText ? 'text' : 'password'}
+                          value={newAccountantPassword}
+                          onChange={(e) => setNewAccountantPassword(e.target.value)}
+                          placeholder="كلمة مرور جديدة للمحاسب..."
+                          className="w-full bg-white border border-pistachio-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Role 5: External Buyer / Customer */}
+                    <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200 space-y-2 sm:col-span-2">
+                      <label className="block text-[11px] font-extrabold text-emerald-950">
+                        5. 🛒 المشتري (المستخدم الخارجي للشراء من المتجر)
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <span className="block text-[10px] font-bold text-emerald-800 mb-0.5">
+                            اسم المستخدم (Username):
+                          </span>
+                          <input
+                            type="text"
+                            value={newCustomerUsername}
+                            onChange={(e) => setNewCustomerUsername(e.target.value)}
+                            placeholder="customer_buyer"
+                            className="w-full bg-white border border-emerald-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
+                          />
+                        </div>
+                        <div>
+                          <span className="block text-[10px] font-bold text-emerald-800 mb-0.5">
+                            كلمة المرور (الحالية: {settings.customerPassword || 'Cust#Buy2026'}):
+                          </span>
+                          <input
+                            type={showPasswordText ? 'text' : 'password'}
+                            value={newCustomerPassword}
+                            onChange={(e) => setNewCustomerPassword(e.target.value)}
+                            placeholder="كلمة مرور جديدة للمشتري..."
+                            className="w-full bg-white border border-emerald-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -4431,7 +4642,7 @@ export default function AdminDashboardPage() {
                   className="bg-brand-900 hover:bg-brand-950 text-white font-extrabold px-6 py-2.5 rounded-xl text-xs flex items-center gap-1.5 shadow-md"
                 >
                   <CheckCircle2 className="w-4 h-4 text-gold-400" />
-                  <span>حفظ جميع الإعدادات وكلمات مرور الأدوار</span>
+                  <span>حفظ جميع الإعدادات وأسماء المستخدمين وكلمات المرور</span>
                 </button>
               </form>
 

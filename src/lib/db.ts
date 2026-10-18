@@ -43,10 +43,16 @@ function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
     parsed.products = structuredClone(initialDatabase.products);
     parsed.settings = {
       ...structuredClone(initialDatabase.settings),
-      adminPassword: parsed.settings?.adminPassword || 'admin',
-      supplierPassword: parsed.settings?.supplierPassword || 'supplier',
-      cashierPassword: parsed.settings?.cashierPassword || 'cashier',
-      accountantPassword: parsed.settings?.accountantPassword || 'accountant',
+      adminUsername: parsed.settings?.adminUsername || 'admin_hafsa',
+      adminPassword: parsed.settings?.adminPassword || 'Hafsa@Admin2026',
+      supplierUsername: parsed.settings?.supplierUsername || 'supplier_arafat',
+      supplierPassword: parsed.settings?.supplierPassword || 'Sup#Arafat2026',
+      cashierUsername: parsed.settings?.cashierUsername || 'cashier_pos',
+      cashierPassword: parsed.settings?.cashierPassword || 'Cash#Pos2026',
+      accountantUsername: parsed.settings?.accountantUsername || 'accountant_fin',
+      accountantPassword: parsed.settings?.accountantPassword || 'Acc#Fin2026',
+      customerUsername: parsed.settings?.customerUsername || 'customer_buyer',
+      customerPassword: parsed.settings?.customerPassword || 'Cust#Buy2026',
     };
   }
 
@@ -54,10 +60,16 @@ function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
     if (parsed.settings.storeName === 'محمصة الواحة الذهبية') {
       parsed.settings = {
         ...structuredClone(initialDatabase.settings),
-        adminPassword: parsed.settings.adminPassword || 'admin',
-        supplierPassword: parsed.settings.supplierPassword || 'supplier',
-        cashierPassword: parsed.settings.cashierPassword || 'cashier',
-        accountantPassword: parsed.settings.accountantPassword || 'accountant',
+        adminUsername: parsed.settings.adminUsername || 'admin_hafsa',
+        adminPassword: parsed.settings.adminPassword || 'Hafsa@Admin2026',
+        supplierUsername: parsed.settings.supplierUsername || 'supplier_arafat',
+        supplierPassword: parsed.settings.supplierPassword || 'Sup#Arafat2026',
+        cashierUsername: parsed.settings.cashierUsername || 'cashier_pos',
+        cashierPassword: parsed.settings.cashierPassword || 'Cash#Pos2026',
+        accountantUsername: parsed.settings.accountantUsername || 'accountant_fin',
+        accountantPassword: parsed.settings.accountantPassword || 'Acc#Fin2026',
+        customerUsername: parsed.settings.customerUsername || 'customer_buyer',
+        customerPassword: parsed.settings.customerPassword || 'Cust#Buy2026',
       };
       parsed.categories = structuredClone(initialDatabase.categories);
       parsed.shippingRates = structuredClone(initialDatabase.shippingRates);
@@ -65,14 +77,35 @@ function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
     }
     parsed.settings.pageContent = getResolvedPageContent(parsed.settings);
     parsed.settings.themeConfig = getResolvedThemeConfig(parsed.settings);
+    if (!parsed.settings.adminUsername) {
+      parsed.settings.adminUsername = 'admin_hafsa';
+    }
+    if (!parsed.settings.adminPassword) {
+      parsed.settings.adminPassword = 'Hafsa@Admin2026';
+    }
+    if (!parsed.settings.supplierUsername) {
+      parsed.settings.supplierUsername = 'supplier_arafat';
+    }
     if (!parsed.settings.supplierPassword) {
-      parsed.settings.supplierPassword = 'supplier';
+      parsed.settings.supplierPassword = 'Sup#Arafat2026';
+    }
+    if (!parsed.settings.cashierUsername) {
+      parsed.settings.cashierUsername = 'cashier_pos';
     }
     if (!parsed.settings.cashierPassword) {
-      parsed.settings.cashierPassword = 'cashier';
+      parsed.settings.cashierPassword = 'Cash#Pos2026';
+    }
+    if (!parsed.settings.accountantUsername) {
+      parsed.settings.accountantUsername = 'accountant_fin';
     }
     if (!parsed.settings.accountantPassword) {
-      parsed.settings.accountantPassword = 'accountant';
+      parsed.settings.accountantPassword = 'Acc#Fin2026';
+    }
+    if (!parsed.settings.customerUsername) {
+      parsed.settings.customerUsername = 'customer_buyer';
+    }
+    if (!parsed.settings.customerPassword) {
+      parsed.settings.customerPassword = 'Cust#Buy2026';
     }
     if (typeof parsed.settings.vipCashbackPercent !== 'number') {
       parsed.settings.vipCashbackPercent = 5;

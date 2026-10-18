@@ -5,109 +5,181 @@ import {
   verifyAdminRequest,
   extractAdminToken,
   getRolePasswordFromSettings,
+  getRoleUsernameFromSettings,
   normalizeAdminRole,
 } from '@/lib/auth';
-import { AdminRole } from '@/types/store';
+import { AdminRole, SystemRole } from '@/types/store';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-  await getDbAsync();
+  const db = await getDbAsync();
   const auth = verifyAdminRequest(request);
   if (!auth.isAuthenticated) {
     return NextResponse.json({ authenticated: false, error: auth.error }, { status: 401 });
   }
   const token = extractAdminToken(request);
+  const role = auth.role || 'super_admin';
   return NextResponse.json({
     success: true,
     authenticated: true,
     token,
-    role: auth.role || 'super_admin',
+    role,
+    username: getRoleUsernameFromSettings(db.settings, role),
   });
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { password, role: requestedRole } = body as { password?: string; role?: AdminRole };
+    const {
+      username,
+      password,
+      role: requestedRole,
+    } = body as {
+      username?: string;
+      password?: string;
+      role?: SystemRole;
+    };
 
     if (!password || typeof password !== 'string' || password.trim() === '') {
-      return NextResponse.json({ error: 'كلمة المرور غير صحيحة' }, { status: 401 });
+      return NextResponse.json({ error: 'اسم المستخدم أو كلمة المرور غير صحيحة' }, { status: 401 });
+    }
+
+    const hasUsernameInput = typeof username === 'string';
+    const normalizedInputUser = hasUsernameInput ? username.trim().toLowerCase() : '';
+
+    if (hasUsernameInput && normalizedInputUser === '') {
+      return NextResponse.json({ error: 'يرجى إدخال اسم المستخدم وكلمة المرور' }, { status: 401 });
     }
 
     const db = await getDbAsync();
-    const configuredPassword = db.settings?.adminPassword || 'admin';
-    const supplierPass = db.settings?.supplierPassword || 'supplier';
-    const cashierPass = db.settings?.cashierPassword || 'cashier';
-    const accountantPass = db.settings?.accountantPassword || 'accountant';
-    const managerPass = db.settings?.managerPassword || 'manager';
-    const promoPass = db.settings?.promoPartnerPassword || 'promo';
+
+    const adminUser = (db.settings?.adminUsername || 'admin_hafsa').trim().toLowerCase();
+    const configuredPassword = db.settings?.adminPassword || 'Hafsa@Admin2026';
     const wesamPass = db.settings?.wesamAdminPassword || 'wesam';
 
-    let matchedRole: AdminRole | null = null;
+    const supplierUser = (db.settings?.supplierUsername || 'supplier_arafat').trim().toLowerCase();
+    const supplierPass = db.settings?.supplierPassword || 'Sup#Arafat2026';
+
+    const cashierUser = (db.settings?.cashierUsername || 'cashier_pos').trim().toLowerCase();
+    const cashierPass = db.settings?.cashierPassword || 'Cash#Pos2026';
+
+    const accountantUser = (db.settings?.accountantUsername || 'accountant_fin').trim().toLowerCase();
+    const accountantPass = db.settings?.accountantPassword || 'Acc#Fin2026';
+
+    const customerUser = (db.settings?.customerUsername || 'customer_buyer').trim().toLowerCase();
+    const customerPass = db.settings?.customerPassword || 'Cust#Buy2026';
+
+    const managerPass = db.settings?.managerPassword || 'manager';
+    const promoPass = db.settings?.promoPartnerPassword || 'promo';
+
+    const matchesRoleCredentials = (targetRole: SystemRole): boolean => {
+      switch (targetRole) {
+        case 'super_admin':
+        case 'admin': {
+          const userOk = !hasUsernameInput || normalizedInputUser === adminUser;
+          const passOk = password === configuredPassword || password === wesamPass;
+          return userOk && passOk;
+        }
+        case 'supplier': {
+          const userOk = !hasUsernameInput || normalizedInputUser === supplierUser;
+          const passOk = password === supplierPass;
+          return userOk && passOk;
+        }
+        case 'cashier': {
+          const userOk = !hasUsernameInput || normalizedInputUser === cashierUser;
+          const passOk = password === cashierPass;
+          return userOk && passOk;
+        }
+        case 'accountant': {
+          const userOk = !hasUsernameInput || normalizedInputUser === accountantUser;
+          const passOk = password === accountantPass;
+          return userOk && passOk;
+        }
+        case 'customer': {
+          const userOk = !hasUsernameInput || normalizedInputUser === customerUser;
+          const passOk = password === customerPass;
+          return userOk && passOk;
+        }
+        case 'store_manager': {
+          const userOk = !hasUsernameInput || normalizedInputUser === 'manager';
+          const passOk = password === managerPass;
+          return userOk && passOk;
+        }
+        case 'promo_partner': {
+          const userOk = !hasUsernameInput || normalizedInputUser === 'promo';
+          const passOk = password === promoPass;
+          return userOk && passOk;
+        }
+        default:
+          return false;
+      }
+    };
+
+    let matchedRole: SystemRole | null = null;
 
     if (requestedRole) {
-      const normalizedReq = normalizeAdminRole(requestedRole);
-      if (normalizedReq === 'super_admin') {
-        if (password === configuredPassword || password === wesamPass) {
-          matchedRole = 'super_admin';
-        }
-      } else if (normalizedReq === 'supplier') {
-        if (password === supplierPass) {
-          matchedRole = 'supplier';
-        }
-      } else if (normalizedReq === 'cashier') {
-        if (password === cashierPass) {
-          matchedRole = 'cashier';
-        }
-      } else if (normalizedReq === 'accountant') {
-        if (password === accountantPass) {
-          matchedRole = 'accountant';
-        }
-      } else if (normalizedReq === 'store_manager') {
-        if (password === managerPass) {
-          matchedRole = 'store_manager';
-        }
-      } else if (normalizedReq === 'promo_partner') {
-        if (password === promoPass) {
-          matchedRole = 'promo_partner';
-        }
+      const targetRole: SystemRole =
+        requestedRole === 'customer' ? 'customer' : normalizeAdminRole(requestedRole);
+      if (matchesRoleCredentials(targetRole)) {
+        matchedRole = targetRole;
       }
     } else {
-      if (password === configuredPassword || password === wesamPass) {
-        matchedRole = 'super_admin';
-      } else if (password === supplierPass) {
-        matchedRole = 'supplier';
-      } else if (password === cashierPass) {
-        matchedRole = 'cashier';
-      } else if (password === accountantPass) {
-        matchedRole = 'accountant';
-      } else if (password === managerPass) {
-        matchedRole = 'store_manager';
-      } else if (password === promoPass) {
-        matchedRole = 'promo_partner';
+      const candidateRoles: SystemRole[] = [
+        'super_admin',
+        'supplier',
+        'cashier',
+        'accountant',
+        'customer',
+        'store_manager',
+        'promo_partner',
+      ];
+      for (const candidate of candidateRoles) {
+        if (matchesRoleCredentials(candidate)) {
+          matchedRole = candidate;
+          break;
+        }
       }
     }
 
     if (!matchedRole) {
-      return NextResponse.json({ error: 'كلمة المرور غير صحيحة' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'اسم المستخدم أو كلمة المرور غير صحيحة لهذا الدور' },
+        { status: 401 }
+      );
     }
 
+    const matchedUsername = getRoleUsernameFromSettings(db.settings, matchedRole);
+
+    // Role 5 (External Customer): Return authenticated buyer session without granting admin_session cookie
+    if (matchedRole === 'customer') {
+      return NextResponse.json({
+        success: true,
+        authenticated: true,
+        role: 'customer',
+        username: matchedUsername,
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+      });
+    }
+
+    const adminRole: AdminRole = normalizeAdminRole(matchedRole);
     const roleSigningSecret =
-      matchedRole === 'super_admin'
+      adminRole === 'super_admin'
         ? configuredPassword
-        : getRolePasswordFromSettings(db.settings, matchedRole);
+        : getRolePasswordFromSettings(db.settings, adminRole);
 
     const session =
-      matchedRole === 'super_admin'
+      adminRole === 'super_admin'
         ? generateAdminToken(configuredPassword)
-        : generateAdminToken(roleSigningSecret, matchedRole);
+        : generateAdminToken(roleSigningSecret, adminRole);
 
     const response = NextResponse.json({
       success: true,
       token: session.token,
       expiresAt: session.expiresAt,
-      role: matchedRole,
+      role: adminRole,
+      username: matchedUsername,
     });
 
     response.cookies.set({

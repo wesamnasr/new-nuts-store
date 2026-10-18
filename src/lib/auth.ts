@@ -23,19 +23,48 @@ export const ROLE_LABELS_AR: Record<SystemRole, string> = {
 };
 
 /**
+ * Resolve the configured username for a specific role from StoreSettings.
+ */
+export function getRoleUsernameFromSettings(
+  settings: StoreSettings | undefined,
+  role?: SystemRole
+): string {
+  switch (role) {
+    case 'supplier':
+      return settings?.supplierUsername || 'supplier_arafat';
+    case 'cashier':
+      return settings?.cashierUsername || 'cashier_pos';
+    case 'accountant':
+      return settings?.accountantUsername || 'accountant_fin';
+    case 'customer':
+      return settings?.customerUsername || 'customer_buyer';
+    case 'store_manager':
+      return 'manager';
+    case 'promo_partner':
+      return 'promo';
+    case 'admin':
+    case 'super_admin':
+    default:
+      return settings?.adminUsername || 'admin_hafsa';
+  }
+}
+
+/**
  * Resolve the configured password for a specific role from StoreSettings.
  */
 export function getRolePasswordFromSettings(
   settings: StoreSettings | undefined,
-  role?: AdminRole
+  role?: SystemRole
 ): string {
   switch (role) {
     case 'supplier':
-      return settings?.supplierPassword || 'supplier';
+      return settings?.supplierPassword || 'Sup#Arafat2026';
     case 'cashier':
-      return settings?.cashierPassword || 'cashier';
+      return settings?.cashierPassword || 'Cash#Pos2026';
     case 'accountant':
-      return settings?.accountantPassword || 'accountant';
+      return settings?.accountantPassword || 'Acc#Fin2026';
+    case 'customer':
+      return settings?.customerPassword || 'Cust#Buy2026';
     case 'store_manager':
       return settings?.managerPassword || 'manager';
     case 'promo_partner':
@@ -43,7 +72,7 @@ export function getRolePasswordFromSettings(
     case 'admin':
     case 'super_admin':
     default:
-      return settings?.adminPassword || 'admin';
+      return settings?.adminPassword || 'Hafsa@Admin2026';
   }
 }
 
@@ -235,10 +264,16 @@ export function verifyAdminRequest(
  */
 export function stripAllPasswords(settings: StoreSettings): StoreSettings {
   const sanitizedSettings = { ...settings };
+  delete sanitizedSettings.adminUsername;
   delete sanitizedSettings.adminPassword;
+  delete sanitizedSettings.supplierUsername;
   delete sanitizedSettings.supplierPassword;
+  delete sanitizedSettings.cashierUsername;
   delete sanitizedSettings.cashierPassword;
+  delete sanitizedSettings.accountantUsername;
   delete sanitizedSettings.accountantPassword;
+  delete sanitizedSettings.customerUsername;
+  delete sanitizedSettings.customerPassword;
   delete sanitizedSettings.managerPassword;
   delete sanitizedSettings.promoPartnerPassword;
   delete sanitizedSettings.wesamAdminPassword;

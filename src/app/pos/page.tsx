@@ -76,6 +76,7 @@ export default function HafsaPosCashierPage() {
   const [posRole, setPosRole] = useState<AdminRole>('cashier');
   const [posToken, setPosToken] = useState<string>('');
   const [posLoginRole, setPosLoginRole] = useState<AdminRole>('cashier');
+  const [posLoginUsername, setPosLoginUsername] = useState<string>('');
   const [posLoginPassword, setPosLoginPassword] = useState<string>('');
   const [posLoginError, setPosLoginError] = useState<string>('');
 
@@ -240,13 +241,14 @@ export default function HafsaPosCashierPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          username: posLoginUsername.trim(),
           password: posLoginPassword,
           role: posLoginRole,
         }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setPosLoginError(data.error || 'كلمة مرور الكاشير غير صحيحة');
+        setPosLoginError(data.error || 'اسم المستخدم أو كلمة المرور غير صحيحة');
         return;
       }
       const role: AdminRole = data.role || posLoginRole;
@@ -260,6 +262,7 @@ export default function HafsaPosCashierPage() {
           token: data.token,
           expiresAt: data.expiresAt,
           role,
+          username: data.username,
         })
       );
       setPosToken(data.token);
@@ -267,7 +270,7 @@ export default function HafsaPosCashierPage() {
       setPosAuthenticated(true);
       setPosLoginPassword('');
       await fetchPosData(data.token);
-      showToast('⚖️ تم فتح نقطة بيع الكاشير بنجاح');
+      showToast(`⚖️ تم فتح نقطة بيع الكاشير بنجاح (${data.username || role})`);
     } catch {
       setPosLoginError('تعذر الاتصال بالخادم');
     }
@@ -788,16 +791,34 @@ export default function HafsaPosCashierPage() {
             </p>
           </div>
 
-          <form onSubmit={handlePosLogin} className="space-y-4">
+          <form onSubmit={handlePosLogin} className="space-y-3.5">
             <div>
               <label className="block text-xs font-black text-[#231710] mb-1.5">
                 اختر الدور للدخول إلى نقطة البيع:
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { id: 'cashier' as AdminRole, label: '⚖️ الكاشير', desc: 'بيع وتجهيز فقط' },
-                  { id: 'accountant' as AdminRole, label: '📊 المحاسب', desc: 'مراجعة الدرج' },
-                  { id: 'super_admin' as AdminRole, label: '👑 الأدمن', desc: 'إشراف كامل' },
+                  {
+                    id: 'cashier' as AdminRole,
+                    label: '⚖️ الكاشير',
+                    desc: 'cashier_pos',
+                    defaultUser: 'cashier_pos',
+                    defaultPass: 'Cash#Pos2026',
+                  },
+                  {
+                    id: 'accountant' as AdminRole,
+                    label: '📊 المحاسب',
+                    desc: 'accountant_fin',
+                    defaultUser: 'accountant_fin',
+                    defaultPass: 'Acc#Fin2026',
+                  },
+                  {
+                    id: 'super_admin' as AdminRole,
+                    label: '👑 الأدمن',
+                    desc: 'admin_hafsa',
+                    defaultUser: 'admin_hafsa',
+                    defaultPass: 'Hafsa@Admin2026',
+                  },
                 ].map((r) => (
                   <button
                     key={r.id}
@@ -813,29 +834,87 @@ export default function HafsaPosCashierPage() {
                     }`}
                   >
                     <div className="font-cairo font-black text-xs">{r.label}</div>
-                    <div className="text-[10px] opacity-80">{r.desc}</div>
+                    <div className="text-[10px] font-mono opacity-85">{r.desc}</div>
                   </button>
                 ))}
               </div>
             </div>
 
+            <div className="bg-white border border-[#E6DFD3] rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+              <div className="font-mono text-[#231710]">
+                {posLoginRole === 'cashier' ? (
+                  <>
+                    User: <strong>cashier_pos</strong> | Pass: <strong>Cash#Pos2026</strong>
+                  </>
+                ) : posLoginRole === 'accountant' ? (
+                  <>
+                    User: <strong>accountant_fin</strong> | Pass: <strong>Acc#Fin2026</strong>
+                  </>
+                ) : (
+                  <>
+                    User: <strong>admin_hafsa</strong> | Pass: <strong>Hafsa@Admin2026</strong>
+                  </>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (posLoginRole === 'cashier') {
+                    setPosLoginUsername('cashier_pos');
+                    setPosLoginPassword('Cash#Pos2026');
+                  } else if (posLoginRole === 'accountant') {
+                    setPosLoginUsername('accountant_fin');
+                    setPosLoginPassword('Acc#Fin2026');
+                  } else {
+                    setPosLoginUsername('admin_hafsa');
+                    setPosLoginPassword('Hafsa@Admin2026');
+                  }
+                  setPosLoginError('');
+                }}
+                className="bg-[#231710] text-[#D4AF37] font-black px-2.5 py-1 rounded-lg text-[10px] cursor-pointer"
+              >
+                تعبئة تلقائية ⚡
+              </button>
+            </div>
+
             <div>
-              <label className="block text-xs font-black text-[#231710] mb-1.5">
-                كلمة مرور {posLoginRole === 'cashier' ? 'الكاشير' : posLoginRole === 'accountant' ? 'المحاسب' : 'الأدمن'}:
+              <label className="block text-xs font-black text-[#231710] mb-1">
+                اسم المستخدم ({posLoginRole === 'cashier' ? 'الكاشير' : posLoginRole === 'accountant' ? 'المحاسب' : 'الأدمن'}):
+              </label>
+              <input
+                type="text"
+                required
+                value={posLoginUsername}
+                onChange={(e) => setPosLoginUsername(e.target.value)}
+                placeholder={
+                  posLoginRole === 'cashier'
+                    ? 'cashier_pos'
+                    : posLoginRole === 'accountant'
+                      ? 'accountant_fin'
+                      : 'admin_hafsa'
+                }
+                className="w-full bg-white border-2 border-[#E6DFD3] focus:border-[#D4AF37] rounded-xl px-3.5 py-2 text-xs font-mono font-bold outline-none"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-black text-[#231710] mb-1">
+                كلمة المرور ({posLoginRole === 'cashier' ? 'الكاشير' : posLoginRole === 'accountant' ? 'المحاسب' : 'الأدمن'}):
               </label>
               <input
                 type="password"
+                required
                 value={posLoginPassword}
                 onChange={(e) => setPosLoginPassword(e.target.value)}
                 placeholder={
                   posLoginRole === 'cashier'
-                    ? 'أدخل كلمة مرور الكاشير (الافتراضية: cashier)'
+                    ? 'Cash#Pos2026'
                     : posLoginRole === 'accountant'
-                      ? 'أدخل كلمة مرور المحاسب (الافتراضية: accountant)'
-                      : 'أدخل كلمة مرور الأدمن (الافتراضية: admin)'
+                      ? 'Acc#Fin2026'
+                      : 'Hafsa@Admin2026'
                 }
-                className="w-full bg-white border-2 border-[#E6DFD3] focus:border-[#D4AF37] rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none"
-                autoFocus
+                className="w-full bg-white border-2 border-[#E6DFD3] focus:border-[#D4AF37] rounded-xl px-3.5 py-2 text-xs font-mono font-bold outline-none"
               />
             </div>
 

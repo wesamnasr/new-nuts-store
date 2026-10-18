@@ -453,10 +453,16 @@ export interface StoreSettings {
   googleMapsUrl?: string;
   metaPixelId?: string;
   tiktokPixelId?: string;
+  adminUsername?: string;
   adminPassword?: string;
+  supplierUsername?: string;
   supplierPassword?: string;
+  cashierUsername?: string;
   cashierPassword?: string;
+  accountantUsername?: string;
   accountantPassword?: string;
+  customerUsername?: string;
+  customerPassword?: string;
   managerPassword?: string;
   promoPartnerPassword?: string;
   wesamAdminPassword?: string;
@@ -516,6 +522,7 @@ export interface AdminAuthSession {
   token: string;
   expiresAt: number;
   role?: AdminRole;
+  username?: string;
 }
 
 export interface ReviewSubmissionPayload {

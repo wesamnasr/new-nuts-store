@@ -121,37 +121,73 @@ export async function PUT(request: NextRequest) {
           }
         : getResolvedThemeConfig(db.settings);
 
+      const newAdminUsername =
+        typeof body.settings.adminUsername === 'string' && body.settings.adminUsername.trim()
+          ? body.settings.adminUsername.trim()
+          : db.settings.adminUsername || 'admin_hafsa';
+
       const newPassword =
         typeof body.settings.adminPassword === 'string' && body.settings.adminPassword.trim()
           ? body.settings.adminPassword.trim()
-          : db.settings.adminPassword || 'admin';
+          : db.settings.adminPassword || 'Hafsa@Admin2026';
+
+      const newSupplierUsername =
+        typeof body.settings.supplierUsername === 'string' && body.settings.supplierUsername.trim()
+          ? body.settings.supplierUsername.trim()
+          : db.settings.supplierUsername || 'supplier_arafat';
 
       const newSupplierPassword =
         typeof body.settings.supplierPassword === 'string' && body.settings.supplierPassword.trim()
           ? body.settings.supplierPassword.trim()
-          : db.settings.supplierPassword || 'supplier';
+          : db.settings.supplierPassword || 'Sup#Arafat2026';
+
+      const newCashierUsername =
+        typeof body.settings.cashierUsername === 'string' && body.settings.cashierUsername.trim()
+          ? body.settings.cashierUsername.trim()
+          : db.settings.cashierUsername || 'cashier_pos';
 
       const newCashierPassword =
         typeof body.settings.cashierPassword === 'string' && body.settings.cashierPassword.trim()
           ? body.settings.cashierPassword.trim()
-          : db.settings.cashierPassword || 'cashier';
+          : db.settings.cashierPassword || 'Cash#Pos2026';
+
+      const newAccountantUsername =
+        typeof body.settings.accountantUsername === 'string' && body.settings.accountantUsername.trim()
+          ? body.settings.accountantUsername.trim()
+          : db.settings.accountantUsername || 'accountant_fin';
 
       const newAccountantPassword =
         typeof body.settings.accountantPassword === 'string' && body.settings.accountantPassword.trim()
           ? body.settings.accountantPassword.trim()
-          : db.settings.accountantPassword || 'accountant';
+          : db.settings.accountantPassword || 'Acc#Fin2026';
 
-      if (newPassword !== (db.settings.adminPassword || 'admin')) {
+      const newCustomerUsername =
+        typeof body.settings.customerUsername === 'string' && body.settings.customerUsername.trim()
+          ? body.settings.customerUsername.trim()
+          : db.settings.customerUsername || 'customer_buyer';
+
+      const newCustomerPassword =
+        typeof body.settings.customerPassword === 'string' && body.settings.customerPassword.trim()
+          ? body.settings.customerPassword.trim()
+          : db.settings.customerPassword || 'Cust#Buy2026';
+
+      if (newPassword !== (db.settings.adminPassword || 'Hafsa@Admin2026')) {
         rotatedToken = generateAdminToken(newPassword).token;
       }
 
       db.settings = {
         ...db.settings,
         ...body.settings,
+        adminUsername: newAdminUsername,
         adminPassword: newPassword,
+        supplierUsername: newSupplierUsername,
         supplierPassword: newSupplierPassword,
+        cashierUsername: newCashierUsername,
         cashierPassword: newCashierPassword,
+        accountantUsername: newAccountantUsername,
         accountantPassword: newAccountantPassword,
+        customerUsername: newCustomerUsername,
+        customerPassword: newCustomerPassword,
         pageContent: incomingPageContent,
         themeConfig: incomingThemeConfig,
       };
