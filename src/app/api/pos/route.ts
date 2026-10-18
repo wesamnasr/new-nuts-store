@@ -42,11 +42,9 @@ function sanitizeShiftForCashier(shift: PosShift | null): PosShift | null {
   return copy;
 }
 
-export async function GET(request?: Request) {
+export async function GET(request: Request) {
   try {
-    const auth = request
-      ? verifyAdminRequest(request)
-      : { isAuthenticated: false, role: undefined };
+    const auth = verifyAdminRequest(request);
 
     if (auth.isAuthenticated && auth.role === 'supplier') {
       return NextResponse.json(
@@ -67,10 +65,10 @@ export async function GET(request?: Request) {
     const allOrders = db.orders || [];
     const rawRecentPosOrders = allOrders
       .filter((o) => o.orderSource === 'pos' || o.orderNumber?.startsWith('POS-'))
-      .slice(0, 40);
+      .slice(0, 200);
     const rawOnlineQueueOrders = allOrders
       .filter((o) => o.orderSource !== 'pos' && !o.orderNumber?.startsWith('POS-'))
-      .slice(0, 40);
+      .slice(0, 200);
 
     return NextResponse.json({
       activeShift: canSeeProfits ? rawActiveShift : sanitizeShiftForCashier(rawActiveShift),

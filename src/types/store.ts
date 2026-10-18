@@ -15,6 +15,12 @@ export type RoastOption =
 export type WeightGrams = 125 | 250 | 500 | 1000 | 2000 | number;
 
 export type PartitionedBoxSize = 'roqan_4' | 'family_6' | 'vip_6';
+export type PartitionedBoxTierId = PartitionedBoxSize;
+export type Promotion = FlashPromotion;
+
+export type CoffeeBlendRoastLevel = 'light' | 'medium' | 'dark' | string;
+export type CoffeeBlendSpicingOption = 'plain' | 'cardamom' | 'royal_mix' | 'extra_cardamom' | string;
+export type CoffeeGrindSize = 'turkish_fine' | 'espresso_medium' | 'french_coarse' | 'whole_bean' | string;
 
 export type CoffeeRoastLevel =
   | 'فاتح (أشقر)'
@@ -199,6 +205,7 @@ export interface CartItem {
   customBreakdown?: CustomMixItem[];
   isPartitionedBox?: boolean;
   partitionedBoxSize?: PartitionedBoxSize;
+  partitionedBoxTierId?: PartitionedBoxSize;
   partitionedSlots?: BoxSlotSelection[];
   boxPresetId?: PartitionedBoxSize;
   boxSlotsCount?: 4 | 6;
@@ -270,6 +277,7 @@ export interface VipMember {
   customerName?: string;
   phone: string;          // 01XXXXXXXXX
   walletBalance?: number; // Cashback balance in EGP
+  walletBalanceEgp?: number; // Alias for walletBalance in EGP
   pointsBalance: number;  // Cashback balance in EGP
   totalSpent: number;
   ordersCount: number;
@@ -303,6 +311,7 @@ export interface FlashPromotion {
   originalRetailPrice?: number;
   originalPrice?: number;        // Alias for originalRetailPrice
   promoPrice: number;
+  discountedPrice?: number;      // Alias for promoPrice
   netProfitEgp?: number;         // promoPrice - totalRawCost
   profitMarginPercent?: number;  // (netProfitEgp / promoPrice) * 100
   minSafeMarginPercent?: number; // Default 15%

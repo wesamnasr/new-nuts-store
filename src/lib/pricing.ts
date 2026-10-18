@@ -125,8 +125,10 @@ export interface PartitionedBoxPresetConfig {
   slotWeightGrams: number;
   gramsPerSlot: number;
   totalWeightGrams: number;
+  totalGrams?: number;
   approximateTotalGrams: number;
   basePrice: number;
+  basePriceEgp?: number;
   packagingCost: number;
   minMarginPercent: number;
   defaultSlots: Array<{
@@ -207,6 +209,32 @@ export const PARTITIONED_BOX_PRESETS: Record<PartitionedBoxSize, PartitionedBoxP
   },
 };
 
+export interface PartitionedBoxTierConfig extends PartitionedBoxPresetConfig {
+  totalGrams: number;
+  basePriceEgp: number;
+}
+
+export const PARTITIONED_BOX_TIERS: PartitionedBoxTierConfig[] = Object.values(
+  PARTITIONED_BOX_PRESETS
+).map((p) => ({
+  ...p,
+  totalGrams: p.totalWeightGrams,
+  basePriceEgp: p.basePrice,
+}));
+
+export function calculatePartitionedBoxValuation(
+  presetOrId: PartitionedBoxPresetConfig | PartitionedBoxSize,
+  slotsInput: any[]
+) {
+  const presetId = typeof presetOrId === 'string' ? presetOrId : presetOrId.id;
+  const res = calculatePartitionedBox(presetId, slotsInput);
+  return {
+    ...res,
+    finalBoxPriceEgp: res.finalPrice,
+    totalRawCostEgp: res.rawCost,
+  };
+}
+
 export interface PartitionedBoxResult {
   isValid: boolean;
   preset: PartitionedBoxPresetConfig;
@@ -220,6 +248,8 @@ export interface PartitionedBoxResult {
   netProfitEgp: number;
   profitMarginPercent: number;
   slots: BoxSlotSelection[];
+  finalBoxPriceEgp?: number;
+  totalRawCostEgp?: number;
   error?: string;
 }
 
@@ -381,6 +411,31 @@ export const COFFEE_ORIGINS = [
     badge: 'وش كثيف جداً',
   },
 ];
+
+export interface CoffeeOriginCatalogItem {
+  id: string;
+  name: string;
+  notes: string;
+  flavorNote: string;
+  pricePerKg: number;
+  costPerKg: number;
+  badge: string;
+}
+
+export const COFFEE_ORIGINS_CATALOG: CoffeeOriginCatalogItem[] = COFFEE_ORIGINS.map((o) => ({
+  ...o,
+  flavorNote: o.notes,
+}));
+
+export const COFFEE_SPICING_SURCHARGE_PER_KG: Record<
+  string,
+  { pricePerKg: number; costPerKg: number }
+> = {
+  plain: { pricePerKg: 0, costPerKg: 0 },
+  cardamom: { pricePerKg: 40, costPerKg: 25 },
+  royal_mix: { pricePerKg: 60, costPerKg: 40 },
+  extra_cardamom: { pricePerKg: 80, costPerKg: 50 },
+};
 
 export const COFFEE_ROAST_LEVELS: CoffeeRoastLevel[] = [
   'فاتح (أشقر)',
