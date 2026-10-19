@@ -77,34 +77,34 @@ function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
     }
     parsed.settings.pageContent = getResolvedPageContent(parsed.settings);
     parsed.settings.themeConfig = getResolvedThemeConfig(parsed.settings);
-    if (!parsed.settings.adminUsername) {
+    if (!parsed.settings.adminUsername || parsed.settings.adminUsername === 'admin') {
       parsed.settings.adminUsername = 'admin_hafsa';
     }
-    if (!parsed.settings.adminPassword) {
+    if (!parsed.settings.adminPassword || parsed.settings.adminPassword === 'admin') {
       parsed.settings.adminPassword = 'Hafsa@Admin2026';
     }
-    if (!parsed.settings.supplierUsername) {
+    if (!parsed.settings.supplierUsername || parsed.settings.supplierUsername === 'supplier') {
       parsed.settings.supplierUsername = 'supplier_arafat';
     }
-    if (!parsed.settings.supplierPassword) {
+    if (!parsed.settings.supplierPassword || parsed.settings.supplierPassword === 'supplier') {
       parsed.settings.supplierPassword = 'Sup#Arafat2026';
     }
-    if (!parsed.settings.cashierUsername) {
+    if (!parsed.settings.cashierUsername || parsed.settings.cashierUsername === 'cashier') {
       parsed.settings.cashierUsername = 'cashier_pos';
     }
-    if (!parsed.settings.cashierPassword) {
+    if (!parsed.settings.cashierPassword || parsed.settings.cashierPassword === 'cashier') {
       parsed.settings.cashierPassword = 'Cash#Pos2026';
     }
-    if (!parsed.settings.accountantUsername) {
+    if (!parsed.settings.accountantUsername || parsed.settings.accountantUsername === 'accountant') {
       parsed.settings.accountantUsername = 'accountant_fin';
     }
-    if (!parsed.settings.accountantPassword) {
+    if (!parsed.settings.accountantPassword || parsed.settings.accountantPassword === 'accountant') {
       parsed.settings.accountantPassword = 'Acc#Fin2026';
     }
-    if (!parsed.settings.customerUsername) {
+    if (!parsed.settings.customerUsername || parsed.settings.customerUsername === 'customer') {
       parsed.settings.customerUsername = 'customer_buyer';
     }
-    if (!parsed.settings.customerPassword) {
+    if (!parsed.settings.customerPassword || parsed.settings.customerPassword === 'customer') {
       parsed.settings.customerPassword = 'Cust#Buy2026';
     }
     if (typeof parsed.settings.vipCashbackPercent !== 'number') {
@@ -195,6 +195,7 @@ function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
 function ensureDbFile(): DatabaseSchema {
   try {
     if (getPostgresUrl() && globalThis.__newNutsMemoryDb) {
+      globalThis.__newNutsMemoryDb = normalizeDatabase(globalThis.__newNutsMemoryDb);
       return globalThis.__newNutsMemoryDb;
     }
 
@@ -302,7 +303,9 @@ export async function getDbAsync(): Promise<DatabaseSchema> {
           : (rows[0].data as DatabaseSchema);
       const hadCanonical =
         Array.isArray(parsed.categories) &&
-        parsed.categories.some((c) => c.id === 'cat-seeds-crackers');
+        parsed.categories.some((c) => c.id === 'cat-snacks') &&
+        Boolean(parsed.settings?.adminUsername) &&
+        parsed.settings?.adminPassword !== 'admin';
       const normalized = normalizeDatabase(parsed);
       globalThis.__newNutsMemoryDb = normalized;
 
