@@ -74,6 +74,11 @@ export default function PosDirectSalesPage({
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
+      if (p.showInPos !== false) {
+        // product is allowed in POS
+      } else {
+        return false;
+      }
       if (selectedCategoryId !== 'all' && p.categoryId !== selectedCategoryId) {
         return false;
       }

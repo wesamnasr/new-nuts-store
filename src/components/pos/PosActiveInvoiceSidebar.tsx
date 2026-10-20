@@ -326,9 +326,9 @@ export default function PosActiveInvoiceSidebar({
               </p>
             </div>
           ) : (
-            posItems.map((item) => (
+            posItems.map((item, idx) => (
               <div
-                key={item.cartItemId}
+                key={item.cartItemId || `pos-item-${idx}-${item.productId || 'p'}`}
                 className="bg-[#FAF6F0] rounded-xl p-2 border border-[#E6DFD3] space-y-1"
               >
                 {/* Row 1: Item Name + Delete */}
