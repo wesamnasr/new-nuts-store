@@ -26,7 +26,14 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ products: db.products });
+    const sanitizedProducts = db.products.map((p) => {
+      const copy = { ...p };
+      delete copy.costPerKg;
+      delete copy.packagingCost;
+      return copy;
+    });
+
+    return NextResponse.json({ products: sanitizedProducts });
   } catch (err: any) {
     return NextResponse.json(
       { error: 'حدث خطأ أثناء جلب التقييمات' },

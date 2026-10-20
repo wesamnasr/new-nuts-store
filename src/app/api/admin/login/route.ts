@@ -12,6 +12,21 @@ import { AdminRole, SystemRole } from '@/types/store';
 
 export const dynamic = 'force-dynamic';
 
+function getRoleRedirectPath(role: AdminRole): string {
+  switch (role) {
+    case 'supplier':
+      return '/supplier';
+    case 'cashier':
+      return '/pos';
+    case 'accountant':
+      return '/accountant';
+    case 'super_admin':
+    case 'admin':
+    default:
+      return '/admin';
+  }
+}
+
 export async function GET(request: NextRequest) {
   const db = await getDbAsync();
   const auth = verifyAdminRequest(request);
@@ -26,6 +41,7 @@ export async function GET(request: NextRequest) {
     token,
     role,
     username: getRoleUsernameFromSettings(db.settings, role),
+    redirectTo: getRoleRedirectPath(role),
   });
 }
 
@@ -55,24 +71,17 @@ export async function POST(request: NextRequest) {
 
     const db = await getDbAsync();
 
-    const adminUser = (db.settings?.adminUsername || 'admin_hafsa').trim().toLowerCase();
-    const configuredPassword = db.settings?.adminPassword || 'Hafsa@Admin2026';
-    const wesamPass = db.settings?.wesamAdminPassword || 'wesam';
+    const adminUser = getRoleUsernameFromSettings(db.settings, 'super_admin').trim().toLowerCase();
+    const configuredPassword = getRolePasswordFromSettings(db.settings, 'super_admin');
 
-    const supplierUser = (db.settings?.supplierUsername || 'supplier_arafat').trim().toLowerCase();
-    const supplierPass = db.settings?.supplierPassword || 'Sup#Arafat2026';
+    const supplierUser = getRoleUsernameFromSettings(db.settings, 'supplier').trim().toLowerCase();
+    const supplierPass = getRolePasswordFromSettings(db.settings, 'supplier');
 
-    const cashierUser = (db.settings?.cashierUsername || 'cashier_pos').trim().toLowerCase();
-    const cashierPass = db.settings?.cashierPassword || 'Cash#Pos2026';
+    const cashierUser = getRoleUsernameFromSettings(db.settings, 'cashier').trim().toLowerCase();
+    const cashierPass = getRolePasswordFromSettings(db.settings, 'cashier');
 
-    const accountantUser = (db.settings?.accountantUsername || 'accountant_fin').trim().toLowerCase();
-    const accountantPass = db.settings?.accountantPassword || 'Acc#Fin2026';
-
-    const customerUser = (db.settings?.customerUsername || 'customer_buyer').trim().toLowerCase();
-    const customerPass = db.settings?.customerPassword || 'Cust#Buy2026';
-
-    const managerPass = db.settings?.managerPassword || 'manager';
-    const promoPass = db.settings?.promoPartnerPassword || 'promo';
+    const accountantUser = getRoleUsernameFromSettings(db.settings, 'accountant').trim().toLowerCase();
+    const accountantPass = getRolePasswordFromSettings(db.settings, 'accountant');
 
     const matchesRoleCredentials = (targetRole: SystemRole): boolean => {
       switch (targetRole) {
@@ -81,71 +90,32 @@ export async function POST(request: NextRequest) {
           const userOk =
             !hasUsernameInput ||
             normalizedInputUser === adminUser ||
-            normalizedInputUser === 'admin_hafsa' ||
-            normalizedInputUser === 'admin';
-          const passOk =
-            password === configuredPassword ||
-            password === 'Hafsa@Admin2026' ||
-            password === 'admin' ||
-            password === wesamPass;
+            normalizedInputUser === 'admin_hafsa';
+          const passOk = password === configuredPassword;
           return userOk && passOk;
         }
         case 'supplier': {
           const userOk =
             !hasUsernameInput ||
             normalizedInputUser === supplierUser ||
-            normalizedInputUser === 'supplier_arafat' ||
-            normalizedInputUser === 'supplier';
-          const passOk =
-            password === supplierPass ||
-            password === 'Sup#Arafat2026' ||
-            password === 'supplier';
+            normalizedInputUser === 'supplier_arafat';
+          const passOk = password === supplierPass;
           return userOk && passOk;
         }
         case 'cashier': {
           const userOk =
             !hasUsernameInput ||
             normalizedInputUser === cashierUser ||
-            normalizedInputUser === 'cashier_pos' ||
-            normalizedInputUser === 'cashier';
-          const passOk =
-            password === cashierPass ||
-            password === 'Cash#Pos2026' ||
-            password === 'cashier';
+            normalizedInputUser === 'cashier_pos';
+          const passOk = password === cashierPass;
           return userOk && passOk;
         }
         case 'accountant': {
           const userOk =
             !hasUsernameInput ||
             normalizedInputUser === accountantUser ||
-            normalizedInputUser === 'accountant_fin' ||
-            normalizedInputUser === 'accountant';
-          const passOk =
-            password === accountantPass ||
-            password === 'Acc#Fin2026' ||
-            password === 'accountant';
-          return userOk && passOk;
-        }
-        case 'customer': {
-          const userOk =
-            !hasUsernameInput ||
-            normalizedInputUser === customerUser ||
-            normalizedInputUser === 'customer_buyer' ||
-            normalizedInputUser === 'customer';
-          const passOk =
-            password === customerPass ||
-            password === 'Cust#Buy2026' ||
-            password === 'customer';
-          return userOk && passOk;
-        }
-        case 'store_manager': {
-          const userOk = !hasUsernameInput || normalizedInputUser === 'manager';
-          const passOk = password === managerPass;
-          return userOk && passOk;
-        }
-        case 'promo_partner': {
-          const userOk = !hasUsernameInput || normalizedInputUser === 'promo';
-          const passOk = password === promoPass;
+            normalizedInputUser === 'accountant_fin';
+          const passOk = password === accountantPass;
           return userOk && passOk;
         }
         default:
@@ -156,8 +126,13 @@ export async function POST(request: NextRequest) {
     let matchedRole: SystemRole | null = null;
 
     if (requestedRole) {
-      const targetRole: SystemRole =
-        requestedRole === 'customer' ? 'customer' : normalizeAdminRole(requestedRole);
+      if ((requestedRole as string) === 'customer') {
+        return NextResponse.json(
+          { error: 'عزل الأدوار: حسابات الموظفين تقتصر على أدوار طاقم العمل الـ 4 فقط' },
+          { status: 401 }
+        );
+      }
+      const targetRole: SystemRole = normalizeAdminRole(requestedRole);
       if (matchesRoleCredentials(targetRole)) {
         matchedRole = targetRole;
       }
@@ -167,9 +142,6 @@ export async function POST(request: NextRequest) {
         'supplier',
         'cashier',
         'accountant',
-        'customer',
-        'store_manager',
-        'promo_partner',
       ];
       for (const candidate of candidateRoles) {
         if (matchesRoleCredentials(candidate)) {
@@ -181,23 +153,12 @@ export async function POST(request: NextRequest) {
 
     if (!matchedRole) {
       return NextResponse.json(
-        { error: 'اسم المستخدم أو كلمة المرور غير صحيحة لهذا الدور' },
+        { error: 'اسم المستخدم أو كلمة المرور غير صحيحة' },
         { status: 401 }
       );
     }
 
     const matchedUsername = getRoleUsernameFromSettings(db.settings, matchedRole);
-
-    // Role 5 (External Customer): Return authenticated buyer session without granting admin_session cookie
-    if (matchedRole === 'customer') {
-      return NextResponse.json({
-        success: true,
-        authenticated: true,
-        role: 'customer',
-        username: matchedUsername,
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-      });
-    }
 
     const adminRole: AdminRole = normalizeAdminRole(matchedRole);
     const roleSigningSecret =
@@ -210,12 +171,15 @@ export async function POST(request: NextRequest) {
         ? generateAdminToken(configuredPassword)
         : generateAdminToken(roleSigningSecret, adminRole);
 
+    const redirectTo = getRoleRedirectPath(adminRole);
+
     const response = NextResponse.json({
       success: true,
       token: session.token,
       expiresAt: session.expiresAt,
       role: adminRole,
       username: matchedUsername,
+      redirectTo,
     });
 
     response.cookies.set({
@@ -234,4 +198,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'حدث خطأ أثناء تسجيل الدخول' }, { status: 500 });
   }
 }
-

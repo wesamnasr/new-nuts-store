@@ -19,7 +19,6 @@ export const ROLE_LABELS_AR: Record<SystemRole, string> = {
   accountant: 'المحاسب (المراجعة المالية والورديات)',
   store_manager: 'مدير التشغيل والطلبات',
   promo_partner: 'شريك العروض والتسويق',
-  customer: 'المشتري (المستخدم الخارجي)',
 };
 
 /**
@@ -36,8 +35,6 @@ export function getRoleUsernameFromSettings(
       return settings?.cashierUsername || 'cashier_pos';
     case 'accountant':
       return settings?.accountantUsername || 'accountant_fin';
-    case 'customer':
-      return settings?.customerUsername || 'customer_buyer';
     case 'store_manager':
       return 'manager';
     case 'promo_partner':
@@ -63,8 +60,6 @@ export function getRolePasswordFromSettings(
       return settings?.cashierPassword || 'Cash#Pos2026';
     case 'accountant':
       return settings?.accountantPassword || 'Acc#Fin2026';
-    case 'customer':
-      return settings?.customerPassword || 'Cust#Buy2026';
     case 'store_manager':
       return settings?.managerPassword || 'manager';
     case 'promo_partner':
@@ -272,8 +267,8 @@ export function stripAllPasswords(settings: StoreSettings): StoreSettings {
   delete sanitizedSettings.cashierPassword;
   delete sanitizedSettings.accountantUsername;
   delete sanitizedSettings.accountantPassword;
-  delete sanitizedSettings.customerUsername;
-  delete sanitizedSettings.customerPassword;
+  delete (sanitizedSettings as any).customerUsername;
+  delete (sanitizedSettings as any).customerPassword;
   delete sanitizedSettings.managerPassword;
   delete sanitizedSettings.promoPartnerPassword;
   delete sanitizedSettings.wesamAdminPassword;
@@ -281,7 +276,7 @@ export function stripAllPasswords(settings: StoreSettings): StoreSettings {
 }
 
 /**
- * Helper to sanitize public store data for unauthenticated visitors (Role 5: External Buyer / Customer).
+ * Helper to sanitize public store data for unauthenticated visitors / public storefront.
  * Strips all role passwords, wholesale costs, net profits, POS shifts/expenses, VIP member lists, and customer orders.
  */
 export function sanitizePublicStoreData(db: DatabaseSchema): DatabaseSchema {
@@ -324,22 +319,23 @@ export function sanitizePublicStoreData(db: DatabaseSchema): DatabaseSchema {
     posShifts: [], // POS shifts hidden from public
     posExpenses: [], // POS expenses hidden from public
     vipMembers: [], // Full VIP directory hidden from public (looked up via /api/vip by phone)
+    supplyInvoices: [], // Supply invoices hidden from public
   };
 }
 
 /**
- * Role-isolated store data projection for all 5 roles:
+ * Role-isolated store data projection for the 4 staff roles and unauthenticated public storefront:
  * 1. super_admin / admin: Full access to all store data, costs, profits, orders, shifts, settings & role passwords
  * 2. supplier: Access to products (including wholesale costPerKg, packagingCost, inStock, origin) & categories; isolated from customer orders, POS shifts/expenses, VIP members, and coupons
  * 3. cashier: Access to POS products (retail prices only, NO costPerKg), active orders & POS shifts (NO wholesale rawCostTotal or netProfitEgp), and VIP lookup
  * 4. accountant: Access to all financial records (orders, products with costs & margins, POS shifts, POS expenses, coupons, VIP liabilities), but no role passwords
- * 5. customer: Public storefront data only via sanitizePublicStoreData
+ * Public/Unauthenticated: Public storefront data only via sanitizePublicStoreData
  */
 export function sanitizeStoreDataForRole(
   db: DatabaseSchema,
   role: SystemRole
 ): DatabaseSchema {
-  if (role === 'customer') {
+  if ((role as string) === 'customer') {
     return sanitizePublicStoreData(db);
   }
 
@@ -419,6 +415,7 @@ export function sanitizeStoreDataForRole(
       orders: ordersWithoutProfit,
       posShifts: shiftsWithoutProfit,
       promotions: promosWithoutProfit,
+      supplyInvoices: [],
     };
   }
 

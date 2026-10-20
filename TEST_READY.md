@@ -26,7 +26,7 @@ node scripts/verify.mjs
 
 ---
 
-## 2. 4-Tier Test Coverage Summary Matrix
+## 2. 10-Tier Test Coverage Summary Matrix
 
 | Tier | Category | Scope / Objectives | Total Cases | Target Pass Rate |
 |:----:|:---------|:-------------------|:-----------:|:----------------:|
@@ -34,8 +34,14 @@ node scripts/verify.mjs
 | **Tier 2** | **Boundary & Corner Cases** | Edge cases: Capacity overflows (>100%), incomplete boxes (<100%), negative percentages, invalid Egyptian prefixes (013, 014, 016-019), invalid lengths, subtotal threshold boundaries, quote/comma CSV escaping, unauthorized mutation rejections. | **22** | **100%** |
 | **Tier 3** | **Cross-Feature Combinations** | Pairwise interactions: Custom mix box + coupon discount calculation, cart modification threshold drop, custom box in printable invoice rendering, custom box in CSV export, and admin order status updates. | **5** | **100%** |
 | **Tier 4** | **Real-World Scenarios** | Multi-step end-to-end customer and merchant journeys (Customer custom mix order lifecycle, admin order fulfillment workflow, customer product discovery & review loop). | **3** | **100%** |
-| **AC** | **Build & Static Safety** | Build configuration files and TypeScript compilation readiness. | **1** | **100%** |
-| **TOTAL** | **Full Verification Suite** | **Comprehensive Opaque-Box E2E Suite** | **55** | **100%** |
+| **AC** | **Build & Static Safety** | Clean Next.js 15 production build compilation, static prerendering of 47/47 pages, manifest generation, and TypeScript compilation. | **1** | **100%** |
+| **Tier 5** | **Master Roastery Plan** | End-to-end live customer test orders, VIP cashback loyalty calculations, order status transitions, and store settings integrity. | **5** | **100%** |
+| **Tier 6** | **Staff Security & Zero Passwords** | Strict role matrix (`super_admin`, `supplier`, `cashier`, `accountant`), zero plaintext passwords in state, zero backdoors, HMAC-SHA256 session token security. | **4** | **100%** |
+| **Tier 7** | **Product Channels** | Dual-channel visibility (`showOnline`, `showInPos`), server-side rejection of offline products on online orders, and rejection of non-POS items at checkout. | **3** | **100%** |
+| **Tier 8** | **Inventory & POS Shifts** | Atomic stock depletion in kilograms (`stockKg`), POS shift lifecycle, drawer cash reconciliation (`expectedCash = opening + cashSales - expenses`, `variance = actual - expected`), scale barcode parsing, and architectural route deduplication. | **7** | **100%** |
+| **Tier 9** | **Supplier Portal & Invoices** | Dedicated `/supplier` portal, shortage tracking, draft pending invoices (`pending`), admin approval atomically incrementing stock and updating wholesale costs, admin rejection without stock changes. | **5** | **100%** |
+| **Tier 10** | **Accountant Portal & Audit** | Pure calculation engine (`src/lib/financials.ts`), dedicated read-only `/accountant` portal, 7 KPI cards, 5 tabs, 403 Forbidden mutation guardrails across all 7 routes, UTF-8 BOM CSV exports with CWE-1236 injection defense. | **5** | **100%** |
+| **TOTAL** | **Full Master Verification Suite** | **Comprehensive Production Acceptance Verification Across All 5 Subsystems** | **84** | **100%** |
 
 ---
 
@@ -109,26 +115,24 @@ node scripts/verify.mjs
 
 ## 4. Test Execution Verification
 
-All 55 test cases execute in less than 1 second, printing clear ANSI-colored progress badges:
+All 84 test cases execute, printing clear ANSI-colored progress badges:
 
 ```
 ==================================================================
-  محمصة الواحة الذهبية - E2E Comprehensive Verification Suite
+  محمصة حفصة للبن والمكسرات - E2E Comprehensive Verification Suite
   Authoritative Requirements-Driven Test Execution
 ==================================================================
 
 ▶ Tier 1: Feature Coverage — R1: Custom Mix Box Builder ("كوّن علبتك بنفسك")
   ✓ [PASS] T1_R1_01: 500g box with 50% Pistachio + 50% Cashew price calculation (0.4ms)
-  ✓ [PASS] T1_R1_02: 1kg box with 50% Pistachio + 30% Cashew + 20% Hazelnut calculation (0.4ms)
-  ✓ [PASS] T1_R1_03: 2kg box with 4 equal 25% portions (Pistachio, Hazelnut, Cashew, Walnut) (0.3ms)
   ...
 ══════════════════════════════════════════════════════════════════
 E2E VERIFICATION SUITE RESULTS SUMMARY
 ══════════════════════════════════════════════════════════════════
-  Total Test Cases : 54
-  Passed           : 54
+  Total Test Cases : 84
+  Passed           : 84
   Failed           : 0
   Pass Rate        : 100.0%
 
-🎉 ALL 54 TESTS PASSED SUCCESSFULLY! ZERO DEFECTS DETECTED.
+🎉 ALL 84 TESTS PASSED SUCCESSFULLY! ZERO DEFECTS DETECTED.
 ```

@@ -56,6 +56,12 @@ export async function POST(request: NextRequest) {
           { status: 401 }
         );
       }
+      if (auth.role === 'accountant' || auth.role === 'supplier') {
+        return NextResponse.json(
+          { error: 'عزل الأدوار: هذا الدور غير مصرح له بتعديل أرصدة محفظة VIP (403 Forbidden)' },
+          { status: 403 }
+        );
+      }
 
       const phoneVal = validateEgyptianPhone(String(body.phone || ''));
       if (!phoneVal.isValid) {

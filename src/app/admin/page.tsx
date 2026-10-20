@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import {
   LayoutDashboard,
@@ -39,6 +39,10 @@ import {
   Clock,
   Check,
   Filter,
+  ClipboardList,
+  FileText,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { useStore, STORE_SYNC_STORAGE_KEY } from '@/context/StoreContext';
 import {
@@ -59,6 +63,8 @@ import {
   CardStyle,
   BorderRadiusStyle,
   AdminRole,
+  SupplyInvoice,
+  SupplyInvoiceItem,
 } from '@/types/store';
 import { generateOrdersCsv } from '@/lib/csv';
 import { formatWhatsAppPhone } from '@/lib/validation';
@@ -128,6 +134,7 @@ type AdminTab =
   | 'orders'
   | 'products'
   | 'categories'
+  | 'supply_invoices'
   | 'supply_portal'
   | 'accounting_portal'
   | 'cashier_portal'
@@ -144,7 +151,7 @@ function getDefaultTabForRole(role: AdminRole): AdminTab {
   return 'overview';
 }
 
-type SelectableLoginRole = 'super_admin' | 'supplier' | 'accountant' | 'cashier' | 'customer';
+type SelectableLoginRole = 'super_admin' | 'supplier' | 'accountant' | 'cashier';
 
 const ROLE_PORTAL_META: Record<
   SelectableLoginRole,
@@ -152,7 +159,6 @@ const ROLE_PORTAL_META: Record<
     title: string;
     badge: string;
     defaultUsername: string;
-    defaultPassword: string;
     description: string;
     badgeClass: string;
   }
@@ -161,7 +167,6 @@ const ROLE_PORTAL_META: Record<
     title: '👑 الأدمن (المدير العام)',
     badge: 'صلاحية كاملة',
     defaultUsername: 'admin_hafsa',
-    defaultPassword: 'Hafsa@Admin2026',
     description: 'تحكم كامل بالمتجر، الأسعار، الطلبات، التقارير، وبيانات دخول جميع الأدوار',
     badgeClass: 'bg-gold-500 text-brand-950',
   },
@@ -169,33 +174,22 @@ const ROLE_PORTAL_META: Record<
     title: '📦 المورد (إدارة التوريد)',
     badge: 'عزل التوريد والمخزون',
     defaultUsername: 'supplier_arafat',
-    defaultPassword: 'Sup#Arafat2026',
-    description: 'تحديث تكاليف التوريد (شيت الجملة)، التغليف، المنشأ، وتوافر المخزون فقط',
+    description: 'متابعة المخزون وتقديم فواتير التوريد بانتظار موافقة الإدارة',
     badgeClass: 'bg-amber-500 text-brand-950',
   },
   cashier: {
     title: '⚖️ الكاشير (نقطة البيع POS)',
     badge: 'عزل الكاشير والمبيعات',
     defaultUsername: 'cashier_pos',
-    defaultPassword: 'Cash#Pos2026',
-    description: 'شاشة الميزان والبيع المباشر وتجهيز طلبات الأونلاين دون كشف تكلفة الجملة أو صافي الربح',
+    description: 'شاشة الميزان والبيع المباشر وتجهيز طلبات الأونلاين والورديات',
     badgeClass: 'bg-sky-400 text-brand-950',
   },
   accountant: {
     title: '📊 المحاسب (المراجعة المالية)',
     badge: 'عزل مالي ومحاسبي',
     defaultUsername: 'accountant_fin',
-    defaultPassword: 'Acc#Fin2026',
     description: 'مراجعة الإيرادات، تكلفة البضاعة المباعة، صافي الأرباح، وجرد الورديات Z-Report',
     badgeClass: 'bg-pistachio-500 text-brand-950',
-  },
-  customer: {
-    title: '🛒 المشتري (المستخدم الخارجي)',
-    badge: 'عزل المتجر والشراء فقط',
-    defaultUsername: 'customer_buyer',
-    defaultPassword: 'Cust#Buy2026',
-    description: 'تصفح المتجر، تكوين البوكسات وتوليفة القهوة، إتمام الشراء، وتتبع الطلب برقم الهاتف فقط',
-    badgeClass: 'bg-emerald-400 text-brand-950',
   },
 };
 
@@ -207,7 +201,16 @@ const ALL_ROAST_OPTIONS: RoastOption[] = [
   'تشكيلة فاخرة',
 ];
 
-const STATUS_LABELS: Record<OrderStatus, { label: string; badgeClass: string; dotClass: string }> = {
+const CANONICAL_ORDER_STATUSES: OrderStatus[] = [
+  'pending',
+  'confirmed',
+  'roasting_packing',
+  'shipped',
+  'delivered',
+  'cancelled',
+];
+
+const STATUS_LABELS: Record<string, { label: string; badgeClass: string; dotClass: string }> = {
   pending: {
     label: 'قيد المراجعة',
     badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
@@ -220,6 +223,11 @@ const STATUS_LABELS: Record<OrderStatus, { label: string; badgeClass: string; do
   },
   roasting_packing: {
     label: 'جاري التحميص والتغليف 🔥',
+    badgeClass: 'bg-orange-100 text-orange-800 border-orange-200',
+    dotClass: 'bg-orange-500',
+  },
+  preparing: {
+    label: 'جاري التحميص والتجهيز 🔥',
     badgeClass: 'bg-orange-100 text-orange-800 border-orange-200',
     dotClass: 'bg-orange-500',
   },
@@ -238,6 +246,17 @@ const STATUS_LABELS: Record<OrderStatus, { label: string; badgeClass: string; do
     badgeClass: 'bg-red-100 text-red-700 border-red-200',
     dotClass: 'bg-red-500',
   },
+};
+
+const DEFAULT_STATUS_META = {
+  label: 'قيد المراجعة',
+  badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
+  dotClass: 'bg-amber-500',
+};
+
+const getOrderStatusMeta = (status?: string) => {
+  if (!status) return DEFAULT_STATUS_META;
+  return STATUS_LABELS[status] || DEFAULT_STATUS_META;
 };
 
 export default function AdminDashboardPage() {
@@ -260,6 +279,14 @@ export default function AdminDashboardPage() {
 
   // Invoice Modal State
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<Order | null>(null);
+
+  // Supply Invoices Approval & Management State
+  const [supplyInvoices, setSupplyInvoices] = useState<SupplyInvoice[]>([]);
+  const [loadingSupplyInvoices, setLoadingSupplyInvoices] = useState<boolean>(false);
+  const [invoiceReviewNotes, setInvoiceReviewNotes] = useState<Record<string, string>>({});
+  const [actionLoadingInvoiceId, setActionLoadingInvoiceId] = useState<string | null>(null);
+  const [supplyInvoiceFilter, setSupplyInvoiceFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [expandedAdminInvoiceId, setExpandedAdminInvoiceId] = useState<string | null>(null);
 
   // Orders Filter, Sort & Search State
   const [orderSearch, setOrderSearch] = useState('');
@@ -338,8 +365,6 @@ export default function AdminDashboardPage() {
   const [newCashierPassword, setNewCashierPassword] = useState('');
   const [newAccountantUsername, setNewAccountantUsername] = useState('');
   const [newAccountantPassword, setNewAccountantPassword] = useState('');
-  const [newCustomerUsername, setNewCustomerUsername] = useState('');
-  const [newCustomerPassword, setNewCustomerPassword] = useState('');
   const [showPasswordText, setShowPasswordText] = useState(false);
 
   // Sync CMS & Theme draft when storeData loads/updates
@@ -352,7 +377,6 @@ export default function AdminDashboardPage() {
       setNewSupplierUsername(storeData.settings.supplierUsername || 'supplier_arafat');
       setNewCashierUsername(storeData.settings.cashierUsername || 'cashier_pos');
       setNewAccountantUsername(storeData.settings.accountantUsername || 'accountant_fin');
-      setNewCustomerUsername(storeData.settings.customerUsername || 'customer_buyer');
     }
   }, [storeData?.settings]);
 
@@ -368,8 +392,6 @@ export default function AdminDashboardPage() {
       setSelectedLoginRole('accountant');
     } else if (qRole === 'cashier') {
       setSelectedLoginRole('cashier');
-    } else if (qRole === 'customer') {
-      setSelectedLoginRole('customer');
     }
   }, []);
 
@@ -378,7 +400,19 @@ export default function AdminDashboardPage() {
     let isMounted = true;
     const checkSession = async () => {
       try {
-        const savedToken = sessionStorage.getItem('admin_token');
+        let savedToken = sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token');
+        if (!savedToken) {
+          try {
+            const raw = localStorage.getItem('nuts_admin_session');
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (parsed?.token && (parsed?.expiresAt ? parsed.expiresAt > Date.now() : true)) {
+                savedToken = parsed.token;
+              }
+            }
+          } catch {}
+        }
+
         const headers: Record<string, string> = {};
         if (savedToken) {
           headers['Authorization'] = `Bearer ${savedToken}`;
@@ -395,22 +429,51 @@ export default function AdminDashboardPage() {
           const data = await res.json();
           if (data.authenticated && isMounted) {
             const resolvedRole: AdminRole = data.role || 'super_admin';
+            const activeToken = data.token || savedToken || '';
+            if (activeToken) {
+              sessionStorage.setItem('admin_token', activeToken);
+              localStorage.setItem('admin_token', activeToken);
+              localStorage.setItem(
+                'nuts_admin_session',
+                JSON.stringify({
+                  token: activeToken,
+                  expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+                  role: resolvedRole,
+                  username: data.username || currentUsername,
+                })
+              );
+            }
+            if (resolvedRole === 'supplier') {
+              window.location.replace('/supplier');
+              return;
+            }
+            if (resolvedRole === 'cashier') {
+              window.location.replace('/pos');
+              return;
+            }
+            if (resolvedRole === 'accountant') {
+              window.location.replace('/accountant');
+              return;
+            }
             setCurrentRole(resolvedRole);
             if (data.username) setCurrentUsername(data.username);
             setActiveTab(getDefaultTabForRole(resolvedRole));
             setIsAuthenticated(true);
-            const activeToken = data.token || savedToken || '';
             if (activeToken) {
               setAdminToken(activeToken);
-              sessionStorage.setItem('admin_token', activeToken);
             }
             await refreshStore();
+            fetchSupplyInvoices(activeToken);
             return;
           }
         }
 
         if (isMounted) {
           sessionStorage.removeItem('admin_token');
+          sessionStorage.removeItem('hafsa_pos_token_v1');
+          sessionStorage.removeItem('hafsa_pos_role_v1');
+          localStorage.removeItem('nuts_admin_session');
+          localStorage.removeItem('admin_token');
           setAdminToken('');
           setIsAuthenticated(false);
         }
@@ -418,6 +481,10 @@ export default function AdminDashboardPage() {
         console.error('Session verification error:', e);
         if (isMounted) {
           sessionStorage.removeItem('admin_token');
+          sessionStorage.removeItem('hafsa_pos_token_v1');
+          sessionStorage.removeItem('hafsa_pos_role_v1');
+          localStorage.removeItem('nuts_admin_session');
+          localStorage.removeItem('admin_token');
           setAdminToken('');
           setIsAuthenticated(false);
         }
@@ -434,7 +501,7 @@ export default function AdminDashboardPage() {
     };
   }, [refreshStore]);
 
-  // Login handler
+  // Login handler — authenticates username & password and routes user automatically by role
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
@@ -446,34 +513,39 @@ export default function AdminDashboardPage() {
         body: JSON.stringify({
           username: loginUsername.trim(),
           password: loginPassword,
-          role: selectedLoginRole,
         }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        if (data.role === 'customer' || selectedLoginRole === 'customer') {
-          try {
-            localStorage.setItem(
-              'customer_auth_session',
-              JSON.stringify({
-                username: data.username || loginUsername.trim(),
-                role: 'customer',
-                loggedInAt: Date.now(),
-              })
-            );
-          } catch {}
-          showToast(`مرحباً بك (${data.username || loginUsername}) في متجر المشتري 🛒`);
-          window.location.href = '/';
-          return;
-        }
-
         if (data.token) {
           const resolvedRole: AdminRole = data.role || 'super_admin';
           sessionStorage.setItem('admin_token', data.token);
-          if (resolvedRole === 'cashier' || resolvedRole === 'super_admin') {
-            sessionStorage.setItem('hafsa_pos_token_v1', data.token);
-            sessionStorage.setItem('hafsa_pos_role_v1', resolvedRole);
+          localStorage.setItem('admin_token', data.token);
+          localStorage.setItem(
+            'nuts_admin_session',
+            JSON.stringify({
+              token: data.token,
+              expiresAt: data.expiresAt || Date.now() + 24 * 60 * 60 * 1000,
+              role: resolvedRole,
+              username: data.username,
+            })
+          );
+          sessionStorage.setItem('hafsa_pos_token_v1', data.token);
+          sessionStorage.setItem('hafsa_pos_role_v1', resolvedRole);
+
+          if (resolvedRole === 'supplier') {
+            window.location.href = '/supplier';
+            return;
           }
+          if (resolvedRole === 'cashier') {
+            window.location.href = '/pos';
+            return;
+          }
+          if (resolvedRole === 'accountant') {
+            window.location.href = '/accountant';
+            return;
+          }
+
           setAdminToken(data.token);
           setCurrentRole(resolvedRole);
           if (data.username) setCurrentUsername(data.username);
@@ -481,10 +553,11 @@ export default function AdminDashboardPage() {
           setIsAuthenticated(true);
           setLoginPassword('');
           await refreshStore();
+          fetchSupplyInvoices(data.token);
           showToast(data.message || `تم تسجيل الدخول بنجاح (${data.username || resolvedRole})`);
         }
       } else {
-        setLoginError(data.error || 'اسم المستخدم أو كلمة المرور غير صحيحة لهذا الدور');
+        setLoginError(data.error || 'اسم المستخدم أو كلمة المرور غير صحيحة');
       }
     } catch {
       setLoginError('فشل الاتصال بالخادم. يرجى المحاولة لاحقاً');
@@ -503,6 +576,9 @@ export default function AdminDashboardPage() {
     sessionStorage.removeItem('admin_token');
     sessionStorage.removeItem('hafsa_pos_token_v1');
     sessionStorage.removeItem('hafsa_pos_role_v1');
+    localStorage.removeItem('nuts_admin_session');
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('customer_auth_session');
     setAdminToken('');
     setIsAuthenticated(false);
     await refreshStore();
@@ -549,6 +625,76 @@ export default function AdminDashboardPage() {
     }
   };
 
+  // Fetch Supply Invoices
+  const fetchSupplyInvoices = useCallback(async (tokenOverride?: string) => {
+    const activeTok = tokenOverride || adminToken;
+    if (!activeTok) return;
+    try {
+      setLoadingSupplyInvoices(true);
+      const res = await fetch('/api/supply-invoices', {
+        headers: {
+          Authorization: `Bearer ${activeTok}`,
+          'x-admin-token': activeTok,
+        },
+        cache: 'no-store',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSupplyInvoices(Array.isArray(data.invoices) ? data.invoices : []);
+      }
+    } catch (err) {
+      console.error('Failed to load supply invoices', err);
+    } finally {
+      setLoadingSupplyInvoices(false);
+    }
+  }, [adminToken]);
+
+  // Review (Approve / Reject) Supply Invoice
+  const handleReviewSupplyInvoice = async (
+    invoiceId: string,
+    status: 'approved' | 'rejected'
+  ) => {
+    try {
+      setActionLoadingInvoiceId(invoiceId);
+      const note = invoiceReviewNotes[invoiceId] || '';
+      const res = await fetch('/api/supply-invoices', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+          'x-admin-token': adminToken,
+        },
+        body: JSON.stringify({
+          invoiceId,
+          status,
+          adminNotes: note.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(
+          status === 'approved'
+            ? 'تم اعتماد فاتورة التوريد وإضافة الكميات للمخزون وتحديث التكلفة بنجاح ✅'
+            : 'تم رفض فاتورة التوريد دون تعديل المخزون ❌'
+        );
+        await fetchSupplyInvoices();
+        await refreshStore();
+      } else {
+        showToast(data.error || 'فشل تحديث حالة الفاتورة', 'error');
+      }
+    } catch {
+      showToast('حدث خطأ أثناء معالجة الفاتورة', 'error');
+    } finally {
+      setActionLoadingInvoiceId(null);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'supply_invoices' && isAuthenticated && adminToken) {
+      fetchSupplyInvoices();
+    }
+  }, [activeTab, isAuthenticated, adminToken, fetchSupplyInvoices]);
+
   // Derived data & filters
   const orders = storeData?.orders || [];
   const products = storeData?.products || [];
@@ -557,9 +703,29 @@ export default function AdminDashboardPage() {
   const coupons = storeData?.coupons || [];
   const settings = storeData?.settings;
 
+  const effectiveSupplyInvoices = useMemo<SupplyInvoice[]>(() => {
+    if (supplyInvoices.length > 0) return supplyInvoices;
+    const storeInvoices = (storeData as any)?.supplyInvoices;
+    return Array.isArray(storeInvoices) ? (storeInvoices as SupplyInvoice[]) : [];
+  }, [supplyInvoices, storeData]);
+
+  const pendingSupplyInvoicesCount = useMemo(() => {
+    return effectiveSupplyInvoices.filter((i) => i.status === 'pending').length;
+  }, [effectiveSupplyInvoices]);
+
+  const filteredSupplyInvoices = useMemo<SupplyInvoice[]>(() => {
+    return effectiveSupplyInvoices.filter((inv) => {
+      if (supplyInvoiceFilter === 'all') return true;
+      return inv.status === supplyInvoiceFilter;
+    });
+  }, [effectiveSupplyInvoices, supplyInvoiceFilter]);
+
   const filteredOrders = useMemo(() => {
     const list = orders.filter((o) => {
-      if (orderStatusFilter !== 'all' && o.status !== orderStatusFilter) return false;
+      if (orderStatusFilter !== 'all') {
+        const normStatus = (o.status as string) === 'preparing' ? 'roasting_packing' : o.status;
+        if (normStatus !== orderStatusFilter) return false;
+      }
       if (orderPaymentFilter !== 'all' && o.paymentMethod !== orderPaymentFilter) return false;
       if (orderGovernorateFilter !== 'all' && o.governorate !== orderGovernorateFilter) return false;
       if (orderSearch.trim()) {
@@ -723,97 +889,19 @@ export default function AdminDashboardPage() {
   }
 
   if (!isAuthenticated) {
-    const activeRoleMeta = ROLE_PORTAL_META[selectedLoginRole];
     return (
       <div className="min-h-screen bg-gradient-to-br from-brand-950 via-brand-900 to-brand-950 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-lg bg-white rounded-3xl p-6 border border-gold-500/30 shadow-2xl space-y-4">
-          <div className="text-center space-y-1.5">
-            <div className="w-12 h-12 bg-brand-950 text-gold-400 rounded-2xl mx-auto flex items-center justify-center shadow-md border border-gold-500/30">
-              <ShieldCheck className="w-6 h-6" />
+        <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 border border-gold-500/30 shadow-2xl space-y-5">
+          <div className="text-center space-y-2">
+            <div className="w-14 h-14 bg-brand-950 text-gold-400 rounded-2xl mx-auto flex items-center justify-center shadow-md border border-gold-500/30">
+              <ShieldCheck className="w-7 h-7" />
             </div>
             <h1 className="text-xl font-black text-brand-950">
-              بوابة عزل الأدوار الـ 5 والصلاحيات
+              تسجيل دخول طاقم العمل
             </h1>
-            <p className="text-[11px] text-brand-600">
-              {settings?.storeName || 'محمصة حفصة للبن والمكسرات'} — لكل دور اسم مستخدم وكلمة مرور مستقلان تماماً
+            <p className="text-xs text-brand-600 leading-relaxed">
+              {settings?.storeName || 'محمصة حفصة للبن والمكسرات'} — أدخل اسم المستخدم وكلمة المرور ليتم تحويلك تلقائياً إلى القسم المسموح لك حسب تخصصك
             </p>
-          </div>
-
-          {/* All 5 Roles Selector Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {(
-              ['super_admin', 'supplier', 'cashier', 'accountant', 'customer'] as const
-            ).map((rKey) => {
-              const meta = ROLE_PORTAL_META[rKey];
-              const isSelected = selectedLoginRole === rKey;
-              return (
-                <button
-                  key={rKey}
-                  type="button"
-                  onClick={() => {
-                    setSelectedLoginRole(rKey);
-                    setLoginError('');
-                  }}
-                  className={`p-2.5 rounded-2xl border text-right transition cursor-pointer ${
-                    rKey === 'customer' ? 'col-span-2 sm:col-span-1' : ''
-                  } ${
-                    isSelected
-                      ? 'bg-brand-950 text-white border-gold-500 shadow-md'
-                      : 'bg-brand-50/70 hover:bg-brand-100 text-brand-900 border-brand-200'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-[11px] font-black">{meta.title}</span>
-                  </div>
-                  <div
-                    className={`text-[9.5px] mt-1 font-mono truncate ${
-                      isSelected ? 'text-gold-400' : 'text-brand-600'
-                    }`}
-                  >
-                    User: {meta.defaultUsername}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Selected Role Isolation Description & Quick Credentials Card */}
-          <div className="bg-brand-50 border border-brand-200 rounded-2xl p-3 text-right space-y-2">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <span className="text-xs font-black text-brand-950">
-                {activeRoleMeta.title}
-              </span>
-              <span
-                className={`text-[10px] font-black px-2 py-0.5 rounded-full ${activeRoleMeta.badgeClass}`}
-              >
-                {activeRoleMeta.badge}
-              </span>
-            </div>
-            <p className="text-[11px] text-brand-700 leading-relaxed">
-              {activeRoleMeta.description}
-            </p>
-            <div className="pt-2 border-t border-brand-200/80 flex flex-wrap items-center justify-between gap-2 text-[10.5px]">
-              <div className="font-mono text-brand-900 space-x-2 space-x-reverse">
-                <span>
-                  المستخدم: <strong className="text-brand-950">{activeRoleMeta.defaultUsername}</strong>
-                </span>
-                <span>|</span>
-                <span>
-                  المرور: <strong className="text-brand-950">{activeRoleMeta.defaultPassword}</strong>
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setLoginUsername(activeRoleMeta.defaultUsername);
-                  setLoginPassword(activeRoleMeta.defaultPassword);
-                  setLoginError('');
-                }}
-                className="bg-brand-900 hover:bg-brand-950 text-gold-400 font-extrabold px-2.5 py-1 rounded-lg text-[10px] transition cursor-pointer"
-              >
-                تعبئة تلقائية للدور ⚡
-              </button>
-            </div>
           </div>
 
           {loginError && (
@@ -823,46 +911,46 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-3">
+          <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-[11px] font-bold text-brand-900 mb-1">
-                اسم المستخدم ({activeRoleMeta.title})
+              <label className="block text-xs font-bold text-brand-900 mb-1.5">
+                اسم المستخدم
               </label>
               <input
                 type="text"
                 required
                 value={loginUsername}
                 onChange={(e) => setLoginUsername(e.target.value)}
-                placeholder={`مثال: ${activeRoleMeta.defaultUsername}`}
-                className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2.5 text-xs font-mono font-bold text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-900"
+                placeholder="أدخل اسم المستخدم"
+                className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-900"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-brand-900 mb-1">
-                كلمة المرور ({activeRoleMeta.title})
+              <label className="block text-xs font-bold text-brand-900 mb-1.5">
+                كلمة المرور
               </label>
               <input
                 type="password"
                 required
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder={`مثال: ${activeRoleMeta.defaultPassword}`}
-                className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2.5 text-xs font-mono font-bold text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-900"
+                placeholder="••••••••"
+                className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-900"
               />
             </div>
 
             <button
               type="submit"
               disabled={loginSubmitting}
-              className="w-full bg-brand-900 hover:bg-brand-950 text-white font-black text-xs py-2.5 rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              className="w-full bg-brand-900 hover:bg-brand-950 text-white font-black text-xs py-3 rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
             >
               {loginSubmitting ? (
-                <span>جاري التحقق من اسم المستخدم وكلمة المرور...</span>
+                <span>جاري التحقق والتوجيه تلقائياً...</span>
               ) : (
                 <>
-                  <KeyRound className="w-3.5 h-3.5 text-gold-400" />
-                  <span>تسجيل دخول {activeRoleMeta.title}</span>
+                  <KeyRound className="w-4 h-4 text-gold-400" />
+                  <span>تسجيل الدخول</span>
                 </>
               )}
             </button>
@@ -1083,6 +1171,10 @@ export default function AdminDashboardPage() {
       ],
       inStock: true,
       featured: true,
+      stockKg: 50,
+      packagingCost: 5,
+      showOnline: true,
+      showInPos: true,
       rating: 5.0,
       reviewsCount: 1,
       reviews: [],
@@ -1107,6 +1199,12 @@ export default function AdminDashboardPage() {
         cleanedWeights.length > 0
           ? cleanedWeights
           : [{ id: 'w-250', label: '250 جم', weightGrams: 250, price: 180 }],
+      stockKg:
+        typeof editingProduct.stockKg === 'number' && !isNaN(editingProduct.stockKg)
+          ? editingProduct.stockKg
+          : 50,
+      showOnline: editingProduct.showOnline !== false,
+      showInPos: editingProduct.showInPos !== false,
     };
 
     if (isCreatingProduct) {
@@ -1141,6 +1239,20 @@ export default function AdminDashboardPage() {
   const handleToggleProductFeatured = async (prodId: string) => {
     const updated = products.map((p) => (p.id === prodId ? { ...p, featured: !p.featured } : p));
     await updateStorePayload({ products: updated }, 'تم تحديث حالة تمييز المنتج');
+  };
+
+  const handleToggleProductShowOnline = async (prodId: string) => {
+    const updated = products.map((p) =>
+      p.id === prodId ? { ...p, showOnline: p.showOnline === false ? true : false } : p
+    );
+    await updateStorePayload({ products: updated }, 'تم تحديث قناة المتجر الإلكتروني للمنتج');
+  };
+
+  const handleToggleProductShowInPos = async (prodId: string) => {
+    const updated = products.map((p) =>
+      p.id === prodId ? { ...p, showInPos: p.showInPos === false ? true : false } : p
+    );
+    await updateStorePayload({ products: updated }, 'تم تحديث قناة الكاشير (POS) للمنتج');
   };
 
   const handleDeleteProduct = async (prodId: string) => {
@@ -1371,6 +1483,14 @@ export default function AdminDashboardPage() {
       badge: `${products.length} صنف`,
       badgeColor: 'bg-amber-500 text-brand-950',
       roles: ['super_admin', 'admin', 'supplier'],
+    },
+    {
+      id: 'supply_invoices',
+      label: 'فواتير التوريد واعتماد الشحنات',
+      icon: <ClipboardList className="w-4 h-4" />,
+      badge: pendingSupplyInvoicesCount > 0 ? `${pendingSupplyInvoicesCount} معلقة` : undefined,
+      badgeColor: 'bg-amber-500 text-brand-950 font-black animate-pulse',
+      roles: ['super_admin', 'admin', 'store_manager'],
     },
     {
       id: 'accounting_portal',
@@ -1699,6 +1819,342 @@ export default function AdminDashboardPage() {
               />
             )}
 
+          {/* ROLE MODULE: SUPPLY INVOICES APPROVAL WORKFLOW */}
+          {activeTab === 'supply_invoices' && isFullAdmin && (
+            <div className="space-y-4">
+              {/* Header card with quick actions and stats */}
+              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 shadow-2xs space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center border border-amber-500/20">
+                      <ClipboardList className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-sm sm:text-base font-black text-brand-950">
+                          إدارة فواتير التوريد واعتماد الشحنات
+                        </h2>
+                        {pendingSupplyInvoicesCount > 0 && (
+                          <span className="bg-amber-500 text-brand-950 font-black text-[10.5px] px-2.5 py-0.5 rounded-full animate-pulse">
+                            {pendingSupplyInvoicesCount} بانتظار الاعتماد
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-brand-600 mt-0.5">
+                        فحص ومراجعة فواتير التوريد الواردة من المورد، وتدقيق الأصناف والأسعار، واعتمادها لإضافة المخزون وتحديث التكلفة تلقائياً
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fetchSupplyInvoices()}
+                      disabled={loadingSupplyInvoices}
+                      className="bg-brand-50 hover:bg-brand-100 text-brand-800 border border-brand-200 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                    >
+                      <RotateCcw className={`w-3.5 h-3.5 ${loadingSupplyInvoices ? 'animate-spin' : ''}`} />
+                      <span>تحديث الفواتير</span>
+                    </button>
+                    <Link
+                      href="/supplier"
+                      target="_blank"
+                      className="bg-amber-500 hover:bg-amber-400 text-brand-950 font-black px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs"
+                    >
+                      <Truck className="w-3.5 h-3.5" />
+                      <span>فتح بوابة المورد ↗</span>
+                    </Link>
+                  </div>
+                </div>
+
+                {/* KPI Metrics */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 border-t border-brand-100">
+                  <div className="bg-brand-50/70 p-2.5 rounded-xl border border-brand-100">
+                    <span className="text-[10px] font-bold text-brand-600 block">إجمالي الفواتير</span>
+                    <span className="text-base font-black text-brand-950">{effectiveSupplyInvoices.length}</span>
+                  </div>
+                  <div className="bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+                    <span className="text-[10px] font-bold text-amber-700 block">فواتير معلقة (قيد المراجعة)</span>
+                    <span className="text-base font-black text-amber-800">{pendingSupplyInvoicesCount}</span>
+                  </div>
+                  <div className="bg-pistachio-50 p-2.5 rounded-xl border border-pistachio-200">
+                    <span className="text-[10px] font-bold text-pistachio-700 block">فواتير معتمدة ومضافة</span>
+                    <span className="text-base font-black text-pistachio-800">
+                      {effectiveSupplyInvoices.filter((i) => i.status === 'approved').length}
+                    </span>
+                  </div>
+                  <div className="bg-red-50 p-2.5 rounded-xl border border-red-200">
+                    <span className="text-[10px] font-bold text-red-700 block">فواتير مرفوضة</span>
+                    <span className="text-base font-black text-red-800">
+                      {effectiveSupplyInvoices.filter((i) => i.status === 'rejected').length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Filter Tabs */}
+              <div className="flex items-center gap-2">
+                {(['all', 'pending', 'approved', 'rejected'] as const).map((st) => (
+                  <button
+                    key={st}
+                    onClick={() => setSupplyInvoiceFilter(st)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
+                      supplyInvoiceFilter === st
+                        ? 'bg-brand-900 text-white shadow-xs'
+                        : 'bg-white text-brand-700 border border-brand-200 hover:bg-brand-50'
+                    }`}
+                  >
+                    {st === 'all' && `جميع الفواتير (${effectiveSupplyInvoices.length})`}
+                    {st === 'pending' && `بانتظار المراجعة (${pendingSupplyInvoicesCount})`}
+                    {st === 'approved' && `المعتمدة (${effectiveSupplyInvoices.filter((i) => i.status === 'approved').length})`}
+                    {st === 'rejected' && `المرفوضة (${effectiveSupplyInvoices.filter((i) => i.status === 'rejected').length})`}
+                  </button>
+                ))}
+              </div>
+
+              {/* Invoices List */}
+              {filteredSupplyInvoices.length === 0 ? (
+                <div className="bg-white p-8 text-center rounded-2xl border border-brand-200 shadow-2xs space-y-2">
+                  <CheckCircle2 className="w-10 h-10 text-pistachio-600 mx-auto" />
+                  <h3 className="text-sm font-black text-brand-950">لا توجد فواتير توريد بهذه الحالة</h3>
+                  <p className="text-xs text-brand-600">
+                    يمكن للمورد إرسال فواتير توريد جديدة من بوابته المخصصة لتظهر هنا فوراً.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3.5">
+                  {filteredSupplyInvoices.map((inv) => {
+                    const isPending = inv.status === 'pending';
+                    const isExpanded = expandedAdminInvoiceId === inv.id || isPending;
+                    const totalKg = inv.items.reduce((s: number, i: SupplyInvoiceItem) => s + (i.quantityKg || 0), 0);
+                    const isActionLoading = actionLoadingInvoiceId === inv.id;
+
+                    return (
+                      <div
+                        key={inv.id}
+                        className={`bg-white rounded-2xl border shadow-2xs overflow-hidden transition ${
+                          isPending ? 'border-amber-300 ring-2 ring-amber-100' : 'border-brand-200'
+                        }`}
+                      >
+                        {/* Invoice Header */}
+                        <div className={`p-4 flex flex-wrap items-center justify-between gap-3 ${
+                          isPending ? 'bg-amber-50/50' : 'bg-brand-50/40'
+                        }`}>
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono font-black text-xs shrink-0 ${
+                              isPending
+                                ? 'bg-amber-500 text-brand-950 font-bold'
+                                : inv.status === 'approved'
+                                ? 'bg-pistachio-700 text-white'
+                                : 'bg-red-700 text-white'
+                            }`}>
+                              SUP
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-mono font-black text-brand-950 text-sm">
+                                  {inv.invoiceNumber}
+                                </span>
+                                {inv.status === 'pending' && (
+                                  <span className="bg-amber-100 border border-amber-300 text-amber-900 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                    <Clock className="w-3 h-3 text-amber-600" />
+                                    <span>قيد المراجعة والاعتماد</span>
+                                  </span>
+                                )}
+                                {inv.status === 'approved' && (
+                                  <span className="bg-pistachio-100 border border-pistachio-300 text-pistachio-900 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3 text-pistachio-700" />
+                                    <span>معتمدة (تمت إضافة المخزون)</span>
+                                  </span>
+                                )}
+                                {inv.status === 'rejected' && (
+                                  <span className="bg-red-100 border border-red-300 text-red-900 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3 text-red-600" />
+                                    <span>مرفوضة من الإدارة</span>
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-brand-500 mt-0.5">
+                                المورد: <span className="font-extrabold text-brand-900">{inv.supplierName || inv.supplierId}</span> • تاريخ الإنشاء: {new Date(inv.createdAt).toLocaleString('ar-EG')} • {inv.items.length} أصناف ({totalKg} كجم)
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-4">
+                            <div className="text-left">
+                              <span className="text-[10px] text-brand-500 font-bold block">إجمالي الفاتورة</span>
+                              <span className="text-sm sm:text-base font-black text-pistachio-800">
+                                {inv.totalAmount.toLocaleString('ar-EG')} ج.م
+                              </span>
+                            </div>
+
+                            {!isPending && (
+                              <button
+                                type="button"
+                                onClick={() => setExpandedAdminInvoiceId(isExpanded ? null : inv.id)}
+                                className="bg-brand-100 hover:bg-brand-200 text-brand-900 p-2 rounded-xl transition"
+                                title={isExpanded ? 'إخفاء التفاصيل' : 'عرض الأصناف'}
+                              >
+                                {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Supplier Notes */}
+                        {inv.notes && (
+                          <div className="px-4 py-2 bg-brand-50/70 border-t border-brand-100 text-xs text-brand-800">
+                            <span className="font-extrabold text-brand-950">ملاحظات المورد: </span>
+                            <span>{inv.notes}</span>
+                          </div>
+                        )}
+
+                        {/* Line Items Table */}
+                        {isExpanded && (
+                          <div className="p-4 border-t border-brand-200 bg-white space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-xs font-black text-brand-950">
+                                تفاصيل أصناف وكميات الشحنة ({inv.items.length} أصناف):
+                              </h4>
+                              {isPending && (
+                                <span className="text-[10.5px] text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200 font-bold">
+                                  💡 المخزون الفعلي الحالي لن يتأثر إلا بعد الضغط على "اعتماد الفاتورة"
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="overflow-x-auto rounded-xl border border-brand-200">
+                              <table className="w-full text-right border-collapse text-xs">
+                                <thead>
+                                  <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
+                                    <th className="p-2.5">اسم الصنف</th>
+                                    <th className="p-2.5 text-center">الكمية الموردة (كجم)</th>
+                                    <th className="p-2.5 text-center">تكلفة الكيلو (ج.م)</th>
+                                    <th className="p-2.5 text-center">إجمالي البند (ج.م)</th>
+                                    <th className="p-2.5 text-center">المخزون الحالي بالمتجر</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-brand-100">
+                                  {inv.items.map((item: SupplyInvoiceItem, idx: number) => {
+                                    const prod = products.find((p) => p.id === item.productId);
+                                    const currentStock = typeof prod?.stockKg === 'number' ? prod.stockKg : 0;
+                                    return (
+                                      <tr key={idx} className="hover:bg-brand-50/60">
+                                        <td className="p-2.5">
+                                          <div className="font-bold text-brand-950">{item.productName}</div>
+                                          {prod && (
+                                            <div className="text-[10px] text-brand-500 font-mono">
+                                              كود: {prod.slug}
+                                            </div>
+                                          )}
+                                        </td>
+                                        <td className="p-2.5 text-center font-black text-amber-900">
+                                          +{item.quantityKg} كجم
+                                        </td>
+                                        <td className="p-2.5 text-center font-black">
+                                          {item.costPerKg} ج.م
+                                        </td>
+                                        <td className="p-2.5 text-center font-black text-pistachio-800">
+                                          {item.totalCost} ج.م
+                                        </td>
+                                        <td className="p-2.5 text-center font-mono">
+                                          <span className="bg-brand-100 text-brand-900 px-2 py-0.5 rounded font-bold">
+                                            {currentStock} كجم
+                                          </span>
+                                          {isPending && (
+                                            <span className="text-[10px] text-pistachio-700 block font-bold mt-0.5">
+                                              → بعد الاعتماد: {Math.round((currentStock + item.quantityKg) * 1000) / 1000} كجم
+                                            </span>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+
+                            {/* Pending Action Box */}
+                            {isPending && (
+                              <div className="p-3.5 bg-amber-50/70 rounded-2xl border border-amber-200 space-y-3 mt-3">
+                                <div>
+                                  <label className="block text-[11px] font-black text-brand-950 mb-1">
+                                    ملاحظات الإدارة عند المراجعة (اختياري):
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={invoiceReviewNotes[inv.id] || ''}
+                                    onChange={(e) =>
+                                      setInvoiceReviewNotes((prev) => ({
+                                        ...prev,
+                                        [inv.id]: e.target.value,
+                                      }))
+                                    }
+                                    placeholder="مثال: تم فحص الشحنة ومطابقة الأوزان على ميزان الفرع واعتمادها"
+                                    className="w-full bg-white border border-brand-200 rounded-xl px-3 py-1.5 text-xs text-brand-950"
+                                  />
+                                </div>
+
+                                <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                                  <div className="text-[11px] text-brand-600 font-bold">
+                                    ⚠️ بالضغط على اعتماد الفاتورة سيتم فورياً إضافة الكميات إلى مخزون الأصناف وتحديث تكلفة الكيلو.
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      disabled={isActionLoading}
+                                      onClick={() => handleReviewSupplyInvoice(inv.id, 'rejected')}
+                                      className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-300 font-extrabold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 disabled:opacity-50"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                      <span>رفض الفاتورة</span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      disabled={isActionLoading}
+                                      onClick={() => handleReviewSupplyInvoice(inv.id, 'approved')}
+                                      className="bg-pistachio-700 hover:bg-pistachio-800 text-white font-black text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow disabled:opacity-50"
+                                    >
+                                      {isActionLoading ? (
+                                        <RotateCcw className="w-3.5 h-3.5 animate-spin" />
+                                      ) : (
+                                        <Check className="w-3.5 h-3.5" />
+                                      )}
+                                      <span>اعتماد الفاتورة وإضافة المخزون</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Reviewed History Notes */}
+                            {!isPending && (inv.adminNotes || inv.reviewedAt) && (
+                              <div className="p-3 bg-brand-50 rounded-xl border border-brand-200 text-xs space-y-0.5">
+                                <div className="text-brand-950 font-black">
+                                  حالة الفحص والاعتماد: {inv.status === 'approved' ? 'معتمدة ✓' : 'مرفوضة ✕'}
+                                </div>
+                                {inv.adminNotes && (
+                                  <div className="text-brand-700">ملاحظات الإدارة: {inv.adminNotes}</div>
+                                )}
+                                {inv.reviewedAt && (
+                                  <div className="text-[10px] text-brand-500">
+                                    تاريخ المراجعة: {new Date(inv.reviewedAt).toLocaleString('ar-EG')} بواسطة {inv.reviewedBy || 'الأدمن'}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ROLE PORTAL 2: ACCOUNTANT ISOLATION PORTAL */}
           {activeTab === 'accounting_portal' &&
             (isFullAdmin || currentRole === 'accountant') && (
@@ -1852,9 +2308,11 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-                  {(Object.keys(STATUS_LABELS) as OrderStatus[]).map((stKey) => {
-                    const count = orders.filter((o) => o.status === stKey).length;
-                    const info = STATUS_LABELS[stKey];
+                  {CANONICAL_ORDER_STATUSES.map((stKey) => {
+                    const count = orders.filter(
+                      (o) => o.status === stKey || (stKey === 'roasting_packing' && (o.status as string) === 'preparing')
+                    ).length;
+                    const info = getOrderStatusMeta(stKey);
                     return (
                       <button
                         key={stKey}
@@ -2141,8 +2599,11 @@ export default function AdminDashboardPage() {
                   >
                     الكل ({orders.length})
                   </button>
-                  {(Object.keys(STATUS_LABELS) as OrderStatus[]).map((stKey) => {
-                    const count = orders.filter((o) => o.status === stKey).length;
+                  {CANONICAL_ORDER_STATUSES.map((stKey) => {
+                    const count = orders.filter(
+                      (o) => o.status === stKey || (stKey === 'roasting_packing' && (o.status as string) === 'preparing')
+                    ).length;
+                    const info = getOrderStatusMeta(stKey);
                     return (
                       <button
                         key={stKey}
@@ -2153,7 +2614,7 @@ export default function AdminDashboardPage() {
                             : 'bg-brand-50 text-brand-800 hover:bg-brand-100'
                         }`}
                       >
-                        {STATUS_LABELS[stKey].label} ({count})
+                        {info.label} ({count})
                       </button>
                     );
                   })}
@@ -2198,7 +2659,7 @@ export default function AdminDashboardPage() {
                       </thead>
                       <tbody className="divide-y divide-brand-100 align-top">
                         {filteredOrders.map((order) => {
-                          const st = STATUS_LABELS[order.status];
+                          const st = getOrderStatusMeta(order.status);
                           return (
                             <tr
                               key={order.id}
@@ -2296,9 +2757,9 @@ export default function AdminDashboardPage() {
                               {/* Ordered Items */}
                               <td className="p-3 min-w-[240px]">
                                 <div className="space-y-1">
-                                  {order.items.map((item) => (
+                                  {order.items.map((item, idx) => (
                                     <div
-                                      key={item.cartItemId}
+                                      key={item.cartItemId || `${order.id}-item-${idx}-${item.productId || 'p'}`}
                                       className="bg-brand-50/80 px-2 py-1.5 rounded-lg border border-brand-100 text-[11px]"
                                     >
                                       <div className="flex items-center justify-between gap-2">
@@ -2311,8 +2772,8 @@ export default function AdminDashboardPage() {
                                       </div>
                                       {item.isCustomMix && item.customBreakdown ? (
                                         <div className="text-[10px] text-brand-700 mt-1 pr-1.5 border-r-2 border-gold-500 space-y-0.5">
-                                          {item.customBreakdown.map((b, idx) => (
-                                            <div key={idx}>
+                                          {item.customBreakdown.map((b, bIdx) => (
+                                            <div key={b.productId ? `${b.productId}-${bIdx}` : bIdx}>
                                               • {b.productName} ({b.roastOption}) — {b.weightGrams}جم (
                                               {b.percentage}%)
                                             </div>
@@ -2374,14 +2835,14 @@ export default function AdminDashboardPage() {
                               <td className="p-3 whitespace-nowrap space-y-1.5">
                                 <div>
                                   <span
-                                    className={`inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${st.badgeClass}`}
+                                    className={`inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${st?.badgeClass || 'bg-amber-100 text-amber-800 border-amber-200'}`}
                                   >
-                                    {st.label}
+                                    {st?.label || order.status || 'قيد المراجعة'}
                                   </span>
                                 </div>
                                 {currentRole !== 'accountant' && (
                                   <select
-                                    value={order.status}
+                                    value={(order.status as string) === 'preparing' ? 'roasting_packing' : order.status}
                                     onChange={(e) =>
                                       handleOrderStatusChange(order.id, e.target.value as OrderStatus)
                                     }
@@ -2389,7 +2850,7 @@ export default function AdminDashboardPage() {
                                   >
                                     <option value="pending">قيد المراجعة</option>
                                     <option value="confirmed">تم التأكيد</option>
-                                    <option value="roasting_packing">جاري التحميص</option>
+                                    <option value="roasting_packing">جاري التحميص والتغليف</option>
                                     <option value="shipped">خرج مع المندوب</option>
                                     <option value="delivered">تم التسليم</option>
                                     <option value="cancelled">ملغي</option>
@@ -2986,9 +3447,26 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
 
-                  {/* Availability & Featured Flags + Submit */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-brand-200">
-                    <div className="flex items-center gap-4">
+                  {/* Availability, Stock KG, Channels & Featured Flags + Submit */}
+                  <div className="space-y-3 pt-3 border-t border-brand-200">
+                    <div className="flex flex-wrap items-center gap-4 bg-brand-50 p-3 rounded-xl border border-brand-200">
+                      <div className="flex items-center gap-2">
+                        <label className="text-[11px] font-black text-brand-950">رصيد المخزون الفعلي (كجم):</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={editingProduct.stockKg ?? 50}
+                          onChange={(e) =>
+                            setEditingProduct({
+                              ...editingProduct,
+                              stockKg: Number(e.target.value),
+                            })
+                          }
+                          className="w-24 bg-white border border-brand-300 rounded-lg px-2.5 py-1 text-xs font-black text-brand-900"
+                        />
+                      </div>
+
                       <label className="flex items-center gap-1.5 text-xs font-extrabold cursor-pointer">
                         <input
                           type="checkbox"
@@ -2998,7 +3476,31 @@ export default function AdminDashboardPage() {
                           }
                           className="rounded text-brand-900"
                         />
-                        <span>متوفر في المخزون</span>
+                        <span>متوفر للبيع</span>
+                      </label>
+
+                      <label className="flex items-center gap-1.5 text-xs font-extrabold cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editingProduct.showOnline !== false}
+                          onChange={(e) =>
+                            setEditingProduct({ ...editingProduct, showOnline: e.target.checked })
+                          }
+                          className="rounded text-brand-900"
+                        />
+                        <span>🌐 متاح بالمتجر الإلكتروني</span>
+                      </label>
+
+                      <label className="flex items-center gap-1.5 text-xs font-extrabold cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editingProduct.showInPos !== false}
+                          onChange={(e) =>
+                            setEditingProduct({ ...editingProduct, showInPos: e.target.checked })
+                          }
+                          className="rounded text-brand-900"
+                        />
+                        <span>🧾 متاح بالكاشير (POS)</span>
                       </label>
 
                       <label className="flex items-center gap-1.5 text-xs font-extrabold cursor-pointer">
@@ -3014,7 +3516,7 @@ export default function AdminDashboardPage() {
                       </label>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-end gap-2">
                       <button
                         type="button"
                         onClick={() => {
@@ -3071,7 +3573,7 @@ export default function AdminDashboardPage() {
                           <th className="p-3">الأوزان والأسعار (ج.م)</th>
                           <th className="p-3">خيارات التحميص</th>
                           <th className="p-3 whitespace-nowrap">التقييم والقيم</th>
-                          <th className="p-3 whitespace-nowrap text-center">التوفر والتمييز</th>
+                          <th className="p-3 whitespace-nowrap text-center">المخزون والقنوات والتمييز</th>
                           <th className="p-3 whitespace-nowrap text-center">إجراءات</th>
                         </tr>
                       </thead>
@@ -3168,21 +3670,61 @@ export default function AdminDashboardPage() {
                                 </div>
                               </td>
 
-                              {/* Stock & Featured Toggles */}
+                              {/* Stock, Channels & Featured Toggles */}
                               <td className="p-3 whitespace-nowrap text-center space-y-1.5">
-                                <div>
+                                <div className="flex items-center justify-center gap-1">
                                   <button
                                     type="button"
                                     onClick={() => handleToggleProductStock(prod.id)}
-                                    className={`text-[10px] font-extrabold px-2.5 py-1 rounded-lg border transition ${
+                                    className={`text-[10px] font-extrabold px-2 py-0.5 rounded-lg border transition ${
                                       prod.inStock
                                         ? 'bg-pistachio-50 text-pistachio-700 border-pistachio-200 hover:bg-pistachio-100'
                                         : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
                                     }`}
+                                    title="تغيير حالة التوفر"
                                   >
-                                    {prod.inStock ? 'متوفر ✓' : 'غير متوفر ✕'}
+                                    {prod.inStock ? 'متوفر ✓' : 'نافد ✕'}
+                                  </button>
+                                  <span
+                                    className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                                      (prod.stockKg ?? 0) <= 5
+                                        ? 'bg-amber-50 text-amber-800 border-amber-300'
+                                        : 'bg-brand-50 text-brand-700 border-brand-200'
+                                    }`}
+                                    title="المخزون المتوفر بالكيلوجرام"
+                                  >
+                                    {prod.stockKg !== undefined ? `${prod.stockKg} كجم` : '50 كجم'}
+                                  </span>
+                                </div>
+
+                                {/* Channel Badges & Toggles */}
+                                <div className="flex items-center justify-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleProductShowOnline(prod.id)}
+                                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border transition ${
+                                      prod.showOnline !== false
+                                        ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                                        : 'bg-zinc-100 text-zinc-400 border-zinc-200 line-through'
+                                    }`}
+                                    title="قناة المتجر الإلكتروني: انقر للتفعيل أو التعطيل"
+                                  >
+                                    🌐 {prod.showOnline !== false ? 'أونلاين' : 'معطل'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleProductShowInPos(prod.id)}
+                                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border transition ${
+                                      prod.showInPos !== false
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                        : 'bg-zinc-100 text-zinc-400 border-zinc-200 line-through'
+                                    }`}
+                                    title="قناة الكاشير POS: انقر للتفعيل أو التعطيل"
+                                  >
+                                    🧾 {prod.showInPos !== false ? 'كاشير' : 'معطل'}
                                   </button>
                                 </div>
+
                                 <div>
                                   <button
                                     type="button"
@@ -4319,22 +4861,15 @@ export default function AdminDashboardPage() {
                     ...(newAccountantPassword.trim()
                       ? { accountantPassword: newAccountantPassword.trim() }
                       : {}),
-                    ...(newCustomerUsername.trim()
-                      ? { customerUsername: newCustomerUsername.trim() }
-                      : {}),
-                    ...(newCustomerPassword.trim()
-                      ? { customerPassword: newCustomerPassword.trim() }
-                      : {}),
                   };
                   updateStorePayload(
                     { settings: updatedSettings },
-                    'تم حفظ إعدادات المتجر وأسماء المستخدمين وكلمات المرور للأدوار الـ 5 بنجاح ✅'
+                    'تم حفظ إعدادات المتجر وأسماء المستخدمين وكلمات المرور للأدوار الـ 4 بنجاح ✅'
                   );
                   setNewAdminPassword('');
                   setNewSupplierPassword('');
                   setNewCashierPassword('');
                   setNewAccountantPassword('');
-                  setNewCustomerPassword('');
                 }}
                 className="lg:col-span-2 bg-white p-4 sm:p-6 rounded-2xl border border-brand-200 shadow-2xs space-y-4"
               >
@@ -4445,13 +4980,13 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
-                {/* 5-Role Isolation & Independent Usernames + Passwords Section */}
+                {/* 4-Role Isolation & Independent Usernames + Passwords Section */}
                 <div className="pt-4 border-t border-brand-200 space-y-3">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div>
                       <h4 className="text-xs sm:text-sm font-black text-brand-950 flex items-center gap-1.5">
                         <ShieldCheck className="w-4 h-4 text-gold-500" />
-                        <span>إدارة عزل الأدوار الـ 5 (اسم مستخدم وكلمة مرور مستقلة لكل دور)</span>
+                        <span>إدارة عزل الأدوار الـ 4 (المدير العام، المورد، الكاشير، المحاسب)</span>
                       </h4>
                       <p className="text-[10.5px] text-brand-600 mt-0.5">
                         لكل دور وظيفي اسم مستخدم (Username) وكلمة مرور (Password) مختلفان تماماً. اترك حقل كلمة المرور فارغاً للإبقاء على كلمة المرور الحالية.
@@ -4598,39 +5133,6 @@ export default function AdminDashboardPage() {
                           placeholder="كلمة مرور جديدة للمحاسب..."
                           className="w-full bg-white border border-pistachio-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
                         />
-                      </div>
-                    </div>
-
-                    {/* Role 5: External Buyer / Customer */}
-                    <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200 space-y-2 sm:col-span-2">
-                      <label className="block text-[11px] font-extrabold text-emerald-950">
-                        5. 🛒 المشتري (المستخدم الخارجي للشراء من المتجر)
-                      </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <span className="block text-[10px] font-bold text-emerald-800 mb-0.5">
-                            اسم المستخدم (Username):
-                          </span>
-                          <input
-                            type="text"
-                            value={newCustomerUsername}
-                            onChange={(e) => setNewCustomerUsername(e.target.value)}
-                            placeholder="customer_buyer"
-                            className="w-full bg-white border border-emerald-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
-                          />
-                        </div>
-                        <div>
-                          <span className="block text-[10px] font-bold text-emerald-800 mb-0.5">
-                            كلمة المرور (الحالية: {settings.customerPassword || 'Cust#Buy2026'}):
-                          </span>
-                          <input
-                            type={showPasswordText ? 'text' : 'password'}
-                            value={newCustomerPassword}
-                            onChange={(e) => setNewCustomerPassword(e.target.value)}
-                            placeholder="كلمة مرور جديدة للمشتري..."
-                            className="w-full bg-white border border-emerald-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
-                          />
-                        </div>
                       </div>
                     </div>
                   </div>

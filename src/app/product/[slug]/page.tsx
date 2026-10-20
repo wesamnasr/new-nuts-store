@@ -3,14 +3,14 @@ import { notFound } from 'next/navigation';
 import { getDbAsync } from '@/lib/db';
 import { getSafeImageUrl } from '@/lib/defaults';
 import { resolveProductBySlug, getRelatedProducts } from '@/lib/slugs';
-import ProductDetailClient from '@/app/products/[slug]/ProductDetailClient';
+import ProductDetailClient from '@/components/product/ProductDetailClient';
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
 /**
  * Generate Static Params for build-time pre-rendering on the single canonical /product/[slug] route

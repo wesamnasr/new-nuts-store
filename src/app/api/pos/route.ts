@@ -46,7 +46,14 @@ export async function GET(request: Request) {
   try {
     const auth = verifyAdminRequest(request);
 
-    if (auth.isAuthenticated && auth.role === 'supplier') {
+    if (!auth.isAuthenticated) {
+      return NextResponse.json(
+        { error: 'غير مصرح بالوصول: يتطلب تسجيل الدخول' },
+        { status: 401 }
+      );
+    }
+
+    if (auth.role === 'supplier') {
       return NextResponse.json(
         { error: 'عزل الأدوار: المورد غير مصرح له بالدخول إلى نظام الكاشير (403 Forbidden)' },
         { status: 403 }
@@ -96,15 +103,31 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const auth = verifyAdminRequest(request);
-    if (auth.isAuthenticated && auth.role === 'supplier') {
+
+    if (!auth.isAuthenticated) {
       return NextResponse.json(
-        { error: 'عزل الأدوار: المورد غير مصرح له بإصدار فواتير الكاشير (403 Forbidden)' },
+        { error: 'غير مصرح بالوصول: يتطلب تسجيل الدخول' },
+        { status: 401 }
+      );
+    }
+
+    if (auth.role === 'supplier') {
+      return NextResponse.json(
+        { error: 'عزل الأدوار: المورد غير مصرح له بإصدار فواتير الكاشير' },
         { status: 403 }
       );
     }
+
+    if (auth.role === 'accountant') {
+      return NextResponse.json(
+        { error: 'عزل الأدوار: المحاسب بصلاحية قراءة فقط وممنوع من إصدار فواتير الكاشير' },
+        { status: 403 }
+      );
+    }
+
     const canSeeProfits =
       auth.isAuthenticated &&
-      (auth.role === 'super_admin' || auth.role === 'accountant');
+      (auth.role === 'super_admin' || (auth.role as string) === 'admin');
 
     const body = await request.json();
     const action = body.action || 'create_invoice';
@@ -118,16 +141,23 @@ export async function POST(request: Request) {
     // 1. OPEN NEW SHIFT
     if (action === 'open_shift') {
       const cashierName = (body.cashierName || 'كاشير فرع بني مزار').trim();
+      const cashierId = (body.cashierId || (auth as unknown as { username?: string }).username || 'cashier_pos').trim();
       const shiftPeriod = body.shiftPeriod || 'الوردية الصباحية';
-      const openingCash = Math.max(0, Number(body.openingCash) || 0);
+      const openingCash = Math.max(0, Number(body.openingCash ?? body.startingCash) || 0);
+      const startingCash = openingCash;
+      const startTime = new Date().toISOString();
+      const openedAt = startTime;
 
       // Close any existing open shift first
       for (const s of db.posShifts) {
         if (s.status === 'open') {
           s.status = 'closed';
           s.closedAt = new Date().toISOString();
-          s.actualClosingCash = s.expectedCashInDrawer;
-          s.cashDifference = 0;
+          s.endTime = s.closedAt;
+          s.actualCash = s.actualClosingCash ?? s.expectedCash ?? s.expectedCashInDrawer ?? 0;
+          s.actualClosingCash = s.actualCash;
+          s.variance = (s.actualCash ?? 0) - (s.expectedCash ?? s.expectedCashInDrawer ?? 0);
+          s.cashDifference = s.variance;
         }
       }
 
@@ -135,22 +165,29 @@ export async function POST(request: Request) {
       const newShift: PosShift = {
         id: `shift-${Date.now()}`,
         shiftNumber: `SHIFT-${shiftNum}`,
+        cashierId,
         cashierName,
         shiftPeriod,
         status: 'open',
+        startingCash,
         openingCash,
+        cashSales: 0,
         cashSalesTotal: 0,
+        cardSales: 0,
         vodafoneCashTotal: 0,
         instapayTotal: 0,
         vipRedeemedTotal: 0,
         vipCashbackIssuedTotal: 0,
+        expenses: 0,
         expensesTotal: 0,
+        expectedCash: openingCash,
         expectedCashInDrawer: openingCash,
         ordersCount: 0,
         totalRevenue: 0,
         totalRawCost: 0,
         totalNetProfit: 0,
-        openedAt: new Date().toISOString(),
+        startTime,
+        openedAt,
         notes: body.notes?.trim() || undefined,
       };
 
@@ -162,7 +199,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // 2. CLOSE ACTIVE SHIFT (Z-REPORT)
+    // 2. CLOSE ACTIVE SHIFT (Z-REPORT & RECONCILIATION)
     if (action === 'close_shift') {
       const activeShift = db.posShifts.find((s) => s.status === 'open');
       if (!activeShift) {
@@ -172,17 +209,24 @@ export async function POST(request: Request) {
         );
       }
 
-      const actualClosingCash =
-        body.actualClosingCash !== undefined
-          ? Math.max(0, Number(body.actualClosingCash) || 0)
-          : activeShift.expectedCashInDrawer;
+      const starting = Number(activeShift.startingCash ?? activeShift.openingCash ?? 0);
+      const cash = Number(activeShift.cashSales ?? activeShift.cashSalesTotal ?? 0);
+      const exp = Number(activeShift.expenses ?? activeShift.expensesTotal ?? 0);
+      const expectedCash = Math.max(0, starting + cash - exp);
+      activeShift.expectedCash = expectedCash;
+      activeShift.expectedCashInDrawer = expectedCash;
+
+      const rawActual = body.actualCash !== undefined ? body.actualCash : body.actualClosingCash;
+      const actualCash = rawActual !== undefined ? Math.max(0, Number(rawActual) || 0) : expectedCash;
+      const variance = Math.round(actualCash - expectedCash);
 
       activeShift.status = 'closed';
-      activeShift.closedAt = new Date().toISOString();
-      activeShift.actualClosingCash = actualClosingCash;
-      activeShift.cashDifference = Math.round(
-        actualClosingCash - activeShift.expectedCashInDrawer
-      );
+      activeShift.endTime = new Date().toISOString();
+      activeShift.closedAt = activeShift.endTime;
+      activeShift.actualCash = actualCash;
+      activeShift.actualClosingCash = actualCash;
+      activeShift.variance = variance;
+      activeShift.cashDifference = variance;
       if (body.notes) {
         activeShift.notes = body.notes.trim();
       }
@@ -195,8 +239,8 @@ export async function POST(request: Request) {
     }
 
     // 3. ADD PETTY CASH EXPENSE FROM DRAWER
-    if (action === 'add_expense') {
-      const title = (body.title || '').trim();
+    if (action === 'add_expense' || action === 'expense') {
+      const title = (body.title || body.description || '').trim();
       const amount = Math.max(1, Math.round(Number(body.amount) || 0));
       if (!title || amount <= 0) {
         return NextResponse.json(
@@ -219,11 +263,13 @@ export async function POST(request: Request) {
       db.posExpenses.unshift(newExpense);
 
       if (activeShift) {
-        activeShift.expensesTotal += amount;
-        activeShift.expectedCashInDrawer = Math.max(
-          0,
-          activeShift.openingCash + activeShift.cashSalesTotal - activeShift.expensesTotal
-        );
+        activeShift.expenses = (activeShift.expenses || 0) + amount;
+        activeShift.expensesTotal = (activeShift.expensesTotal || 0) + amount;
+        const starting = Number(activeShift.startingCash ?? activeShift.openingCash ?? 0);
+        const cash = Number(activeShift.cashSales ?? activeShift.cashSalesTotal ?? 0);
+        const exp = Number(activeShift.expenses ?? activeShift.expensesTotal ?? 0);
+        activeShift.expectedCash = Math.max(0, starting + cash - exp);
+        activeShift.expectedCashInDrawer = activeShift.expectedCash;
       }
 
       await saveDbAsync(db);
@@ -261,6 +307,41 @@ export async function POST(request: Request) {
         { error: 'فاتورة الكاشير فارغة، يرجى إضافة صنف واحد على الأقل' },
         { status: 400 }
       );
+    }
+
+    // Validate showInPos channel restriction for all items
+    for (const item of rawItems) {
+      if (item.productId && !item.productId.startsWith('flash-promo-') && !item.isPartitionedBox && !item.isCustomMix && !item.isCoffeeBlend) {
+        const prod = db.products.find((p) => p.id === item.productId);
+        if (prod && prod.showInPos === false) {
+          return NextResponse.json(
+            { error: 'المنتج غير مصرح ببيعه عبر الكاشير' },
+            { status: 400 }
+          );
+        }
+      }
+      if (item.isPartitionedBox && Array.isArray(item.partitionedSlots)) {
+        for (const slot of item.partitionedSlots) {
+          const slotProd = db.products.find((p) => p.id === slot.productId);
+          if (slotProd && slotProd.showInPos === false) {
+            return NextResponse.json(
+              { error: 'المنتج غير مصرح ببيعه عبر الكاشير' },
+              { status: 400 }
+            );
+          }
+        }
+      }
+      if (item.isCustomMix && Array.isArray(item.customBreakdown)) {
+        for (const b of item.customBreakdown) {
+          const bProd = db.products.find((p) => p.id === b.productId);
+          if (bProd && bProd.showInPos === false) {
+            return NextResponse.json(
+              { error: 'المنتج غير مصرح ببيعه عبر الكاشير' },
+              { status: 400 }
+            );
+          }
+        }
+      }
     }
 
     let subtotal = 0;
@@ -449,6 +530,53 @@ export async function POST(request: Request) {
       createdAt: new Date().toISOString(),
     };
 
+    // Atomic Stock Depletion for POS Sale
+    for (const item of verifiedItems) {
+      const qty = item.quantity || 1;
+      if (item.isPartitionedBox && Array.isArray(item.partitionedSlots)) {
+        for (const slot of item.partitionedSlots) {
+          const slotProd = db.products.find((p) => p.id === slot.productId);
+          if (slotProd) {
+            const slotGrams = slot.slotGrams || slot.weightGrams || (item.partitionedBoxSize === 'roqan_4' ? 100 : 125);
+            const consumedKg = (slotGrams * qty) / 1000;
+            const currentStock = typeof slotProd.stockKg === 'number' ? slotProd.stockKg : 50;
+            slotProd.stockKg = Math.max(0, Math.round((currentStock - consumedKg) * 1000) / 1000);
+            if (slotProd.stockKg <= 0) slotProd.inStock = false;
+          }
+        }
+      } else if (item.isCustomMix && Array.isArray(item.customBreakdown)) {
+        for (const b of item.customBreakdown) {
+          const bProd = db.products.find((p) => p.id === b.productId);
+          if (bProd) {
+            const constituentGrams = b.weightGrams || ((b.percentage || 0) * (item.boxCapacityGrams || 500) / 100);
+            const consumedKg = (constituentGrams * qty) / 1000;
+            const currentStock = typeof bProd.stockKg === 'number' ? bProd.stockKg : 50;
+            bProd.stockKg = Math.max(0, Math.round((currentStock - consumedKg) * 1000) / 1000);
+            if (bProd.stockKg <= 0) bProd.inStock = false;
+          }
+        }
+      } else if (item.isCoffeeBlend && item.coffeeBlendSpec) {
+        const totalGrams = item.coffeeBlendSpec.weightGrams || 250;
+        const prod = db.products.find((p) => p.id === item.productId || p.categoryId === 'cat-coffee-espresso');
+        if (prod) {
+          const consumedKg = (totalGrams * qty) / 1000;
+          const currentStock = typeof prod.stockKg === 'number' ? prod.stockKg : 50;
+          prod.stockKg = Math.max(0, Math.round((currentStock - consumedKg) * 1000) / 1000);
+          if (prod.stockKg <= 0) prod.inStock = false;
+        }
+      } else {
+        const prod = db.products.find((p) => p.id === item.productId);
+        if (prod) {
+          const matchedW = prod.weights?.find((w) => w.id === item.weightId || w.label === item.weightLabel);
+          const grams = item.customWeightGrams || matchedW?.weightGrams || matchedW?.grams || 250;
+          const consumedKg = (grams * qty) / 1000;
+          const currentStock = typeof prod.stockKg === 'number' ? prod.stockKg : 50;
+          prod.stockKg = Math.max(0, Math.round((currentStock - consumedKg) * 1000) / 1000);
+          if (prod.stockKg <= 0) prod.inStock = false;
+        }
+      }
+    }
+
     db.orders.unshift(createdOrder);
 
     // Update Active Shift Metrics
@@ -461,17 +589,21 @@ export async function POST(request: Request) {
       activeShift.vipCashbackIssuedTotal += vipCashbackEarned;
 
       if (paymentMethod === 'cod') {
-        activeShift.cashSalesTotal += finalTotal;
+        activeShift.cashSales = (activeShift.cashSales || 0) + finalTotal;
+        activeShift.cashSalesTotal = (activeShift.cashSalesTotal || 0) + finalTotal;
       } else if (paymentMethod === 'vodafone_cash') {
+        activeShift.cardSales = (activeShift.cardSales || 0) + finalTotal;
         activeShift.vodafoneCashTotal += finalTotal;
       } else if (paymentMethod === 'instapay') {
+        activeShift.cardSales = (activeShift.cardSales || 0) + finalTotal;
         activeShift.instapayTotal += finalTotal;
       }
 
-      activeShift.expectedCashInDrawer = Math.max(
-        0,
-        activeShift.openingCash + activeShift.cashSalesTotal - activeShift.expensesTotal
-      );
+      const starting = Number(activeShift.startingCash ?? activeShift.openingCash ?? 0);
+      const cash = Number(activeShift.cashSales ?? activeShift.cashSalesTotal ?? 0);
+      const exp = Number(activeShift.expenses ?? activeShift.expensesTotal ?? 0);
+      activeShift.expectedCash = Math.max(0, starting + cash - exp);
+      activeShift.expectedCashInDrawer = activeShift.expectedCash;
     }
 
     await saveDbAsync(db);

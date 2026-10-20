@@ -28,6 +28,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: 'محمصة حفصة للبن والمكسرات | أصل التحميصة ومزاج القهوة الفاخر في بني مزار',
   description:
     'محمصة حفصة للبن والمكسرات بمركز بني مزار (أمام مسجد الزراعيين - المنيا). تسوق أونلاين أفخر المكسرات الطازجة، توليفات البن المحمص بالطلب، بوكس الـ 125 جنيه، الياميش، والعسل الطبيعي مع توصيل سريع لبندر وقرى بني مزار.',

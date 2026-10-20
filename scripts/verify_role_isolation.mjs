@@ -13,10 +13,10 @@ import { GET as ordersGET, DELETE as ordersDELETE } from '../src/app/api/orders/
 import { GET as posGET } from '../src/app/api/pos/route';
 
 async function runRoleIsolationChecks() {
-  console.log('=== Verifying 5-Role Isolation Architecture ===');
+  console.log('=== Verifying 4-Staff-Role Isolation Architecture ===');
   const db = await getDbAsync();
 
-  // 1. Verify all 5 roles have completely distinct usernames AND distinct passwords
+  // 1. Verify all 4 staff roles have completely distinct usernames AND distinct passwords
   const credentials = [
     {
       role: 'super_admin',
@@ -38,18 +38,13 @@ async function runRoleIsolationChecks() {
       user: db.settings.accountantUsername || 'accountant_fin',
       pass: db.settings.accountantPassword || 'Acc#Fin2026',
     },
-    {
-      role: 'customer',
-      user: db.settings.customerUsername || 'customer_buyer',
-      pass: db.settings.customerPassword || 'Cust#Buy2026',
-    },
   ];
 
   const uniqueUsernames = new Set(credentials.map((c) => c.user.toLowerCase()));
   const uniquePasswords = new Set(credentials.map((c) => c.pass));
-  assert.equal(uniqueUsernames.size, 5, 'All 5 roles must have distinct usernames');
-  assert.equal(uniquePasswords.size, 5, 'All 5 roles must have distinct passwords');
-  console.log('✓ All 5 roles have distinct usernames AND distinct passwords');
+  assert.equal(uniqueUsernames.size, 4, 'All 4 staff roles must have distinct usernames');
+  assert.equal(uniquePasswords.size, 4, 'All 4 staff roles must have distinct passwords');
+  console.log('✓ All 4 staff roles have distinct usernames AND distinct passwords');
 
   // Verify each role logs in with its distinct username + password and fails with mismatched username/password
   for (let i = 0; i < credentials.length; i++) {

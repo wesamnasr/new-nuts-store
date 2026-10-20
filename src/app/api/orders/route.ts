@@ -36,6 +36,14 @@ function stripOrderCosts(order: Order): Order {
   return copy;
 }
 
+function depleteProductStock(product: Product, consumedKg: number) {
+  const currentStock = typeof product.stockKg === 'number' ? product.stockKg : 50;
+  product.stockKg = Math.max(0, Math.round((currentStock - consumedKg) * 1000) / 1000);
+  if (product.stockKg <= 0) {
+    product.inStock = false;
+  }
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q')?.trim();
@@ -121,12 +129,33 @@ export async function POST(request: NextRequest) {
       const quantity = Math.max(1, Math.floor(Number(rawItem.quantity) || 1));
       let unitPrice = 0;
 
+      // Channel check: direct product reference
+      if (rawItem.productId && !rawItem.productId.startsWith('flash-promo-') && !rawItem.isPartitionedBox && !rawItem.isCustomMix && !rawItem.isCoffeeBlend) {
+        const directProd = db.products.find((p) => p.id === rawItem.productId);
+        if (directProd && directProd.showOnline === false) {
+          return NextResponse.json(
+            { error: 'المنتج غير متاح للطلب عبر المتجر الإلكتروني' },
+            { status: 400 }
+          );
+        }
+      }
+
       // Case A: Partitioned Box (بوكس روقان 125ج / العيلة 250ج / VIP 450ج)
       if (rawItem.isPartitionedBox) {
         const boxSize = (rawItem.partitionedBoxSize || 'roqan_4') as PartitionedBoxSize;
         const rawSlots: BoxSlotSelection[] = Array.isArray(rawItem.partitionedSlots)
           ? rawItem.partitionedSlots
           : [];
+
+        for (const slot of rawSlots) {
+          const slotProd = db.products.find((p) => p.id === slot.productId);
+          if (slotProd && slotProd.showOnline === false) {
+            return NextResponse.json(
+              { error: 'المنتج غير متاح للطلب عبر المتجر الإلكتروني' },
+              { status: 400 }
+            );
+          }
+        }
 
         const verifiedSlots: BoxSlotSelection[] = rawSlots.map((slot, idx) => {
           const dbProduct = db.products.find((p) => p.id === slot.productId);
@@ -255,6 +284,12 @@ export async function POST(request: NextRequest) {
               { status: 400 }
             );
           }
+          if (dbProduct.showOnline === false) {
+            return NextResponse.json(
+              { error: 'المنتج غير متاح للطلب عبر المتجر الإلكتروني' },
+              { status: 400 }
+            );
+          }
           portions.push({
             product: dbProduct,
             percentage: Number(b.percentage),
@@ -288,6 +323,12 @@ export async function POST(request: NextRequest) {
         if (!dbProduct) {
           return NextResponse.json(
             { error: 'أحد الأصناف المطلوبة غير موجود في المتجر' },
+            { status: 400 }
+          );
+        }
+        if (dbProduct.showOnline === false) {
+          return NextResponse.json(
+            { error: 'المنتج غير متاح للطلب عبر المتجر الإلكتروني' },
             { status: 400 }
           );
         }
@@ -493,6 +534,56 @@ export async function POST(request: NextRequest) {
       createdAt: nowIso,
     };
 
+    // 9. Atomic Stock Depletion across all items
+    for (const item of verifiedItems) {
+      const qty = item.quantity || 1;
+      if (item.isPartitionedBox && Array.isArray(item.partitionedSlots)) {
+        for (const slot of item.partitionedSlots) {
+          const slotProd = db.products.find((p) => p.id === slot.productId);
+          if (slotProd) {
+            const slotGrams = slot.slotGrams || slot.weightGrams || (item.partitionedBoxSize === 'roqan_4' ? 100 : 125);
+            const consumedKg = (slotGrams * qty) / 1000;
+            depleteProductStock(slotProd, consumedKg);
+          }
+        }
+      } else if (item.isCustomMix && Array.isArray(item.customBreakdown)) {
+        for (const b of item.customBreakdown) {
+          const bProd = db.products.find((p) => p.id === b.productId);
+          if (bProd) {
+            const constituentGrams = b.weightGrams || ((b.percentage || 0) * (item.boxCapacityGrams || 500) / 100);
+            const consumedKg = (constituentGrams * qty) / 1000;
+            depleteProductStock(bProd, consumedKg);
+          }
+        }
+      } else if (item.isCoffeeBlend && item.coffeeBlendSpec) {
+        const totalGrams = item.coffeeBlendSpec.weightGrams || 250;
+        const prod = db.products.find((p) => p.id === item.productId || p.categoryId === 'cat-coffee-espresso');
+        if (prod) {
+          depleteProductStock(prod, (totalGrams * qty) / 1000);
+        }
+      } else if (typeof item.productId === 'string' && item.productId.startsWith('flash-promo-')) {
+        const promoId = item.productId.replace('flash-promo-', '');
+        const promo = (db.promotions || []).find((p) => p.id === promoId);
+        if (promo && Array.isArray(promo.items)) {
+          for (const pi of promo.items) {
+            const promoProd = db.products.find((p) => p.id === pi.productId);
+            if (promoProd) {
+              const consumedKg = (pi.weightGrams * (pi.quantity || 1) * qty) / 1000;
+              depleteProductStock(promoProd, consumedKg);
+            }
+          }
+        }
+      } else {
+        const prod = db.products.find((p) => p.id === item.productId);
+        if (prod) {
+          const matchedW = prod.weights?.find((w) => w.id === item.weightId || w.label === item.weightLabel);
+          const grams = item.customWeightGrams || matchedW?.weightGrams || matchedW?.grams || 250;
+          const consumedKg = (grams * qty) / 1000;
+          depleteProductStock(prod, consumedKg);
+        }
+      }
+    }
+
     db.orders.unshift(newOrder);
     await saveDbAsync(db);
 
@@ -514,9 +605,9 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    if (auth.role === 'supplier' || auth.role === 'promo_partner') {
+    if (auth.role === 'supplier' || auth.role === 'promo_partner' || auth.role === 'accountant') {
       return NextResponse.json(
-        { error: 'عزل الأدوار: هذا الدور غير مصرح له بتعديل حالات الطلبات (403 Forbidden)' },
+        { error: 'عزل الأدوار: هذا الدور غير مصرح له بتعديل حالات الطلبات' },
         { status: 403 }
       );
     }

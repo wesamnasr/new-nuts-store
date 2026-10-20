@@ -101,6 +101,9 @@ export interface Product {
   pricePerKg?: number;       // Base Kilo selling price in EGP (auto-computes 125g, 250g, 500g, 1000g)
   costPerKg?: number;        // Arafat's Excel cost per Kg in EGP (for profit margin protection)
   packagingCost?: number;    // Packaging cost per unit in EGP
+  stockKg?: number;          // Current available inventory in Kilograms
+  showOnline?: boolean;      // Controls visibility on storefront (/) and online checkout
+  showInPos?: boolean;       // Controls visibility in POS cashier terminal (/pos)
   barcode?: string;          // Electronic barcode scale PLU / SKU code
   isSuperVipItem?: boolean;  // Super VIP nuts indicator for partitioned box margin safety
   inStock: boolean;
@@ -430,6 +433,8 @@ export interface StoreThemeConfig {
   showThemeSwitcher: boolean;
 }
 
+export type StaffRole = 'super_admin' | 'supplier' | 'cashier' | 'accountant';
+
 export type AdminRole =
   | 'super_admin'
   | 'admin'
@@ -439,7 +444,30 @@ export type AdminRole =
   | 'store_manager'
   | 'promo_partner';
 
-export type SystemRole = AdminRole | 'customer';
+export type SystemRole = AdminRole;
+
+export interface SupplyInvoiceItem {
+  productId: string;
+  productName: string;
+  quantityKg: number;
+  costPerKg: number;
+  totalCost: number;
+}
+
+export interface SupplyInvoice {
+  id: string;
+  invoiceNumber: string;
+  supplierId: string;
+  supplierName: string;
+  items: SupplyInvoiceItem[];
+  totalAmount: number;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  notes?: string;
+  adminNotes?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+}
 
 export interface StoreSettings {
   storeName: string;
@@ -470,8 +498,6 @@ export interface StoreSettings {
   cashierPassword?: string;
   accountantUsername?: string;
   accountantPassword?: string;
-  customerUsername?: string;
-  customerPassword?: string;
   managerPassword?: string;
   promoPartnerPassword?: string;
   wesamAdminPassword?: string;
@@ -492,24 +518,34 @@ export interface PosExpense {
 export interface PosShift {
   id: string;
   shiftNumber: string; // e.g. "SHIFT-101"
+  cashierId?: string;
   cashierName: string;
   shiftPeriod: 'الوردية الصباحية' | 'الوردية المسائية' | 'وردية اليوم الكامل';
   status: 'open' | 'closed';
+  startingCash?: number;
   openingCash: number;
+  cashSales?: number;
   cashSalesTotal: number;
+  cardSales?: number;
   vodafoneCashTotal: number;
   instapayTotal: number;
   vipRedeemedTotal: number;
   vipCashbackIssuedTotal: number;
+  expenses?: number;
   expensesTotal: number;
+  expectedCash?: number;
   expectedCashInDrawer: number;
+  actualCash?: number;
   actualClosingCash?: number;
+  variance?: number;
   cashDifference?: number;
   ordersCount: number;
   totalRevenue: number;
   totalRawCost: number;
   totalNetProfit: number;
+  startTime?: string;
   openedAt: string;
+  endTime?: string;
   closedAt?: string;
   notes?: string;
 }
@@ -525,6 +561,7 @@ export interface DatabaseSchema {
   promotions?: FlashPromotion[];
   posShifts?: PosShift[];
   posExpenses?: PosExpense[];
+  supplyInvoices?: SupplyInvoice[];
 }
 
 export interface AdminAuthSession {

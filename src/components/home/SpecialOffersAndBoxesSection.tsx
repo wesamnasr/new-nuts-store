@@ -52,7 +52,8 @@ export default function SpecialOffersAndBoxesSection({
 
   const handleQuickAddBox = (size: PartitionedBoxSize) => {
     const preset = PARTITIONED_BOX_PRESETS[size];
-    const slots = buildDefaultPartitionedBoxSlots(size, products);
+    const onlineProducts = products.filter((p) => p.showOnline !== false);
+    const slots = buildDefaultPartitionedBoxSlots(size, onlineProducts.length > 0 ? onlineProducts : products);
     addPartitionedBoxToCart(size, slots, preset.basePrice, 1);
     setAddedBoxId(size);
     setTimeout(() => setAddedBoxId(null), 1500);

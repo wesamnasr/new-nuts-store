@@ -12,7 +12,10 @@ export default function HomePage() {
   const { storeData, isLoading } = useStore();
 
   const categories = storeData?.categories || [];
-  const products = storeData?.products || [];
+  const products = useMemo(
+    () => (storeData?.products || []).filter((p) => p.showOnline !== false),
+    [storeData?.products]
+  );
   const promotions = useMemo(
     () => (storeData?.promotions || []).filter((p) => p.active),
     [storeData?.promotions]

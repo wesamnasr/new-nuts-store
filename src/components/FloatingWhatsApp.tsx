@@ -27,7 +27,7 @@ export default function FloatingWhatsApp() {
   }
 
   const whatsappNumber = formatWhatsAppPhone(storeData?.settings.whatsappNumber);
-  const storeName = storeData?.settings.storeName || 'محمصة الواحة الذهبية';
+  const storeName = storeData?.settings.storeName || 'محمصة حفصة للبن والمكسرات';
 
   const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
     `مرحباً ${storeName}، ${pageContent.floatingWhatsappMessage}`

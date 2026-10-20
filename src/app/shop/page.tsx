@@ -33,7 +33,10 @@ function ShopCatalogContent() {
   }, [searchParams]);
 
   const categories = storeData?.categories || [];
-  const products = storeData?.products || [];
+  const products = useMemo(
+    () => (storeData?.products || []).filter((p) => p.showOnline !== false),
+    [storeData?.products]
+  );
 
   // Extract distinct subCategories for current category
   const subCategories = useMemo(() => {

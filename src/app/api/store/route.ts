@@ -38,59 +38,15 @@ export async function PUT(request: NextRequest) {
     const role = auth.role || 'super_admin';
     const body = await request.json();
 
-    // Role 3 (Cashier) & Role 4 (Accountant) cannot modify catalog, settings, coupons, or shipping rates via PUT /api/store
-    if (role === 'cashier' || role === 'accountant') {
+    // Role 2 (Supplier), Role 3 (Cashier), and Role 4 (Accountant) cannot mutate store data via PUT /api/store
+    if (role === 'accountant' || role === 'cashier' || role === 'supplier') {
       return NextResponse.json(
         {
           error:
-            'عزل الأدوار: هذا الدور غير مصرح له بتعديل إعدادات المتجر أو الكتالوج العام (403 Forbidden)',
+            'عزل الأدوار: هذا الدور غير مصرح له بتعديل بيانات المتجر أو الكتالوج (403 Forbidden)',
         },
         { status: 403 }
       );
-    }
-
-    // Role 2 (Supplier): Isolated strictly to updating product supply costs (costPerKg, packagingCost), stock status (inStock), and origin
-    if (role === 'supplier') {
-      if (!Array.isArray(body.products)) {
-        return NextResponse.json(
-          {
-            error:
-              'عزل الأدوار: صلاحية المورد تقتصر على تحديث تكاليف التوريد وحالة المخزون فقط (403 Forbidden)',
-          },
-          { status: 403 }
-        );
-      }
-
-      const incomingById = new Map<string, Product>(
-        body.products.map((p: Product) => [p.id, p])
-      );
-
-      db.products = db.products.map((existingProd) => {
-        const incoming = incomingById.get(existingProd.id);
-        if (!incoming) return existingProd;
-        return {
-          ...existingProd,
-          costPerKg:
-            typeof incoming.costPerKg === 'number' && incoming.costPerKg >= 0
-              ? incoming.costPerKg
-              : existingProd.costPerKg,
-          packagingCost:
-            typeof incoming.packagingCost === 'number' && incoming.packagingCost >= 0
-              ? incoming.packagingCost
-              : existingProd.packagingCost,
-          inStock:
-            typeof incoming.inStock === 'boolean'
-              ? incoming.inStock
-              : existingProd.inStock,
-          origin:
-            typeof incoming.origin === 'string'
-              ? incoming.origin
-              : existingProd.origin,
-        };
-      });
-
-      await saveDbAsync(db);
-      return NextResponse.json(sanitizeStoreDataForRole(db, 'supplier'));
     }
 
     if (body.action === 'reset_demo') {
@@ -161,16 +117,6 @@ export async function PUT(request: NextRequest) {
           ? body.settings.accountantPassword.trim()
           : db.settings.accountantPassword || 'Acc#Fin2026';
 
-      const newCustomerUsername =
-        typeof body.settings.customerUsername === 'string' && body.settings.customerUsername.trim()
-          ? body.settings.customerUsername.trim()
-          : db.settings.customerUsername || 'customer_buyer';
-
-      const newCustomerPassword =
-        typeof body.settings.customerPassword === 'string' && body.settings.customerPassword.trim()
-          ? body.settings.customerPassword.trim()
-          : db.settings.customerPassword || 'Cust#Buy2026';
-
       if (newPassword !== (db.settings.adminPassword || 'Hafsa@Admin2026')) {
         rotatedToken = generateAdminToken(newPassword).token;
       }
@@ -186,8 +132,6 @@ export async function PUT(request: NextRequest) {
         cashierPassword: newCashierPassword,
         accountantUsername: newAccountantUsername,
         accountantPassword: newAccountantPassword,
-        customerUsername: newCustomerUsername,
-        customerPassword: newCustomerPassword,
         pageContent: incomingPageContent,
         themeConfig: incomingThemeConfig,
       };

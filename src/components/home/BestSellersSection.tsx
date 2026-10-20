@@ -26,11 +26,12 @@ export default function BestSellersSection({
 
   const displayedProducts = useMemo(() => {
     if (!products || products.length === 0) return [];
+    const onlineProds = products.filter((p) => p.showOnline !== false);
     if (activeFilter === 'all') {
-      const featured = products.filter((p) => p.featured);
-      return (featured.length >= 8 ? featured : products).slice(0, 8);
+      const featured = onlineProds.filter((p) => p.featured);
+      return (featured.length >= 8 ? featured : onlineProds).slice(0, 8);
     }
-    return products.filter((p) => p.categoryId === activeFilter).slice(0, 8);
+    return onlineProds.filter((p) => p.categoryId === activeFilter).slice(0, 8);
   }, [products, activeFilter]);
 
   if (!products || products.length === 0) return null;

@@ -51,8 +51,6 @@ function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
       cashierPassword: parsed.settings?.cashierPassword || 'Cash#Pos2026',
       accountantUsername: parsed.settings?.accountantUsername || 'accountant_fin',
       accountantPassword: parsed.settings?.accountantPassword || 'Acc#Fin2026',
-      customerUsername: parsed.settings?.customerUsername || 'customer_buyer',
-      customerPassword: parsed.settings?.customerPassword || 'Cust#Buy2026',
     };
   }
 
@@ -68,8 +66,6 @@ function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
         cashierPassword: parsed.settings.cashierPassword || 'Cash#Pos2026',
         accountantUsername: parsed.settings.accountantUsername || 'accountant_fin',
         accountantPassword: parsed.settings.accountantPassword || 'Acc#Fin2026',
-        customerUsername: parsed.settings.customerUsername || 'customer_buyer',
-        customerPassword: parsed.settings.customerPassword || 'Cust#Buy2026',
       };
       parsed.categories = structuredClone(initialDatabase.categories);
       parsed.shippingRates = structuredClone(initialDatabase.shippingRates);
@@ -101,12 +97,8 @@ function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
     if (!parsed.settings.accountantPassword || parsed.settings.accountantPassword === 'accountant') {
       parsed.settings.accountantPassword = 'Acc#Fin2026';
     }
-    if (!parsed.settings.customerUsername || parsed.settings.customerUsername === 'customer') {
-      parsed.settings.customerUsername = 'customer_buyer';
-    }
-    if (!parsed.settings.customerPassword || parsed.settings.customerPassword === 'customer') {
-      parsed.settings.customerPassword = 'Cust#Buy2026';
-    }
+    delete (parsed.settings as any).customerUsername;
+    delete (parsed.settings as any).customerPassword;
     if (typeof parsed.settings.vipCashbackPercent !== 'number') {
       parsed.settings.vipCashbackPercent = 5;
     }
@@ -138,9 +130,17 @@ function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
   if (!Array.isArray(parsed.posExpenses)) {
     parsed.posExpenses = structuredClone(initialDatabase.posExpenses || []);
   }
+  if (!Array.isArray(parsed.supplyInvoices)) {
+    parsed.supplyInvoices = structuredClone(initialDatabase.supplyInvoices || []);
+  }
 
   if (Array.isArray(parsed.orders)) {
     for (const order of parsed.orders) {
+      if ((order.status as string) === 'preparing') {
+        order.status = 'roasting_packing';
+      } else if (!order.status || !['pending', 'confirmed', 'roasting_packing', 'shipped', 'delivered', 'cancelled'].includes(order.status)) {
+        order.status = 'pending';
+      }
       if (Array.isArray(order.items)) {
         for (const item of order.items) {
           item.productImage = getSafeImageUrl(item.productImage);
@@ -157,6 +157,13 @@ function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
   if (Array.isArray(parsed.products)) {
     for (const prod of parsed.products) {
       prod.image = getSafeImageUrl(prod.image);
+      prod.showOnline = prod.showOnline !== false;
+      prod.showInPos = prod.showInPos !== false;
+      prod.stockKg = typeof prod.stockKg === 'number' ? prod.stockKg : 50;
+      prod.packagingCost = typeof prod.packagingCost === 'number' ? prod.packagingCost : 5;
+      if (typeof prod.inStock !== 'boolean') {
+        prod.inStock = prod.stockKg > 0;
+      }
       if (
         Array.isArray(prod.weights) &&
         !prod.weights.some((w) => (w.weightGrams || w.grams) === 125)
