@@ -357,6 +357,26 @@ export function getResolvedPageContent(settings?: StoreSettings | null): StorePa
     return DEFAULT_PAGE_CONTENT;
   }
   const pc = settings.pageContent;
+  if (
+    pc.headerSubtitle?.includes('HAFSA ROASTERY') ||
+    pc.heroDescription?.includes('24 عين') ||
+    pc.customBoxBannerDesc?.includes('اختر حجم البوكس المقسم')
+  ) {
+    return {
+      ...DEFAULT_PAGE_CONTENT,
+      showAnnouncementBar: pc.showAnnouncementBar ?? true,
+      showCustomBoxBanner: pc.showCustomBoxBanner ?? true,
+      showMixedBoxesSection: pc.showMixedBoxesSection ?? true,
+      showCouponsSection: pc.showCouponsSection ?? true,
+      showTrustSection: pc.showTrustSection ?? true,
+      enableCod: pc.enableCod ?? true,
+      enableInstapay: pc.enableInstapay ?? true,
+      enableVodafoneCash: pc.enableVodafoneCash ?? true,
+      enableVipWallet: pc.enableVipWallet ?? true,
+      showFloatingWhatsapp: pc.showFloatingWhatsapp ?? true,
+      heroImage: getSafeImageUrl(pc.heroImage, DEFAULT_PAGE_CONTENT.heroImage),
+    };
+  }
   return {
     ...DEFAULT_PAGE_CONTENT,
     ...pc,

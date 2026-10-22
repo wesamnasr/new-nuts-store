@@ -165,7 +165,9 @@ export function getResolvedRolePermissions(
     return Array.from(new Set(valid));
   };
 
-  const rawAccountant = sanitizeList(raw?.accountant, DEFAULT_ROLE_PERMISSIONS.accountant);
+  const rawAccountant = sanitizeList(raw?.accountant, DEFAULT_ROLE_PERMISSIONS.accountant).filter(
+    (p) => p !== 'overview'
+  );
   const isLegacyThreeTabAccountant =
     rawAccountant.length <= 3 &&
     rawAccountant.every((p) =>
@@ -176,7 +178,9 @@ export function getResolvedRolePermissions(
     supplier: sanitizeList(raw?.supplier, DEFAULT_ROLE_PERMISSIONS.supplier),
     accountant: isLegacyThreeTabAccountant
       ? [...DEFAULT_ROLE_PERMISSIONS.accountant]
-      : rawAccountant,
+      : rawAccountant.length > 0
+        ? rawAccountant
+        : [...DEFAULT_ROLE_PERMISSIONS.accountant],
     cashier: sanitizeList(raw?.cashier, DEFAULT_ROLE_PERMISSIONS.cashier),
   };
 }
