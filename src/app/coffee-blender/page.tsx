@@ -11,6 +11,7 @@ import {
   Wand2,
 } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
+import { updateUrlQueryParams, useBrowserUrlSync } from '@/lib/url-sync';
 import {
   COFFEE_ORIGINS,
   COFFEE_ROAST_LEVELS,
@@ -42,6 +43,52 @@ export default function CoffeeBlenderPage() {
   const [customBlendName, setCustomBlendName] = useState<string>('توليفة مزاج بني مزار');
   const [justAdded, setJustAdded] = useState<boolean>(false);
 
+  useBrowserUrlSync((params) => {
+    const presetParam = params.get('preset');
+    if (presetParam === 'royal') {
+      setCustomBlendName('توليفة حفصة الملكية');
+      setBrazilianPercent(50);
+      setColombianPercent(30);
+      setHabashiPercent(0);
+      setIndianPercent(20);
+      setRoastLevel('وسط (مضبوط)');
+      setSpicing('محوج مخصوص بحبهان وزر ورد');
+    } else if (presetParam === 'ameed') {
+      setCustomBlendName('خلطة العميد الفاخرة');
+      setBrazilianPercent(40);
+      setColombianPercent(40);
+      setHabashiPercent(20);
+      setIndianPercent(0);
+      setRoastLevel('وسط (مضبوط)');
+      setSpicing('محوج ملكي بالحبهان والزعفران وجوزة الطيب');
+    } else if (presetParam === 'turkish') {
+      setCustomBlendName('توليفة وش تركي كثيف');
+      setBrazilianPercent(60);
+      setColombianPercent(0);
+      setHabashiPercent(10);
+      setIndianPercent(30);
+      setRoastLevel('غامق (ثقيل)');
+      setSpicing('محوج عادي بحبهان فاخر');
+    }
+
+    const rParam = params.get('roast') as CoffeeRoastLevel | null;
+    if (rParam && COFFEE_ROAST_LEVELS.includes(rParam)) {
+      setRoastLevel(rParam);
+    }
+    const sParam = params.get('spicing') as CoffeeSpicingOption | null;
+    if (sParam && COFFEE_SPICING_OPTIONS.some((s) => s.option === sParam)) {
+      setSpicing(sParam);
+    }
+    const gParam = params.get('grind') as CoffeeGrindType | null;
+    if (gParam && COFFEE_GRIND_TYPES.includes(gParam)) {
+      setGrindType(gParam);
+    }
+    const wParam = Number(params.get('weight')) as WeightGrams;
+    if ([125, 250, 500, 1000].includes(wParam)) {
+      setWeightGrams(wParam);
+    }
+  });
+
   const applyPresetBlend = (
     name: string,
     braz: number,
@@ -58,6 +105,9 @@ export default function CoffeeBlenderPage() {
     setIndianPercent(ind);
     setRoastLevel(roast);
     setSpicing(spic);
+    const presetSlug =
+      name.includes('حفصة') ? 'royal' : name.includes('العميد') ? 'ameed' : 'turkish';
+    updateUrlQueryParams({ preset: presetSlug, roast, spicing: spic });
   };
 
   const blendCalc = useMemo(
@@ -104,12 +154,12 @@ export default function CoffeeBlenderPage() {
           <div className="space-y-2">
             <div className="inline-flex items-center gap-1.5 bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40 px-3.5 py-1 rounded-full text-xs font-black">
               <Coffee className="w-3.5 h-3.5" />
-              <span>معمل توليفة البن الخاصة • صوامع محمصة حفصة النحاسية الأربعة</span>
+              <span>معمل توليفة البن</span>
             </div>
             <h1 className="font-cairo text-2xl sm:text-4xl font-black text-white">
-              صمّم توليفة قهوتك الخاصة بالجرام والتحويجة!
+              صمّم توليفة قهوتك الخاصة
             </h1>
-            <p className="text-xs sm:text-sm text-[#F3ECE1]/85 max-w-2xl">
+            <p className="hidden">
               امزج بين البن البرازيلي والكولومبي والحبشي والهندي، واختر درجة التحميص والتحويجة
               ونوع الطحنة، وسنطبع اسمك على ستيكر البارستا ونطحنها لك طازجة لحظة الطلب.
             </p>
@@ -277,7 +327,10 @@ export default function CoffeeBlenderPage() {
                   <button
                     key={level}
                     type="button"
-                    onClick={() => setRoastLevel(level)}
+                    onClick={() => {
+                      setRoastLevel(level);
+                      updateUrlQueryParams({ roast: level });
+                    }}
                     className={`p-3 rounded-2xl border-2 text-center transition cursor-pointer ${
                       isSelected
                         ? 'bg-[#231710] text-[#D4AF37] border-[#D4AF37] font-black shadow'
@@ -312,7 +365,10 @@ export default function CoffeeBlenderPage() {
                   <button
                     key={opt.option}
                     type="button"
-                    onClick={() => setSpicing(opt.option)}
+                    onClick={() => {
+                      setSpicing(opt.option);
+                      updateUrlQueryParams({ spicing: opt.option });
+                    }}
                     className={`p-3.5 rounded-2xl border-2 text-right transition cursor-pointer flex items-center justify-between gap-2 ${
                       isSelected
                         ? 'bg-[#231710] text-[#FAF6F0] border-[#D4AF37] shadow'
@@ -353,7 +409,10 @@ export default function CoffeeBlenderPage() {
                   <button
                     key={g}
                     type="button"
-                    onClick={() => setGrindType(g)}
+                    onClick={() => {
+                      setGrindType(g);
+                      updateUrlQueryParams({ grind: g });
+                    }}
                     className={`p-2.5 rounded-xl border text-xs font-extrabold transition cursor-pointer ${
                       grindType === g
                         ? 'bg-[#231710] text-[#D4AF37] border-[#D4AF37]'
@@ -382,7 +441,10 @@ export default function CoffeeBlenderPage() {
                   <button
                     key={w.g}
                     type="button"
-                    onClick={() => setWeightGrams(w.g)}
+                    onClick={() => {
+                      setWeightGrams(w.g);
+                      updateUrlQueryParams({ weight: w.g });
+                    }}
                     className={`p-2.5 rounded-xl border text-xs font-black transition cursor-pointer tabular-nums ${
                       weightGrams === w.g
                         ? 'bg-[#D4AF37] text-[#231710] border-[#231710]'

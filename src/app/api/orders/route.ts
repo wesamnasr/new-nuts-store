@@ -18,7 +18,7 @@ import {
   calculateVipCashback,
 } from '@/lib/pricing';
 import { getSafeImageUrl } from '@/lib/defaults';
-import { verifyAdminRequest } from '@/lib/auth';
+import { hasRolePermission, verifyAdminRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,7 +68,14 @@ export async function GET(request: NextRequest) {
   const auth = verifyAdminRequest(request);
   if (auth.isAuthenticated) {
     // Role 2: Supplier is isolated from customer orders
-    if (auth.role === 'supplier' || auth.role === 'promo_partner') {
+    if (
+      (auth.role === 'supplier' &&
+        !hasRolePermission('supplier', 'orders', db.settings) &&
+        !hasRolePermission('supplier', 'accounting_portal', db.settings) &&
+        !hasRolePermission('supplier', 'cashier_portal', db.settings) &&
+        !hasRolePermission('supplier', 'overview', db.settings)) ||
+      auth.role === 'promo_partner'
+    ) {
       return NextResponse.json({ orders: [] });
     }
     // Role 3: Cashier sees orders for preparation/delivery without raw cost or net profit
@@ -605,7 +612,11 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    if (auth.role === 'supplier' || auth.role === 'promo_partner' || auth.role === 'accountant') {
+    if (
+      (auth.role === 'supplier' && !hasRolePermission('supplier', 'orders', db.settings) && !hasRolePermission('supplier', 'cashier_portal', db.settings)) ||
+      (auth.role === 'accountant' && !hasRolePermission('accountant', 'cashier_portal', db.settings)) ||
+      auth.role === 'promo_partner'
+    ) {
       return NextResponse.json(
         { error: 'عزل الأدوار: هذا الدور غير مصرح له بتعديل حالات الطلبات' },
         { status: 403 }
@@ -670,7 +681,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (orderId === 'all') {
-      db.orders = [];
+      return NextResponse.json({ error: 'غير مسموح بمسح السجل بالكامل' }, { status: 400 });
     } else {
       db.orders = db.orders.filter((o) => o.id !== orderId);
     }

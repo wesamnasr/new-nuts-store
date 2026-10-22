@@ -19,6 +19,7 @@ import { useStore } from '@/context/StoreContext';
 import { calculateVipCashback } from '@/lib/pricing';
 import { getSafeImageUrl } from '@/lib/defaults';
 import { VipMember } from '@/types/store';
+import { updateUrlQueryParams, useBrowserUrlSync } from '@/lib/url-sync';
 
 export default function VipWalletPage() {
   const {
@@ -41,6 +42,18 @@ export default function VipWalletPage() {
 
   // Interactive Cashback Calculator state
   const [simOrderAmount, setSimOrderAmount] = useState<number>(300);
+
+  useBrowserUrlSync((params) => {
+    const pParam = params.get('phone');
+    if (pParam) {
+      setPhoneInput(pParam);
+      setActiveVipPhone(pParam);
+    }
+    const simParam = Number(params.get('sim'));
+    if (simParam && simParam >= 150) {
+      setSimOrderAmount(simParam);
+    }
+  });
 
   const currentMember = lookedUpMember || activeVipMember || storeData?.vipMembers?.[0] || null;
 
@@ -70,6 +83,7 @@ export default function VipWalletPage() {
       } else if (data.member) {
         setLookedUpMember(data.member);
         setActiveVipPhone(data.member.phone);
+        updateUrlQueryParams({ phone: data.member.phone });
         await refreshStore();
         setFeedback({
           type: 'success',
@@ -95,12 +109,12 @@ export default function VipWalletPage() {
           <div className="lg:col-span-7 space-y-3">
             <div className="inline-flex items-center gap-1.5 bg-[#D4AF37] text-[#231710] px-3.5 py-1 rounded-full text-xs font-black">
               <Crown className="w-4 h-4" />
-              <span>نادي ومحفظة عملاء «حفصة VIP» • فرع بني مزار</span>
+              <span>محفظة حفصة VIP</span>
             </div>
             <h1 className="font-cairo text-2xl sm:text-4xl font-black text-white leading-tight">
-              محفظتك الذهبية للكاش باك الفوري (5%) في الموقع وفرع بني مزار
+              محفظتك الذهبية للكاش باك الفوري (5%)
             </h1>
-            <p className="text-xs sm:text-sm text-[#F3ECE1]/85 leading-relaxed max-w-2xl">
+            <p className="hidden">
               بدون بطاقات بلاستيكية أو تعقيد! رقم موبايلك هو حسابك في محمصة حفصة. اكسب 5% كاش باك
               نقدي على كل طلب من 150 ج.م، واستبدل نقاطك كخصم فوري عند الدفع أونلاين أو عبر مسح
               الـ QR Code عند الكاشير أمام مسجد الزراعيين.

@@ -68,11 +68,15 @@ export default function Navbar() {
   };
 
   const handleInstallPwa = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      await deferredPrompt.userChoice;
-      setDeferredPrompt(null);
-    } else {
+    try {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        setDeferredPrompt(null);
+      } else {
+        setShowInstallModal(true);
+      }
+    } catch {
       setShowInstallModal(true);
     }
   };
@@ -136,7 +140,7 @@ export default function Navbar() {
                 </div>
                 <span className="text-[10px] font-bold text-[#6E5D4F] hidden sm:flex items-center gap-1 truncate">
                   <MapPin className="w-2.5 h-2.5 text-[#C88A4B] shrink-0" />
-                  <span>بني مزار — أمام مسجد الزراعيين • تحميص يومي طازج</span>
+                  <span>بني مزار — أمام مسجد الزراعيين</span>
                 </span>
               </div>
             </Link>

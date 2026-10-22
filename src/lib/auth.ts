@@ -1,5 +1,13 @@
 import crypto from 'crypto';
-import { AdminRole, DatabaseSchema, StoreSettings, SystemRole } from '@/types/store';
+import {
+  AdminPermissionId,
+  AdminRole,
+  DatabaseSchema,
+  NonAdminStaffRole,
+  RolePermissionsConfig,
+  StoreSettings,
+  SystemRole,
+} from '@/types/store';
 import { getDb } from '@/lib/db';
 
 const SESSION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -20,6 +28,190 @@ export const ROLE_LABELS_AR: Record<SystemRole, string> = {
   store_manager: 'مدير التشغيل والطلبات',
   promo_partner: 'شريك العروض والتسويق',
 };
+
+export const ALL_DASHBOARD_PERMISSIONS: AdminPermissionId[] = [
+  'overview',
+  'orders',
+  'products',
+  'categories',
+  'supply_portal',
+  'supply_invoices',
+  'accounting_portal',
+  'cashier_portal',
+  'operations',
+  'shipping',
+  'coupons',
+  'reviews',
+  'settings',
+];
+
+export const DEFAULT_ROLE_PERMISSIONS: RolePermissionsConfig = {
+  supplier: ['supply_portal', 'supply_invoices', 'categories'],
+  accountant: ['accounting_portal', 'orders', 'supply_invoices'],
+  cashier: ['cashier_portal', 'orders'],
+};
+
+export interface DashboardPermissionMeta {
+  id: AdminPermissionId;
+  label: string;
+  description: string;
+  badgeCategory: string;
+}
+
+export const DASHBOARD_PERMISSION_META: DashboardPermissionMeta[] = [
+  {
+    id: 'overview',
+    label: 'نظرة عامة والإحصائيات',
+    description: 'لوحة المؤشرات العامة ومبيعات المتجر وصافي الأرباح والتقارير السريعة',
+    badgeCategory: 'الإدارة العامة',
+  },
+  {
+    id: 'orders',
+    label: 'الطلبات والعملاء',
+    description: 'استعراض ومتابعة طلبات الأونلاين والكاشير وتحديث حالات التجهيز والتوصيل',
+    badgeCategory: 'المبيعات والطلبات',
+  },
+  {
+    id: 'products',
+    label: 'المنتجات والمخزون',
+    description: 'إضافة وتعديل المنتجات وأسعار البيع للجمهور والعروض وتوافر الأصناف',
+    badgeCategory: 'المنتجات والمخزون',
+  },
+  {
+    id: 'categories',
+    label: 'الأقسام والتصنيفات',
+    description: 'إدارة أقسام المتجر وتصنيفات المحمصة وترتيب ظهورها',
+    badgeCategory: 'المنتجات والمخزون',
+  },
+  {
+    id: 'supply_portal',
+    label: 'بوابة التوريد والمخزون (المورد)',
+    description: 'تحديث أسعار التكلفة بالجملة، التغليف، بلد المنشأ، النواقص، وإرسال دفعات التوريد',
+    badgeCategory: 'التوريد والمشتريات',
+  },
+  {
+    id: 'supply_invoices',
+    label: 'فواتير التوريد (عرفات)',
+    description: 'استعراض سجل فواتير التوريد، إنشاء فواتير توريد جديدة، ومتابعة حالة الاعتماد',
+    badgeCategory: 'التوريد والمشتريات',
+  },
+  {
+    id: 'accounting_portal',
+    label: 'بوابة المحاسبة والتدقيق المالي (المحاسب)',
+    description: 'التقارير المالية الشاملة، أرباح القنوات، مراجعة ورديات الكاشير (Z-Report)، المصروفات، وتصدير Excel',
+    badgeCategory: 'المالية والمحاسبة',
+  },
+  {
+    id: 'cashier_portal',
+    label: 'نقطة البيع والورديات (الكاشير POS)',
+    description: 'شاشة كاشير الفرع التفاعلية، الميزان، البوكسات، توليفة البن، الفواتير الفورية، وإغلاق الوردية',
+    badgeCategory: 'نقطة البيع POS',
+  },
+  {
+    id: 'operations',
+    label: 'العمليات والـ VIP والعروض',
+    description: 'إدارة عملاء محفظة VIP الكاش باك، العروض الخاطفة، وسجل الورديات والمصروفات',
+    badgeCategory: 'الإدارة والتسويق',
+  },
+  {
+    id: 'shipping',
+    label: 'الشحن والتوصيل (بني مزار)',
+    description: 'إدارة مناطق الشحن وأسعار التوصيل للبندر والقرى والحد الأدنى للطلبات',
+    badgeCategory: 'الإعدادات والتشغيل',
+  },
+  {
+    id: 'coupons',
+    label: 'كوبونات الخصم',
+    description: 'إنشاء وتفعيل وإيقاف أكواد وكوبونات الخصم التسويقية',
+    badgeCategory: 'الإدارة والتسويق',
+  },
+  {
+    id: 'reviews',
+    label: 'تقييمات العملاء',
+    description: 'مراجعة وإدارة تعليقات وتقييمات المشترين على المنتجات',
+    badgeCategory: 'الإدارة والتسويق',
+  },
+  {
+    id: 'settings',
+    label: 'إعدادات المتجر والمظهر',
+    description: 'تعديل بيانات المتجر، الثيمات، محتوى الصفحات، وأرقام الدفع والتواصل',
+    badgeCategory: 'الإعدادات والتشغيل',
+  },
+];
+
+/**
+ * Resolve role permissions from StoreSettings, falling back to DEFAULT_ROLE_PERMISSIONS.
+ */
+export function getResolvedRolePermissions(
+  settings?: StoreSettings | null
+): RolePermissionsConfig {
+  const raw = settings?.rolePermissions;
+  const sanitizeList = (
+    list: unknown,
+    fallback: AdminPermissionId[]
+  ): AdminPermissionId[] => {
+    if (!Array.isArray(list)) return [...fallback];
+    const valid = list.filter(
+      (item): item is AdminPermissionId =>
+        typeof item === 'string' &&
+        ALL_DASHBOARD_PERMISSIONS.includes(item as AdminPermissionId)
+    );
+    return Array.from(new Set(valid));
+  };
+
+  return {
+    supplier: sanitizeList(raw?.supplier, DEFAULT_ROLE_PERMISSIONS.supplier),
+    accountant: sanitizeList(raw?.accountant, DEFAULT_ROLE_PERMISSIONS.accountant),
+    cashier: sanitizeList(raw?.cashier, DEFAULT_ROLE_PERMISSIONS.cashier),
+  };
+}
+
+/**
+ * Check if a given role has access to a specific dashboard permission/page.
+ * Admin ('super_admin' / 'admin') always has full access to all permissions.
+ */
+export function hasRolePermission(
+  role: AdminRole | string | null | undefined,
+  permission: AdminPermissionId,
+  settings?: StoreSettings | null
+): boolean {
+  const normalized = normalizeAdminRole(role);
+  if (normalized === 'super_admin') {
+    return true;
+  }
+  const resolved = getResolvedRolePermissions(settings);
+  if (
+    normalized === 'supplier' ||
+    normalized === 'accountant' ||
+    normalized === 'cashier'
+  ) {
+    return resolved[normalized].includes(permission);
+  }
+  if (normalized === 'store_manager') {
+    return permission === 'orders' || permission === 'cashier_portal';
+  }
+  if (normalized === 'promo_partner') {
+    return permission === 'coupons' || permission === 'reviews';
+  }
+  return false;
+}
+
+/**
+ * Return the list of AdminRoles allowed to access a given permission/capability.
+ */
+export function getAllowedRolesForPermission(
+  permission: AdminPermissionId,
+  settings?: StoreSettings | null
+): AdminRole[] {
+  const allowed: AdminRole[] = ['super_admin', 'admin'];
+  const nonAdminRoles: NonAdminStaffRole[] = ['supplier', 'accountant', 'cashier'];
+  for (const r of nonAdminRoles) {
+    if (hasRolePermission(r, permission, settings)) {
+      allowed.push(r);
+    }
+  }
+  return allowed;
+}
 
 /**
  * Resolve the configured username for a specific role from StoreSettings.
@@ -326,8 +518,8 @@ export function sanitizePublicStoreData(db: DatabaseSchema): DatabaseSchema {
 /**
  * Role-isolated store data projection for the 4 staff roles and unauthenticated public storefront:
  * 1. super_admin / admin: Full access to all store data, costs, profits, orders, shifts, settings & role passwords
- * 2. supplier: Access to products (including wholesale costPerKg, packagingCost, inStock, origin) & categories; isolated from customer orders, POS shifts/expenses, VIP members, and coupons
- * 3. cashier: Access to POS products (retail prices only, NO costPerKg), active orders & POS shifts (NO wholesale rawCostTotal or netProfitEgp), and VIP lookup
+ * 2. supplier: Access to products (including wholesale costPerKg, packagingCost, inStock, origin) & categories; isolated from customer orders, POS shifts/expenses, VIP members, and coupons (unless granted by Admin in rolePermissions)
+ * 3. cashier: Access to POS products (retail prices only, NO costPerKg), active orders & POS shifts (NO wholesale rawCostTotal or netProfitEgp), and VIP lookup (unless granted by Admin in rolePermissions)
  * 4. accountant: Access to all financial records (orders, products with costs & margins, POS shifts, POS expenses, coupons, VIP liabilities), but no role passwords
  * Public/Unauthenticated: Public storefront data only via sanitizePublicStoreData
  */
@@ -348,21 +540,51 @@ export function sanitizeStoreDataForRole(
 
   const safeSettings = stripAllPasswords(db.settings);
 
-  // Role 2: Supplier (المورد) -> Supply & Inventory only (wholesale costPerKg, packagingCost, inStock, categories)
+  // Role 2: Supplier (المورد) -> Supply & Inventory by default, dynamically adaptable via rolePermissions
   if (normalized === 'supplier') {
+    const canSeeOrders =
+      hasRolePermission('supplier', 'orders', db.settings) ||
+      hasRolePermission('supplier', 'accounting_portal', db.settings) ||
+      hasRolePermission('supplier', 'cashier_portal', db.settings) ||
+      hasRolePermission('supplier', 'overview', db.settings);
+    const canSeePosAndVip =
+      hasRolePermission('supplier', 'accounting_portal', db.settings) ||
+      hasRolePermission('supplier', 'cashier_portal', db.settings) ||
+      hasRolePermission('supplier', 'operations', db.settings) ||
+      hasRolePermission('supplier', 'overview', db.settings);
+    const canSeeCoupons =
+      hasRolePermission('supplier', 'coupons', db.settings) ||
+      hasRolePermission('supplier', 'accounting_portal', db.settings) ||
+      hasRolePermission('supplier', 'cashier_portal', db.settings) ||
+      hasRolePermission('supplier', 'overview', db.settings);
+
     return {
       ...db,
       settings: safeSettings,
-      orders: [], // Supplier cannot see customer orders or phone numbers
-      posShifts: [], // Supplier cannot see cashier shifts or drawer cash
-      posExpenses: [], // Supplier cannot see store petty cash expenses
-      vipMembers: [], // Supplier cannot see VIP customer wallets
-      coupons: [], // Supplier cannot see marketing coupons
+      orders: canSeeOrders ? db.orders : [],
+      posShifts: canSeePosAndVip ? db.posShifts : [],
+      posExpenses: canSeePosAndVip ? db.posExpenses : [],
+      vipMembers: canSeePosAndVip ? db.vipMembers : [],
+      coupons: canSeeCoupons ? db.coupons : [],
     };
   }
 
-  // Role 3: Cashier (الكاشير) -> POS & Order Fulfillment only (strictly isolated from wholesale costPerKg & net profit)
+  // Role 3: Cashier (الكاشير) -> POS & Order Fulfillment by default, dynamically adaptable via rolePermissions
   if (normalized === 'cashier' || normalized === 'store_manager') {
+    const canSeeWholesaleAndProfit =
+      normalized === 'cashier' &&
+      (hasRolePermission('cashier', 'supply_portal', db.settings) ||
+        hasRolePermission('cashier', 'accounting_portal', db.settings) ||
+        hasRolePermission('cashier', 'overview', db.settings) ||
+        hasRolePermission('cashier', 'products', db.settings));
+
+    const canSeeSupplyInvoices =
+      normalized === 'cashier' &&
+      (hasRolePermission('cashier', 'supply_invoices', db.settings) ||
+        hasRolePermission('cashier', 'supply_portal', db.settings) ||
+        hasRolePermission('cashier', 'accounting_portal', db.settings) ||
+        hasRolePermission('cashier', 'overview', db.settings));
+
     const productsWithoutWholesaleCost = Array.isArray(db.products)
       ? db.products.map((p) => {
           const copy = { ...p };
@@ -411,11 +633,11 @@ export function sanitizeStoreDataForRole(
     return {
       ...db,
       settings: safeSettings,
-      products: productsWithoutWholesaleCost,
-      orders: ordersWithoutProfit,
-      posShifts: shiftsWithoutProfit,
-      promotions: promosWithoutProfit,
-      supplyInvoices: [],
+      products: canSeeWholesaleAndProfit ? db.products : productsWithoutWholesaleCost,
+      orders: canSeeWholesaleAndProfit ? db.orders : ordersWithoutProfit,
+      posShifts: canSeeWholesaleAndProfit ? db.posShifts : shiftsWithoutProfit,
+      promotions: canSeeWholesaleAndProfit ? db.promotions : promosWithoutProfit,
+      supplyInvoices: canSeeSupplyInvoices ? db.supplyInvoices : [],
     };
   }
 
@@ -440,4 +662,3 @@ export function sanitizeStoreDataForRole(
 
 // Re-export CSV utilities from dedicated client-safe shared module
 export { generateOrdersCsv, escapeCsvField } from '@/lib/csv';
-

@@ -22,6 +22,11 @@ import {
   calculatePromoProfitSafety,
 } from '@/lib/pricing';
 import { FlashPromotion, Product } from '@/types/store';
+import {
+  updateUrlQueryParams,
+  buildUrlWithParams,
+  useBrowserUrlSync,
+} from '@/lib/url-sync';
 
 interface HafsaOperationsStudioProps {
   adminToken: string | null;
@@ -40,6 +45,20 @@ export default function HafsaOperationsStudio({
   const [subTab, setSubTab] = useState<
     'kilo_updater' | 'partner4_promos' | 'vip_cashier' | 'qr_codes' | 'wesam_marketing'
   >('kilo_updater');
+
+  useBrowserUrlSync((params) => {
+    const st = params.get('subtab');
+    if (
+      st &&
+      ['kilo_updater', 'partner4_promos', 'vip_cashier', 'qr_codes', 'wesam_marketing'].includes(st)
+    ) {
+      setSubTab(
+        st as 'kilo_updater' | 'partner4_promos' | 'vip_cashier' | 'qr_codes' | 'wesam_marketing'
+      );
+    } else if (!st) {
+      setSubTab('kilo_updater');
+    }
+  });
 
   const products = storeData?.products || [];
   const promotions = storeData?.promotions || [];
@@ -242,10 +261,10 @@ export default function HafsaOperationsStudio({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#E6DFD3] pb-4">
         <div>
           <span className="text-[10.5px] font-black text-[#C88A4B] uppercase tracking-wider block">
-            ★ مركز قيادة الشركاء الأربعة • محمصة حفصة للبن والمكسرات (بني مزار) ★
+            ★ أدوات التشغيل الذكية • محمصة حفصة ★
           </span>
           <h2 className="font-cairo text-lg sm:text-xl font-black text-[#231710]">
-            أدوات التشغيل الذكية: الأوزان الأربعة • حاسبة الشريك الرابع • كاشير VIP • رموز الـ QR
+            الأوزان الأربعة • حاسبة العروض • نادي VIP • رموز الـ QR
           </h2>
         </div>
 
@@ -255,7 +274,7 @@ export default function HafsaOperationsStudio({
             className="bg-[#D4AF37] hover:bg-[#C88A4B] text-[#231710] px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-sm transition"
           >
             <Scale className="w-3.5 h-3.5" />
-            <span>⚖️ فتح شاشة الكاشير والميزان باللمس (POS)</span>
+            <span>⚖️ شاشة الكاشير (POS)</span>
           </a>
           <button
             type="button"
@@ -263,7 +282,7 @@ export default function HafsaOperationsStudio({
             className="bg-[#231710] hover:bg-[#3A2519] text-[#D4AF37] border border-[#D4AF37] px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition"
           >
             <Bell className="w-3.5 h-3.5" />
-            <span>🔔 اختبار جرس الطلبات الصوتية</span>
+            <span>🔔 اختبار جرس التنبيه</span>
           </button>
         </div>
       </div>
@@ -273,29 +292,36 @@ export default function HafsaOperationsStudio({
         {[
           {
             id: 'kilo_updater',
-            label: '⚖️ تحديث سعر الكيلو والـ 4 أوزان (شيت أ. عرفات)',
+            label: '⚖️ أسعار الكيلو والـ 4 أوزان',
           },
           {
             id: 'partner4_promos',
-            label: '🔥 استوديو الشريك الرابع وحاسبة أمان الأرباح',
+            label: '🔥 حاسبة العروض والأرباح',
           },
           {
             id: 'vip_cashier',
-            label: '👑 كاشير المحل ومزامنة محفظة حفصة VIP',
+            label: '👑 أعضاء نادي VIP',
           },
           {
             id: 'qr_codes',
-            label: '📱 طباعة الـ 3 رموز QR للمحل',
+            label: '📱 رموز الـ QR',
           },
           {
             id: 'wesam_marketing',
-            label: '📈 تسويق م. وسام ولوجستيات بني مزار',
+            label: '📈 التسويق والتوصيل',
           },
         ].map((tab) => (
-          <button
+          <a
             key={tab.id}
-            type="button"
-            onClick={() => setSubTab(tab.id as any)}
+            href={buildUrlWithParams('/admin', {
+              tab: 'operations',
+              subtab: tab.id === 'kilo_updater' ? null : tab.id,
+            })}
+            onClick={(e) => {
+              e.preventDefault();
+              setSubTab(tab.id as any);
+              updateUrlQueryParams({ subtab: tab.id === 'kilo_updater' ? null : tab.id });
+            }}
             className={`px-3 py-2 rounded-lg text-xs font-extrabold whitespace-nowrap transition cursor-pointer ${
               subTab === tab.id
                 ? 'bg-[#231710] text-[#D4AF37] shadow-xs font-black'
@@ -303,7 +329,7 @@ export default function HafsaOperationsStudio({
             }`}
           >
             {tab.label}
-          </button>
+          </a>
         ))}
       </div>
 
@@ -311,7 +337,8 @@ export default function HafsaOperationsStudio({
       {subTab === 'kilo_updater' && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[#FAF6F0] p-3 rounded-xl border border-[#E6DFD3]">
-            <p className="text-xs text-[#231710] font-bold">
+            <p className="text-xs text-[#231710] font-bold">تحديث سريع لسعر وتكلفة الكيلو</p>
+            <p className="hidden">
               💡 عدّل <strong>سعر بيع الكيلو</strong> أو <strong>تكلفة الكيلو (شيت أ. عرفات)</strong>{' '}
               واضغط حفظ ليقوم النظام تلقائياً بتحديث أسعار (ثمن 125ج • ربع 250ج • نصف 500ج • كيلو 1000ج).
             </p>
@@ -563,7 +590,7 @@ export default function HafsaOperationsStudio({
               <h3 className="font-cairo text-base sm:text-lg font-black text-white">
                 شاشة الكاشير والميزان الإلكتروني باللمس (POS)
               </h3>
-              <p className="text-xs text-[#F3ECE1]/85 leading-relaxed">
+              <p className="hidden">
                 تم توحيد جميع عمليات البيع المباشر، الوزن بالجرام أو بالجنيه، قراءة باركود الميزان،
                 وخصم وإضافة كاش باك محفظة VIP (5%) وتقفيل الورديات داخل شاشة الكاشير المخصصة.
               </p>

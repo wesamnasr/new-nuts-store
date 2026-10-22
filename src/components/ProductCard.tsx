@@ -59,13 +59,16 @@ export default function ProductCard({ product }: ProductCardProps) {
       : null;
 
   const getShortWeightTitle = getShortWeightLabel;
+  const productDetailHref = `/product/${product.slug || product.id}?weight=${encodeURIComponent(
+    selectedWeight?.id || ''
+  )}&roast=${encodeURIComponent(selectedRoast)}`;
 
   return (
     <div className="theme-product-card group bg-white rounded-2xl border border-[#E6DFD3] shadow-xs hover:shadow-lg hover:border-[#C88A4B] transition-all duration-300 flex flex-col overflow-hidden">
       {/* Product Image Header */}
       <div className="relative h-44 sm:h-48 w-full overflow-hidden bg-[#F3ECE1]">
         <Link
-          href={`/product/${product.slug || product.id}`}
+          href={productDetailHref}
           className="block w-full h-full overflow-hidden"
         >
           <img
@@ -109,7 +112,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div>
           <div className="flex items-start justify-between gap-1">
             <h3 className="font-cairo text-xs sm:text-[13px] font-extrabold text-[#231710] hover:text-[#C88A4B] line-clamp-1 leading-snug transition">
-              <Link href={`/product/${product.slug || product.id}`}>
+              <Link href={productDetailHref}>
                 {product.name}
               </Link>
             </h3>
@@ -119,7 +122,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             </span>
           </div>
           <p className="text-[10px] text-[#6E5D4F] mt-0.5 line-clamp-1">
-            {product.subtitle || product.origin}
+            {product.origin}
           </p>
         </div>
 

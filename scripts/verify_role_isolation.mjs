@@ -5,6 +5,9 @@ import {
   verifyAdminToken,
   sanitizePublicStoreData,
   sanitizeStoreDataForRole,
+  hasRolePermission,
+  ALL_DASHBOARD_PERMISSIONS,
+  DEFAULT_ROLE_PERMISSIONS,
 } from '../src/lib/auth';
 import { getDbAsync } from '../src/lib/db';
 import { POST as loginPOST, GET as loginGET } from '../src/app/api/admin/login/route';
@@ -236,6 +239,45 @@ async function runRoleIsolationChecks() {
   const adminLoginData = await adminLoginRes.json();
   assert.equal(adminLoginData.role, 'super_admin', 'Admin login must return super_admin role');
   console.log('✓ Role 1 (Super Admin) full control verified');
+
+  // 7. Dynamic Role Permissions (Granting & Revoking Permissions across the other 3 roles)
+  assert.equal(adminLoginData.unifiedDashboard, '/admin', 'Login returns unifiedDashboard /admin');
+  assert.equal(adminLoginData.permissions.length, ALL_DASHBOARD_PERMISSIONS.length, 'Admin has all dashboard permissions');
+  assert.deepEqual(
+    DEFAULT_ROLE_PERMISSIONS.supplier,
+    ['supply_portal', 'supply_invoices', 'categories'],
+    'Default supplier permissions match expected tabs'
+  );
+  assert.deepEqual(
+    DEFAULT_ROLE_PERMISSIONS.accountant,
+    ['accounting_portal', 'orders', 'supply_invoices'],
+    'Default accountant permissions match expected tabs'
+  );
+  assert.deepEqual(
+    DEFAULT_ROLE_PERMISSIONS.cashier,
+    ['cashier_portal', 'orders'],
+    'Default cashier permissions match expected tabs'
+  );
+
+  const customSettings = {
+    ...db.settings,
+    rolePermissions: {
+      supplier: ['supply_portal', 'supply_invoices', 'categories', 'coupons', 'orders'],
+      accountant: ['accounting_portal', 'orders', 'supply_invoices', 'reviews'],
+      cashier: ['cashier_portal'],
+    },
+  };
+  assert.equal(hasRolePermission('supplier', 'coupons', customSettings), true, 'Admin can grant coupons permission to supplier');
+  assert.equal(hasRolePermission('supplier', 'orders', customSettings), true, 'Admin can grant orders permission to supplier');
+  assert.equal(hasRolePermission('accountant', 'reviews', customSettings), true, 'Admin can grant reviews permission to accountant');
+  assert.equal(hasRolePermission('cashier', 'orders', customSettings), false, 'Admin can revoke orders permission from cashier');
+  assert.equal(hasRolePermission('super_admin', 'orders', customSettings), true, 'Super admin always retains all permissions');
+
+  const customDb = { ...db, settings: customSettings };
+  const supplierWithGrantedOrders = sanitizeStoreDataForRole(customDb, 'supplier');
+  assert.ok(supplierWithGrantedOrders.orders.length > 0, 'Supplier sees orders when granted orders permission by Admin');
+  assert.ok(supplierWithGrantedOrders.coupons.length > 0, 'Supplier sees coupons when granted coupons permission by Admin');
+  console.log('✓ Dynamic Role Permissions (Grant / Revoke by Admin) verified');
 
   console.log('🎉 ALL 5 ROLES ISOLATION & DISTINCT CREDENTIALS CHECKS PASSED!');
 }

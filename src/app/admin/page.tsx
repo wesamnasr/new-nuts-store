@@ -79,6 +79,16 @@ import HafsaOperationsStudio from '@/components/admin/HafsaOperationsStudio';
 import SupplierIsolationPortal from '@/components/admin/SupplierIsolationPortal';
 import AccountantIsolationPortal from '@/components/admin/AccountantIsolationPortal';
 import SupermarketReceiptModal from '@/components/SupermarketReceiptModal';
+import RolePermissionsManager from '@/components/admin/RolePermissionsManager';
+import dynamic from 'next/dynamic';
+import { getResolvedRolePermissions, hasRolePermission } from '@/lib/permissions';
+import {
+  updateUrlQueryParams,
+  buildUrlWithParams,
+  useBrowserUrlSync,
+} from '@/lib/url-sync';
+const HafsaPosCashierPage = dynamic(() => import('@/app/pos/page'), { ssr: false });
+import type { AdminPermissionId } from '@/types/store';
 
 const LOCAL_PRODUCT_IMAGES: Array<{ url: string; label: string }> = [
   { url: '/images/products/pistachio.jpg', label: 'فستق' },
@@ -142,13 +152,49 @@ type AdminTab =
   | 'shipping'
   | 'coupons'
   | 'reviews'
+  | 'permissions'
   | 'settings';
+
+const ALL_ADMIN_TABS: AdminTab[] = [
+  'overview',
+  'orders',
+  'products',
+  'categories',
+  'supply_invoices',
+  'supply_portal',
+  'accounting_portal',
+  'cashier_portal',
+  'operations',
+  'shipping',
+  'coupons',
+  'reviews',
+  'permissions',
+  'settings',
+];
 
 function getDefaultTabForRole(role: AdminRole): AdminTab {
   if (role === 'supplier') return 'supply_portal';
   if (role === 'accountant') return 'accounting_portal';
   if (role === 'cashier') return 'cashier_portal';
   return 'overview';
+}
+
+function getRequestedTabFromUrl(): AdminTab | null {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  const qTab = params.get('tab') as AdminTab | null;
+  if (qTab && ALL_ADMIN_TABS.includes(qTab)) return qTab;
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  if (parts[0] === 'admin' && parts[1] && ALL_ADMIN_TABS.includes(parts[1] as AdminTab)) {
+    return parts[1] as AdminTab;
+  }
+  if (parts[0] === 'accountant') {
+    return 'accounting_portal';
+  }
+  if (parts[0] === 'supplier') {
+    return 'supply_portal';
+  }
+  return null;
 }
 
 type SelectableLoginRole = 'super_admin' | 'supplier' | 'accountant' | 'cashier';
@@ -443,7 +489,7 @@ export default function AdminDashboardPage() {
                 })
               );
             }
-            if (resolvedRole === 'supplier') {
+            if (false && resolvedRole === 'supplier') {
               window.location.replace('/supplier');
               return;
             }
@@ -451,13 +497,28 @@ export default function AdminDashboardPage() {
               window.location.replace('/pos');
               return;
             }
-            if (resolvedRole === 'accountant') {
+            if (false && resolvedRole === 'accountant') {
               window.location.replace('/accountant');
               return;
             }
             setCurrentRole(resolvedRole);
             if (data.username) setCurrentUsername(data.username);
-            setActiveTab(getDefaultTabForRole(resolvedRole));
+            const requestedUrlTab = getRequestedTabFromUrl();
+            const isRequestedAllowed =
+              requestedUrlTab &&
+              (resolvedRole === 'super_admin' ||
+                resolvedRole === 'admin' ||
+                (requestedUrlTab !== 'permissions' &&
+                  hasRolePermission(
+                    resolvedRole,
+                    requestedUrlTab as AdminPermissionId,
+                    storeData?.settings
+                  )));
+            const initialTab = isRequestedAllowed
+              ? requestedUrlTab
+              : getDefaultTabForRole(resolvedRole);
+            setActiveTab(initialTab);
+            updateUrlQueryParams({ tab: initialTab }, { replace: true });
             setIsAuthenticated(true);
             if (activeToken) {
               setAdminToken(activeToken);
@@ -533,7 +594,7 @@ export default function AdminDashboardPage() {
           sessionStorage.setItem('hafsa_pos_token_v1', data.token);
           sessionStorage.setItem('hafsa_pos_role_v1', resolvedRole);
 
-          if (resolvedRole === 'supplier') {
+          if (false && resolvedRole === 'supplier') {
             window.location.href = '/supplier';
             return;
           }
@@ -541,7 +602,7 @@ export default function AdminDashboardPage() {
             window.location.href = '/pos';
             return;
           }
-          if (resolvedRole === 'accountant') {
+          if (false && resolvedRole === 'accountant') {
             window.location.href = '/accountant';
             return;
           }
@@ -549,7 +610,22 @@ export default function AdminDashboardPage() {
           setAdminToken(data.token);
           setCurrentRole(resolvedRole);
           if (data.username) setCurrentUsername(data.username);
-          setActiveTab(getDefaultTabForRole(resolvedRole));
+          const requestedUrlTab = getRequestedTabFromUrl();
+          const isRequestedAllowed =
+            requestedUrlTab &&
+            (resolvedRole === 'super_admin' ||
+              resolvedRole === 'admin' ||
+              (requestedUrlTab !== 'permissions' &&
+                hasRolePermission(
+                  resolvedRole,
+                  requestedUrlTab as AdminPermissionId,
+                  storeData?.settings
+                )));
+          const initialTab = isRequestedAllowed
+            ? requestedUrlTab
+            : getDefaultTabForRole(resolvedRole);
+          setActiveTab(initialTab);
+          updateUrlQueryParams({ tab: initialTab }, { replace: true });
           setIsAuthenticated(true);
           setLoginPassword('');
           await refreshStore();
@@ -702,6 +778,96 @@ export default function AdminDashboardPage() {
   const shippingRates = storeData?.shippingRates || [];
   const coupons = storeData?.coupons || [];
   const settings = storeData?.settings;
+
+  const selectTab = useCallback(
+    (nextTab: AdminTab, extraParams?: Record<string, string | null>) => {
+      setActiveTab(nextTab);
+      if (extraParams && 'subtab' in extraParams) {
+        setActiveSubTab(extraParams.subtab || 'channels');
+      } else {
+        setActiveSubTab('channels');
+      }
+      updateUrlQueryParams({
+        tab: nextTab,
+        subtab: null,
+        status: null,
+        invoice: null,
+        productModal: null,
+        invStatus: null,
+        ...extraParams,
+      });
+    },
+    []
+  );
+
+  const [activeSubTab, setActiveSubTab] = useState<string>('channels');
+
+  // Sync Dashboard activeTab, filters & modals with Browser URL and Back/Forward
+  useBrowserUrlSync((params, pathname) => {
+    const subParam = params.get('subtab');
+    setActiveSubTab(subParam || 'channels');
+    const qTab = params.get('tab') as AdminTab | null;
+    const parts = pathname.split('/').filter(Boolean);
+    const pathTab: AdminTab | null =
+      parts[0] === 'admin' && parts[1] && ALL_ADMIN_TABS.includes(parts[1] as AdminTab)
+        ? (parts[1] as AdminTab)
+        : parts[0] === 'accountant'
+          ? 'accounting_portal'
+          : parts[0] === 'supplier'
+            ? 'supply_portal'
+            : null;
+    const resolvedTab = qTab && ALL_ADMIN_TABS.includes(qTab) ? qTab : pathTab;
+    if (
+      resolvedTab &&
+      (currentRole === 'super_admin' ||
+        currentRole === 'admin' ||
+        (resolvedTab !== 'permissions' &&
+          hasRolePermission(currentRole, resolvedTab as AdminPermissionId, settings)))
+    ) {
+      setActiveTab(resolvedTab);
+    }
+
+    const stParam = params.get('status');
+    if (stParam && (stParam === 'all' || CANONICAL_ORDER_STATUSES.includes(stParam as OrderStatus))) {
+      setOrderStatusFilter(stParam as 'all' | OrderStatus);
+    } else if (!stParam) {
+      setOrderStatusFilter('all');
+    }
+
+    const invStParam = params.get('invStatus');
+    if (invStParam && ['all', 'pending', 'approved', 'rejected'].includes(invStParam)) {
+      setSupplyInvoiceFilter(invStParam as 'all' | 'pending' | 'approved' | 'rejected');
+    } else if (!invStParam) {
+      setSupplyInvoiceFilter('all');
+    }
+
+    const catParam = params.get('cat');
+    setProductCategoryFilter(catParam || 'all');
+
+    const invoiceParam = params.get('invoice');
+    if (invoiceParam && orders.length > 0) {
+      const foundOrd = orders.find(
+        (o) => o.orderNumber === invoiceParam || o.id === invoiceParam
+      );
+      if (foundOrd) setSelectedInvoiceOrder(foundOrd);
+    } else if (!invoiceParam) {
+      setSelectedInvoiceOrder(null);
+    }
+
+    const prodModalParam = params.get('productModal');
+    if (prodModalParam && products.length > 0 && prodModalParam !== 'new') {
+      const foundProd = products.find(
+        (p) => p.slug === prodModalParam || p.id === prodModalParam
+      );
+      if (foundProd) {
+        setIsCreatingProduct(false);
+        setEditingProduct(foundProd);
+      }
+    } else if (!prodModalParam) {
+      setEditingProduct(null);
+      setIsCreatingProduct(false);
+    }
+  });
 
   const effectiveSupplyInvoices = useMemo<SupplyInvoice[]>(() => {
     if (supplyInvoices.length > 0) return supplyInvoices;
@@ -876,6 +1042,29 @@ export default function AdminDashboardPage() {
     return list;
   }, [products, reviewProductFilter, reviewRatingFilter, reviewSearch]);
 
+  useEffect(() => {
+    if (!settings) return;
+    if (currentRole === 'super_admin' || currentRole === 'admin') return;
+    if (activeTab === 'permissions') {
+      const fallbackTab = getDefaultTabForRole(currentRole);
+      setActiveTab(fallbackTab);
+      updateUrlQueryParams({ tab: fallbackTab }, { replace: true });
+      return;
+    }
+    if (!hasRolePermission(currentRole, activeTab as AdminPermissionId, settings)) {
+      const resolved = getResolvedRolePermissions(settings);
+      const allowedList =
+        currentRole === 'supplier' || currentRole === 'accountant' || currentRole === 'cashier'
+          ? resolved[currentRole]
+          : [];
+      if (allowedList.length > 0) {
+        const nextAllowedTab = allowedList[0] as AdminTab;
+        setActiveTab(nextAllowedTab);
+        updateUrlQueryParams({ tab: nextAllowedTab }, { replace: true });
+      }
+    }
+  }, [currentRole, activeTab, settings]);
+
   // Authentication gate rendering
   if (authLoading) {
     return (
@@ -899,7 +1088,10 @@ export default function AdminDashboardPage() {
             <h1 className="text-xl font-black text-brand-950">
               تسجيل دخول طاقم العمل
             </h1>
-            <p className="text-xs text-brand-600 leading-relaxed">
+            <p className="text-xs text-brand-600">
+              {settings?.storeName || 'محمصة حفصة'}
+            </p>
+            <p className="hidden">
               {settings?.storeName || 'محمصة حفصة للبن والمكسرات'} — أدخل اسم المستخدم وكلمة المرور ليتم تحويلك تلقائياً إلى القسم المسموح لك حسب تخصصك
             </p>
           </div>
@@ -1121,27 +1313,6 @@ export default function AdminDashboardPage() {
       if (res.ok) {
         await refreshStore();
         showToast('تم حذف الطلب من السجل');
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const handleClearAllOrders = async () => {
-    if (orders.length === 0) return;
-    try {
-      const headers: Record<string, string> = {};
-      if (adminToken) {
-        headers['Authorization'] = `Bearer ${adminToken}`;
-        headers['x-admin-token'] = adminToken;
-      }
-      const res = await fetch('/api/orders?orderId=all', {
-        method: 'DELETE',
-        headers,
-      });
-      if (res.ok) {
-        await refreshStore();
-        showToast('تم مسح سجل الطلبات بالكامل');
       }
     } catch (e) {
       console.error(e);
@@ -1472,13 +1643,13 @@ export default function AdminDashboardPage() {
   }> = [
     {
       id: 'overview',
-      label: 'النظرة العامة والإحصائيات',
+      label: currentRole === 'accountant' ? 'الدخل اليومي والملخص المالي' : 'النظرة العامة',
       icon: <LayoutDashboard className="w-4 h-4" />,
-      roles: ['super_admin', 'admin', 'store_manager'],
+      roles: ['super_admin', 'admin', 'store_manager', 'accountant'],
     },
     {
       id: 'supply_portal',
-      label: 'بوابة المورد والتوريد',
+      label: 'بوابة المورد',
       icon: <Truck className="w-4 h-4" />,
       badge: `${products.length} صنف`,
       badgeColor: 'bg-amber-500 text-brand-950',
@@ -1486,15 +1657,18 @@ export default function AdminDashboardPage() {
     },
     {
       id: 'supply_invoices',
-      label: 'فواتير التوريد واعتماد الشحنات',
+      label: currentRole === 'accountant' ? 'فواتير الشراء والتوريد' : 'فواتير التوريد',
       icon: <ClipboardList className="w-4 h-4" />,
-      badge: pendingSupplyInvoicesCount > 0 ? `${pendingSupplyInvoicesCount} معلقة` : undefined,
-      badgeColor: 'bg-amber-500 text-brand-950 font-black animate-pulse',
-      roles: ['super_admin', 'admin', 'store_manager'],
+      badge: pendingSupplyInvoicesCount > 0 ? `${pendingSupplyInvoicesCount} معلقة` : effectiveSupplyInvoices.length,
+      badgeColor:
+        pendingSupplyInvoicesCount > 0
+          ? 'bg-amber-500 text-brand-950 font-black animate-pulse'
+          : 'bg-white/15 text-white',
+      roles: ['super_admin', 'admin', 'store_manager', 'accountant'],
     },
     {
       id: 'accounting_portal',
-      label: 'بوابة المحاسب والجرد المالي',
+      label: currentRole === 'accountant' ? 'التقارير المالية الشاملة' : 'بوابة المحاسب',
       icon: <TrendingUp className="w-4 h-4" />,
       badge: 'مالي',
       badgeColor: 'bg-pistachio-500 text-brand-950',
@@ -1502,7 +1676,7 @@ export default function AdminDashboardPage() {
     },
     {
       id: 'cashier_portal',
-      label: 'بوابة الكاشير ونقطة البيع',
+      label: 'بوابة الكاشير',
       icon: <ShieldCheck className="w-4 h-4" />,
       badge: 'POS',
       badgeColor: 'bg-sky-400 text-brand-950',
@@ -1512,7 +1686,7 @@ export default function AdminDashboardPage() {
       id: 'orders',
       label:
         currentRole === 'accountant'
-          ? 'سجل الفواتير والطلبات المالي'
+          ? 'فواتير المبيعات والكاشير'
           : currentRole === 'cashier'
           ? 'تجهيز طلبات الموقع الأونلاين'
           : 'الطلبات والفواتير',
@@ -1523,10 +1697,10 @@ export default function AdminDashboardPage() {
     },
     {
       id: 'products',
-      label: 'المنتجات والأوزان والأسعار',
+      label: currentRole === 'accountant' ? 'الأصناف والتكاليف والأسعار' : 'المنتجات والأسعار',
       icon: <ShoppingBag className="w-4 h-4" />,
       badge: products.length,
-      roles: ['super_admin', 'admin', 'store_manager'],
+      roles: ['super_admin', 'admin', 'store_manager', 'accountant'],
     },
     {
       id: 'categories',
@@ -1537,11 +1711,11 @@ export default function AdminDashboardPage() {
     },
     {
       id: 'operations',
-      label: 'أدوات التشغيل والعروض والـ QR',
+      label: currentRole === 'accountant' ? 'الورديات والمصروفات والـ VIP' : 'أدوات التشغيل',
       icon: <Sparkles className="w-4 h-4" />,
-      badge: 'الشركاء 4',
+      badge: currentRole === 'accountant' ? 'درج الكاشير' : 'الشركاء 4',
       badgeColor: 'bg-gold-500 text-brand-950',
-      roles: ['super_admin', 'admin', 'store_manager', 'promo_partner'],
+      roles: ['super_admin', 'admin', 'store_manager', 'promo_partner', 'accountant'],
     },
     {
       id: 'shipping',
@@ -1566,23 +1740,40 @@ export default function AdminDashboardPage() {
     },
     {
       id: 'settings',
-      label: 'الإعدادات وعزل الأدوار والنسخ',
+      label: 'الإعدادات',
       icon: <Settings className="w-4 h-4" />,
       roles: ['super_admin', 'admin'],
     },
   ];
 
-  const navItems = allNavItems.filter((item) => item.roles.includes(currentRole));
+  allNavItems.splice(allNavItems.length - 1, 0, {
+    id: 'permissions',
+    label: 'صلاحيات المستخدمين',
+    icon: <KeyRound className="w-4 h-4" />,
+    badge: '4 مستخدمين',
+    badgeColor: 'bg-gold-500 text-brand-950',
+    roles: ['super_admin', 'admin'],
+  });
+
+  const canAccessTab = (tabId: AdminTab): boolean => {
+    if (isFullAdmin) return true;
+    if (tabId === 'permissions') return isFullAdmin;
+    return hasRolePermission(currentRole, tabId as AdminPermissionId, settings);
+  };
+
+  const navItems = allNavItems.filter((item) => canAccessTab(item.id));
+
+
   const currentNav = navItems.find((n) => n.id === activeTab) || navItems[0];
 
   const roleHeaderBadge =
     currentRole === 'supplier'
-      ? { label: '📦 المورد (عزل التوريد والمخزون)', cls: 'bg-amber-100 text-amber-950 border-amber-300' }
+      ? { label: '📦 المورد', cls: 'bg-amber-100 text-amber-950 border-amber-300' }
       : currentRole === 'accountant'
-      ? { label: '📊 المحاسب (عزل المراجعة المالية)', cls: 'bg-pistachio-100 text-pistachio-900 border-pistachio-300' }
+      ? { label: '📊 المحاسب', cls: 'bg-pistachio-100 text-pistachio-900 border-pistachio-300' }
       : currentRole === 'cashier'
-      ? { label: '⚖️ الكاشير (عزل المبيعات بدون تكاليف)', cls: 'bg-sky-100 text-sky-950 border-sky-300' }
-      : { label: '👑 الأدمن (المدير العام)', cls: 'bg-gold-500/20 text-brand-950 border-gold-500/40' };
+      ? { label: '⚖️ الكاشير', cls: 'bg-sky-100 text-sky-950 border-sky-300' }
+      : { label: '👑 الأدمن', cls: 'bg-gold-500/20 text-brand-950 border-gold-500/40' };
 
   return (
     <div className="min-h-screen bg-brand-50 flex flex-col lg:flex-row">
@@ -1625,11 +1816,21 @@ export default function AdminDashboardPage() {
         <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
+            const tabHref = buildUrlWithParams('/admin', {
+              tab: item.id,
+              subtab: null,
+              status: null,
+              invoice: null,
+              productModal: null,
+              invStatus: null,
+            });
             return (
-              <button
+              <a
                 key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
+                href={tabHref}
+                onClick={(e) => {
+                  e.preventDefault();
+                  selectTab(item.id);
                   setSidebarOpen(false);
                 }}
                 className={`w-full flex items-center justify-between gap-1.5 px-2.5 py-2 rounded-xl text-right transition group ${
@@ -1660,7 +1861,7 @@ export default function AdminDashboardPage() {
                     {item.badge}
                   </span>
                 )}
-              </button>
+              </a>
             );
           })}
         </nav>
@@ -1685,31 +1886,13 @@ export default function AdminDashboardPage() {
             <ExternalLink className="w-3 h-3 text-pistachio-400" />
           </Link>
 
-          <div className={isFullAdmin ? 'grid grid-cols-2 gap-1.5' : 'block'}>
-            {isFullAdmin && (
-              <button
-                onClick={() =>
-                  updateStorePayload(
-                    { action: 'reset_demo' },
-                    'تمت استعادة البيانات الافتراضية للمتجر'
-                  )
-                }
-                className="bg-white/10 hover:bg-white/15 text-brand-100 text-[10px] font-bold px-2 py-1.5 rounded-xl flex items-center justify-center gap-1 transition border border-white/10"
-                title="استعادة البيانات الافتراضية"
-              >
-                <RotateCcw className="w-3 h-3 text-gold-400" />
-                <span>ضبط افتراضي</span>
-              </button>
-            )}
-
-            <button
-              onClick={handleLogout}
-              className="w-full bg-red-500/20 hover:bg-red-500/30 text-red-200 hover:text-white text-[10px] font-extrabold px-2 py-1.5 rounded-xl flex items-center justify-center gap-1 transition border border-red-500/30"
-            >
-              <LogOut className="w-3 h-3" />
-              <span>تسجيل خروج</span>
-            </button>
-          </div>
+          <button
+            onClick={handleLogout}
+            className="w-full bg-red-500/20 hover:bg-red-500/30 text-red-200 hover:text-white text-[10px] font-extrabold px-2 py-1.5 rounded-xl flex items-center justify-center gap-1 transition border border-red-500/30"
+          >
+            <LogOut className="w-3 h-3" />
+            <span>تسجيل خروج</span>
+          </button>
         </div>
       </aside>
 
@@ -1762,7 +1945,7 @@ export default function AdminDashboardPage() {
               {isFullAdmin && (
                 <button
                   onClick={() => {
-                    setActiveTab('products');
+                    selectTab('products', { productModal: 'new' });
                     openCreateProductModal();
                   }}
                   className="bg-brand-900 hover:bg-brand-950 text-white text-[10px] sm:text-[11px] font-extrabold px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition shadow-2xs cursor-pointer"
@@ -1778,11 +1961,22 @@ export default function AdminDashboardPage() {
           <div className="lg:hidden flex items-center gap-1 overflow-x-auto no-scrollbar px-3 py-1.5 bg-brand-50/90 border-t border-brand-100">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
+              const tabHref = buildUrlWithParams('/admin', {
+                tab: item.id,
+                subtab: null,
+                status: null,
+                invoice: null,
+                productModal: null,
+                invStatus: null,
+              });
               return (
-                <button
+                <a
                   key={item.id}
-                  type="button"
-                  onClick={() => setActiveTab(item.id)}
+                  href={tabHref}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    selectTab(item.id);
+                  }}
                   className={`flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] whitespace-nowrap shrink-0 transition cursor-pointer ${
                     isActive
                       ? 'bg-brand-950 text-gold-400 font-black shadow-2xs'
@@ -1800,7 +1994,7 @@ export default function AdminDashboardPage() {
                       {item.badge}
                     </span>
                   )}
-                </button>
+                </a>
               );
             })}
           </div>
@@ -1810,17 +2004,19 @@ export default function AdminDashboardPage() {
         <main className="p-3 sm:p-5 space-y-4 max-w-7xl w-full mx-auto">
           {/* ROLE PORTAL 1: SUPPLIER ISOLATION PORTAL */}
           {activeTab === 'supply_portal' &&
-            (isFullAdmin || currentRole === 'supplier') && (
+            canAccessTab('supply_portal') && (
               <SupplierIsolationPortal
                 products={products}
                 categories={categories}
                 saving={saving}
+                supplyInvoices={effectiveSupplyInvoices}
+                onInvoiceCreated={(inv) => setSupplyInvoices((prev) => [inv, ...prev])}
                 onUpdateStorePayload={updateStorePayload}
               />
             )}
 
           {/* ROLE MODULE: SUPPLY INVOICES APPROVAL WORKFLOW */}
-          {activeTab === 'supply_invoices' && isFullAdmin && (
+          {activeTab === 'supply_invoices' && canAccessTab('supply_invoices') && (
             <div className="space-y-4">
               {/* Header card with quick actions and stats */}
               <div className="bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 shadow-2xs space-y-3">
@@ -1840,7 +2036,7 @@ export default function AdminDashboardPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-brand-600 mt-0.5">
+                      <p className="hidden">
                         فحص ومراجعة فواتير التوريد الواردة من المورد، وتدقيق الأصناف والأسعار، واعتمادها لإضافة المخزون وتحديث التكلفة تلقائياً
                       </p>
                     </div>
@@ -1897,7 +2093,10 @@ export default function AdminDashboardPage() {
                 {(['all', 'pending', 'approved', 'rejected'] as const).map((st) => (
                   <button
                     key={st}
-                    onClick={() => setSupplyInvoiceFilter(st)}
+                    onClick={() => {
+                      setSupplyInvoiceFilter(st);
+                      updateUrlQueryParams({ invStatus: st === 'all' ? null : st });
+                    }}
                     className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
                       supplyInvoiceFilter === st
                         ? 'bg-brand-900 text-white shadow-xs'
@@ -2157,21 +2356,26 @@ export default function AdminDashboardPage() {
 
           {/* ROLE PORTAL 2: ACCOUNTANT ISOLATION PORTAL */}
           {activeTab === 'accounting_portal' &&
-            (isFullAdmin || currentRole === 'accountant') && (
+            canAccessTab('accounting_portal') && (
               <AccountantIsolationPortal
                 orders={orders}
                 products={products}
                 posShifts={storeData?.posShifts || []}
                 posExpenses={storeData?.posExpenses || []}
                 vipMembers={storeData?.vipMembers || []}
+                coupons={coupons}
+                supplyInvoices={effectiveSupplyInvoices}
                 settings={settings}
                 onExportOrdersCsv={handleExportCsv}
-                onOpenOrdersTab={() => setActiveTab('orders')}
+                onOpenOrdersTab={() => selectTab('orders')}
+                onOpenSupplyInvoicesTab={() => selectTab('supply_invoices')}
+                onOpenOperationsTab={() => selectTab('operations')}
+                onOpenProductsTab={() => selectTab('products')}
               />
             )}
 
           {/* ROLE PORTAL 3: CASHIER ISOLATION PORTAL */}
-          {activeTab === 'cashier_portal' && currentRole === 'cashier' && (
+          {activeTab === 'cashier_portal' && canAccessTab('cashier_portal') && (
             <div className="bg-gradient-to-l from-brand-950 via-brand-900 to-brand-950 text-white p-6 rounded-3xl border border-gold-500/30 shadow-xl space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="space-y-1">
@@ -2181,7 +2385,7 @@ export default function AdminDashboardPage() {
                   <h2 className="text-lg sm:text-xl font-black text-white">
                     شاشة الكاشير والميزان الرقمي وتجهيز الطلبات
                   </h2>
-                  <p className="text-xs text-brand-200 max-w-2xl leading-relaxed">
+                  <p className="hidden">
                     حساب الكاشير معزول تماماً عن تكاليف الجملة (شيت عرفات)، صافي الأرباح، وإعدادات الإدارة. يمكنك فتح شاشة الميزان والباركود للبيع المباشر أو متابعة تجهيز طلبات الموقع الأونلاين.
                   </p>
                 </div>
@@ -2196,7 +2400,7 @@ export default function AdminDashboardPage() {
                   </Link>
                   <button
                     type="button"
-                    onClick={() => setActiveTab('orders')}
+                    onClick={() => selectTab('orders')}
                     className="bg-white/10 hover:bg-white/15 border border-white/20 text-white font-extrabold text-xs px-4 py-3 rounded-2xl transition"
                   >
                     📦 تجهيز طلبات الأونلاين ({activeOrdersCount} جاري)
@@ -2206,7 +2410,13 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {activeTab === 'operations' && isFullAdmin && (
+          {activeTab === 'cashier_portal' && canAccessTab('cashier_portal') && (
+            <div className="rounded-3xl overflow-hidden border border-gold-500/30 shadow-2xl">
+              <HafsaPosCashierPage />
+            </div>
+          )}
+
+          {activeTab === 'operations' && canAccessTab('operations') && (
             <HafsaOperationsStudio
               adminToken={adminToken}
               onUpdateStorePayload={updateStorePayload}
@@ -2216,7 +2426,7 @@ export default function AdminDashboardPage() {
           {/* ================================================================= */}
           {/* MODULE 1: OVERVIEW & ANALYTICS                                    */}
           {/* ================================================================= */}
-          {activeTab === 'overview' && isFullAdmin && (
+          {activeTab === 'overview' && canAccessTab('overview') && (
             <div className="space-y-4">
               {/* 6 KPI Summary Cards */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
@@ -2300,7 +2510,7 @@ export default function AdminDashboardPage() {
                     مراحل تنفيذ الطلبات (اضغط لفلترة الطلبات)
                   </h3>
                   <button
-                    onClick={() => setActiveTab('orders')}
+                    onClick={() => selectTab('orders')}
                     className="text-[10.5px] font-bold text-brand-700 hover:text-brand-950 underline"
                   >
                     عرض كل الطلبات ({orders.length})
@@ -2318,7 +2528,7 @@ export default function AdminDashboardPage() {
                         key={stKey}
                         onClick={() => {
                           setOrderStatusFilter(stKey);
-                          setActiveTab('orders');
+                          selectTab('orders', { status: stKey });
                         }}
                         className="p-2.5 rounded-xl border border-brand-200 hover:border-brand-700 bg-brand-50/60 hover:bg-brand-100/60 text-right transition space-y-0.5"
                       >
@@ -2346,9 +2556,11 @@ export default function AdminDashboardPage() {
                     <div className="flex items-center gap-2">
                       <select
                         value={orderStatusFilter}
-                        onChange={(e) =>
-                          setOrderStatusFilter(e.target.value as 'all' | OrderStatus)
-                        }
+                        onChange={(e) => {
+                          const nextSt = e.target.value as 'all' | OrderStatus;
+                          setOrderStatusFilter(nextSt);
+                          updateUrlQueryParams({ status: nextSt === 'all' ? null : nextSt });
+                        }}
                         className="bg-brand-50 border border-brand-200 rounded-lg px-2 py-1 text-[11px] font-bold"
                       >
                         <option value="all">كل الحالات ({orders.length})</option>
@@ -2360,7 +2572,7 @@ export default function AdminDashboardPage() {
                         <option value="cancelled">ملغي</option>
                       </select>
                       <button
-                        onClick={() => setActiveTab('orders')}
+                        onClick={() => selectTab('orders')}
                         className="text-[11px] font-bold text-pistachio-700 hover:underline"
                       >
                         الجدول الكامل ←
@@ -2418,7 +2630,10 @@ export default function AdminDashboardPage() {
                             </td>
                             <td className="p-2.5 text-center whitespace-nowrap">
                               <button
-                                onClick={() => setSelectedInvoiceOrder(ord)}
+                                onClick={() => {
+                                  setSelectedInvoiceOrder(ord);
+                                  updateUrlQueryParams({ invoice: ord.orderNumber });
+                                }}
                                 className="p-1.5 bg-brand-900 text-gold-400 rounded-lg hover:bg-brand-950 inline-flex"
                                 title="طباعة الفاتورة"
                               >
@@ -2507,18 +2722,6 @@ export default function AdminDashboardPage() {
                       </button>
                     )}
 
-                    {orders.length > 0 && isFullAdmin && (
-                      <button
-                        type="button"
-                        onClick={handleClearAllOrders}
-                        className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-black px-3 py-1.5 rounded-xl flex items-center gap-1 transition shrink-0"
-                        title="مسح جميع الطلبات من السجل"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>تصفير الطلبات</span>
-                      </button>
-                    )}
-
                     <button
                       onClick={handleExportCsv}
                       className="bg-pistachio-700 hover:bg-pistachio-800 text-white text-xs font-black px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition shrink-0"
@@ -2590,7 +2793,10 @@ export default function AdminDashboardPage() {
                 {/* Status Filter Pills */}
                 <div className="flex flex-wrap gap-1.5 pt-2 border-t border-brand-100">
                   <button
-                    onClick={() => setOrderStatusFilter('all')}
+                    onClick={() => {
+                      setOrderStatusFilter('all');
+                      updateUrlQueryParams({ status: null });
+                    }}
                     className={`px-3 py-1 rounded-lg text-[11px] font-extrabold transition ${
                       orderStatusFilter === 'all'
                         ? 'bg-brand-900 text-white'
@@ -2607,7 +2813,10 @@ export default function AdminDashboardPage() {
                     return (
                       <button
                         key={stKey}
-                        onClick={() => setOrderStatusFilter(stKey)}
+                        onClick={() => {
+                          setOrderStatusFilter(stKey);
+                          updateUrlQueryParams({ status: stKey });
+                        }}
                         className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition ${
                           orderStatusFilter === stKey
                             ? 'bg-brand-900 text-white'
@@ -2862,7 +3071,10 @@ export default function AdminDashboardPage() {
                               <td className="p-3 whitespace-nowrap text-center">
                                 <div className="flex items-center justify-center gap-1">
                                   <button
-                                    onClick={() => setSelectedInvoiceOrder(order)}
+                                    onClick={() => {
+                                      setSelectedInvoiceOrder(order);
+                                      updateUrlQueryParams({ invoice: order.orderNumber });
+                                    }}
                                     className="p-1.5 bg-brand-900 hover:bg-brand-950 text-gold-400 rounded-lg transition"
                                     title="معاينة وطباعة الفاتورة"
                                   >
@@ -2981,7 +3193,11 @@ export default function AdminDashboardPage() {
 
                   <select
                     value={productCategoryFilter}
-                    onChange={(e) => setProductCategoryFilter(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setProductCategoryFilter(val);
+                      updateUrlQueryParams({ cat: val === 'all' ? null : val });
+                    }}
                     className="bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
                   >
                     <option value="all">جميع الأقسام ({categories.length})</option>
@@ -3748,6 +3964,7 @@ export default function AdminDashboardPage() {
                                     onClick={() => {
                                       setIsCreatingProduct(false);
                                       setEditingProduct(prod);
+                                      updateUrlQueryParams({ productModal: prod.slug });
                                     }}
                                     className="bg-amber-100 hover:bg-amber-200 text-brand-950 text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg flex items-center gap-1"
                                     title="تحرير شامل للمنتج"
@@ -4806,7 +5023,25 @@ export default function AdminDashboardPage() {
           {/* ================================================================= */}
           {/* MODULE 9: STORE SETTINGS, SECURITY & BACKUP                       */}
           {/* ================================================================= */}
-          {activeTab === 'settings' && isFullAdmin && (
+          {activeTab === 'permissions' && isFullAdmin && (
+            <RolePermissionsManager
+              rolePermissions={getResolvedRolePermissions(settings)}
+              isSaving={saving}
+              onSaveRolePermissions={async (updated) => {
+                await updateStorePayload(
+                  {
+                    settings: {
+                      ...settings,
+                      rolePermissions: updated,
+                    },
+                  },
+                  'تم حفظ وتطبيق صلاحيات المستخدمين (المورد، المحاسب، الكاشير) بنجاح ✅'
+                );
+              }}
+            />
+          )}
+
+          {activeTab === 'settings' && canAccessTab('settings') && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Core Identity, Role Passwords & Payment Settings Form */}
               <form
@@ -4986,7 +5221,16 @@ export default function AdminDashboardPage() {
                     <div>
                       <h4 className="text-xs sm:text-sm font-black text-brand-950 flex items-center gap-1.5">
                         <ShieldCheck className="w-4 h-4 text-gold-500" />
-                        <span>إدارة عزل الأدوار الـ 4 (المدير العام، المورد، الكاشير، المحاسب)</span>
+                        <span>إدارة حسابات وصلاحيات المستخدمين الـ 4 (الأدمن، المورد، المحاسب، الكاشير)</span>
+                        {isFullAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('permissions')}
+                            className="mr-2 px-3 py-1 rounded-lg bg-gold-500 hover:bg-gold-400 text-brand-950 text-[11px] font-black transition cursor-pointer"
+                          >
+                            ⚙️ منح أو حذف صلاحيات المستخدمين
+                          </button>
+                        )}
                       </h4>
                       <p className="text-[10.5px] text-brand-600 mt-0.5">
                         لكل دور وظيفي اسم مستخدم (Username) وكلمة مرور (Password) مختلفان تماماً. اترك حقل كلمة المرور فارغاً للإبقاء على كلمة المرور الحالية.
@@ -5148,7 +5392,7 @@ export default function AdminDashboardPage() {
                 </button>
               </form>
 
-              {/* Backup, Restore & Reset Card */}
+              {/* Backup & Restore Card */}
               <div className="space-y-4">
                 <div className="bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 space-y-3 shadow-2xs">
                   <h3 className="text-sm font-black text-brand-950">
@@ -5178,28 +5422,6 @@ export default function AdminDashboardPage() {
                     />
                   </label>
                 </div>
-
-                <div className="bg-red-50/70 p-4 sm:p-5 rounded-2xl border border-red-200 space-y-2.5">
-                  <h3 className="text-xs font-black text-red-900">
-                    إعادة ضبط بيانات المتجر الافتراضية
-                  </h3>
-                  <p className="text-[11px] text-red-700">
-                    سيقوم هذا الإجراء باستعادة المنتجات والأقسام والإعدادات الافتراضية للمحمصة.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      updateStorePayload(
-                        { action: 'reset_demo' },
-                        'تمت استعادة البيانات الافتراضية بنجاح'
-                      )
-                    }
-                    className="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>إعادة ضبط البيانات الافتراضية</span>
-                  </button>
-                </div>
               </div>
             </div>
           )}
@@ -5212,7 +5434,10 @@ export default function AdminDashboardPage() {
           order={selectedInvoiceOrder}
           mode="receipt"
           settings={settings}
-          onClose={() => setSelectedInvoiceOrder(null)}
+          onClose={() => {
+            setSelectedInvoiceOrder(null);
+            updateUrlQueryParams({ invoice: null });
+          }}
         />
       )}
     </div>

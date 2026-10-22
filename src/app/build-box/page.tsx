@@ -25,6 +25,7 @@ import {
   RoastOption,
 } from '@/types/store';
 import { getSafeImageUrl } from '@/lib/defaults';
+import { updateUrlQueryParams, useBrowserUrlSync, buildUrlWithParams } from '@/lib/url-sync';
 
 function BuildBoxStudioContent() {
   const { storeData, addPartitionedBoxToCart, setIsCartOpen } = useStore();
@@ -48,6 +49,26 @@ function BuildBoxStudioContent() {
   const [activeSlotIdx, setActiveSlotIdx] = useState<number>(0);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [justAdded, setJustAdded] = useState(false);
+
+  useBrowserUrlSync((params) => {
+    const sz = params.get('size') as PartitionedBoxSize | null;
+    if (sz && PARTITIONED_BOX_PRESETS[sz]) {
+      setBoxSize(sz);
+    }
+    const cat = params.get('cat');
+    if (cat && ['all', 'seeds', 'luxury', 'sweets'].includes(cat)) {
+      setCategoryFilter(cat);
+    } else {
+      setCategoryFilter('all');
+    }
+    const slotParam = params.get('slot');
+    if (slotParam) {
+      const idx = Number(slotParam) - 1;
+      if (!Number.isNaN(idx) && idx >= 0) {
+        setActiveSlotIdx(idx);
+      }
+    }
+  });
 
   const products = useMemo(() => {
     const all = storeData?.products || [];
@@ -200,13 +221,13 @@ function BuildBoxStudioContent() {
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-1.5 bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40 px-3 py-1 rounded-full text-xs font-black">
               <Gift className="w-3.5 h-3.5" />
-              <span>استوديو «صمّم بوكس السهرة والـ 125 جنيه» التفاعلي</span>
+              <span>استوديو بوكس السهرة</span>
             </div>
             <h1 className="font-cairo text-2xl sm:text-3xl font-black text-white">
-              املأ خانات بوكس السهرة على ذوقك في 3 خطوات!
+              صمّم بوكس السهرة على ذوقك
             </h1>
             <p className="text-xs sm:text-sm text-[#F3ECE1]/85">
-              اختر حجم البوكس المقسم (4 خانات أو 6 خانات)، ثم اضغط على الأصناف لتعبئة كل خانة مع تحديد التحميص والملح.
+              {''}
             </p>
           </div>
 
@@ -239,7 +260,10 @@ function BuildBoxStudioContent() {
                 <button
                   key={sizeKey}
                   type="button"
-                  onClick={() => setBoxSize(sizeKey)}
+                  onClick={() => {
+                    setBoxSize(sizeKey);
+                    updateUrlQueryParams({ size: sizeKey, slot: null });
+                  }}
                   className={`text-right p-4 rounded-2xl border-2 transition cursor-pointer flex items-center justify-between gap-3 ${
                     isSelected
                       ? 'bg-[#231710] text-[#FAF6F0] border-[#D4AF37] shadow-lg'
@@ -310,7 +334,10 @@ function BuildBoxStudioContent() {
                 return (
                   <div
                     key={idx}
-                    onClick={() => setActiveSlotIdx(idx)}
+                    onClick={() => {
+                      setActiveSlotIdx(idx);
+                      updateUrlQueryParams({ slot: idx + 1 });
+                    }}
                     className={`rounded-2xl p-2.5 border-2 transition cursor-pointer flex flex-col justify-between min-h-[125px] ${
                       slot
                         ? isActive
@@ -451,7 +478,10 @@ function BuildBoxStudioContent() {
                   <button
                     key={f.id}
                     type="button"
-                    onClick={() => setCategoryFilter(f.id)}
+                    onClick={() => {
+                      setCategoryFilter(f.id);
+                      updateUrlQueryParams({ cat: f.id === 'all' ? null : f.id });
+                    }}
                     className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold whitespace-nowrap transition cursor-pointer ${
                       categoryFilter === f.id
                         ? 'bg-[#231710] text-[#D4AF37]'

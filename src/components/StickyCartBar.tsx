@@ -42,65 +42,58 @@ export default function StickyCartBar() {
 
   return (
     <>
-      {/* Floating Cart Summary Pill when items are in cart */}
+      {/* Compact Floating Cart Summary Pill on the Right Side when items are in cart */}
       {cartCount > 0 && !isCartOpen && !pathname?.startsWith('/checkout') && (
-        <div className="fixed bottom-16 lg:bottom-3 inset-x-3 z-30 max-w-xl mx-auto pointer-events-none">
-          <div className="pointer-events-auto bg-[#231710]/95 backdrop-blur-md text-white border border-[#D4AF37]/50 rounded-2xl p-2 sm:px-3.5 sm:py-2.5 shadow-2xl flex items-center justify-between gap-2">
+        <div className="fixed bottom-16 lg:bottom-3.5 right-3 sm:right-4 z-40 pointer-events-none">
+          <div className="pointer-events-auto bg-[#231710]/95 backdrop-blur-md text-white border border-[#D4AF37]/50 rounded-2xl px-2.5 py-1.5 shadow-xl flex items-center gap-2 w-fit max-w-[calc(100vw-1.5rem)]">
             <button
               type="button"
               onClick={() => setIsCartOpen(true)}
-              className="flex items-center gap-2.5 text-right min-w-0 cursor-pointer group"
+              className="flex items-center gap-2 text-right min-w-0 cursor-pointer group"
             >
-              <div className="relative w-8 h-8 rounded-xl bg-[#D4AF37] text-[#231710] flex items-center justify-center shrink-0 shadow group-hover:scale-105 transition">
-                <ShoppingBag className="w-4 h-4" />
-                <span className="absolute -top-1 -right-1 bg-white text-[#231710] text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-[#231710] shadow tabular-nums">
+              <div className="relative w-7 h-7 rounded-xl bg-[#D4AF37] text-[#231710] flex items-center justify-center shrink-0 shadow group-hover:scale-105 transition">
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span className="absolute -top-1 -right-1 bg-white text-[#231710] text-[8.5px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center border border-[#231710] shadow tabular-nums">
                   {cartCount}
                 </span>
               </div>
 
-              <div className="min-w-0">
+              <div className="min-w-0 leading-tight">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-xs sm:text-sm font-black text-[#D4AF37] tabular-nums">
+                  <span className="text-xs font-black text-[#D4AF37] tabular-nums whitespace-nowrap">
                     {netSubtotal} ج.م
                   </span>
-                  {discountAmount > 0 && (
-                    <span className="text-[9.5px] text-emerald-400 font-bold tabular-nums">
-                      (وفرت {discountAmount} ج.م)
-                    </span>
-                  )}
                 </div>
-                <div className="text-[9.5px] text-[#F3ECE1] truncate flex items-center gap-1">
+                <div className="text-[9px] text-[#F3ECE1]/90 truncate flex items-center gap-0.5">
                   {remainingForFree === 0 ? (
                     <>
                       <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
-                      <span className="text-emerald-300 font-bold">
-                        شحن مجاني لبني مزار مفعّل + كاش باك 5% VIP 🎉
-                      </span>
+                      <span className="text-emerald-300 font-bold">شحن مجاني 🎉</span>
                     </>
                   ) : (
                     <>
                       <Truck className="w-2.5 h-2.5 text-[#D4AF37] shrink-0" />
-                      <span>باقي {remainingForFree} ج.م للشحن المجاني ببني مزار</span>
+                      <span>باقي {remainingForFree} ج للشحن</span>
                     </>
                   )}
                 </div>
               </div>
             </button>
 
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
                 onClick={() => setIsCartOpen(true)}
-                className="bg-white/15 hover:bg-white/25 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition cursor-pointer"
+                className="bg-[#D4AF37] hover:bg-[#C88A4B] text-[#231710] text-[10px] font-black px-2.5 py-1 rounded-lg transition cursor-pointer shadow-sm whitespace-nowrap"
               >
                 عرض السلة
               </button>
               <Link
                 href="/checkout"
-                className="bg-gradient-to-l from-[#D4AF37] to-[#C88A4B] hover:opacity-95 text-[#231710] text-[10px] sm:text-[11px] font-black px-3 py-1.5 rounded-lg shadow flex items-center gap-1 transition"
+                className="bg-white/15 hover:bg-white/25 text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-0.5 transition whitespace-nowrap"
               >
                 <span>إتمام الطلب</span>
-                <ArrowLeft className="w-3 h-3" />
+                <ArrowLeft className="w-2.5 h-2.5" />
               </Link>
             </div>
           </div>

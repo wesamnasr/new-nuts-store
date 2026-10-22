@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { updateUrlQueryParams, useBrowserUrlSync } from '@/lib/url-sync';
 import {
   X,
   Star,
@@ -33,11 +35,42 @@ export default function ProductModal() {
 
   useEffect(() => {
     if (selectedProductModal && resolvedWeights.length > 0) {
-      setSelectedWeight(resolvedWeights[1] || resolvedWeights[0] || null);
-      setSelectedRoast(selectedProductModal.roastOptions[0] || 'محمص مملح');
+      const params =
+        typeof window !== 'undefined'
+          ? new URLSearchParams(window.location.search)
+          : null;
+      const qvW = params?.get('qvWeight');
+      const qvR = params?.get('qvRoast');
+      const matchedW =
+        (qvW && resolvedWeights.find((w) => w.id === qvW || String(w.weightGrams) === qvW)) ||
+        resolvedWeights[1] ||
+        resolvedWeights[0] ||
+        null;
+      const matchedR =
+        (qvR && selectedProductModal.roastOptions.find((r) => r === qvR)) ||
+        selectedProductModal.roastOptions[0] ||
+        'محمص مملح';
+      setSelectedWeight(matchedW);
+      setSelectedRoast(matchedR);
       setQuantity(1);
     }
   }, [selectedProductModal, resolvedWeights]);
+
+  useBrowserUrlSync((params) => {
+    if (!selectedProductModal || resolvedWeights.length === 0) return;
+    const qvW = params.get('qvWeight');
+    const qvR = params.get('qvRoast');
+    if (qvW) {
+      const matchedW = resolvedWeights.find(
+        (w) => w.id === qvW || String(w.weightGrams) === qvW
+      );
+      if (matchedW) setSelectedWeight(matchedW);
+    }
+    if (qvR) {
+      const matchedR = selectedProductModal.roastOptions.find((r) => r === qvR);
+      if (matchedR) setSelectedRoast(matchedR);
+    }
+  });
 
   if (!selectedProductModal || !selectedWeight) return null;
 
@@ -105,7 +138,6 @@ export default function ProductModal() {
                 </span>
                 <span>السعرات: {product.caloriesPer100g} سعر</span>
               </div>
-              <p className="text-[9.5px] text-brand-700 line-clamp-2">{product.nutritionalHighlight}</p>
               <div className="mt-1 flex flex-wrap items-center gap-1 text-[9px] font-bold text-brand-800">
                 <span className="bg-brand-100 px-1.5 py-0.5 rounded">
                   البروتين: {product.proteinPer100g}
@@ -131,9 +163,17 @@ export default function ProductModal() {
                 </span>
               </div>
 
-              <div>
+              <div className="flex items-center justify-between gap-2">
                 <h2 className="text-base sm:text-lg font-extrabold text-brand-950">{product.name}</h2>
-                <p className="text-[11px] text-brand-600 font-semibold mt-0.5">{product.subtitle}</p>
+                <Link
+                  href={`/product/${product.slug || product.id}?weight=${encodeURIComponent(
+                    selectedWeight.id
+                  )}&roast=${encodeURIComponent(selectedRoast)}`}
+                  onClick={() => setSelectedProductModal(null)}
+                  className="text-[10px] font-black text-brand-900 bg-brand-100 hover:bg-brand-200 px-2.5 py-1 rounded-lg transition shrink-0"
+                >
+                  صفحة المنتج الكاملة ↗
+                </Link>
               </div>
 
               <p className="text-[11px] text-brand-800 leading-relaxed bg-brand-50/70 p-2 rounded-lg border border-brand-100">
@@ -152,7 +192,10 @@ export default function ProductModal() {
                       <button
                         key={w.id}
                         type="button"
-                        onClick={() => setSelectedWeight(w)}
+                        onClick={() => {
+                          setSelectedWeight(w);
+                          updateUrlQueryParams({ qvWeight: w.id });
+                        }}
                         className={`p-1.5 rounded-lg border text-center transition ${
                           active
                             ? 'bg-brand-900 text-white border-brand-900 shadow-2xs'
@@ -193,7 +236,10 @@ export default function ProductModal() {
                       <button
                         key={roast}
                         type="button"
-                        onClick={() => setSelectedRoast(roast)}
+                        onClick={() => {
+                          setSelectedRoast(roast);
+                          updateUrlQueryParams({ qvRoast: roast });
+                        }}
                         className={`px-2 py-1 rounded-md text-[10px] font-bold border transition ${
                           active
                             ? 'bg-amber-100 text-brand-950 border-brand-700 shadow-2xs'

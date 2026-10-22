@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   Scale,
   Coffee,
@@ -45,6 +46,10 @@ import PosCoffeeBlendPage from '@/components/pos/PosCoffeeBlendPage';
 import PosInvoicesTablePage from '@/components/pos/PosInvoicesTablePage';
 import PosShiftSummaryPage from '@/components/pos/PosShiftSummaryPage';
 import PosOnlineOrdersPage from '@/components/pos/PosOnlineOrdersPage';
+import {
+  updateUrlQueryParams,
+  useBrowserUrlSync,
+} from '@/lib/url-sync';
 
 const ADMIN_SESSION_STORAGE_KEY = 'nuts_admin_session';
 const HELD_INVOICES_STORAGE_KEY = 'nuts_pos_held_invoices';
@@ -66,8 +71,10 @@ export type PosPageId =
   | 'online_orders';
 
 export default function HafsaPosCashierPage() {
+  const pathname = usePathname();
+  const isEmbeddedInAdmin = pathname?.startsWith('/admin') ?? false;
   const { storeData, refreshStore, showToast } = useStore();
-  const products = storeData?.products || [];
+  const products = (storeData?.products || []).filter((p) => p.showInPos !== false);
   const categories = storeData?.categories || [];
   const promotions = storeData?.promotions || [];
   const settings = storeData?.settings;
@@ -95,6 +102,48 @@ export default function HafsaPosCashierPage() {
   const [onlineDeliveryFilter, setOnlineDeliveryFilter] = useState<
     'all' | 'bandar_fast' | 'villages_scheduled' | 'store_pickup'
   >('all');
+
+  useBrowserUrlSync((params) => {
+    const pg = params.get('posPage') as PosPageId | null;
+    if (
+      pg &&
+      [
+        'direct_sales',
+        'boxes',
+        'coffee_blend',
+        'invoices_table',
+        'shift_summary',
+        'online_orders',
+      ].includes(pg)
+    ) {
+      setActivePage(pg);
+    } else if (!pg) {
+      setActivePage('direct_sales');
+    }
+
+    const sub = params.get('posSub');
+    if (pg === 'boxes' && (sub === 'ready' || sub === 'touch_builder')) {
+      setBoxTab(sub);
+    } else if (pg === 'coffee_blend' && (sub === 'ready' || sub === 'custom_bag')) {
+      setCoffeeTab(sub);
+    } else if (
+      pg === 'invoices_table' &&
+      sub &&
+      ['all_pos', 'counter_takeaway', 'glass_bar_dine_in', 'phone_delivery', 'online', 'all'].includes(
+        sub
+      )
+    ) {
+      setInvoiceSourceFilter(sub as any);
+    } else if (
+      pg === 'online_orders' &&
+      sub &&
+      ['all', 'bandar_fast', 'villages_scheduled', 'store_pickup'].includes(sub)
+    ) {
+      setOnlineDeliveryFilter(sub as any);
+    } else if (!pg || pg === 'direct_sales') {
+      setSelectedCategoryId(sub || 'all');
+    }
+  });
 
   // POS Server State
   const [activeShift, setActiveShift] = useState<PosShift | null>(null);
@@ -322,11 +371,11 @@ export default function HafsaPosCashierPage() {
               })
             );
           }
-          if (verifiedRole === 'supplier') {
+          if (verifiedRole === 'supplier' && !data.permissions?.includes('cashier_portal') && !window.location.pathname.startsWith('/admin')) {
             window.location.replace('/supplier');
             return;
           }
-          if (verifiedRole === 'accountant') {
+          if (verifiedRole === 'accountant' && !data.permissions?.includes('cashier_portal') && !window.location.pathname.startsWith('/admin')) {
             window.location.replace('/accountant');
             return;
           }
@@ -355,7 +404,8 @@ export default function HafsaPosCashierPage() {
       }
     };
     verifyPosSession();
-  }, [fetchPosData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Keyboard Shortcuts F1..F6 to switch between the 6 POS pages
   useEffect(() => {
@@ -936,8 +986,9 @@ export default function HafsaPosCashierPage() {
     <div className="min-h-screen bg-[#FAF6F0] text-[#231710] pb-10">
       <div className="flex flex-col lg:flex-row items-start print:hidden">
         {/* =================================================================== */}
-        {/* RIGHT VERTICAL NAVIGATION SIDEBAR (COLLAPSIBLE & RESIZABLE)         */}
+        {/* RIGHT VERTICAL NAVIGATION SIDEBAR (STANDALONE /pos ONLY)            */}
         {/* =================================================================== */}
+        {!isEmbeddedInAdmin && (
         <div
           className="w-full lg:shrink-0"
           style={{ width: `${effectiveNavWidth}px`, maxWidth: '100%' }}
@@ -1004,7 +1055,13 @@ export default function HafsaPosCashierPage() {
                   <div key={pg.id} className="space-y-1">
                     <button
                       type="button"
-                      onClick={() => setActivePage(pg.id)}
+                      onClick={() => {
+                        setActivePage(pg.id);
+                        updateUrlQueryParams({
+                          posPage: pg.id === 'direct_sales' ? null : pg.id,
+                          posSub: null,
+                        });
+                      }}
                       title={`${pg.label} (${pg.shortcut})`}
                       className={`relative w-full py-2 px-2.5 rounded-xl text-xs font-cairo font-black flex items-center ${
                         navCollapsed ? 'justify-center' : 'justify-between'
@@ -1054,6 +1111,7 @@ export default function HafsaPosCashierPage() {
                           onClick={() => {
                             setActivePage('direct_sales');
                             setSelectedCategoryId('all');
+                            updateUrlQueryParams({ posPage: null, posSub: null });
                           }}
                           className={`w-full text-right py-1 px-2 rounded-lg text-[10px] font-cairo font-bold flex items-center justify-between transition cursor-pointer ${
                             activePage === 'direct_sales' && selectedCategoryId === 'all'
@@ -1073,6 +1131,7 @@ export default function HafsaPosCashierPage() {
                               onClick={() => {
                                 setActivePage('direct_sales');
                                 setSelectedCategoryId(cat.id);
+                                updateUrlQueryParams({ posPage: null, posSub: cat.id });
                               }}
                               className={`w-full text-right py-1 px-2 rounded-lg text-[10px] font-cairo font-bold flex items-center gap-1.5 transition cursor-pointer ${
                                 isCatSelected
@@ -1095,6 +1154,7 @@ export default function HafsaPosCashierPage() {
                           onClick={() => {
                             setActivePage('boxes');
                             setBoxTab('ready');
+                            updateUrlQueryParams({ posPage: 'boxes', posSub: 'ready' });
                           }}
                           className={`w-full text-right py-1 px-2 rounded-lg text-[10px] font-cairo font-bold flex items-center gap-1.5 transition cursor-pointer ${
                             activePage === 'boxes' && boxTab === 'ready'
@@ -1109,6 +1169,7 @@ export default function HafsaPosCashierPage() {
                           onClick={() => {
                             setActivePage('boxes');
                             setBoxTab('touch_builder');
+                            updateUrlQueryParams({ posPage: 'boxes', posSub: 'touch_builder' });
                           }}
                           className={`w-full text-right py-1 px-2 rounded-lg text-[10px] font-cairo font-bold flex items-center gap-1.5 transition cursor-pointer ${
                             activePage === 'boxes' && boxTab === 'touch_builder'
@@ -1128,6 +1189,7 @@ export default function HafsaPosCashierPage() {
                           onClick={() => {
                             setActivePage('coffee_blend');
                             setCoffeeTab('ready');
+                            updateUrlQueryParams({ posPage: 'coffee_blend', posSub: 'ready' });
                           }}
                           className={`w-full text-right py-1 px-2 rounded-lg text-[10px] font-cairo font-bold flex items-center gap-1.5 transition cursor-pointer ${
                             activePage === 'coffee_blend' && coffeeTab === 'ready'
@@ -1142,6 +1204,7 @@ export default function HafsaPosCashierPage() {
                           onClick={() => {
                             setActivePage('coffee_blend');
                             setCoffeeTab('custom_bag');
+                            updateUrlQueryParams({ posPage: 'coffee_blend', posSub: 'custom_bag' });
                           }}
                           className={`w-full text-right py-1 px-2 rounded-lg text-[10px] font-cairo font-bold flex items-center gap-1.5 transition cursor-pointer ${
                             activePage === 'coffee_blend' && coffeeTab === 'custom_bag'
@@ -1169,6 +1232,7 @@ export default function HafsaPosCashierPage() {
                             onClick={() => {
                               setActivePage('invoices_table');
                               setInvoiceSourceFilter(sub.id);
+                              updateUrlQueryParams({ posPage: 'invoices_table', posSub: sub.id });
                             }}
                             className={`w-full text-right py-1 px-2 rounded-lg text-[10px] font-cairo font-bold flex items-center gap-1.5 transition cursor-pointer ${
                               invoiceSourceFilter === sub.id
@@ -1196,6 +1260,7 @@ export default function HafsaPosCashierPage() {
                             onClick={() => {
                               setActivePage('online_orders');
                               setOnlineDeliveryFilter(sub.id);
+                              updateUrlQueryParams({ posPage: 'online_orders', posSub: sub.id });
                             }}
                             className={`w-full text-right py-1 px-2 rounded-lg text-[10px] font-cairo font-bold flex items-center gap-1.5 transition cursor-pointer ${
                               onlineDeliveryFilter === sub.id
@@ -1286,11 +1351,258 @@ export default function HafsaPosCashierPage() {
             </div>
           </aside>
         </div>
+        )}
 
         {/* =================================================================== */}
-        {/* MAIN WORKSPACE CONTENT: SELLING PAGES (WITH FIXED RESIZABLE CART)   */}
+        {/* MAIN WORKSPACE CONTENT: SELLING PAGES (WITH RESIZABLE CART)         */}
         {/* =================================================================== */}
-        <main className="flex-1 min-w-0 w-full px-3 sm:px-4 pt-3">
+        <main className="flex-1 min-w-0 w-full px-3 sm:px-4 pt-3 space-y-3">
+          {/* Contained Horizontal POS Navigation Bar when embedded inside /admin */}
+          {isEmbeddedInAdmin && (
+            <div className="bg-[#231710] text-[#FAF6F0] rounded-2xl border-2 border-[#D4AF37] p-3 shadow-md space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {navPages.map((pg) => {
+                    const isActive = activePage === pg.id;
+                    return (
+                      <button
+                        key={pg.id}
+                        type="button"
+                        onClick={() => {
+                          setActivePage(pg.id);
+                          updateUrlQueryParams({
+                            posPage: pg.id === 'direct_sales' ? null : pg.id,
+                            posSub: null,
+                          });
+                        }}
+                        className={`px-3 py-2 rounded-xl text-xs font-cairo font-black flex items-center gap-1.5 transition cursor-pointer ${
+                          isActive
+                            ? 'bg-[#D4AF37] text-[#231710] shadow-sm'
+                            : 'bg-white/10 text-[#FAF6F0] hover:bg-white/20'
+                        }`}
+                      >
+                        <span className="shrink-0">{pg.icon}</span>
+                        <span>{pg.label}</span>
+                        {pg.badge !== undefined && (
+                          <span
+                            className={`text-[10px] px-1.5 rounded-full font-black tabular-nums ${
+                              pg.id === 'online_orders' && pendingOnlineCount > 0
+                                ? 'bg-[#B83B2B] text-white'
+                                : isActive
+                                  ? 'bg-[#231710] text-[#D4AF37]'
+                                  : 'bg-white/15 text-white'
+                            }`}
+                          >
+                            {pg.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {activeShift ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActivePage('shift_summary');
+                        updateUrlQueryParams({ posPage: 'shift_summary', posSub: null });
+                      }}
+                      className="bg-[#3B6E4C] hover:bg-[#2F5A3D] text-white rounded-xl py-2 px-3 text-xs font-cairo font-black flex items-center gap-1.5 cursor-pointer transition tabular-nums"
+                    >
+                      <span>💵 درج الوردية:</span>
+                      <span>{activeShift.expectedCashInDrawer} ج.م</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActivePage('shift_summary');
+                        updateUrlQueryParams({ posPage: 'shift_summary', posSub: null });
+                      }}
+                      className="bg-[#B83B2B] text-white text-xs font-bold py-2 px-3 rounded-xl cursor-pointer"
+                    >
+                      ⚠️ افتح وردية
+                    </button>
+                  )}
+
+                  {!isSellingPage && posItems.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActivePage('direct_sales');
+                        updateUrlQueryParams({ posPage: null, posSub: null });
+                      }}
+                      className="bg-[#3B6E4C] text-white py-2 px-3 rounded-xl text-xs font-cairo font-black flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
+                      <span>الفاتورة ({posNetTotal} ج)</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Contextual Sub-Sections Filter Row inside Admin POS View */}
+              {activePage === 'direct_sales' && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategoryId('all');
+                      updateUrlQueryParams({ posPage: null, posSub: null });
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo font-bold transition cursor-pointer ${
+                      selectedCategoryId === 'all'
+                        ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black border border-[#D4AF37]/50'
+                        : 'bg-white/5 text-white/80 hover:bg-white/15'
+                    }`}
+                  >
+                    📦 كل الأصناف
+                  </button>
+                  {categories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCategoryId(cat.id);
+                        updateUrlQueryParams({ posPage: null, posSub: cat.id });
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo font-bold flex items-center gap-1 transition cursor-pointer ${
+                        selectedCategoryId === cat.id
+                          ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black border border-[#D4AF37]/50'
+                          : 'bg-white/5 text-white/80 hover:bg-white/15'
+                      }`}
+                    >
+                      <span>{cat.icon}</span>
+                      <span>{cat.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {activePage === 'boxes' && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBoxTab('ready');
+                      updateUrlQueryParams({ posPage: 'boxes', posSub: 'ready' });
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo font-bold transition cursor-pointer ${
+                      boxTab === 'ready'
+                        ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black border border-[#D4AF37]/50'
+                        : 'bg-white/5 text-white/80 hover:bg-white/15'
+                    }`}
+                  >
+                    🎁 البوكسات الجاهزة
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBoxTab('touch_builder');
+                      updateUrlQueryParams({ posPage: 'boxes', posSub: 'touch_builder' });
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo font-bold transition cursor-pointer ${
+                      boxTab === 'touch_builder'
+                        ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black border border-[#D4AF37]/50'
+                        : 'bg-white/5 text-white/80 hover:bg-white/15'
+                    }`}
+                  >
+                    ✨ تكوين بوكس باللمس
+                  </button>
+                </div>
+              )}
+
+              {activePage === 'coffee_blend' && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCoffeeTab('ready');
+                      updateUrlQueryParams({ posPage: 'coffee_blend', posSub: 'ready' });
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo font-bold transition cursor-pointer ${
+                      coffeeTab === 'ready'
+                        ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black border border-[#D4AF37]/50'
+                        : 'bg-white/5 text-white/80 hover:bg-white/15'
+                    }`}
+                  >
+                    ☕ توليفات وبن جاهز
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCoffeeTab('custom_bag');
+                      updateUrlQueryParams({ posPage: 'coffee_blend', posSub: 'custom_bag' });
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo font-bold transition cursor-pointer ${
+                      coffeeTab === 'custom_bag'
+                        ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black border border-[#D4AF37]/50'
+                        : 'bg-white/5 text-white/80 hover:bg-white/15'
+                    }`}
+                  >
+                    🥣 خلط توليفة مخصوصة
+                  </button>
+                </div>
+              )}
+
+              {activePage === 'invoices_table' && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-white/10">
+                  {[
+                    { id: 'all_pos' as const, label: '🧾 كل فواتير الكاشير' },
+                    { id: 'counter_takeaway' as const, label: '🛍️ مبيعات الكاونتر' },
+                    { id: 'glass_bar_dine_in' as const, label: '☕ البار الزجاجي' },
+                    { id: 'phone_delivery' as const, label: '🛵 دليفري التليفون' },
+                    { id: 'online' as const, label: '🌐 فواتير الأونلاين' },
+                  ].map((sub) => (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => {
+                        setInvoiceSourceFilter(sub.id);
+                        updateUrlQueryParams({ posPage: 'invoices_table', posSub: sub.id });
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo font-bold transition cursor-pointer ${
+                        invoiceSourceFilter === sub.id
+                          ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black border border-[#D4AF37]/50'
+                          : 'bg-white/5 text-white/80 hover:bg-white/15'
+                      }`}
+                    >
+                      {sub.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {activePage === 'online_orders' && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-white/10">
+                  {[
+                    { id: 'all' as const, label: '📋 كل الطلبات' },
+                    { id: 'bandar_fast' as const, label: '🛵 دليفري البندر' },
+                    { id: 'villages_scheduled' as const, label: '🚐 قرى المركز' },
+                    { id: 'store_pickup' as const, label: '🏪 استلام الفرع' },
+                  ].map((sub) => (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => {
+                        setOnlineDeliveryFilter(sub.id);
+                        updateUrlQueryParams({ posPage: 'online_orders', posSub: sub.id });
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo font-bold transition cursor-pointer ${
+                        onlineDeliveryFilter === sub.id
+                          ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black border border-[#D4AF37]/50'
+                          : 'bg-white/5 text-white/80 hover:bg-white/15'
+                      }`}
+                    >
+                      {sub.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {isSellingPage ? (
             <div className="flex flex-col lg:flex-row gap-3.5 items-start">
               {/* CENTER/MAIN AREA (Flex-1): Large Simplified Cards */}
@@ -1385,6 +1697,7 @@ export default function HafsaPosCashierPage() {
                   onDeleteHeldInvoice={handleDeleteHeldInvoice}
                   cartWidth={cartWidth}
                   onChangeCartWidth={handleChangeCartWidth}
+                  embeddedInAdmin={isEmbeddedInAdmin}
                 />
               </div>
             </div>

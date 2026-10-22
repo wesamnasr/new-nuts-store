@@ -7,11 +7,6 @@ import {
   Clock,
   Phone,
   Sparkles,
-  Coffee,
-  Gift,
-  Crown,
-  ShieldCheck,
-  Truck,
 } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 
@@ -22,65 +17,60 @@ export default function AboutPage() {
   const storeZones = [
     {
       icon: '🥜',
-      title: 'بنك المكسرات والتسالي (24 عين زجاجية مضاءة)',
-      desc: 'مقسم بدقة هندسية إلى 12 عين سفلية للب والتسالي والسوداني، و12 عين علوية للمكسرات الفاخرة والتمور والفواكه المجففة.',
+      title: 'بنك المكسرات والتسالي',
+      desc: '24 عين زجاجية للمكسرات الفاخرة والتسالي الطازجة.',
     },
     {
       icon: '☕',
-      title: 'ركن البن والـ 4 صوامع النحاسية والمطحن الألماني',
-      desc: '4 صوامع نحاسية فاخرة تحفظ حبوب البن (فاتح، وسط، غامق، وإسبريسو) مع طحن فوري لحظة الطلب وتحويجة الحبهان والزعفران.',
+      title: 'ركن البن والصوامع النحاسية',
+      desc: 'تحميص وطحن فوري بالدرجة والتحويجة المفضلة.',
     },
     {
       icon: '🍯',
-      title: 'ركن خلية العسل الخشبية السداسية',
-      desc: 'عرض هندسي مضاء لبرطمانات عسل النحل الطبيعي (سدر جبلي، موالح، حبة البركة) وعسل الطاقة بالمكسرات الملكية.',
+      title: 'خلية العسل الطبيعي',
+      desc: 'عسل نحل طبيعي ومكسرات بالعسل الجبلي.',
     },
     {
       icon: '🥤',
-      title: 'استاند السعادة وكاسات الـ Dome Lid الجاهزة',
-      desc: 'كاسات سناك ومكسرات وشوكولاتة مستوردة جاهزة للخطف السريع بأسعار تبدأ من 35 ج.م و50 ج.م.',
+      title: 'استاند السعادة السريع',
+      desc: 'كاسات سناك ومكسرات وشوكولاتة جاهزة.',
     },
   ];
 
   return (
     <div className="min-h-screen bg-[#FAF6F0] text-[#231710] pb-16">
       {/* Hero Banner */}
-      <div className="bg-[#231710] text-[#FAF6F0] border-b-2 border-[#D4AF37]/50 py-10 sm:py-14 px-4">
-        <div className="max-w-5xl mx-auto text-center space-y-3">
+      <div className="bg-[#231710] text-[#FAF6F0] border-b-2 border-[#D4AF37]/50 py-8 sm:py-10 px-4">
+        <div className="max-w-4xl mx-auto text-center space-y-2">
           <div className="inline-flex items-center gap-1.5 bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40 px-3.5 py-1 rounded-full text-xs font-black">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>قصة محمصة حفصة للبن والمكسرات • HAFSA ROASTERY</span>
+            <span>محمصة حفصة • HAFSA ROASTERY</span>
           </div>
-          <h1 className="font-cairo text-2xl sm:text-4xl font-black text-white">
-            تجربة التحميص الفاخر ومزاج القهوة الأصيل في قلب بني مزار
+          <h1 className="font-cairo text-2xl sm:text-3xl font-black text-white">
+            تحميص يومي طازج في قلب بني مزار
           </h1>
-          <p className="text-xs sm:text-base text-[#F3ECE1]/85 max-w-3xl mx-auto leading-relaxed">
-            انطلقت «محمصة حفصة للبن والمكسرات» من قلب مركز بني مزار (أمام مسجد الزراعيين) لتقدم
-            مفهوماً عصرياً يجمع بين فخامة التصميم المعماري (رخام الكالاكاتا والإضاءة الدافئة) وبين
-            أعلى معايير النظافة والتحميص اليومي الطازج بأسعار تناسب كل بيت في بني مزار.
-          </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 space-y-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
         {/* 4 Architectural Store Zones */}
         <div className="space-y-4">
           <h2 className="font-cairo text-xl sm:text-2xl font-black text-[#231710] text-center">
-            أركان فرع «محمصة حفصة» في بني مزار
+            أركان المحمصة
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {storeZones.map((zone, idx) => (
               <div
                 key={idx}
-                className="bg-white rounded-3xl p-5 border border-[#E6DFD3] shadow-xs space-y-2.5"
+                className="bg-white rounded-3xl p-5 border border-[#E6DFD3] shadow-xs space-y-2"
               >
-                <div className="w-11 h-11 rounded-2xl bg-[#F3ECE1] border border-[#D4AF37] flex items-center justify-center text-xl">
+                <div className="w-10 h-10 rounded-2xl bg-[#F3ECE1] border border-[#D4AF37] flex items-center justify-center text-xl">
                   {zone.icon}
                 </div>
                 <h3 className="font-cairo text-sm font-black text-[#231710]">
                   {zone.title}
                 </h3>
-                <p className="text-xs text-[#6E5D4F] leading-relaxed">{zone.desc}</p>
+                <p className="text-xs text-[#6E5D4F]">{zone.desc}</p>
               </div>
             ))}
           </div>
@@ -92,27 +82,25 @@ export default function AboutPage() {
             <span className="bg-[#231710] text-[#D4AF37] text-xs font-black px-3 py-1 rounded-full inline-block">
               📍 موقع الفرع ومواعيد العمل
             </span>
-            <h2 className="font-cairo text-2xl font-black text-[#231710]">
-              تفضل بزيارتنا في فرع بني مزار — أمام مسجد الزراعيين
+            <h2 className="font-cairo text-xl sm:text-2xl font-black text-[#231710]">
+              فرع بني مزار — أمام مسجد الزراعيين
             </h2>
-            <div className="space-y-2.5 text-xs sm:text-sm text-[#231710]">
+            <div className="space-y-2 text-xs sm:text-sm text-[#231710]">
               <p className="flex items-center gap-2 font-bold">
                 <MapPin className="w-4 h-4 text-[#C88A4B] shrink-0" />
                 <span>
-                  {settings?.address ||
-                    'محافظة المنيا - مركز بني مزار - وسط البلد - أمام مسجد الزراعيين مباشرة'}
+                  {settings?.address || 'بني مزار - أمام مسجد الزراعيين'}
                 </span>
               </p>
               <p className="flex items-center gap-2 font-bold">
                 <Clock className="w-4 h-4 text-[#C88A4B] shrink-0" />
                 <span>
-                  {settings?.workingHours ||
-                    'يومياً من الساعة 9:00 صباحاً حتى 1:00 بعد منتصف الليل'}
+                  {settings?.workingHours || 'يومياً من 9 صباحاً حتى 1 صباحاً'}
                 </span>
               </p>
               <p className="flex items-center gap-2 font-bold tabular-nums">
                 <Phone className="w-4 h-4 text-[#C88A4B] shrink-0" />
-                <span>خط الطلبات السريعة والواتساب: {settings?.supportPhone || '01000000000'}</span>
+                <span>واتساب وخدمة العملاء: {settings?.supportPhone || '01000000000'}</span>
               </p>
             </div>
 
@@ -123,13 +111,13 @@ export default function AboutPage() {
                 rel="noreferrer"
                 className="bg-[#231710] text-[#D4AF37] font-cairo font-black text-xs px-5 py-3 rounded-2xl shadow"
               >
-                📍 افتح الاتجاهات على خرائط جوجل (Google Maps)
+                📍 خرائط جوجل
               </a>
               <Link
                 href="/build-box"
                 className="bg-[#D4AF37] text-[#231710] font-cairo font-black text-xs px-5 py-3 rounded-2xl shadow"
               >
-                🎁 صمّم بوكس السهرة الآن
+                🎁 صمّم بوكس السهرة
               </Link>
             </div>
           </div>
@@ -137,7 +125,7 @@ export default function AboutPage() {
           <div className="lg:col-span-6">
             <div className="rounded-2xl overflow-hidden border border-[#E6DFD3] h-64 sm:h-72 bg-[#F3ECE1] relative flex items-center justify-center">
               <iframe
-                title="موقع محمصة حفصة للبن والمكسرات - بني مزار"
+                title="موقع محمصة حفصة - بني مزار"
                 src="https://www.google.com/maps?q=28.5036,30.8004&hl=ar&z=15&output=embed"
                 className="w-full h-full border-0"
                 loading="lazy"

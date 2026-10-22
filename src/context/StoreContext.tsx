@@ -19,6 +19,7 @@ import {
 import { getResolvedThemeConfig, getSafeImageUrl, STORE_THEMES } from '@/lib/defaults';
 import { PARTITIONED_BOX_PRESETS } from '@/lib/pricing';
 import { validateEgyptianPhone } from '@/lib/validation';
+import { updateUrlQueryParams, useBrowserUrlSync } from '@/lib/url-sync';
 
 interface ToastMessage {
   id: string;
@@ -106,11 +107,54 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [storeData, setStoreData] = useState<DatabaseSchema | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
+  const [isCartOpen, setIsCartOpenState] = useState<boolean>(false);
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [activeVipPhone, setActiveVipPhoneState] = useState<string>('');
   const [useVipWalletInCheckout, setUseVipWalletInCheckout] = useState<boolean>(false);
-  const [selectedProductModal, setSelectedProductModal] = useState<Product | null>(null);
+  const [selectedProductModal, setSelectedProductModalState] = useState<Product | null>(null);
+
+  const setIsCartOpen = useCallback((open: boolean) => {
+    setIsCartOpenState(open);
+    updateUrlQueryParams({ cart: open ? 'open' : null });
+  }, []);
+
+  const setSelectedProductModal = useCallback((product: Product | null) => {
+    setSelectedProductModalState(product);
+    updateUrlQueryParams({
+      quickView: product ? product.slug || product.id : null,
+      qvWeight: null,
+      qvRoast: null,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !storeData?.products) return;
+    const params = new URLSearchParams(window.location.search);
+    const qvParam = params.get('quickView');
+    if (qvParam) {
+      const matched = storeData.products.find(
+        (p) => p.slug === qvParam || p.id === qvParam
+      );
+      if (matched) setSelectedProductModalState(matched);
+    }
+  }, [storeData?.products]);
+
+  useBrowserUrlSync((params) => {
+    const cartParam = params.get('cart');
+    setIsCartOpenState(cartParam === 'open');
+
+    const qvParam = params.get('quickView');
+    if (!qvParam) {
+      setSelectedProductModalState(null);
+    } else if (storeData?.products) {
+      const matched = storeData.products.find(
+        (p) => p.slug === qvParam || p.id === qvParam
+      );
+      if (matched) {
+        setSelectedProductModalState(matched);
+      }
+    }
+  });
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [pixelEvents, setPixelEvents] = useState<PixelEventLog[]>([]);
   const [themeOverrideState, setThemeOverrideState] = useState<Partial<StoreThemeConfig> | null>(null);
@@ -671,23 +715,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
-      {/* Floating Toast Notifications */}
-      <div className="fixed bottom-16 lg:bottom-4 left-3.5 z-[100] flex flex-col gap-1.5 max-w-[290px] w-full pointer-events-none px-3 sm:px-0">
+      {/* Compact Floating Toast Notifications on the Right Side */}
+      <div
+        className={`fixed right-3 sm:right-4 z-[100] flex flex-col items-end gap-1.5 max-w-[260px] w-fit pointer-events-none ${
+          cartCount > 0 && !isCartOpen ? 'bottom-28 lg:bottom-16' : 'bottom-16 lg:bottom-4'
+        }`}
+      >
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className="pointer-events-auto bg-[#231710] text-white px-3 py-2.5 rounded-xl shadow-xl border border-[#D4AF37]/50 flex items-center justify-between gap-2"
+            className="pointer-events-auto bg-[#231710]/95 backdrop-blur-md text-white px-2.5 py-1.5 rounded-xl shadow-xl border border-[#D4AF37]/50 flex items-center justify-between gap-2 w-fit"
           >
-            <div>
-              <p className="font-bold text-xs text-[#D4AF37]">{toast.title}</p>
+            <div className="min-w-0">
+              <p className="font-bold text-[11px] text-[#D4AF37] leading-tight">{toast.title}</p>
               {toast.subtitle && (
-                <p className="text-[11px] text-[#FAF6F0]/90 mt-0.5 font-tajawal">{toast.subtitle}</p>
+                <p className="text-[9.5px] text-[#FAF6F0]/90 mt-0.5 font-tajawal truncate">
+                  {toast.subtitle}
+                </p>
               )}
             </div>
             {toast.showCartButton && (
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="text-[11px] bg-[#D4AF37] hover:bg-[#C88A4B] text-[#231710] font-extrabold px-2.5 py-1.5 rounded-lg shrink-0 transition"
+                className="text-[10px] bg-[#D4AF37] hover:bg-[#C88A4B] text-[#231710] font-black px-2 py-1 rounded-lg shrink-0 transition cursor-pointer"
               >
                 عرض السلة
               </button>

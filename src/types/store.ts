@@ -435,6 +435,25 @@ export interface StoreThemeConfig {
 
 export type StaffRole = 'super_admin' | 'supplier' | 'cashier' | 'accountant';
 
+export type AdminPermissionId =
+  | 'overview'
+  | 'orders'
+  | 'products'
+  | 'categories'
+  | 'supply_portal'
+  | 'supply_invoices'
+  | 'accounting_portal'
+  | 'cashier_portal'
+  | 'operations'
+  | 'shipping'
+  | 'coupons'
+  | 'reviews'
+  | 'settings';
+
+export type NonAdminStaffRole = 'supplier' | 'accountant' | 'cashier';
+
+export type RolePermissionsConfig = Record<NonAdminStaffRole, AdminPermissionId[]>;
+
 export type AdminRole =
   | 'super_admin'
   | 'admin'
@@ -503,6 +522,7 @@ export interface StoreSettings {
   wesamAdminPassword?: string;
   pageContent?: StorePageContent;
   themeConfig?: StoreThemeConfig;
+  rolePermissions?: RolePermissionsConfig;
 }
 
 export interface PosExpense {

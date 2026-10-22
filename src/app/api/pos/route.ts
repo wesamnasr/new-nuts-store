@@ -16,7 +16,7 @@ import {
 } from '@/lib/pricing';
 import { validateEgyptianPhone } from '@/lib/validation';
 import { getSafeImageUrl } from '@/lib/defaults';
-import { verifyAdminRequest } from '@/lib/auth';
+import { hasRolePermission, verifyAdminRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,7 +53,13 @@ export async function GET(request: Request) {
       );
     }
 
-    if (auth.role === 'supplier') {
+    const dbForGet = await getDbAsync();
+    if (
+      auth.role === 'supplier' &&
+      !hasRolePermission('supplier', 'cashier_portal', dbForGet.settings) &&
+      !hasRolePermission('supplier', 'accounting_portal', dbForGet.settings) &&
+      !hasRolePermission('supplier', 'operations', dbForGet.settings)
+    ) {
       return NextResponse.json(
         { error: 'عزل الأدوار: المورد غير مصرح له بالدخول إلى نظام الكاشير (403 Forbidden)' },
         { status: 403 }
@@ -111,14 +117,20 @@ export async function POST(request: Request) {
       );
     }
 
-    if (auth.role === 'supplier') {
+    const dbForGet = await getDbAsync();
+    if (
+      auth.role === 'supplier' &&
+      !hasRolePermission('supplier', 'cashier_portal', dbForGet.settings) &&
+      !hasRolePermission('supplier', 'accounting_portal', dbForGet.settings) &&
+      !hasRolePermission('supplier', 'operations', dbForGet.settings)
+    ) {
       return NextResponse.json(
         { error: 'عزل الأدوار: المورد غير مصرح له بإصدار فواتير الكاشير' },
         { status: 403 }
       );
     }
 
-    if (auth.role === 'accountant') {
+    if (auth.role === 'accountant' && !hasRolePermission('accountant', 'cashier_portal', dbForGet.settings)) {
       return NextResponse.json(
         { error: 'عزل الأدوار: المحاسب بصلاحية قراءة فقط وممنوع من إصدار فواتير الكاشير' },
         { status: 403 }

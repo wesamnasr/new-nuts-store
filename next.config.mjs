@@ -27,6 +27,15 @@ const nextConfig = {
   outputFileTracingExcludes: {
     '*': ['.agents/**/*', 'data/**/*'],
   },
+  experimental: {
+    optimizePackageImports: ['lucide-react'],
+  },
+  webpack: (config, { isServer }) => {
+    if (!isServer && config.output) {
+      config.output.chunkLoadTimeout = 180000;
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

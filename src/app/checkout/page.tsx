@@ -323,7 +323,7 @@ export default function CheckoutPage() {
 
           <div className="space-y-1">
             <span className="bg-[#D4AF37]/25 text-[#231710] border border-[#D4AF37] text-xs font-black px-3 py-0.5 rounded-full">
-              تم تسجيل طلبك في محمصة حفصة بنجاح 🎉
+              تم تسجيل طلبك بنجاح 🎉
             </span>
             <h1 className="font-cairo text-xl sm:text-2xl font-black text-[#231710] pt-1">
               شكراً لك يا {completedOrder.customerName}!
@@ -372,7 +372,7 @@ export default function CheckoutPage() {
               className="w-full py-3.5 px-4 rounded-2xl bg-[#3B6E4C] hover:opacity-95 text-white font-cairo font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg transition"
             >
               <MessageCircle className="w-4 h-4" />
-              <span>أرسل الفاتورة المنسقة عبر واتساب المحل لتأكيد التوصيل الفوري</span>
+              <span>إرسال الفاتورة عبر واتساب</span>
             </a>
 
             <button
@@ -381,7 +381,7 @@ export default function CheckoutPage() {
               className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-[#FAF6F0] text-[#231710] border-2 border-[#231710] font-cairo font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Printer className="w-4 h-4" />
-              <span>عرض وطباعة بون الفاتورة الحراري (80mm)</span>
+              <span>عرض الفاتورة</span>
             </button>
 
             <div className="grid grid-cols-2 gap-2">
@@ -420,9 +420,9 @@ export default function CheckoutPage() {
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="space-y-1">
           <h1 className="font-cairo text-2xl sm:text-3xl font-black text-[#231710]">
-            إتمام الطلب السريع (1-Step Checkout) — مركز بني مزار
+            إتمام الطلب
           </h1>
-          <p className="text-xs sm:text-sm text-[#6E5D4F]">
+          <p className="hidden">
             أكمل بياناتك في خطوة واحدة ليبدأ التحميص والتجهيز الفوري في فرعنا أمام مسجد الزراعيين
           </p>
         </div>
@@ -468,7 +468,7 @@ export default function CheckoutPage() {
                   <span className="w-6 h-6 rounded-full bg-[#231710] text-[#D4AF37] text-xs flex items-center justify-center font-black">
                     1
                   </span>
-                  <span>بيانات العميل وربط محفظة حفصة VIP</span>
+                  <span>بيانات العميل</span>
                 </h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -532,7 +532,7 @@ export default function CheckoutPage() {
                   <span className="w-6 h-6 rounded-full bg-[#231710] text-[#D4AF37] text-xs flex items-center justify-center font-black">
                     2
                   </span>
-                  <span>اختر طريقة الاستلام والتوصيل لمركز بني مزار</span>
+                  <span>طريقة الاستلام والتوصيل</span>
                 </h2>
 
                 <div className="grid grid-cols-1 gap-2.5">
@@ -550,9 +550,9 @@ export default function CheckoutPage() {
                       <Truck className="w-5 h-5 text-[#D4AF37] shrink-0" />
                       <div>
                         <div className="font-cairo text-xs sm:text-sm font-black">
-                          🛵 توصيل سريع لبندر بني مزار (خلال 30–45 دقيقة)
+                          🛵 توصيل سريع لبندر بني مزار (30–45 دقيقة)
                         </div>
-                        <div className="text-[11px] opacity-80">
+                        <div className="hidden">
                           شارع العاشر، بورسعيد، الجمهورية، شرق وغرب المحطة، موقف القيس
                         </div>
                       </div>
@@ -576,9 +576,9 @@ export default function CheckoutPage() {
                       <Clock className="w-5 h-5 text-[#D4AF37] shrink-0" />
                       <div>
                         <div className="font-cairo text-xs sm:text-sm font-black">
-                          🚐 توصيل مجدول لقرى مركز بني مزار (دورتان يومياً: 2 ظهراً و8 مساءً)
+                          🚐 توصيل مجدول لقرى بني مزار (2 ظهراً و8 مساءً)
                         </div>
-                        <div className="text-[11px] opacity-80">
+                        <div className="hidden">
                           القيس، صندفا، بني علي، شلقام، أبشاق، طمبو، الجندية، أبو جرج، البهنسا... (حد أدنى 200 ج.م)
                         </div>
                       </div>
@@ -604,7 +604,7 @@ export default function CheckoutPage() {
                         <div className="font-cairo text-xs sm:text-sm font-black">
                           🏪 استلام سريع من الفرع — أمام مسجد الزراعيين
                         </div>
-                        <div className="text-[11px] opacity-80">
+                        <div className="hidden">
                           جهّز طلبي آخذُه وأنا معدي بدون انتظار!
                         </div>
                       </div>
@@ -722,7 +722,7 @@ export default function CheckoutPage() {
                   <span className="w-6 h-6 rounded-full bg-[#231710] text-[#D4AF37] text-xs flex items-center justify-center font-black">
                     3
                   </span>
-                  <span>اختر وسيلة الدفع</span>
+                  <span>وسيلة الدفع</span>
                 </h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">

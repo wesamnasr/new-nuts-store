@@ -31,6 +31,7 @@ import { useStore } from '@/context/StoreContext';
 import { getSafeImageUrl } from '@/lib/defaults';
 import ProductCard from '@/components/ProductCard';
 import NutritionFactsCard from '@/components/product/NutritionFactsCard';
+import { updateUrlQueryParams, useBrowserUrlSync, buildUrlWithParams } from '@/lib/url-sync';
 
 interface ProductDetailClientProps {
   initialProduct: Product;
@@ -71,13 +72,53 @@ export default function ProductDetailClient({
     getSafeImageUrl(initialProduct.image)
   );
 
-  // Variant selector states
+  // Variant selector states & Sub-section state synced with URL
   const [selectedWeight, setSelectedWeight] = useState<WeightVariant>(
     initialProduct.weights[1] || initialProduct.weights[0]
   );
   const [selectedRoast, setSelectedRoast] = useState<RoastOption>(
     initialProduct.roastOptions[0] || 'محمص مملح'
   );
+  const [activeSection, setActiveSection] = useState<'all' | 'nutrition' | 'reviews' | 'related'>('all');
+
+  const allGalleryImages = useMemo(() => {
+    const base = getSafeImageUrl(product.image);
+    const extras = (product.gallery || [])
+      .filter((img) => Boolean(img && img.trim()))
+      .map((img) => getSafeImageUrl(img));
+    return [base, ...extras.filter((u) => u !== base)];
+  }, [product.image, product.gallery]);
+
+  useBrowserUrlSync((params) => {
+    const wParam = params.get('weight');
+    if (wParam) {
+      const matchedW = product.weights.find(
+        (w) => w.id === wParam || String(w.weightGrams) === wParam || String(w.grams) === wParam
+      );
+      if (matchedW) setSelectedWeight(matchedW);
+    }
+
+    const rParam = params.get('roast');
+    if (rParam) {
+      const matchedR = product.roastOptions.find((r) => r === rParam);
+      if (matchedR) setSelectedRoast(matchedR);
+    }
+
+    const imgParam = params.get('img');
+    if (imgParam !== null) {
+      const idx = Number(imgParam);
+      if (!Number.isNaN(idx) && allGalleryImages[idx]) {
+        setSelectedImage(allGalleryImages[idx]);
+      }
+    }
+
+    const secParam = params.get('section');
+    if (secParam === 'nutrition' || secParam === 'reviews' || secParam === 'related') {
+      setActiveSection(secParam);
+    } else {
+      setActiveSection('all');
+    }
+  });
   const [quantity, setQuantity] = useState<number>(1);
   const [workerNotes, setWorkerNotes] = useState<string>('');
   const [justAdded, setJustAdded] = useState<boolean>(false);
@@ -110,10 +151,6 @@ export default function ProductDetailClient({
     if (!product.inStock) return;
     addToCart(product, selectedWeight, selectedRoast, quantity, workerNotes.trim() || undefined);
     setJustAdded(true);
-    showToast(
-      `تمت إضافة "${product.name}" إلى السلة`,
-      `${selectedWeight.label} • ${selectedRoast} (${quantity})`
-    );
     setTimeout(() => setJustAdded(false), 1500);
   };
 
@@ -281,7 +318,10 @@ export default function ProductDetailClient({
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
               <button
                 type="button"
-                onClick={() => setSelectedImage(getSafeImageUrl(product.image))}
+                onClick={() => {
+                  setSelectedImage(getSafeImageUrl(product.image));
+                  updateUrlQueryParams({ img: 0 });
+                }}
                 className={`w-10 h-10 rounded-lg overflow-hidden border transition shrink-0 ${
                   selectedImage === getSafeImageUrl(product.image)
                     ? 'border-brand-900 shadow-2xs scale-105'
@@ -298,7 +338,10 @@ export default function ProductDetailClient({
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => setSelectedImage(imgUrl)}
+                  onClick={() => {
+                    setSelectedImage(imgUrl);
+                    updateUrlQueryParams({ img: idx + 1 });
+                  }}
                   className={`w-10 h-10 rounded-lg overflow-hidden border transition shrink-0 ${
                     selectedImage === imgUrl
                       ? 'border-brand-900 shadow-2xs scale-105'
@@ -335,9 +378,6 @@ export default function ProductDetailClient({
             <h1 className="text-lg sm:text-xl font-extrabold text-brand-950 leading-tight">
               {product.name}
             </h1>
-            <p className="text-[11px] sm:text-xs text-brand-700 font-medium mt-0.5">
-              {product.subtitle}
-            </p>
           </div>
 
           {/* Price Display */}
@@ -385,7 +425,10 @@ export default function ProductDetailClient({
                   <button
                     key={w.id}
                     type="button"
-                    onClick={() => setSelectedWeight(w)}
+                    onClick={() => {
+                      setSelectedWeight(w);
+                      updateUrlQueryParams({ weight: w.id });
+                    }}
                     className={`py-2 px-2 rounded-xl border text-center transition cursor-pointer tabular-nums ${
                       isSelected
                         ? 'bg-[#231710] text-[#FAF6F0] border-[#D4AF37] shadow-xs'
@@ -404,21 +447,13 @@ export default function ProductDetailClient({
                 );
               })}
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-1 text-[9.5px] sm:text-[10px] bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-100">
-              <span className="font-semibold text-brand-800">👥 {servingHint}</span>
-              {bulkSavingsEgp > 0 && (
-                <span className="font-bold text-pistachio-700 bg-pistachio-50 px-1.5 py-0.5 rounded border border-pistachio-200">
-                  ✨ أوفر بـ {bulkSavingsEgp} ج.م مقارنة بالحجم الصغير
-                </span>
-              )}
-            </div>
           </div>
 
           {/* Interactive Roast Option Selector */}
           {product.roastOptions.length > 0 && (
             <div className="space-y-1">
               <label className="text-[10.5px] font-extrabold text-brand-900 block">
-                2. درجة التحميص / الملح / الطحنة:
+                درجة التحميص / الطحنة:
               </label>
               <div className="flex flex-wrap gap-1.5">
                 {product.roastOptions.map((roast) => {
@@ -427,7 +462,10 @@ export default function ProductDetailClient({
                     <button
                       key={roast}
                       type="button"
-                      onClick={() => setSelectedRoast(roast)}
+                      onClick={() => {
+                        setSelectedRoast(roast);
+                        updateUrlQueryParams({ roast });
+                      }}
                       className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition cursor-pointer ${
                         isActive
                           ? 'bg-[#231710] text-[#D4AF37] border-[#D4AF37] shadow-2xs font-extrabold'
@@ -547,20 +585,62 @@ export default function ProductDetailClient({
         </div>
       </div>
 
+      {/* Sub-pages / Sections Navigation Bar with Dedicated URLs */}
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar bg-white p-2 rounded-2xl border border-brand-200 shadow-2xs">
+        {[
+          { id: 'all' as const, label: 'نظرة شاملة' },
+          { id: 'nutrition' as const, label: 'القيمة الغذائية' },
+          { id: 'reviews' as const, label: `تقييمات العملاء (${reviewsCount})` },
+          ...(relatedProducts.length > 0
+            ? [{ id: 'related' as const, label: 'أصناف مشابهة' }]
+            : []),
+        ].map((tab) => {
+          const isActive = activeSection === tab.id;
+          const tabHref = buildUrlWithParams(
+            `/product/${product.slug || product.id}`,
+            {
+              weight: selectedWeight.id,
+              roast: selectedRoast,
+              section: tab.id === 'all' ? null : tab.id,
+            }
+          );
+          return (
+            <a
+              key={tab.id}
+              href={tabHref}
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveSection(tab.id);
+                updateUrlQueryParams({
+                  section: tab.id === 'all' ? null : tab.id,
+                });
+              }}
+              className={`px-4 py-2 rounded-xl text-xs font-cairo font-black whitespace-nowrap transition cursor-pointer ${
+                isActive
+                  ? 'bg-[#231710] text-[#D4AF37] shadow-xs'
+                  : 'bg-[#FAF6F0] text-[#231710] hover:bg-[#F3ECE1]'
+              }`}
+            >
+              {tab.label}
+            </a>
+          );
+        })}
+      </div>
+
       {/* Luxury Nutrition Facts Card Section */}
-      <section className="pt-1">
-        <NutritionFactsCard product={product} />
-      </section>
+      {(activeSection === 'all' || activeSection === 'nutrition') && (
+        <section id="nutrition" className="pt-1">
+          <NutritionFactsCard product={product} />
+        </section>
+      )}
 
       {/* Customer Reviews Section */}
-      <section className="bg-white rounded-xl border border-brand-200/80 shadow-2xs p-3.5 sm:p-5 space-y-4">
+      {(activeSection === 'all' || activeSection === 'reviews') && (
+      <section id="reviews" className="bg-white rounded-xl border border-brand-200/80 shadow-2xs p-3.5 sm:p-5 space-y-4">
         <div className="border-b border-brand-100 pb-3">
           <h2 className="text-sm sm:text-base font-extrabold text-brand-950">
-            تقييمات وآراء العملاء
+            تقييمات العملاء
           </h2>
-          <p className="text-[10.5px] text-brand-600 mt-0.5">
-            آراء موثقة وتجارب حقيقية من عملاء تذوقوا هذا الصنف
-          </p>
         </div>
 
         {/* Reviews Summary & Distribution Breakdown */}
@@ -613,10 +693,7 @@ export default function ProductDetailClient({
           {/* Review Submission Form Column (5 cols) */}
           <div className="lg:col-span-5 bg-brand-50/70 border border-brand-200 rounded-xl p-3.5 space-y-2.5 h-fit">
             <div>
-              <h3 className="text-xs sm:text-sm font-extrabold text-brand-950">أضف تقييمك ورأيك</h3>
-              <p className="text-[10px] text-brand-600 mt-0.5">
-                رأيك يهمنا ويساعد العملاء الآخرين في اختيار أفضل المكسرات
-              </p>
+              <h3 className="text-xs sm:text-sm font-extrabold text-brand-950">أضف تقييمك</h3>
             </div>
 
             {formError && (
@@ -796,17 +873,15 @@ export default function ProductDetailClient({
           </div>
         </div>
       </section>
+      )}
 
       {/* Smart Cross-Sell Recommendation (يكمل سهرتك مع هذا الصنف) */}
-      {relatedProducts.length > 0 && (
-        <section className="space-y-3 pt-2">
+      {relatedProducts.length > 0 && (activeSection === 'all' || activeSection === 'related') && (
+        <section id="related" className="space-y-3 pt-2">
           <div className="border-b border-brand-200 pb-2.5">
             <h2 className="font-cairo text-sm sm:text-base font-extrabold text-brand-950">
               ✨ يكمل سهرتك مع هذا الصنف
             </h2>
-            <p className="text-[10.5px] text-brand-600 mt-0.5">
-              ترشيحات ذكية من محمصة حفصة تناسب ذوقك وتكمل طلبك للشحن المجاني والكاش باك
-            </p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
             {relatedProducts.map((relProduct) => (

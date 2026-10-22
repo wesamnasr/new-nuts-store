@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbAsync } from '@/lib/db';
 import {
+  ALL_DASHBOARD_PERMISSIONS,
   generateAdminToken,
   verifyAdminRequest,
   extractAdminToken,
+  getResolvedRolePermissions,
   getRolePasswordFromSettings,
   getRoleUsernameFromSettings,
   normalizeAdminRole,
 } from '@/lib/auth';
-import { AdminRole, SystemRole } from '@/types/store';
+import { AdminPermissionId, AdminRole, SystemRole } from '@/types/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +29,13 @@ function getRoleRedirectPath(role: AdminRole): string {
   }
 }
 
+function getPermissionsForRole(role: AdminRole, resolved: ReturnType<typeof getResolvedRolePermissions>): AdminPermissionId[] {
+  if (role === 'supplier' || role === 'accountant' || role === 'cashier') {
+    return resolved[role];
+  }
+  return ALL_DASHBOARD_PERMISSIONS;
+}
+
 export async function GET(request: NextRequest) {
   const db = await getDbAsync();
   const auth = verifyAdminRequest(request);
@@ -35,6 +44,7 @@ export async function GET(request: NextRequest) {
   }
   const token = extractAdminToken(request);
   const role = auth.role || 'super_admin';
+  const rolePermissions = getResolvedRolePermissions(db.settings);
   return NextResponse.json({
     success: true,
     authenticated: true,
@@ -42,6 +52,9 @@ export async function GET(request: NextRequest) {
     role,
     username: getRoleUsernameFromSettings(db.settings, role),
     redirectTo: getRoleRedirectPath(role),
+    unifiedDashboard: '/admin',
+    permissions: getPermissionsForRole(role, rolePermissions),
+    rolePermissions,
   });
 }
 
@@ -172,6 +185,7 @@ export async function POST(request: NextRequest) {
         : generateAdminToken(roleSigningSecret, adminRole);
 
     const redirectTo = getRoleRedirectPath(adminRole);
+    const rolePermissions = getResolvedRolePermissions(db.settings);
 
     const response = NextResponse.json({
       success: true,
@@ -180,6 +194,9 @@ export async function POST(request: NextRequest) {
       role: adminRole,
       username: matchedUsername,
       redirectTo,
+      unifiedDashboard: '/admin',
+      permissions: getPermissionsForRole(adminRole, rolePermissions),
+      rolePermissions,
     });
 
     response.cookies.set({

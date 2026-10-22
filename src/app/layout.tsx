@@ -13,12 +13,14 @@ const cairo = Cairo({
   subsets: ['arabic', 'latin'],
   weight: ['400', '500', '600', '700', '800', '900'],
   variable: '--font-cairo',
+  display: 'swap',
 });
 
 const tajawal = Tajawal({
   subsets: ['arabic', 'latin'],
   weight: ['400', '500', '700', '800'],
   variable: '--font-tajawal',
+  display: 'swap',
 });
 
 export const viewport: Viewport = {
@@ -110,27 +112,52 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-                var isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                if (isDev) {
-                  navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                    for (var i = 0; i < registrations.length; i++) {
-                      registrations[i].unregister();
+              try {
+                if (typeof window !== 'undefined') {
+                  // Intercept raw DOM Event rejections and ChunkLoadError timeouts to recover cleanly
+                  window.addEventListener('error', function(event) {
+                    var msg = (event && event.message) ? String(event.message) : '';
+                    if (msg.indexOf('Loading chunk') !== -1 || msg.indexOf('ChunkLoadError') !== -1) {
+                      var lastReload = sessionStorage.getItem('hafsa_chunk_reload_ts');
+                      var now = Date.now();
+                      if (!lastReload || now - Number(lastReload) > 10000) {
+                        sessionStorage.setItem('hafsa_chunk_reload_ts', String(now));
+                        window.location.reload();
+                      }
                     }
                   });
-                  if ('caches' in window) {
-                    caches.keys().then(function(names) {
-                      for (var i = 0; i < names.length; i++) {
-                        caches.delete(names[i]);
-                      }
-                    });
-                  }
-                } else {
-                  window.addEventListener('load', function() {
-                    navigator.serviceWorker.register('/sw.js').catch(function() {});
+                  window.addEventListener('unhandledrejection', function(event) {
+                    if (event && event.reason && typeof event.reason === 'object' && ('isTrusted' in event.reason || event.reason instanceof Event)) {
+                      event.preventDefault();
+                      console.warn('Prevented raw Event unhandled rejection:', event.reason.type || event.reason);
+                    }
                   });
+
+                  if ('serviceWorker' in navigator) {
+                    var isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                    if (isDev) {
+                      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                        if (!registrations) return;
+                        for (var i = 0; i < registrations.length; i++) {
+                          try { registrations[i].unregister(); } catch (_) {}
+                        }
+                      }).catch(function() {});
+                      if ('caches' in window) {
+                        caches.keys().then(function(names) {
+                          if (!names) return;
+                          for (var i = 0; i < names.length; i++) {
+                            try { caches.delete(names[i]); } catch (_) {}
+                          }
+                        }).catch(function() {});
+                      }
+                    } else {
+                      window.addEventListener('load', function() {
+                        navigator.serviceWorker.register('/sw.js').catch(function() {});
+                      });
+                    }
+                  }
                 }
-              }
+              } catch (_) {}
             `,
           }}
         />

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDbAsync, saveDbAsync } from '@/lib/db';
 import { SupplyInvoice, SupplyInvoiceItem } from '@/types/store';
-import { verifyAdminRequest } from '@/lib/auth';
+import { hasRolePermission, verifyAdminRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
  * GET /api/supply-invoices
  * RBAC Matrix:
  * - Unauthenticated: 401 Unauthorized
- * - Cashier: 403 Forbidden
+ * - Cashier: 403 Forbidden (unless granted supply_invoices / supply_portal by Admin)
  * - Supplier: 200 OK (Scoped to own invoices)
  * - Accountant: 200 OK (Full audit access to all invoices)
  * - Super Admin / Admin: 200 OK (Full access to all invoices)
@@ -25,14 +25,21 @@ export async function GET(request: Request) {
       );
     }
 
-    if (auth.role === 'cashier') {
+    const db = await getDbAsync();
+    const canViewInvoices =
+      auth.role === 'super_admin' ||
+      auth.role === 'admin' ||
+      hasRolePermission(auth.role, 'supply_invoices', db.settings) ||
+      hasRolePermission(auth.role, 'supply_portal', db.settings) ||
+      hasRolePermission(auth.role, 'accounting_portal', db.settings);
+
+    if ((auth.role === 'cashier' || !canViewInvoices) && !canViewInvoices) {
       return NextResponse.json(
-        { error: 'عزل الأدوار: الكاشير غير مصرح له بالاطلاع على فواتير التوريد (403 Forbidden)' },
+        { error: 'عزل الأدوار: هذا الدور غير مصرح له بالاطلاع على فواتير التوريد (403 Forbidden)' },
         { status: 403 }
       );
     }
 
-    const db = await getDbAsync();
     const invoices: SupplyInvoice[] = Array.isArray(db.supplyInvoices) ? db.supplyInvoices : [];
 
     // Supplier gets their own invoices
@@ -44,18 +51,15 @@ export async function GET(request: Request) {
           inv.supplierId === 'supplier_arafat' ||
           !inv.supplierId
       );
-      return NextResponse.json({ success: true, invoices: scopedInvoices, supplyInvoices: scopedInvoices });
+      return NextResponse.json({
+        success: true,
+        invoices: scopedInvoices,
+        supplyInvoices: scopedInvoices,
+      });
     }
 
-    // Accountant and Admin get all invoices
-    if (auth.role === 'accountant' || auth.role === 'super_admin' || auth.role === 'admin') {
-      return NextResponse.json({ success: true, invoices, supplyInvoices: invoices });
-    }
-
-    return NextResponse.json(
-      { error: 'عزل الأدوار: غير مصرح لهذا الدور بالوصول (403 Forbidden)' },
-      { status: 403 }
-    );
+    // Accountant, Admin, or any role granted supply_invoices/accounting_portal get all invoices
+    return NextResponse.json({ success: true, invoices, supplyInvoices: invoices });
   } catch (err: any) {
     console.error('Error in GET /api/supply-invoices:', err);
     return NextResponse.json(
@@ -69,8 +73,8 @@ export async function GET(request: Request) {
  * POST /api/supply-invoices
  * RBAC Matrix:
  * - Unauthenticated: 401 Unauthorized
- * - Cashier: 403 Forbidden
- * - Accountant: 403 Forbidden (Read-only auditor)
+ * - Cashier: 403 Forbidden (unless granted supply_portal by Admin)
+ * - Accountant: 403 Forbidden (Read-only auditor unless granted supply_portal by Admin)
  * - Supplier & Super Admin: 201 Created (status: 'pending', stock unchanged)
  */
 export async function POST(request: Request) {
@@ -84,24 +88,22 @@ export async function POST(request: Request) {
       );
     }
 
-    if (auth.role === 'cashier') {
-      return NextResponse.json(
-        { error: 'عزل الأدوار: الكاشير غير مصرح له بإنشاء فواتير توريد (403 Forbidden)' },
-        { status: 403 }
-      );
-    }
+    const db = await getDbAsync();
+    const canCreateSupplyInvoice =
+      auth.role === 'super_admin' ||
+      auth.role === 'admin' ||
+      hasRolePermission(auth.role, 'supply_portal', db.settings);
 
-    if (auth.role === 'accountant') {
-      return NextResponse.json(
-        {
-          error:
-            'عزل الأدوار: المحاسب يتمتع بصلاحية تدقيق وقراءة فقط وممنوع من إنشاء فواتير توريد (403 Forbidden)',
-        },
-        { status: 403 }
-      );
-    }
-
-    if (auth.role !== 'supplier' && auth.role !== 'super_admin' && auth.role !== 'admin') {
+    if (!canCreateSupplyInvoice) {
+      if (auth.role === 'accountant') {
+        return NextResponse.json(
+          {
+            error:
+              'عزل الأدوار: المحاسب يتمتع بصلاحية تدقيق وقراءة فقط وممنوع من إنشاء فواتير توريد (403 Forbidden)',
+          },
+          { status: 403 }
+        );
+      }
       return NextResponse.json(
         { error: 'عزل الأدوار: غير مصرح لهذا الدور بإنشاء فواتير توريد (403 Forbidden)' },
         { status: 403 }
@@ -118,7 +120,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const db = await getDbAsync();
     const validatedItems: SupplyInvoiceItem[] = [];
 
     for (const item of rawItems) {

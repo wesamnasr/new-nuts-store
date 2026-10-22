@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Order, OrderStatus } from '@/types/store';
 import { useStore } from '@/context/StoreContext';
+import { updateUrlQueryParams, useBrowserUrlSync } from '@/lib/url-sync';
 
 const STATUS_STEPS: { key: OrderStatus; label: string; desc: string; icon: React.ReactNode }[] = [
   {
@@ -28,13 +29,13 @@ const STATUS_STEPS: { key: OrderStatus; label: string; desc: string; icon: React
   },
   {
     key: 'roasting_packing',
-    label: 'جاري التحميص والطحن والتعبئة',
+    label: 'جاري التحميص والتجهيز',
     desc: 'فريق محمصة حفصة يجهز طلبك طازجاً الآن ويطبع ستيكر البارستا',
     icon: <Flame className="w-4 h-4" />,
   },
   {
     key: 'shipped',
-    label: 'خرج مع مندوب التوصيل ببني مزار',
+    label: 'خرج للتوصيل',
     desc: 'طلبك في الطريق إليك الآن مع مندوب المحمصة',
     icon: <Truck className="w-4 h-4" />,
   },
@@ -64,7 +65,7 @@ function TrackContent() {
   const [loading, setLoading] = useState(false);
   const [recentOrderNumbers, setRecentOrderNumbers] = useState<string[]>([]);
 
-  const performSearch = async (searchVal: string) => {
+  const performSearch = async (searchVal: string, pushUrl = true) => { if (pushUrl && searchVal.trim()) updateUrlQueryParams({ q: searchVal.trim() });
     if (!searchVal.trim()) return;
     setLoading(true);
     try {
@@ -134,6 +135,7 @@ function TrackContent() {
     setIsCartOpen(true);
   };
 
+  useBrowserUrlSync((params) => { const qParam = params.get('q'); if (qParam && qParam !== query) { setQuery(qParam); performSearch(qParam, false); } });
   const getStepIndex = (status: OrderStatus) => {
     if (status === 'pending' || status === 'confirmed') return 0;
     if (status === 'roasting_packing') return 1;
@@ -148,12 +150,12 @@ function TrackContent() {
         <div className="bg-[#231710] text-[#FAF6F0] rounded-3xl p-6 sm:p-8 border-2 border-[#D4AF37] shadow-xl space-y-4">
           <div className="space-y-1">
             <span className="text-xs font-black text-[#D4AF37] block">
-              📦 متابعة حالة التحميص والتوصيل المباشر — مركز بني مزار
+              📦 تتبع الطلبات
             </span>
             <h1 className="font-cairo text-2xl sm:text-3xl font-black text-white">
-              تتبع طلبك من محمصة حفصة للبن والمكسرات
+              تتبع حالة طلبك
             </h1>
-            <p className="text-xs sm:text-sm text-[#F3ECE1]/85">
+            <p className="hidden">
               أدخل رقم الطلب (مثال: NUT-1024) أو رقم الموبايل (مثال: 01012345678) لمعرفة مرحلة تجهيز وتوصيل طلبك
             </p>
           </div>
@@ -170,7 +172,7 @@ function TrackContent() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="أدخل رقم الطلب (NUT-1024) أو رقم الموبايل (01012345678)..."
+                placeholder="رقم الطلب أو رقم الموبايل..."
                 className="w-full bg-white text-[#231710] rounded-2xl py-3 pr-10 pl-4 text-xs sm:text-sm font-bold focus:outline-none"
               />
               <Search className="w-4 h-4 text-[#6E5D4F] absolute right-3.5 top-3.5" />
@@ -281,9 +283,9 @@ function TrackContent() {
                             <span>{step.label}</span>
                           </div>
                           <p
-                            className={`text-[10.5px] mt-1.5 leading-snug ${
-                              isCurrent ? 'text-[#F3ECE1]/85' : 'text-[#6E5D4F]'
-                            }`}
+                            className="hidden"
+                            data-active={isCurrent ? '1' : '0'}
+                            data-step="desc"
                           >
                             {step.desc}
                           </p>

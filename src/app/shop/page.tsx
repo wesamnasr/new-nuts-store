@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, Suspense, useEffect } from 'react';
+import React, { useState, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -12,25 +12,33 @@ import {
 } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 import ProductCard from '@/components/ProductCard';
+import { updateUrlQueryParams, useBrowserUrlSync, buildUrlWithParams } from '@/lib/url-sync';
 
 function ShopCatalogContent() {
   const { storeData } = useStore();
   const searchParams = useSearchParams();
 
-  const initialCat = searchParams.get('cat') || 'all';
+  const initialCat = searchParams.get('cat') || searchParams.get('category') || 'all';
+  const initialSub = searchParams.get('sub') || 'all';
   const initialQuery = searchParams.get('q') || '';
+  const initialSort =
+    (searchParams.get('sort') as 'popular' | 'price_asc' | 'price_desc' | 'rating') || 'popular';
 
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCat);
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string>('all');
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string>(initialSub);
   const [searchQuery, setSearchQuery] = useState<string>(initialQuery);
-  const [sortBy, setSortBy] = useState<'popular' | 'price_asc' | 'price_desc' | 'rating'>('popular');
+  const [sortBy, setSortBy] = useState<'popular' | 'price_asc' | 'price_desc' | 'rating'>(initialSort);
 
-  useEffect(() => {
-    const q = searchParams.get('q');
-    const c = searchParams.get('cat');
-    if (q !== null) setSearchQuery(q);
-    if (c !== null) setSelectedCategory(c);
-  }, [searchParams]);
+  useBrowserUrlSync((params) => {
+    const c = params.get('cat') || params.get('category') || 'all';
+    const sub = params.get('sub') || 'all';
+    const q = params.get('q') || '';
+    const s = (params.get('sort') as 'popular' | 'price_asc' | 'price_desc' | 'rating') || 'popular';
+    setSelectedCategory(c);
+    setSelectedSubCategory(sub);
+    setSearchQuery(q);
+    setSortBy(s);
+  });
 
   const categories = storeData?.categories || [];
   const products = useMemo(
@@ -84,14 +92,11 @@ function ShopCatalogContent() {
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1.5 text-[#D4AF37] text-xs font-extrabold">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>كتالوج محمصة حفصة الشامل • 6 أقسام رئيسية • 24 عين مكسرات و4 صوامع بن</span>
+              <span>متجر محمصة حفصة</span>
             </div>
             <h1 className="font-cairo text-2xl sm:text-3xl font-black text-white">
-              تصفح جميع أصناف البن والمكسرات والياميش والعسل
+              جميع الأصناف الطازجة
             </h1>
-            <p className="text-xs sm:text-sm text-[#F3ECE1]/80">
-              اختر الوزن مباشرة من الكارت (ثمن 125ج • ربع 250ج • نصف 500ج • كيلو 1000ج)
-            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -113,14 +118,16 @@ function ShopCatalogContent() {
         </div>
       </div>
 
-      {/* Sticky 6 Main Category Tabs */}
+      {/* Sticky 6 Main Category Tabs with Dedicated URLs */}
       <div className="sticky top-14 sm:top-16 z-30 bg-[#FAF6F0]/95 backdrop-blur-md border-b border-[#E6DFD3] shadow-2xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar">
-          <button
-            type="button"
-            onClick={() => {
+          <a
+            href="/shop"
+            onClick={(e) => {
+              e.preventDefault();
               setSelectedCategory('all');
               setSelectedSubCategory('all');
+              updateUrlQueryParams({ cat: null, category: null, sub: null });
             }}
             className={`px-3.5 py-2 rounded-xl text-xs font-cairo font-black whitespace-nowrap transition cursor-pointer ${
               selectedCategory === 'all'
@@ -129,18 +136,24 @@ function ShopCatalogContent() {
             }`}
           >
             🌟 كل الأصناف ({products.length})
-          </button>
+          </a>
 
           {categories.map((cat) => {
             const count = products.filter((p) => p.categoryId === cat.id).length;
             const isSelected = selectedCategory === cat.id;
+            const catHref = buildUrlWithParams('/shop', {
+              cat: cat.id,
+              sort: sortBy === 'popular' ? null : sortBy,
+            });
             return (
-              <button
+              <a
                 key={cat.id}
-                type="button"
-                onClick={() => {
+                href={catHref}
+                onClick={(e) => {
+                  e.preventDefault();
                   setSelectedCategory(cat.id);
                   setSelectedSubCategory('all');
+                  updateUrlQueryParams({ cat: cat.id, category: null, sub: null });
                 }}
                 className={`px-3.5 py-2 rounded-xl text-xs font-cairo font-black whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
                   isSelected
@@ -151,7 +164,7 @@ function ShopCatalogContent() {
                 <span>{cat.icon}</span>
                 <span>{cat.name}</span>
                 <span className="text-[10px] opacity-75 tabular-nums">({count})</span>
-              </button>
+              </a>
             );
           })}
         </div>
@@ -165,7 +178,11 @@ function ShopCatalogContent() {
             <input
               type="search"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSearchQuery(val);
+                updateUrlQueryParams({ q: val.trim() || null }, { replace: true });
+              }}
               placeholder="ابحث بالاسم: فستق، كاجو، لب سوبر، بن عميد، عسل سدر، كاسات السعادة..."
               className="w-full bg-[#FAF6F0] border border-[#E6DFD3] focus:border-[#C88A4B] rounded-xl py-2 pr-9 pl-3 text-xs text-[#231710] focus:outline-none"
             />
@@ -178,7 +195,11 @@ function ShopCatalogContent() {
             <span className="text-xs font-extrabold text-[#6E5D4F]">ترتيب حسب:</span>
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
+              onChange={(e) => {
+                const val = e.target.value as any;
+                setSortBy(val);
+                updateUrlQueryParams({ sort: val === 'popular' ? null : val });
+              }}
               className="bg-[#F3ECE1] border border-[#E6DFD3] rounded-xl px-3 py-2 text-xs font-extrabold text-[#231710] focus:outline-none"
             >
               <option value="popular">الأكثر مبيعاً في بني مزار</option>
@@ -189,12 +210,18 @@ function ShopCatalogContent() {
           </div>
         </div>
 
-        {/* Sub-category Pills */}
+        {/* Sub-category Pills with Dedicated URLs */}
         {subCategories.length > 0 && (
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
-            <button
-              type="button"
-              onClick={() => setSelectedSubCategory('all')}
+            <a
+              href={buildUrlWithParams('/shop', {
+                cat: selectedCategory === 'all' ? null : selectedCategory,
+              })}
+              onClick={(e) => {
+                e.preventDefault();
+                setSelectedSubCategory('all');
+                updateUrlQueryParams({ sub: null });
+              }}
               className={`px-3 py-1 rounded-full text-[11px] font-extrabold whitespace-nowrap border transition cursor-pointer ${
                 selectedSubCategory === 'all'
                   ? 'bg-[#C88A4B] text-white border-[#C88A4B]'
@@ -202,12 +229,19 @@ function ShopCatalogContent() {
               }`}
             >
               جميع الفئات الفرعية
-            </button>
+            </a>
             {subCategories.map((sub) => (
-              <button
+              <a
                 key={sub}
-                type="button"
-                onClick={() => setSelectedSubCategory(sub)}
+                href={buildUrlWithParams('/shop', {
+                  cat: selectedCategory === 'all' ? null : selectedCategory,
+                  sub,
+                })}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSelectedSubCategory(sub);
+                  updateUrlQueryParams({ sub });
+                }}
                 className={`px-3 py-1 rounded-full text-[11px] font-extrabold whitespace-nowrap border transition cursor-pointer ${
                   selectedSubCategory === sub
                     ? 'bg-[#C88A4B] text-white border-[#C88A4B]'
@@ -215,7 +249,7 @@ function ShopCatalogContent() {
                 }`}
               >
                 {sub}
-              </button>
+              </a>
             ))}
           </div>
         )}
@@ -227,15 +261,13 @@ function ShopCatalogContent() {
             <h3 className="font-cairo text-base font-black text-[#231710]">
               لا توجد أصناف مطابقة لبحثك حالياً
             </h3>
-            <p className="text-xs text-[#6E5D4F]">
-              جرّب البحث بكلمة أخرى أو استعرض جميع الأقسام الستة لمحمصة حفصة
-            </p>
             <button
               type="button"
               onClick={() => {
                 setSelectedCategory('all');
                 setSelectedSubCategory('all');
                 setSearchQuery('');
+                updateUrlQueryParams({ cat: null, category: null, sub: null, q: null });
               }}
               className="bg-[#231710] text-[#D4AF37] px-5 py-2 rounded-xl text-xs font-black cursor-pointer"
             >

@@ -83,6 +83,7 @@ interface PosActiveInvoiceSidebarProps {
   onDeleteHeldInvoice: (id: string) => void;
   cartWidth?: number;
   onChangeCartWidth?: (newWidth: number) => void;
+  embeddedInAdmin?: boolean;
 }
 
 export const MIN_POS_CART_WIDTH = 240;
@@ -130,6 +131,7 @@ export default function PosActiveInvoiceSidebar({
   onDeleteHeldInvoice,
   cartWidth = DEFAULT_POS_CART_WIDTH,
   onChangeCartWidth,
+  embeddedInAdmin = false,
 }: PosActiveInvoiceSidebarProps) {
   const [showHeldList, setShowHeldList] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
@@ -181,7 +183,7 @@ export default function PosActiveInvoiceSidebar({
       {/* ================================================================= */}
       <aside
         style={{ width: `${cartWidth}px`, maxWidth: '100%' }}
-        className="w-full lg:fixed lg:left-3 lg:top-3 lg:bottom-3 lg:z-30 bg-white rounded-2xl p-3 border-2 border-[#D4AF37] shadow-xl flex flex-col justify-between select-none transition-[box-shadow]"
+        className={`w-full ${embeddedInAdmin ? 'relative lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)] lg:z-10' : 'lg:fixed lg:left-3 lg:top-3 lg:bottom-3 lg:z-30'} bg-white rounded-2xl p-3 border-2 border-[#D4AF37] shadow-xl flex flex-col justify-between select-none transition-[box-shadow]`}
       >
         {/* Drag-to-Resize Handle on Right Edge (Desktop) */}
         {onChangeCartWidth && (
