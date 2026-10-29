@@ -1440,6 +1440,35 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleAssignOrderRider = async (orderId: string, riderId: string, riderName: string) => {
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (adminToken) {
+        headers['Authorization'] = `Bearer ${adminToken}`;
+        headers['x-admin-token'] = adminToken;
+      }
+      const res = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          orderId,
+          riderId: riderId || null,
+          riderName: riderName || null,
+        }),
+      });
+      if (res.ok) {
+        await refreshStore();
+        showToast('🛵 تم إسناد الطلب لمندوب التوصيل بنجاح');
+      } else {
+        const d = await res.json().catch(() => ({}));
+        showToast(d.error || 'فشل إسناد المندوب', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('حدث خطأ أثناء إسناد المندوب', 'error');
+    }
+  };
+
   const handleSaveOrderNotes = async (orderId: string) => {
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -3323,7 +3352,7 @@ export default function AdminDashboardPage() {
                                     {st?.label || order.status || 'قيد المراجعة'}
                                   </span>
                                 </div>
-                                {currentRole !== 'accountant' && (
+                                {currentRole !== 'accountant' && (<>
                                   <select
                                     value={(order.status as string) === 'preparing' ? 'roasting_packing' : order.status}
                                     onChange={(e) =>
@@ -3338,7 +3367,37 @@ export default function AdminDashboardPage() {
                                     <option value="delivered">تم التسليم</option>
                                     <option value="cancelled">ملغي</option>
                                   </select>
-                                )}
+                                  <select
+                                    value={order.riderId || ''}
+                                    onChange={(e) => {
+                                      const selectedRiderId = e.target.value;
+                                      const matchedRider = (storeData?.staffAccounts || [])
+                                        .filter((s) => s.role === 'delivery_rider')
+                                        .find((s) => s.id === selectedRiderId);
+                                      handleAssignOrderRider(
+                                        order.id,
+                                        selectedRiderId,
+                                        matchedRider?.displayName || matchedRider?.username || (selectedRiderId ? 'مندوب التوصيل' : '')
+                                      );
+                                    }}
+                                    className="block w-full bg-[#FAF6F0] border border-[#D4AF37]/40 text-[#231710] text-[10px] font-bold rounded-lg px-1.5 py-1 focus:outline-none mt-1"
+                                  >
+                                    <option value="">🛵 {order.riderName ? `المندوب: ${order.riderName}` : 'إسناد مندوب...'}</option>
+                                    {(storeData?.staffAccounts || [])
+                                      .filter((s) => s.role === 'delivery_rider' && s.active !== false)
+                                      .map((r) => (
+                                        <option key={r.id} value={r.id}>
+                                          🛵 {r.displayName || r.username}
+                                        </option>
+                                      ))}
+                                    {(!storeData?.staffAccounts ||
+                                      !storeData.staffAccounts.some((s) => s.role === 'delivery_rider')) && (
+                                      <option value="staff-primary-delivery_rider">
+                                        🛵 مندوب التوصيل الرئيسي
+                                      </option>
+                                    )}
+                                  </select>
+                                </>)}
                               </td>
 
                               {/* Actions */}

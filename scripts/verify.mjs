@@ -2586,6 +2586,98 @@ async function runTestSuite() {
         'verify_package3_pos_hardware.mjs must pass 100% of live runtime assertions'
       );
     });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TIER 14: PACKAGE 4 — RIDER PORTAL, ORDER ASSIGNMENT & VIP WALLET 4-DIGIT PIN
+    // ─────────────────────────────────────────────────────────────────────────
+    suite('Tier 14: Package 4 — Rider Portal (/rider), Order Assignment & VIP Wallet 4-Digit PIN Security');
+
+    await test('P4_RDR_01: Dedicated /rider Route & Strict AGENTS.md Role Isolation Compliance', async () => {
+      const riderPageRoute = path.join(ROOT_DIR, 'src/app/rider/page.tsx');
+      const riderApiRoute = path.join(ROOT_DIR, 'src/app/api/rider/orders/route.ts');
+
+      assert.ok(fs.existsSync(riderPageRoute), 'src/app/rider/page.tsx must exist');
+      assert.ok(fs.existsSync(riderApiRoute), 'src/app/api/rider/orders/route.ts must exist');
+
+      const riderPageContent = fs.readFileSync(riderPageRoute, 'utf8');
+      assert.ok(
+        !riderPageContent.includes('role-select') &&
+        !riderPageContent.includes('<select') &&
+        !riderPageContent.includes('اختر الدور') &&
+        !riderPageContent.includes('اختر دورك'),
+        'Rider login form must strictly accept credentials only without role selectors (AGENTS.md)'
+      );
+      assert.ok(
+        riderPageContent.includes('بوابة مندوب التوصيل') &&
+        riderPageContent.includes('bandar_fast') &&
+        riderPageContent.includes('villages_scheduled'),
+        'Rider page must support Bandar fast delivery and villages scheduled distribution cycles'
+      );
+    });
+
+    await test('P4_RDR_02: Order Assignment Handlers from Admin & POS Interfaces', async () => {
+      const adminPageRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/admin/page.tsx'), 'utf8');
+      const posCompRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/components/pos/PosOnlineOrdersPage.tsx'), 'utf8');
+      const ordersRouteRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/api/orders/route.ts'), 'utf8');
+      const posRouteRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/api/pos/route.ts'), 'utf8');
+
+      assert.ok(
+        adminPageRaw.includes('handleAssignOrderRider') && adminPageRaw.includes('order.riderId'),
+        'Admin dashboard must support rider assignment from orders table'
+      );
+      assert.ok(
+        posCompRaw.includes('onAssignRider') && posCompRaw.includes('availableRiders'),
+        'POS online orders page must support rider assignment'
+      );
+      assert.ok(
+        ordersRouteRaw.includes('riderId') && ordersRouteRaw.includes('riderName'),
+        'Orders route PATCH must accept riderId and riderName'
+      );
+      assert.ok(
+        posRouteRaw.includes("action === 'assign_rider'"),
+        'POS route POST must support assign_rider action'
+      );
+    });
+
+    await test('P4_VIP_03: VIP Wallet 4-Digit PIN Security, Zero Hash Leakage & Order Gatekeeping', async () => {
+      const vipPinLibRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/lib/vip-pin.ts'), 'utf8');
+      const vipRouteRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/api/vip/route.ts'), 'utf8');
+      const checkoutPageRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/checkout/page.tsx'), 'utf8');
+      const vipPageRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/vip/page.tsx'), 'utf8');
+
+      assert.ok(
+        vipPinLibRaw.includes('validateVipPinFormat') &&
+        vipPinLibRaw.includes('hashVipPin') &&
+        vipPinLibRaw.includes('verifyVipPin') &&
+        vipPinLibRaw.includes('sanitizeVipMember'),
+        'vip-pin.ts must export validation, scrypt hashing, verification, and sanitization'
+      );
+      assert.ok(
+        vipRouteRaw.includes("action === 'set_pin'") && vipRouteRaw.includes("action === 'verify_pin'"),
+        'vip route must support set_pin and verify_pin actions'
+      );
+      assert.ok(
+        checkoutPageRaw.includes('vipPin') && checkoutPageRaw.includes('الرمز السري لمحفظة VIP'),
+        'checkout page must prompt for 4-digit PIN on VIP wallet redemption'
+      );
+      assert.ok(
+        vipPageRaw.includes('handleSavePin') && vipPageRaw.includes('أمان المحفظة'),
+        'vip page must provide PIN security management card'
+      );
+    });
+
+    await test('P4_RDR_04: Runtime Execution of Rider Portal, Order Assignment & VIP PIN Protection', async () => {
+      const pkg4Out = execSync('node scripts/verify_package4_rider_and_vip_pin.mjs', {
+        cwd: ROOT_DIR,
+        encoding: 'utf8',
+        stdio: 'pipe',
+        timeout: 120000,
+      });
+      assert.ok(
+        pkg4Out.includes('ALL PACKAGE 4 RIDER & VIP PIN CHECKS PASSED'),
+        'verify_package4_rider_and_vip_pin.mjs must pass 100% of live runtime assertions'
+      );
+    });
     
   } finally {
     // Database Restoration (State Isolation guarantee)

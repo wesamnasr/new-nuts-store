@@ -22,6 +22,7 @@ import { getSafeImageUrl } from '@/lib/defaults';
 import { hasRolePermission, verifyAdminRequest } from '@/lib/auth';
 import { reverseOrderEffects, reapplyOrderEffects } from '@/lib/order-reversal';
 import { calculateOrderCogs, roundCurrency } from '@/lib/financials';
+import { verifyVipPin, validateVipPinFormat, hashVipPin } from '@/lib/vip-pin';
 
 export const dynamic = 'force-dynamic';
 
@@ -458,10 +459,26 @@ export async function POST(request: NextRequest) {
       vipMemberIndex !== -1 &&
       (vipMembers[vipMemberIndex].pointsBalance ?? vipMembers[vipMemberIndex].walletBalance ?? 0) > 0
     ) {
-      vipWalletRedeemed = Math.min(
-        vipMembers[vipMemberIndex].pointsBalance ?? vipMembers[vipMemberIndex].walletBalance ?? 0,
-        totalBeforeWallet
-      );
+      const targetMember = vipMembers[vipMemberIndex];
+      const availableWallet =
+        targetMember.pointsBalance ?? targetMember.walletBalance ?? 0;
+
+      if (targetMember.pinHash) {
+        const candidatePin = typeof body.vipPin === 'string' ? body.vipPin.trim() : '';
+        if (!candidatePin || !verifyVipPin(candidatePin, targetMember.pinHash)) {
+          return NextResponse.json(
+            {
+              error: 'الرمز السري (PIN) لمحفظة VIP غير صحيح، يرجى إدخال الرمز المكون من 4 أرقام لحماية رصيدك',
+              vipPinRequired: true,
+            },
+            { status: 400 }
+          );
+        }
+      } else if (body.vipPin && validateVipPinFormat(String(body.vipPin).trim())) {
+        targetMember.pinHash = hashVipPin(String(body.vipPin).trim());
+      }
+
+      vipWalletRedeemed = Math.min(availableWallet, totalBeforeWallet);
     }
 
     const serverTotal = Math.max(0, totalBeforeWallet - vipWalletRedeemed);
@@ -640,10 +657,15 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { orderId, status, notes } = body as {
+    const { orderId, status, notes, riderId, riderName, riderNotes, cashCollected, deliveredAt } = body as {
       orderId: string;
       status?: OrderStatus;
       notes?: string;
+      riderId?: string;
+      riderName?: string;
+      riderNotes?: string;
+      cashCollected?: number;
+      deliveredAt?: string;
     };
 
     if (!orderId) {
@@ -681,6 +703,21 @@ export async function PATCH(request: NextRequest) {
       }
       if (typeof notes === 'string') {
         db.orders[orderIndex].notes = notes;
+      }
+      if (riderId !== undefined) {
+        db.orders[orderIndex].riderId = riderId || undefined;
+      }
+      if (riderName !== undefined) {
+        db.orders[orderIndex].riderName = riderName || undefined;
+      }
+      if (typeof riderNotes === 'string') {
+        db.orders[orderIndex].riderNotes = riderNotes;
+      }
+      if (cashCollected !== undefined) {
+        db.orders[orderIndex].cashCollected = Number(cashCollected) || 0;
+      }
+      if (deliveredAt !== undefined) {
+        db.orders[orderIndex].deliveredAt = deliveredAt;
       }
 
       const returnedOrder =

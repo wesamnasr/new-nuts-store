@@ -14,6 +14,9 @@ import {
   Calculator,
   Phone,
   User,
+  Lock,
+  KeyRound,
+  ShieldCheck,
 } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 import { calculateVipCashback } from '@/lib/pricing';
@@ -36,6 +39,15 @@ export default function VipWalletPage() {
   const [lookedUpMember, setLookedUpMember] = useState<VipMember | null>(null);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
+
+  // VIP 4-Digit PIN Management state
+  const [pinInput, setPinInput] = useState('');
+  const [oldPinInput, setOldPinInput] = useState('');
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinFeedback, setPinFeedback] = useState<{
     type: 'success' | 'error';
     text: string;
   } | null>(null);
@@ -96,6 +108,51 @@ export default function VipWalletPage() {
       setFeedback({ type: 'error', text: 'حدث خطأ أثناء الاتصال بالخادم' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSavePin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentMember?.phone) return;
+    if (!pinInput.trim() || !/^\d{4}$/.test(pinInput.trim())) {
+      setPinFeedback({
+        type: 'error',
+        text: 'يجب أن يتكون الرمز السري من 4 أرقام عددية فقط (مثال: 5599)',
+      });
+      return;
+    }
+    setPinLoading(true);
+    setPinFeedback(null);
+    try {
+      const res = await fetch('/api/vip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'set_pin',
+          phone: currentMember.phone,
+          pin: pinInput.trim(),
+          oldPin: oldPinInput.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPinFeedback({ type: 'error', text: data.error || 'فشل حفظ الرمز السري' });
+      } else {
+        setPinFeedback({
+          type: 'success',
+          text: '🎉 تم تأمين محفظتك بنجاح بالرمز السري المكون من 4 أرقام!',
+        });
+        if (data.member) {
+          setLookedUpMember(data.member);
+        }
+        setPinInput('');
+        setOldPinInput('');
+        await refreshStore();
+      }
+    } catch {
+      setPinFeedback({ type: 'error', text: 'حدث خطأ أثناء حفظ الرمز السري' });
+    } finally {
+      setPinLoading(false);
     }
   };
 
@@ -231,6 +288,78 @@ export default function VipWalletPage() {
                       {currentMember.ordersCount} طلبات
                     </span>
                   </div>
+                </div>
+
+                {/* 4-Digit Security PIN Section */}
+                <div className="bg-[#231710]/95 text-[#FAF6F0] rounded-2xl p-4 border border-[#D4AF37]/40 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-[#D4AF37] text-[#231710] flex items-center justify-center">
+                        <Lock className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="font-cairo text-xs font-black text-white">
+                          أمان المحفظة (الرمز السري 4-Digit PIN)
+                        </h4>
+                        <span className="text-[10px] text-[#FAF6F0]/70 font-bold block">
+                          {currentMember.hasPin
+                            ? '✅ محفظتك مؤمنة برمز سري عند الصرف أونلاين'
+                            : '⚠️ لم يتم تعيين رمز سري بعد (عيّن رمزك لحماية رصيدك)'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-[#D4AF37]/20 text-[#D4AF37]">
+                      {currentMember.hasPin ? 'مؤمن 🔒' : 'غير محمي'}
+                    </span>
+                  </div>
+
+                  {pinFeedback && (
+                    <div
+                      className={`p-2.5 rounded-xl text-xs font-black border ${
+                        pinFeedback.type === 'success'
+                          ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200'
+                          : 'bg-red-500/20 border-red-400 text-red-200'
+                      }`}
+                    >
+                      {pinFeedback.text}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSavePin} className="flex flex-col sm:flex-row gap-2">
+                    {currentMember.hasPin && (
+                      <input
+                        type="password"
+                        maxLength={4}
+                        inputMode="numeric"
+                        pattern="\d{4}"
+                        value={oldPinInput}
+                        onChange={(e) => setOldPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                        placeholder="الرمز الحالي"
+                        className="bg-white/10 border border-[#D4AF37]/40 focus:border-[#D4AF37] rounded-xl px-3 py-2 text-xs text-white placeholder-white/40 focus:outline-none font-mono text-center tracking-widest sm:w-28"
+                      />
+                    )}
+
+                    <input
+                      type="password"
+                      maxLength={4}
+                      inputMode="numeric"
+                      pattern="\d{4}"
+                      value={pinInput}
+                      onChange={(e) => setPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      placeholder={currentMember.hasPin ? 'الرمز الجديد (4 أرقام)' : 'عيّن رمز 4 أرقام'}
+                      className="bg-white/10 border border-[#D4AF37]/40 focus:border-[#D4AF37] rounded-xl px-3 py-2 text-xs text-white placeholder-white/40 focus:outline-none font-mono text-center tracking-widest flex-1"
+                      required
+                    />
+
+                    <button
+                      type="submit"
+                      disabled={pinLoading}
+                      className="bg-[#D4AF37] hover:bg-[#C88A4B] text-[#231710] font-cairo font-black text-xs px-4 py-2 rounded-xl transition cursor-pointer shrink-0"
+                    >
+                      {pinLoading ? 'جاري الحفظ...' : currentMember.hasPin ? 'تغيير الرمز' : 'حفظ وتأمين'}
+                    </button>
+                  </form>
                 </div>
               </div>
             )}

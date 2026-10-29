@@ -18,6 +18,7 @@ import {
   Gift,
   Coffee,
   Printer,
+  Lock,
 } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 import {
@@ -74,6 +75,7 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
   const [paymentReference, setPaymentReference] = useState('');
   const [useVipWallet, setUseVipWallet] = useState<boolean>(false);
+  const [vipPin, setVipPin] = useState<string>('');
 
   // Coupon & Submission states
   const [couponInput, setCouponInput] = useState('');
@@ -236,6 +238,16 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (
+      (useVipWallet || paymentMethod === 'vip_wallet') &&
+      activeVipMember &&
+      activeVipMember.pointsBalance > 0 &&
+      (!vipPin.trim() || !/^\d{4}$/.test(vipPin.trim()))
+    ) {
+      setErrorMsg('يرجى إدخال الرمز السري لمحفظة VIP (4 أرقام عددية) لتأكيد خصم الرصيد');
+      return;
+    }
+
     const resolvedGovernorate =
       deliveryMethod === 'store_pickup'
         ? 'فرع بني مزار - استلام من المحل'
@@ -264,6 +276,7 @@ export default function CheckoutPage() {
           shippingCost,
           discountAmount,
           useVipWallet: useVipWallet || paymentMethod === 'vip_wallet',
+          vipPin: (useVipWallet || paymentMethod === 'vip_wallet') ? vipPin.trim() : undefined,
           couponCode: appliedCoupon?.code,
           total: finalTotal,
           paymentMethod,
@@ -503,26 +516,55 @@ export default function CheckoutPage() {
                 </div>
 
                 {activeVipMember && (
-                  <div className="bg-[#D4AF37]/15 border border-[#D4AF37] rounded-2xl p-3 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <Crown className="w-4 h-4 text-[#C88A4B]" />
-                      <span className="text-xs font-extrabold text-[#231710]">
-                        مرحباً {activeVipMember.customerName}! لديك رصيد محفظة VIP متاح:{' '}
-                        <strong className="text-[#3B6E4C]">{activeVipMember.pointsBalance} ج.م</strong>
-                      </span>
+                  <>
+                    <div className="bg-[#D4AF37]/15 border border-[#D4AF37] rounded-2xl p-3 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Crown className="w-4 h-4 text-[#C88A4B]" />
+                        <span className="text-xs font-extrabold text-[#231710]">
+                          مرحباً {activeVipMember.customerName}! لديك رصيد محفظة VIP متاح:{' '}
+                          <strong className="text-[#3B6E4C]">{activeVipMember.pointsBalance} ج.م</strong>
+                        </span>
+                      </div>
+                      {activeVipMember.pointsBalance > 0 && (
+                        <label className="flex items-center gap-1.5 text-xs font-black text-[#231710] cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={useVipWallet}
+                            onChange={(e) => setUseVipWallet(e.target.checked)}
+                            className="accent-[#231710] w-4 h-4"
+                          />
+                          <span>خصم من المحفظة</span>
+                        </label>
+                      )}
                     </div>
-                    {activeVipMember.pointsBalance > 0 && (
-                      <label className="flex items-center gap-1.5 text-xs font-black text-[#231710] cursor-pointer">
+
+                    {(useVipWallet || paymentMethod === 'vip_wallet') && activeVipMember.pointsBalance > 0 && (
+                      <div className="bg-amber-50 border border-amber-300 rounded-2xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                        <div className="space-y-0.5">
+                          <label className="text-xs font-black text-[#231710] flex items-center gap-1.5">
+                            <Lock className="w-3.5 h-3.5 text-[#C88A4B]" />
+                            <span>الرمز السري لمحفظة VIP (4 أرقام) *</span>
+                          </label>
+                          <span className="text-[11px] text-[#6E5D4F] font-bold block">
+                            {activeVipMember.hasPin
+                              ? 'أدخل رمزك السري الشخصي لحماية الرصيد وتأكيد الخصم'
+                              : 'عيّن رمزك السري (4 أرقام) لأول مرة لتأمين محفظتك بالكامل'}
+                          </span>
+                        </div>
                         <input
-                          type="checkbox"
-                          checked={useVipWallet}
-                          onChange={(e) => setUseVipWallet(e.target.checked)}
-                          className="accent-[#231710] w-4 h-4"
+                          type="password"
+                          maxLength={4}
+                          inputMode="numeric"
+                          pattern="\d{4}"
+                          value={vipPin}
+                          onChange={(e) => setVipPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                          placeholder="••••"
+                          className="w-28 bg-white border border-[#D4AF37] focus:border-[#C88A4B] rounded-xl px-3 py-2 text-center text-sm font-mono tracking-widest text-[#231710] focus:outline-none font-bold"
+                          required
                         />
-                        <span>خصم من المحفظة</span>
-                      </label>
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
 

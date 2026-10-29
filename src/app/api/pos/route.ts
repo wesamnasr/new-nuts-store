@@ -338,6 +338,32 @@ export async function POST(request: Request) {
         }
       }
       order.status = status;
+      if (body.riderId !== undefined) {
+        order.riderId = body.riderId || undefined;
+      }
+      if (body.riderName !== undefined) {
+        order.riderName = body.riderName || undefined;
+      }
+      if (status === 'delivered' && !order.deliveredAt) {
+        order.deliveredAt = new Date().toISOString();
+      }
+      return NextResponse.json({
+        success: true,
+        order: canSeeProfits ? order : sanitizeOrderForCashier(order),
+      });
+    }
+
+    // 4.1 ASSIGN RIDER TO ONLINE/DELIVERY ORDER FROM CASHIER TERMINAL
+    if (action === 'assign_rider') {
+      const orderId = body.orderId;
+      const order = db.orders.find(
+        (o) => o.id === orderId || o.orderNumber === orderId
+      );
+      if (!order) {
+        return NextResponse.json({ error: 'الطلب غير موجود' }, { status: 404 });
+      }
+      order.riderId = body.riderId || undefined;
+      order.riderName = body.riderName || undefined;
       return NextResponse.json({
         success: true,
         order: canSeeProfits ? order : sanitizeOrderForCashier(order),

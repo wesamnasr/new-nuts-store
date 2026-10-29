@@ -31,6 +31,8 @@ interface PosOnlineOrdersPageProps {
   onChangeDeliveryFilter?: (
     filter: 'all' | 'bandar_fast' | 'villages_scheduled' | 'store_pickup'
   ) => void;
+  availableRiders?: Array<{ id: string; displayName?: string; username?: string }>;
+  onAssignRider?: (orderId: string, riderId: string, riderName: string) => Promise<void>;
 }
 
 export default function PosOnlineOrdersPage({
@@ -42,6 +44,8 @@ export default function PosOnlineOrdersPage({
   playCashierBeep,
   deliveryFilter: externalDeliveryFilter,
   onChangeDeliveryFilter,
+  availableRiders,
+  onAssignRider,
 }: PosOnlineOrdersPageProps) {
   const [viewMode, setViewMode] = useState<'kanban' | 'grid'>('kanban');
   const [internalDeliveryFilter, setInternalDeliveryFilter] = useState<
@@ -273,6 +277,35 @@ export default function PosOnlineOrdersPage({
               )}
             </div>
           ))}
+        </div>
+
+        {/* Rider Assignment Selector */}
+        <div className="bg-[#FAF6F0] rounded-xl p-2 border border-[#E6DFD3] flex items-center justify-between gap-2">
+          <span className="text-[10px] font-black text-[#6E5D4F] shrink-0">
+            🛵 المندوب:
+          </span>
+          {onAssignRider && Array.isArray(availableRiders) && availableRiders.length > 0 ? (
+            <select
+              value={ord.riderId || ''}
+              onChange={(e) => {
+                const rId = e.target.value;
+                const rObj = (availableRiders || []).find((r) => r.id === rId);
+                onAssignRider(ord.id, rId, rObj?.displayName || rObj?.username || '');
+              }}
+              className="flex-1 bg-white border border-[#D4AF37]/50 text-[#231710] text-[10px] font-bold rounded-lg px-2 py-1 focus:outline-none"
+            >
+              <option value="">🛵 إسناد مندوب توصيل...</option>
+              {availableRiders.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.displayName || r.username}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="text-[10px] font-bold text-[#231710]">
+              {ord.riderName || 'غير مسند'}
+            </span>
+          )}
         </div>
 
         {/* Footer: Total, Payment & Action Buttons */}

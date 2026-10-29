@@ -165,6 +165,7 @@ export default function HafsaPosCashierPage() {
   const [posExpenses, setPosExpenses] = useState<PosExpense[]>([]);
   const [recentPosOrders, setRecentPosOrders] = useState<Order[]>([]);
   const [onlineQueueOrders, setOnlineQueueOrders] = useState<Order[]>([]);
+  const [availableRiders, setAvailableRiders] = useState<Array<{ id: string; displayName?: string; username?: string }>>([]);
   const [posLoading, setPosLoading] = useState<boolean>(false);
 
   // Current Active POS Invoice Cart State (shared across Direct Sales, Boxes, Coffee Blend)
@@ -332,6 +333,7 @@ export default function HafsaPosCashierPage() {
           setPosExpenses(data.posExpenses || []);
           setRecentPosOrders(data.recentPosOrders || []);
           setOnlineQueueOrders(data.onlineQueueOrders || []);
+          if (data.availableRiders) setAvailableRiders(data.availableRiders);
         }
       } catch (e) {
         console.error('Failed to load POS data', e);

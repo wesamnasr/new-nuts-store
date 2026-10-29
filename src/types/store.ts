@@ -268,6 +268,9 @@ export interface Order {
   paymentMethod: PaymentMethod;
   paymentReference?: string; // phone/handle or screenshot reference for InstaPay / Wallet
   inventoryReversed?: boolean; // Tracks whether stock & VIP points were restored upon cancellation
+  deliveredAt?: string;       // Timestamp when rider confirmed delivery
+  riderNotes?: string;        // Rider operational delivery notes
+  cashCollected?: number;     // Cash amount collected by rider on COD
   status: OrderStatus;
   createdAt: string;
 }
@@ -297,6 +300,8 @@ export interface VipMember {
   qrCodeValue?: string;
   joinedAt: string;
   transactions: VipTransaction[];
+  pinHash?: string;       // scrypt-hashed 4-digit security PIN
+  hasPin?: boolean;        // Public indicator if PIN is configured
 }
 
 export interface FlashPromotionItem {
