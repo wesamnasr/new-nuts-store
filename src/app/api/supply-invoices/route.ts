@@ -9,13 +9,14 @@ export const dynamic = 'force-dynamic';
  * GET /api/supply-invoices
  * RBAC Matrix:
  * - Unauthenticated: 401 Unauthorized
- * - Cashier: 403 Forbidden (unless granted supply_invoices / supply_portal by Admin)
- * - Supplier: 200 OK (Scoped to own invoices)
+ * - Cashier / Delivery Rider: 403 Forbidden (unless granted supply_invoices / supply_portal by Admin)
+ * - Supplier: 200 OK (Scoped to own supplier account; primary supplier also sees legacy 'supplier_arafat' invoices)
  * - Accountant: 200 OK (Full audit access to all invoices)
  * - Super Admin / Admin: 200 OK (Full access to all invoices)
  */
 export async function GET(request: Request) {
   try {
+    const db = await getDbAsync();
     const auth = verifyAdminRequest(request);
 
     if (!auth.isAuthenticated) {
@@ -25,7 +26,13 @@ export async function GET(request: Request) {
       );
     }
 
-    const db = await getDbAsync();
+    if (auth.role === 'delivery_rider') {
+      return NextResponse.json(
+        { error: 'عزل الأدوار: مندوب التوصيل غير مصرح له بالاطلاع على فواتير التوريد (403 Forbidden)' },
+        { status: 403 }
+      );
+    }
+
     const canViewInvoices =
       auth.role === 'super_admin' ||
       auth.role === 'admin' ||
@@ -42,15 +49,23 @@ export async function GET(request: Request) {
 
     const invoices: SupplyInvoice[] = Array.isArray(db.supplyInvoices) ? db.supplyInvoices : [];
 
-    // Supplier gets their own invoices
+    // Supplier gets their own invoices (multi-supplier isolation)
     if (auth.role === 'supplier') {
-      const supplierId = db.settings?.supplierUsername || 'supplier_arafat';
-      const scopedInvoices = invoices.filter(
-        (inv) =>
-          inv.supplierId === supplierId ||
-          inv.supplierId === 'supplier_arafat' ||
-          !inv.supplierId
-      );
+      const primarySupplierUser = (db.settings?.supplierUsername || 'supplier_arafat')
+        .trim()
+        .toLowerCase();
+      const callerUsername = (auth.username || primarySupplierUser).trim().toLowerCase();
+      const isPrimarySupplier =
+        callerUsername === primarySupplierUser || callerUsername === 'supplier_arafat';
+
+      const scopedInvoices = invoices.filter((inv) => {
+        const invOwner = (inv.supplierId || '').trim().toLowerCase();
+        if (invOwner === callerUsername) return true;
+        if (isPrimarySupplier && (!invOwner || invOwner === primarySupplierUser || invOwner === 'supplier_arafat')) {
+          return true;
+        }
+        return false;
+      });
       return NextResponse.json({
         success: true,
         invoices: scopedInvoices,
@@ -71,20 +86,23 @@ export async function GET(request: Request) {
 
 /**
  * POST /api/supply-invoices
- * RBAC Matrix:
- * - Unauthenticated: 401 Unauthorized
- * - Cashier: 403 Forbidden (unless granted supply_portal by Admin)
- * - Accountant: 403 Forbidden (Read-only auditor unless granted supply_portal by Admin)
- * - Supplier & Super Admin: 201 Created (status: 'pending', stock unchanged)
  */
 export async function POST(request: Request) {
   try {
+    await getDbAsync();
     const auth = verifyAdminRequest(request);
 
     if (!auth.isAuthenticated) {
       return NextResponse.json(
         { error: 'غير مصرح بالوصول: يتطلب تسجيل الدخول (401 Unauthorized)' },
         { status: 401 }
+      );
+    }
+
+    if (auth.role === 'delivery_rider') {
+      return NextResponse.json(
+        { error: 'عزل الأدوار: مندوب التوصيل غير مصرح له بإنشاء فواتير توريد (403 Forbidden)' },
+        { status: 403 }
       );
     }
 
@@ -163,9 +181,14 @@ export async function POST(request: Request) {
           : 'SUP-' + Math.floor(1000 + Math.random() * 9000);
 
       const supplierId =
-        body.supplierId || db.settings?.supplierUsername || 'supplier_arafat';
+        body.supplierId ||
+        (auth.role === 'supplier' ? auth.username : undefined) ||
+        db.settings?.supplierUsername ||
+        'supplier_arafat';
       const supplierName =
-        body.supplierName || 'شركة أرافت للاستيراد والتوريد الزراعي';
+        body.supplierName ||
+        (auth.role === 'supplier' ? auth.displayName : undefined) ||
+        'شركة أرافت للاستيراد والتوريد الزراعي';
 
       const newInvoice: SupplyInvoice = {
         id: invoiceId,
@@ -205,21 +228,10 @@ export async function POST(request: Request) {
 
 /**
  * PATCH /api/supply-invoices
- * RBAC Matrix:
- * - Unauthenticated: 401 Unauthorized
- * - Cashier: 403 Forbidden
- * - Supplier: 403 Forbidden
- * - Accountant: 403 Forbidden
- * - Super Admin / Admin: 200 OK (Approve or Reject)
- *
- * Atomic stock increment on approval:
- * - For each item in invoice.items:
- *     product.stockKg += item.quantityKg
- *     product.inStock = true
- *     product.costPerKg = item.costPerKg
  */
 export async function PATCH(request: Request) {
   try {
+    await getDbAsync();
     const auth = verifyAdminRequest(request);
 
     if (!auth.isAuthenticated) {
@@ -294,6 +306,8 @@ export async function PATCH(request: Request) {
         );
       }
 
+      const reviewerLabel = auth.displayName || auth.username || 'super_admin';
+
       if (targetStatus === 'approved') {
         // Atomic stock increment and wholesale cost update
         for (const item of invoice.items) {
@@ -312,7 +326,7 @@ export async function PATCH(request: Request) {
 
         invoice.status = 'approved';
         invoice.reviewedAt = new Date().toISOString();
-        invoice.reviewedBy = 'super_admin';
+        invoice.reviewedBy = reviewerLabel;
         if (typeof body.adminNotes === 'string') {
           invoice.adminNotes = body.adminNotes.trim();
         }
@@ -328,7 +342,7 @@ export async function PATCH(request: Request) {
         // Status rejection: Do NOT touch product stock or wholesale costs
         invoice.status = 'rejected';
         invoice.reviewedAt = new Date().toISOString();
-        invoice.reviewedBy = 'super_admin';
+        invoice.reviewedBy = reviewerLabel;
         if (typeof body.adminNotes === 'string') {
           invoice.adminNotes = body.adminNotes.trim();
         }

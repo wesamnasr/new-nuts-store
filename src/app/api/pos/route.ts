@@ -45,6 +45,7 @@ function sanitizeShiftForCashier(shift: PosShift | null): PosShift | null {
 
 export async function GET(request: Request) {
   try {
+    const dbForGet = await getDbAsync();
     const auth = verifyAdminRequest(request);
 
     if (!auth.isAuthenticated) {
@@ -54,7 +55,13 @@ export async function GET(request: Request) {
       );
     }
 
-    const dbForGet = await getDbAsync();
+    if (auth.role === 'delivery_rider') {
+      return NextResponse.json(
+        { error: 'عزل الأدوار: مندوب التوصيل غير مصرح له بالدخول إلى نظام الكاشير (403 Forbidden)' },
+        { status: 403 }
+      );
+    }
+
     if (
       auth.role === 'supplier' &&
       !hasRolePermission('supplier', 'cashier_portal', dbForGet.settings) &&
@@ -71,7 +78,7 @@ export async function GET(request: Request) {
       auth.isAuthenticated &&
       (auth.role === 'super_admin' || auth.role === 'accountant');
 
-    const db = await getDbAsync();
+    const db = dbForGet;
     const rawShifts = db.posShifts || [];
     const posExpenses = db.posExpenses || [];
     const rawActiveShift = rawShifts.find((s) => s.status === 'open') || rawShifts[0] || null;
@@ -109,12 +116,20 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    await getDbAsync();
     const auth = verifyAdminRequest(request);
 
     if (!auth.isAuthenticated) {
       return NextResponse.json(
         { error: 'غير مصرح بالوصول: يتطلب تسجيل الدخول' },
         { status: 401 }
+      );
+    }
+
+    if (auth.role === 'delivery_rider') {
+      return NextResponse.json(
+        { error: 'عزل الأدوار: مندوب التوصيل غير مصرح له بإصدار فواتير الكاشير (403 Forbidden)' },
+        { status: 403 }
       );
     }
 
@@ -152,8 +167,18 @@ export async function POST(request: Request) {
 
     // 1. OPEN NEW SHIFT
     if (action === 'open_shift') {
-      const cashierName = (body.cashierName || 'كاشير فرع بني مزار').trim();
-      const cashierId = (body.cashierId || (auth as unknown as { username?: string }).username || 'cashier_pos').trim();
+      const cashierName = (
+        body.cashierName ||
+        auth.displayName ||
+        auth.username ||
+        'كاشير فرع بني مزار'
+      ).trim();
+      const cashierId = (
+        body.cashierId ||
+        auth.username ||
+        auth.staffId ||
+        'cashier_pos'
+      ).trim();
       const shiftPeriod = body.shiftPeriod || 'الوردية الصباحية';
       const openingCash = Math.max(0, Number(body.openingCash ?? body.startingCash) || 0);
       const startingCash = openingCash;
@@ -266,6 +291,7 @@ export async function POST(request: Request) {
         title,
         amount,
         category: body.category || 'other',
+        createdBy: auth.displayName || auth.username || 'كاشير فرع بني مزار',
         notes: body.notes?.trim() || undefined,
         createdAt: new Date().toISOString(),
       };
@@ -566,7 +592,13 @@ export async function POST(request: Request) {
       orderSource: 'pos',
       posOrderType,
       chairNumber,
-      cashierName: body.cashierName || activeShift?.cashierName || 'كاشير فرع بني مزار',
+      cashierId: auth.username || auth.staffId || activeShift?.cashierId || 'cashier_pos',
+      cashierName:
+        body.cashierName ||
+        auth.displayName ||
+        activeShift?.cashierName ||
+        auth.username ||
+        'كاشير فرع بني مزار',
       shiftId: activeShift?.id,
       customerName,
       customerPhone: customerPhone || '01000000000',

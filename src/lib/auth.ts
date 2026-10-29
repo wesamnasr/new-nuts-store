@@ -5,10 +5,17 @@ import {
   DatabaseSchema,
   NonAdminStaffRole,
   RolePermissionsConfig,
+  StaffAccount,
+  StaffAccountPublic,
   StoreSettings,
   SystemRole,
 } from '@/types/store';
 import { getDb } from '@/lib/db';
+import {
+  computeSettingsFingerprint,
+  hashPasswordScrypt,
+  verifyPasswordConstantTime,
+} from '@/lib/password-hash';
 import {
   ALL_DASHBOARD_PERMISSIONS,
   DEFAULT_ROLE_PERMISSIONS,
@@ -27,40 +34,27 @@ export {
   hasRolePermission,
   getAllowedRolesForPermission,
   getEffectiveRolePermissions,
+  hashPasswordScrypt,
+  verifyPasswordConstantTime,
+  computeSettingsFingerprint,
 };
-
-export function hashPasswordScrypt(plainPassword: string): string {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const derived = crypto.scryptSync(plainPassword, salt, 64).toString('hex');
-  return `scrypt$${salt}$${derived}`;
-}
-
-export function verifyPasswordConstantTime(
-  candidatePassword: string,
-  storedPassword: string
-): boolean {
-  if (!candidatePassword || !storedPassword) return false;
-  if (storedPassword.startsWith('scrypt$')) {
-    const parts = storedPassword.split('$');
-    if (parts.length !== 3) return false;
-    const [, salt, expectedHex] = parts;
-    const derived = crypto.scryptSync(candidatePassword, salt, 64);
-    const expectedBuf = Buffer.from(expectedHex, 'hex');
-    if (derived.length !== expectedBuf.length) return false;
-    return crypto.timingSafeEqual(derived, expectedBuf);
-  }
-  const candHash = crypto.createHash('sha256').update(candidatePassword).digest();
-  const storedHash = crypto.createHash('sha256').update(storedPassword).digest();
-  return crypto.timingSafeEqual(candHash, storedHash);
-}
 
 const SESSION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 const SECRET_SALT = process.env.ADMIN_JWT_SECRET || 'golden-oasis-admin-secret-salt-v1';
+
+export interface StaffTokenMeta {
+  staffId?: string;
+  username?: string;
+  displayName?: string;
+}
 
 export interface AdminTokenPayload {
   expiresAt: number;
   sig: string;
   role?: AdminRole;
+  staffId?: string;
+  username?: string;
+  displayName?: string;
 }
 
 export const ROLE_LABELS_AR: Record<SystemRole, string> = {
@@ -71,6 +65,14 @@ export const ROLE_LABELS_AR: Record<SystemRole, string> = {
   accountant: 'المحاسب (المراجعة المالية والورديات)',
   delivery_rider: 'مندوب التوصيل (البندر ودورات القرى)',
 };
+
+/**
+ * Strip sensitive hash/fingerprint fields before returning a StaffAccount to clients.
+ */
+export function toPublicStaffAccount(acc: StaffAccount): StaffAccountPublic {
+  const { passwordHash: _ph, settingsFingerprint: _fp, ...safe } = acc;
+  return safe;
+}
 
 /**
  * Resolve the configured username for a specific role from StoreSettings.
@@ -135,21 +137,57 @@ export function normalizeAdminRole(role?: AdminRole | string | null): AdminRole 
 
 /**
  * Generate a cryptographically signed session token.
- * Valid for 24 hours and verified against the role's password in StoreSettings.
- * When called with 1 argument (password), preserves legacy payload format for backwards compatibility.
+ * Supports:
+ * - 1-arg legacy call: generateAdminToken(password)
+ * - 2-arg role-isolated call: generateAdminToken(password, role)
+ * - 3-arg multi-staff call: generateAdminToken(passwordHash, role, { staffId, username, displayName })
  */
 export function generateAdminToken(
   password: string,
-  role?: AdminRole
-): { token: string; expiresAt: number; role: AdminRole } {
+  role?: AdminRole,
+  staffMeta?: StaffTokenMeta
+): {
+  token: string;
+  expiresAt: number;
+  role: AdminRole;
+  staffId?: string;
+  username?: string;
+  displayName?: string;
+} {
   const expiresAt = Date.now() + SESSION_DURATION_MS;
   const resolvedRole = normalizeAdminRole(role);
 
-  if (role === undefined) {
+  if (role === undefined && !staffMeta) {
     const payload = `${expiresAt}:${password}:${SECRET_SALT}`;
     const sig = crypto.createHmac('sha256', SECRET_SALT).update(payload).digest('hex');
     const token = Buffer.from(JSON.stringify({ expiresAt, sig })).toString('base64url');
     return { token, expiresAt, role: resolvedRole };
+  }
+
+  if (staffMeta && (staffMeta.staffId || staffMeta.username)) {
+    const staffId = staffMeta.staffId || '';
+    const username = staffMeta.username || '';
+    const displayName = staffMeta.displayName || username;
+    const payload = `${expiresAt}:${resolvedRole}:${staffId}:${username}:${password}:${SECRET_SALT}`;
+    const sig = crypto.createHmac('sha256', SECRET_SALT).update(payload).digest('hex');
+    const token = Buffer.from(
+      JSON.stringify({
+        expiresAt,
+        sig,
+        role: resolvedRole,
+        staffId: staffId || undefined,
+        username: username || undefined,
+        displayName: displayName || undefined,
+      })
+    ).toString('base64url');
+    return {
+      token,
+      expiresAt,
+      role: resolvedRole,
+      staffId: staffId || undefined,
+      username: username || undefined,
+      displayName: displayName || undefined,
+    };
   }
 
   const payload = `${expiresAt}:${resolvedRole}:${password}:${SECRET_SALT}`;
@@ -161,7 +199,9 @@ export function generateAdminToken(
 }
 
 /**
- * Verify whether a provided token is a valid, unexpired session token.
+ * Verify whether a provided token is a valid, unexpired, active session token.
+ * Multi-staff tokens are verified against live `db.staffAccounts` so account deactivation,
+ * deletion, role modification, or password rotation immediately revokes active tokens.
  */
 export function verifyAdminToken(token: string, currentPassword?: string): boolean {
   if (!token || typeof token !== 'string') return false;
@@ -170,7 +210,7 @@ export function verifyAdminToken(token: string, currentPassword?: string): boole
 
   try {
     const raw = Buffer.from(trimmed, 'base64url').toString('utf-8');
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw) as AdminTokenPayload;
     if (!parsed || typeof parsed.expiresAt !== 'number' || typeof parsed.sig !== 'string') {
       return false;
     }
@@ -183,9 +223,46 @@ export function verifyAdminToken(token: string, currentPassword?: string): boole
       ? normalizeAdminRole(parsed.role)
       : undefined;
 
+    if (parsed.staffId || parsed.username) {
+      const db = getDb();
+      const staffList = Array.isArray(db.staffAccounts) ? db.staffAccounts : [];
+      const account = staffList.find((acc) => {
+        if (parsed.staffId && acc.id === parsed.staffId) return true;
+        if (
+          parsed.username &&
+          acc.username.toLowerCase() === String(parsed.username).toLowerCase()
+        ) {
+          return true;
+        }
+        return false;
+      });
+
+      if (!account || account.active === false) {
+        return false;
+      }
+
+      const resolvedRole = tokenRole || normalizeAdminRole(account.role);
+      if (normalizeAdminRole(account.role) !== resolvedRole) {
+        return false;
+      }
+
+      const secret = currentPassword || account.passwordHash;
+      const expectedPayload = `${parsed.expiresAt}:${resolvedRole}:${parsed.staffId || ''}:${parsed.username || ''}:${secret}:${SECRET_SALT}`;
+      const expectedSig = crypto
+        .createHmac('sha256', SECRET_SALT)
+        .update(expectedPayload)
+        .digest('hex');
+
+      if (parsed.sig.length !== expectedSig.length) {
+        return false;
+      }
+      return crypto.timingSafeEqual(Buffer.from(parsed.sig), Buffer.from(expectedSig));
+    }
+
+    const db = getDb();
     const password =
       currentPassword ||
-      getRolePasswordFromSettings(getDb().settings, tokenRole);
+      getRolePasswordFromSettings(db.settings, tokenRole);
 
     const expectedPayload = tokenRole
       ? `${parsed.expiresAt}:${tokenRole}:${password}:${SECRET_SALT}`
@@ -216,6 +293,55 @@ export function extractTokenRole(token: string | null | undefined): AdminRole {
     return normalizeAdminRole(parsed?.role);
   } catch {
     return 'super_admin';
+  }
+}
+
+/**
+ * Extract full staff metadata (role, staffId, username, displayName) from a verified token.
+ */
+export function extractTokenStaffMeta(token: string | null | undefined): {
+  role: AdminRole;
+  staffId?: string;
+  username?: string;
+  displayName?: string;
+} {
+  if (!token || typeof token !== 'string') {
+    return { role: 'super_admin' };
+  }
+  try {
+    const raw = Buffer.from(token.trim(), 'base64url').toString('utf-8');
+    const parsed = JSON.parse(raw) as AdminTokenPayload;
+    const role = normalizeAdminRole(parsed?.role);
+    const db = getDb();
+    const staffList = Array.isArray(db.staffAccounts) ? db.staffAccounts : [];
+
+    if (parsed?.staffId || parsed?.username) {
+      const liveAccount = staffList.find(
+        (acc) =>
+          (parsed.staffId && acc.id === parsed.staffId) ||
+          (parsed.username &&
+            acc.username.toLowerCase() === String(parsed.username).toLowerCase())
+      );
+      return {
+        role: liveAccount ? normalizeAdminRole(liveAccount.role) : role,
+        staffId: liveAccount?.id || parsed.staffId,
+        username: liveAccount?.username || parsed.username,
+        displayName: liveAccount?.displayName || parsed.displayName || parsed.username,
+      };
+    }
+
+    const fallbackUsername = getRoleUsernameFromSettings(db.settings, role);
+    const primaryAcc = staffList.find(
+      (acc) => acc.isPrimary && normalizeAdminRole(acc.role) === role
+    );
+    return {
+      role,
+      staffId: primaryAcc?.id,
+      username: primaryAcc?.username || fallbackUsername,
+      displayName: primaryAcc?.displayName || ROLE_LABELS_AR[role],
+    };
+  } catch {
+    return { role: 'super_admin' };
   }
 }
 
@@ -264,7 +390,15 @@ export function extractAdminToken(req: Request): string | null {
 export function verifyAdminRequest(
   req: Request,
   allowedRoles?: AdminRole[]
-): { isAuthenticated: boolean; role?: AdminRole; statusCode?: number; error?: string } {
+): {
+  isAuthenticated: boolean;
+  role?: AdminRole;
+  staffId?: string;
+  username?: string;
+  displayName?: string;
+  statusCode?: number;
+  error?: string;
+} {
   const token = extractAdminToken(req);
   if (!token) {
     return {
@@ -283,7 +417,8 @@ export function verifyAdminRequest(
     };
   }
 
-  const role = extractTokenRole(token);
+  const meta = extractTokenStaffMeta(token);
+  const role = meta.role;
 
   if (Array.isArray(allowedRoles) && allowedRoles.length > 0) {
     const normalizedAllowed = new Set(allowedRoles.map((r) => normalizeAdminRole(r)));
@@ -291,13 +426,23 @@ export function verifyAdminRequest(
       return {
         isAuthenticated: false,
         role,
+        staffId: meta.staffId,
+        username: meta.username,
+        displayName: meta.displayName,
         statusCode: 403,
         error: `عزل الأدوار: الدور الحالي (${ROLE_LABELS_AR[role]}) غير مصرح له بهذا الإجراء (403 Forbidden)`,
       };
     }
   }
 
-  return { isAuthenticated: true, role, statusCode: 200 };
+  return {
+    isAuthenticated: true,
+    role,
+    staffId: meta.staffId,
+    username: meta.username,
+    displayName: meta.displayName,
+    statusCode: 200,
+  };
 }
 
 /**
@@ -324,7 +469,7 @@ export function stripAllPasswords(settings: StoreSettings): StoreSettings {
 
 /**
  * Helper to sanitize public store data for unauthenticated visitors / public storefront.
- * Strips all role passwords, wholesale costs, net profits, POS shifts/expenses, VIP member lists, and customer orders.
+ * Strips all role passwords, staff accounts, wholesale costs, net profits, POS shifts/expenses, VIP member lists, and customer orders.
  */
 export function sanitizePublicStoreData(db: DatabaseSchema): DatabaseSchema {
   const sanitizedSettings = stripAllPasswords(db.settings);
@@ -367,16 +512,17 @@ export function sanitizePublicStoreData(db: DatabaseSchema): DatabaseSchema {
     posExpenses: [], // POS expenses hidden from public
     vipMembers: [], // Full VIP directory hidden from public (looked up via /api/vip by phone)
     supplyInvoices: [], // Supply invoices hidden from public
+    staffAccounts: [], // Staff directory hidden from public
   };
 }
 
 /**
- * Role-isolated store data projection for the 4 staff roles and unauthenticated public storefront:
- * 1. super_admin / admin: Full access to all store data, costs, profits, orders, shifts, settings & role passwords
+ * Role-isolated store data projection for staff roles and unauthenticated public storefront:
+ * 1. super_admin / admin: Full access to all store data, costs, profits, orders, shifts, settings & public staff directory (passwordHash stripped)
  * 2. supplier: Access to products (including wholesale costPerKg, packagingCost, inStock, origin) & categories; isolated from customer orders, POS shifts/expenses, VIP members, and coupons (unless granted by Admin in rolePermissions)
  * 3. cashier: Access to POS products (retail prices only, NO costPerKg), active orders & POS shifts (NO wholesale rawCostTotal or netProfitEgp), and VIP lookup (unless granted by Admin in rolePermissions)
- * 4. accountant: Access to all financial records (orders, products with costs & margins, POS shifts, POS expenses, coupons, VIP liabilities), but no role passwords
- * Public/Unauthenticated: Public storefront data only via sanitizePublicStoreData
+ * 4. accountant: Access to all financial records (orders, products with costs & margins, POS shifts, POS expenses, coupons, VIP liabilities), but no role passwords or staff management directory
+ * 5. delivery_rider: Strictly isolated from financials, shifts, VIP directory & supply invoices
  */
 export function sanitizeStoreDataForRole(
   db: DatabaseSchema,
@@ -388,9 +534,14 @@ export function sanitizeStoreDataForRole(
 
   const normalized = normalizeAdminRole(role);
 
-  // Role 1: Admin / Super Admin -> Full unrestricted access
+  // Role 1: Admin / Super Admin -> Full access (strip scrypt passwordHash from staffAccounts JSON)
   if (normalized === 'super_admin') {
-    return db;
+    return {
+      ...db,
+      staffAccounts: Array.isArray(db.staffAccounts)
+        ? db.staffAccounts.map((acc) => toPublicStaffAccount(acc)) as unknown as StaffAccount[]
+        : [],
+    };
   }
 
   const safeSettings = stripAllPasswords(db.settings);
@@ -421,6 +572,7 @@ export function sanitizeStoreDataForRole(
       posExpenses: canSeePosAndVip ? db.posExpenses : [],
       vipMembers: canSeePosAndVip ? db.vipMembers : [],
       coupons: canSeeCoupons ? db.coupons : [],
+      staffAccounts: [],
     };
   }
 
@@ -493,6 +645,7 @@ export function sanitizeStoreDataForRole(
       posShifts: canSeeWholesaleAndProfit ? db.posShifts : shiftsWithoutProfit,
       promotions: canSeeWholesaleAndProfit ? db.promotions : promosWithoutProfit,
       supplyInvoices: canSeeSupplyInvoices ? db.supplyInvoices : [],
+      staffAccounts: [],
     };
   }
 
@@ -501,6 +654,7 @@ export function sanitizeStoreDataForRole(
     return {
       ...db,
       settings: safeSettings,
+      staffAccounts: [],
     };
   }
 
@@ -513,6 +667,7 @@ export function sanitizeStoreDataForRole(
     posExpenses: [],
     vipMembers: [],
     supplyInvoices: [],
+    staffAccounts: [],
   };
 }
 

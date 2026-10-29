@@ -93,6 +93,7 @@ import SupplierIsolationPortal from '@/components/admin/SupplierIsolationPortal'
 import AccountantIsolationPortal from '@/components/admin/AccountantIsolationPortal';
 import SupermarketReceiptModal from '@/components/SupermarketReceiptModal';
 import RolePermissionsManager from '@/components/admin/RolePermissionsManager';
+import StaffAccountsManager from '@/components/admin/StaffAccountsManager';
 import SupplyInvoicesApprovalModule from '@/components/admin/SupplyInvoicesApprovalModule';
 import dynamic from 'next/dynamic';
 import { getResolvedRolePermissions, hasRolePermission } from '@/lib/permissions';
@@ -627,6 +628,10 @@ export default function AdminDashboardPage() {
           }
           if (resolvedRole === 'cashier') {
             window.location.href = '/pos';
+            return;
+          }
+          if (resolvedRole === 'delivery_rider') {
+            setLoginError('عزل الأدوار: حساب مندوب التوصيل غير مصرح له بالدخول إلى لوحة الإدارة');
             return;
           }
 
@@ -5587,21 +5592,24 @@ export default function AdminDashboardPage() {
           {/* MODULE 9: STORE SETTINGS, SECURITY & BACKUP                       */}
           {/* ================================================================= */}
           {activeTab === 'permissions' && isFullAdmin && (
-            <RolePermissionsManager
-              rolePermissions={getResolvedRolePermissions(settings)}
-              isSaving={saving}
-              onSaveRolePermissions={async (updated) => {
-                await updateStorePayload(
-                  {
-                    settings: {
-                      ...settings,
-                      rolePermissions: updated,
+            <>
+              <StaffAccountsManager adminToken={adminToken} onNotify={showToast} />
+              <RolePermissionsManager
+                rolePermissions={getResolvedRolePermissions(settings)}
+                isSaving={saving}
+                onSaveRolePermissions={async (updated) => {
+                  await updateStorePayload(
+                    {
+                      settings: {
+                        ...settings,
+                        rolePermissions: updated,
+                      },
                     },
-                  },
-                  'تم حفظ وتطبيق صلاحيات المستخدمين (المورد، المحاسب، الكاشير) بنجاح ✅'
-                );
-              }}
-            />
+                    'تم حفظ وتطبيق صلاحيات المستخدمين (المورد، المحاسب، الكاشير) بنجاح ✅'
+                  );
+                }}
+              />
+            </>
           )}
 
           {activeTab === 'settings' && canAccessTab('settings') && (

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDbAsync } from '@/lib/db';
+import { getDbAsync, saveDbAsync } from '@/lib/db';
 import {
   ALL_DASHBOARD_PERMISSIONS,
   generateAdminToken,
@@ -11,7 +11,7 @@ import {
   normalizeAdminRole,
   verifyPasswordConstantTime,
 } from '@/lib/auth';
-import { AdminPermissionId, AdminRole, SystemRole } from '@/types/store';
+import { AdminPermissionId, AdminRole, StaffAccount, SystemRole } from '@/types/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +32,8 @@ function getRoleRedirectPath(role: AdminRole): string {
       return '/supplier';
     case 'cashier':
       return '/pos';
+    case 'delivery_rider':
+      return '/rider';
     case 'accountant':
     case 'super_admin':
     case 'admin':
@@ -40,9 +42,15 @@ function getRoleRedirectPath(role: AdminRole): string {
   }
 }
 
-function getPermissionsForRole(role: AdminRole, resolved: ReturnType<typeof getResolvedRolePermissions>): AdminPermissionId[] {
+function getPermissionsForRole(
+  role: AdminRole,
+  resolved: ReturnType<typeof getResolvedRolePermissions>
+): AdminPermissionId[] {
   if (role === 'supplier' || role === 'accountant' || role === 'cashier') {
     return resolved[role];
+  }
+  if (role === 'delivery_rider') {
+    return [];
   }
   return ALL_DASHBOARD_PERMISSIONS;
 }
@@ -56,12 +64,15 @@ export async function GET(request: NextRequest) {
   const token = extractAdminToken(request);
   const role = auth.role || 'super_admin';
   const rolePermissions = getResolvedRolePermissions(db.settings);
+  const username = auth.username || getRoleUsernameFromSettings(db.settings, role);
   return NextResponse.json({
     success: true,
     authenticated: true,
     token,
     role,
-    username: getRoleUsernameFromSettings(db.settings, role),
+    staffId: auth.staffId,
+    username,
+    displayName: auth.displayName || username,
     redirectTo: getRoleRedirectPath(role),
     unifiedDashboard: '/admin',
     permissions: getPermissionsForRole(role, rolePermissions),
@@ -107,8 +118,99 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'يرجى إدخال اسم المستخدم وكلمة المرور' }, { status: 401 });
     }
 
+    if (requestedRole && (requestedRole as string) === 'customer') {
+      return NextResponse.json(
+        { error: 'عزل الأدوار: حسابات الموظفين تقتصر على أدوار طاقم العمل المصرح لهم فقط' },
+        { status: 401 }
+      );
+    }
+
     const db = await getDbAsync();
 
+    // 1. Multi-Staff Directory Resolution (scrypt-hashed individual staff accounts)
+    let matchedStaffAccount: StaffAccount | undefined;
+    if (hasUsernameInput && Array.isArray(db.staffAccounts)) {
+      const candidateStaff = db.staffAccounts.find(
+        (acc) => acc.username.trim().toLowerCase() === normalizedInputUser
+      );
+
+      if (candidateStaff) {
+        const hashMatches = verifyPasswordConstantTime(password, candidateStaff.passwordHash);
+        const primarySettingsMatches =
+          Boolean(candidateStaff.isPrimary) &&
+          verifyPasswordConstantTime(
+            password,
+            getRolePasswordFromSettings(db.settings, candidateStaff.role)
+          );
+
+        if (hashMatches || primarySettingsMatches) {
+          if (candidateStaff.active === false) {
+            return NextResponse.json(
+              { error: 'تم إيقاف حساب هذا الموظف من قِبل الإدارة — يرجى مراجعة مدير الفرع' },
+              { status: 403 }
+            );
+          }
+
+          if (
+            !requestedRole ||
+            normalizeAdminRole(requestedRole) === normalizeAdminRole(candidateStaff.role)
+          ) {
+            matchedStaffAccount = candidateStaff;
+          }
+        }
+      }
+    }
+
+    if (matchedStaffAccount) {
+      if (clientIp) {
+        loginFailuresByIp.delete(clientIp);
+      }
+
+      const adminRole = normalizeAdminRole(matchedStaffAccount.role);
+      const session = generateAdminToken(matchedStaffAccount.passwordHash, adminRole, {
+        staffId: matchedStaffAccount.id,
+        username: matchedStaffAccount.username,
+        displayName: matchedStaffAccount.displayName,
+      });
+
+      try {
+        matchedStaffAccount.lastLoginAt = new Date().toISOString();
+        await saveDbAsync(db);
+      } catch {
+        // Non-blocking audit timestamp update
+      }
+
+      const redirectTo = getRoleRedirectPath(adminRole);
+      const rolePermissions = getResolvedRolePermissions(db.settings);
+
+      const response = NextResponse.json({
+        success: true,
+        token: session.token,
+        expiresAt: session.expiresAt,
+        role: adminRole,
+        staffId: matchedStaffAccount.id,
+        username: matchedStaffAccount.username,
+        displayName: matchedStaffAccount.displayName,
+        redirectTo,
+        unifiedDashboard: '/admin',
+        permissions: getPermissionsForRole(adminRole, rolePermissions),
+        rolePermissions,
+      });
+
+      response.cookies.set({
+        name: 'admin_session',
+        value: session.token,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 24 * 60 * 60,
+      });
+
+      return response;
+    }
+
+    // 2. Canonical Role Settings Fallback (preserves backwards compatibility for legacy/password-only tests)
     const adminUser = getRoleUsernameFromSettings(db.settings, 'super_admin').trim().toLowerCase();
     const configuredPassword = getRolePasswordFromSettings(db.settings, 'super_admin');
 
@@ -120,6 +222,9 @@ export async function POST(request: NextRequest) {
 
     const accountantUser = getRoleUsernameFromSettings(db.settings, 'accountant').trim().toLowerCase();
     const accountantPass = getRolePasswordFromSettings(db.settings, 'accountant');
+
+    const riderUser = getRoleUsernameFromSettings(db.settings, 'delivery_rider').trim().toLowerCase();
+    const riderPass = getRolePasswordFromSettings(db.settings, 'delivery_rider');
 
     const matchesRoleCredentials = (targetRole: SystemRole): boolean => {
       switch (targetRole) {
@@ -156,6 +261,14 @@ export async function POST(request: NextRequest) {
           const passOk = verifyPasswordConstantTime(password, accountantPass);
           return userOk && passOk;
         }
+        case 'delivery_rider': {
+          const userOk =
+            !hasUsernameInput ||
+            normalizedInputUser === riderUser ||
+            normalizedInputUser === 'rider_delivery';
+          const passOk = verifyPasswordConstantTime(password, riderPass);
+          return userOk && passOk;
+        }
         default:
           return false;
       }
@@ -164,12 +277,6 @@ export async function POST(request: NextRequest) {
     let matchedRole: SystemRole | null = null;
 
     if (requestedRole) {
-      if ((requestedRole as string) === 'customer') {
-        return NextResponse.json(
-          { error: 'عزل الأدوار: حسابات الموظفين تقتصر على أدوار طاقم العمل الـ 4 فقط' },
-          { status: 401 }
-        );
-      }
       const targetRole: SystemRole = normalizeAdminRole(requestedRole);
       if (matchesRoleCredentials(targetRole)) {
         matchedRole = targetRole;
@@ -180,6 +287,7 @@ export async function POST(request: NextRequest) {
         'supplier',
         'cashier',
         'accountant',
+        'delivery_rider',
       ];
       for (const candidate of candidateRoles) {
         if (matchesRoleCredentials(candidate)) {
@@ -212,8 +320,18 @@ export async function POST(request: NextRequest) {
     }
 
     const matchedUsername = getRoleUsernameFromSettings(db.settings, matchedRole);
-
     const adminRole: AdminRole = normalizeAdminRole(matchedRole);
+    const primaryAcc = (db.staffAccounts || []).find(
+      (acc) => acc.isPrimary && normalizeAdminRole(acc.role) === adminRole
+    );
+
+    if (primaryAcc && primaryAcc.active === false) {
+      return NextResponse.json(
+        { error: 'تم إيقاف حساب هذا الموظف من قِبل الإدارة — يرجى مراجعة مدير الفرع' },
+        { status: 403 }
+      );
+    }
+
     const roleSigningSecret =
       adminRole === 'super_admin'
         ? configuredPassword
@@ -232,7 +350,9 @@ export async function POST(request: NextRequest) {
       token: session.token,
       expiresAt: session.expiresAt,
       role: adminRole,
+      staffId: primaryAcc?.id,
       username: matchedUsername,
+      displayName: primaryAcc?.displayName || matchedUsername,
       redirectTo,
       unifiedDashboard: '/admin',
       permissions: getPermissionsForRole(adminRole, rolePermissions),

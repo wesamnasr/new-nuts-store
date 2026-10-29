@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDbAsync, saveDbAsync } from '@/lib/db';
+import { getDbAsync, withDbTransaction } from '@/lib/db';
 import { ProductReview, ReviewSubmissionResponse } from '@/types/store';
 import { validateReviewInput, recalculateProductRating } from '@/lib/reviews';
 
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({ products: sanitizedProducts });
-  } catch (err: any) {
+  } catch {
     return NextResponse.json(
       { error: 'حدث خطأ أثناء جلب التقييمات' },
       { status: 500 }
@@ -54,7 +54,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Strict Server-Side Validation
     const validation = validateReviewInput(body);
     if (!validation.isValid || !validation.sanitized) {
       return NextResponse.json<ReviewSubmissionResponse>(
@@ -65,58 +64,51 @@ export async function POST(request: NextRequest) {
 
     const { productId, customerName, rating, comment } = validation.sanitized;
 
-    // 2. Database Lookup
-    const db = await getDbAsync();
-    const product = db.products.find((p) => p.id === productId);
-    if (!product) {
-      return NextResponse.json<ReviewSubmissionResponse>(
-        { success: false, error: 'معرف المنتج غير صالح' },
-        { status: 400 }
+    return await withDbTransaction(async (db) => {
+      const product = db.products.find((p) => p.id === productId);
+      if (!product) {
+        return NextResponse.json<ReviewSubmissionResponse>(
+          { success: false, error: 'معرف المنتج غير صالح' },
+          { status: 400 }
+        );
+      }
+
+      const { newRating, newCount } = recalculateProductRating(
+        product.rating,
+        product.reviewsCount,
+        rating
       );
-    }
 
-    // 3. Weighted Average Rating Recalculation
-    const { newRating, newCount } = recalculateProductRating(
-      product.rating,
-      product.reviewsCount,
-      rating
-    );
+      const dateFormatted = new Intl.DateTimeFormat('ar-EG', {
+        dateStyle: 'medium',
+      }).format(new Date());
 
-    // 4. Create Product Review Object
-    const dateFormatted = new Intl.DateTimeFormat('ar-EG', {
-      dateStyle: 'medium',
-    }).format(new Date());
+      const newReview: ProductReview = {
+        id: `rev-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        customerName,
+        rating: Math.round(rating),
+        comment,
+        date: dateFormatted,
+        verified: true,
+      };
 
-    const newReview: ProductReview = {
-      id: `rev-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      customerName,
-      rating: Math.round(rating),
-      comment,
-      date: dateFormatted,
-      verified: true,
-    };
+      if (!Array.isArray(product.reviews)) {
+        product.reviews = [];
+      }
+      product.reviews.unshift(newReview);
+      product.rating = newRating;
+      product.reviewsCount = newCount;
 
-    // 5. Update Product in Database
-    if (!Array.isArray(product.reviews)) {
-      product.reviews = [];
-    }
-    product.reviews.unshift(newReview);
-    product.rating = newRating;
-    product.reviewsCount = newCount;
-
-    // Save to Neon Postgres & local cache
-    await saveDbAsync(db);
-
-    // 6. Return HTTP 201 Created
-    return NextResponse.json<ReviewSubmissionResponse>(
-      {
-        success: true,
-        review: newReview,
-        rating: newRating,
-        reviewsCount: newCount,
-      },
-      { status: 201 }
-    );
+      return NextResponse.json<ReviewSubmissionResponse>(
+        {
+          success: true,
+          review: newReview,
+          rating: newRating,
+          reviewsCount: newCount,
+        },
+        { status: 201 }
+      );
+    });
   } catch (error: any) {
     console.error('Error processing review submission:', error);
     return NextResponse.json<ReviewSubmissionResponse>(

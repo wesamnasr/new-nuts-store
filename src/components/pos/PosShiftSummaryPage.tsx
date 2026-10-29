@@ -20,6 +20,7 @@ interface PosShiftSummaryPageProps {
   posExpenses: PosExpense[];
   canSeeProfits: boolean;
   posLoading: boolean;
+  defaultCashierName?: string;
   onOpenNewShift: (
     cashierName: string,
     shiftPeriod: 'الوردية الصباحية' | 'الوردية المسائية' | 'وردية اليوم الكامل',
@@ -40,14 +41,21 @@ export default function PosShiftSummaryPage({
   posExpenses,
   canSeeProfits,
   posLoading,
+  defaultCashierName,
   onOpenNewShift,
   onCloseShift,
   onAddExpense,
   onPrintShiftZReport,
 }: PosShiftSummaryPageProps) {
   const [newShiftCashier, setNewShiftCashier] = useState<string>(
-    'كاشير فرع بني مزار (أمام مسجد الزراعيين)'
+    defaultCashierName || 'كاشير فرع بني مزار (أمام مسجد الزراعيين)'
   );
+
+  React.useEffect(() => {
+    if (defaultCashierName && defaultCashierName.trim()) {
+      setNewShiftCashier(defaultCashierName.trim());
+    }
+  }, [defaultCashierName]);
   const [newShiftPeriod, setNewShiftPeriod] = useState<
     'الوردية الصباحية' | 'الوردية المسائية' | 'وردية اليوم الكامل'
   >('الوردية المسائية');

@@ -84,6 +84,7 @@ export default function HafsaPosCashierPage() {
   const [posAuthenticated, setPosAuthenticated] = useState<boolean>(false);
   const [posRole, setPosRole] = useState<AdminRole>('cashier');
   const [posToken, setPosToken] = useState<string>('');
+  const [posStaffDisplayName, setPosStaffDisplayName] = useState<string>('');
   const [posLoginUsername, setPosLoginUsername] = useState<string>('');
   const [posLoginPassword, setPosLoginPassword] = useState<string>('');
   const [posLoginError, setPosLoginError] = useState<string>('');
@@ -388,6 +389,9 @@ export default function HafsaPosCashierPage() {
           } else {
             setPosToken(activeToken);
             setPosRole(verifiedRole);
+            if (data.displayName || data.username) {
+              setPosStaffDisplayName(data.displayName || data.username);
+            }
             setPosAuthenticated(true);
             await fetchPosData(activeToken);
           }
@@ -473,6 +477,9 @@ export default function HafsaPosCashierPage() {
       }
       setPosToken(data.token);
       setPosRole(role);
+      if (data.displayName || data.username) {
+        setPosStaffDisplayName(data.displayName || data.username);
+      }
       setPosAuthenticated(true);
       setPosLoginPassword('');
       await fetchPosData(data.token);
@@ -665,6 +672,7 @@ export default function HafsaPosCashierPage() {
         headers: getPosAuthHeaders(),
         body: JSON.stringify({
           action: 'create_invoice',
+          cashierName: posStaffDisplayName || undefined,
           items: posItems,
           posOrderType,
           chairNumber: posOrderType === 'glass_bar_dine_in' ? chairNumber : undefined,
@@ -1725,6 +1733,7 @@ export default function HafsaPosCashierPage() {
                   posExpenses={posExpenses}
                   canSeeProfits={canSeeProfits}
                   posLoading={posLoading}
+                  defaultCashierName={posStaffDisplayName || undefined}
                   onOpenNewShift={handleOpenNewShift}
                   onCloseShift={handleCloseShift}
                   onAddExpense={handleAddExpense}

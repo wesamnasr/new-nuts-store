@@ -2328,6 +2328,172 @@ async function runTestSuite() {
         'Admin settings must not expose hardcoded staff usernames in input placeholders'
       );
     });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    suite('Tier 12: Package 2 — Neon Postgres Relational Engine, ACID Transactions & Multi-Staff Accounts');
+
+    await test('P2_PG_01: Neon Serverless Postgres 10-Table Relational Schema & Unpooled DDL Routing', async () => {
+      const pgSchemaPath = path.join(ROOT_DIR, 'src/lib/postgres-schema.ts');
+      assert.ok(fs.existsSync(pgSchemaPath), 'src/lib/postgres-schema.ts must exist');
+      const pgRaw = fs.readFileSync(pgSchemaPath, 'utf8');
+
+      for (const tbl of [
+        'store_state',
+        'staff_accounts',
+        'categories',
+        'products',
+        'orders',
+        'pos_shifts',
+        'pos_expenses',
+        'supply_invoices',
+        'vip_members',
+        'coupons',
+      ]) {
+        assert.ok(
+          pgRaw.includes(`CREATE TABLE IF NOT EXISTS ${tbl}`),
+          `postgres-schema.ts must define relational DDL for table ${tbl}`
+        );
+      }
+
+      assert.ok(
+        pgRaw.includes('DATABASE_URL_UNPOOLED') && pgRaw.includes('POSTGRES_URL_NON_POOLING'),
+        'postgres-schema.ts must route schema DDL over direct/unpooled Neon connection when configured'
+      );
+      assert.ok(
+        pgRaw.includes('jsonb_array_elements($1::jsonb)'),
+        'postgres-schema.ts must use bulk parameterized jsonb_array_elements SQL upserts'
+      );
+    });
+
+    await test('P2_PG_02: ACID SQL Transactions (SELECT FOR UPDATE + Optimistic Version Lock) & Cold-Start Warmup', async () => {
+      const pgRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/lib/postgres-schema.ts'), 'utf8');
+      const dbRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/lib/db.ts'), 'utf8');
+
+      assert.ok(
+        pgRaw.includes("SELECT data, version FROM store_state WHERE id = 'main' FOR UPDATE"),
+        'ACID Pool transaction must acquire row-level FOR UPDATE lock'
+      );
+      assert.ok(
+        pgRaw.includes("await client.query('COMMIT')") && pgRaw.includes("await client.query('ROLLBACK')"),
+        'ACID Pool transaction must explicitly COMMIT or ROLLBACK'
+      );
+      assert.ok(
+        dbRaw.includes('executeAtomicPostgresTransaction'),
+        'withDbTransaction in db.ts must delegate to executeAtomicPostgresTransaction when Postgres URL is active'
+      );
+
+      for (const routeFile of [
+        'src/app/api/store/route.ts',
+        'src/app/api/orders/route.ts',
+        'src/app/api/pos/route.ts',
+        'src/app/api/supply-invoices/route.ts',
+        'src/app/api/vip/route.ts',
+        'src/app/api/reviews/route.ts',
+        'src/app/api/admin/staff/route.ts',
+      ]) {
+        const raw = fs.readFileSync(path.join(ROOT_DIR, routeFile), 'utf8');
+        assert.ok(
+          raw.includes('withDbTransaction'),
+          `${routeFile} must wrap mutations inside atomic withDbTransaction`
+        );
+      }
+    });
+
+    await test('P2_STF_03: scrypt Password Hashing, Zero Hash Leakage & Strict AGENTS.md UI Compliance', async () => {
+      const hashRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/lib/password-hash.ts'), 'utf8');
+      const authRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/lib/auth.ts'), 'utf8');
+      const staffUiRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/components/admin/StaffAccountsManager.tsx'), 'utf8');
+
+      assert.ok(
+        hashRaw.includes('crypto.scryptSync') && hashRaw.includes('crypto.timingSafeEqual'),
+        'password-hash.ts must implement scryptSync + timingSafeEqual verification'
+      );
+      assert.ok(
+        authRaw.includes('toPublicStaffAccount') && authRaw.includes('staffAccounts: []'),
+        'auth.ts must strip passwordHash via toPublicStaffAccount and hide staffAccounts from non-admins'
+      );
+      for (const leaked of [
+        'admin_hafsa',
+        'supplier_arafat',
+        'cashier_pos',
+        'accountant_fin',
+        'rider_delivery',
+        'Hafsa@Admin2026',
+      ]) {
+        assert.ok(
+          !staffUiRaw.includes(leaked),
+          `StaffAccountsManager.tsx must never hardcode or leak credential ${leaked}`
+        );
+      }
+    });
+
+    await test('P2_STF_04: /api/admin/staff Admin-Only CRUD, Lockout Guard & Primary Account Protection', async () => {
+      const staffRoutePath = path.join(ROOT_DIR, 'src/app/api/admin/staff/route.ts');
+      assert.ok(fs.existsSync(staffRoutePath), 'src/app/api/admin/staff/route.ts must exist');
+      const staffRouteRaw = fs.readFileSync(staffRoutePath, 'utf8');
+
+      for (const method of ['GET', 'POST', 'PATCH', 'DELETE']) {
+        assert.ok(
+          staffRouteRaw.includes(`export async function ${method}`),
+          `/api/admin/staff must implement ${method}`
+        );
+      }
+      assert.ok(
+        staffRouteRaw.includes("verifyAdminRequest(request, ['super_admin'])"),
+        '/api/admin/staff must restrict access strictly to super_admin'
+      );
+      assert.ok(
+        staffRouteRaw.includes('activeAdminsCount <= 1'),
+        '/api/admin/staff must prevent locking out the last active super_admin'
+      );
+      assert.ok(
+        staffRouteRaw.includes('target.isPrimary'),
+        '/api/admin/staff must protect foundational primary accounts from deletion'
+      );
+    });
+
+    await test('P2_STF_05: Staff Operational Attribution Across POS Shifts/Invoices/Expenses & Multi-Supplier Scoping', async () => {
+      const posRouteRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/api/pos/route.ts'), 'utf8');
+      const supRouteRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/api/supply-invoices/route.ts'), 'utf8');
+      const adminPageRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/admin/page.tsx'), 'utf8');
+
+      assert.ok(
+        posRouteRaw.includes('auth.displayName') && posRouteRaw.includes('createdBy:'),
+        'pos/route.ts must attribute shifts, invoices, and petty expenses to the authenticated staff member'
+      );
+      assert.ok(
+        supRouteRaw.includes('callerUsername') && supRouteRaw.includes('reviewerLabel'),
+        'supply-invoices/route.ts must scope multi-supplier visibility and record actual reviewer identity'
+      );
+      assert.ok(
+        adminPageRaw.includes('<StaffAccountsManager'),
+        'admin/page.tsx must mount StaffAccountsManager in the permissions & staff management tab'
+      );
+    });
+
+    await test('P2_STF_06: Runtime Execution of Multi-Staff Lifecycle, Instant Revocation & Role Isolation Suites', async () => {
+      const pkg2Out = execSync('node scripts/verify_package2_postgres_staff.mjs', {
+        cwd: ROOT_DIR,
+        encoding: 'utf8',
+        stdio: 'pipe',
+        timeout: 120000,
+      });
+      assert.ok(
+        pkg2Out.includes('ALL PACKAGE 2 RELATIONAL ENGINE & MULTI-STAFF RBAC CHECKS PASSED'),
+        'verify_package2_postgres_staff.mjs must pass 100% of live runtime assertions'
+      );
+
+      const roleIsoOut = execSync('node scripts/verify_role_isolation.mjs', {
+        cwd: ROOT_DIR,
+        encoding: 'utf8',
+        stdio: 'pipe',
+        timeout: 120000,
+      });
+      assert.ok(
+        roleIsoOut.includes('ALL 5 ROLES ISOLATION'),
+        'verify_role_isolation.mjs must continue passing 100% of role isolation checks'
+      );
+    });
     
   } finally {
     // Database Restoration (State Isolation guarantee)

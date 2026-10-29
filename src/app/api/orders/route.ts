@@ -630,6 +630,7 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    await getDbAsync();
     const auth = verifyAdminRequest(request);
     if (!auth.isAuthenticated) {
       return NextResponse.json(
@@ -697,6 +698,7 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    await getDbAsync();
     const auth = verifyAdminRequest(request);
     if (!auth.isAuthenticated) {
       return NextResponse.json(

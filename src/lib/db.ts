@@ -1,14 +1,33 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { neon, NeonQueryFunction } from '@neondatabase/serverless';
-import { DatabaseSchema } from '@/types/store';
+import { neon } from '@neondatabase/serverless';
+import { AdminRole, DatabaseSchema, StaffAccount } from '@/types/store';
 import {
   getResolvedPageContent,
   getResolvedThemeConfig,
   getSafeImageUrl,
 } from '@/lib/defaults';
+import {
+  computeSettingsFingerprint,
+  hashPasswordScrypt,
+} from '@/lib/password-hash';
+import {
+  ensurePostgresSchema,
+  executeAtomicPostgresTransaction,
+  getPostgresUrl,
+  inspectPostgresRelationalHealth,
+  RELATIONAL_TABLES,
+  syncAllRelationalTablesHttp,
+} from '@/lib/postgres-schema';
 import seedJson from '../../data/store-db.json';
+
+export {
+  getPostgresUrl,
+  ensurePostgresSchema,
+  inspectPostgresRelationalHealth,
+  RELATIONAL_TABLES,
+};
 
 const DB_PATH = path.join(process.cwd(), 'data', 'store-db.json');
 const TMP_DB_PATH = path.join(os.tmpdir(), 'new-nuts-store-db.json');
@@ -17,24 +36,140 @@ declare global {
   // eslint-disable-next-line no-var
   var __newNutsMemoryDb: DatabaseSchema | undefined;
   // eslint-disable-next-line no-var
-  var __newNutsTableReady: boolean | undefined;
-  // eslint-disable-next-line no-var
   var __newNutsWriteMutex: Promise<void> | undefined;
-}
-
-function getPostgresUrl(): string | undefined {
-  return (
-    process.env.DATABASE_URL ||
-    process.env.POSTGRES_URL ||
-    process.env.STORAGE_URL ||
-    undefined
-  );
+  // eslint-disable-next-line no-var
+  var __newNutsPrimaryHashCache: Map<string, string> | undefined;
 }
 
 export const initialDatabase: DatabaseSchema =
   seedJson as unknown as DatabaseSchema;
 
-function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
+function getCachedPrimaryScryptHash(role: AdminRole, rawPassword: string, fp: string): string {
+  if (!globalThis.__newNutsPrimaryHashCache) {
+    globalThis.__newNutsPrimaryHashCache = new Map<string, string>();
+  }
+  const key = `${role}:${fp}`;
+  const cached = globalThis.__newNutsPrimaryHashCache.get(key);
+  if (cached) return cached;
+  const hashed = hashPasswordScrypt(rawPassword);
+  globalThis.__newNutsPrimaryHashCache.set(key, hashed);
+  return hashed;
+}
+
+function syncStaffAccounts(parsed: DatabaseSchema): void {
+  const settings = parsed.settings;
+  if (!settings) return;
+
+  const existingList: StaffAccount[] = Array.isArray(parsed.staffAccounts)
+    ? parsed.staffAccounts.filter((s) => Boolean(s && typeof s === 'object' && s.id && s.username))
+    : [];
+
+  const primaryDefinitions: Array<{
+    id: string;
+    role: AdminRole;
+    username: string;
+    rawPassword: string;
+    defaultDisplayName: string;
+  }> = [
+    {
+      id: 'staff-primary-super_admin',
+      role: 'super_admin',
+      username: settings.adminUsername || 'admin_hafsa',
+      rawPassword: settings.adminPassword || 'Hafsa@Admin2026',
+      defaultDisplayName: 'إدارة محمصة حفصة (المدير العام)',
+    },
+    {
+      id: 'staff-primary-accountant',
+      role: 'accountant',
+      username: settings.accountantUsername || 'accountant_fin',
+      rawPassword: settings.accountantPassword || 'Acc#Fin2026',
+      defaultDisplayName: 'المحاسب المالي الرئيسي',
+    },
+    {
+      id: 'staff-primary-cashier',
+      role: 'cashier',
+      username: settings.cashierUsername || 'cashier_pos',
+      rawPassword: settings.cashierPassword || 'Cash#Pos2026',
+      defaultDisplayName: 'كاشير صالة فرع بني مزار (أساسي)',
+    },
+    {
+      id: 'staff-primary-supplier',
+      role: 'supplier',
+      username: settings.supplierUsername || 'supplier_arafat',
+      rawPassword: settings.supplierPassword || 'Sup#Arafat2026',
+      defaultDisplayName: 'مسؤول التوريد والمخزون الرئيسي',
+    },
+    {
+      id: 'staff-primary-delivery_rider',
+      role: 'delivery_rider',
+      username: settings.riderUsername || 'rider_delivery',
+      rawPassword: settings.riderPassword || 'Rider#Hafsa2026',
+      defaultDisplayName: 'مندوب التوصيل الرئيسي (بني مزار)',
+    },
+  ];
+
+  const nowIso = new Date().toISOString();
+  const primaryIds = new Set(primaryDefinitions.map((d) => d.id));
+  const nextAccounts: StaffAccount[] = [];
+  const usedUsernames = new Set<string>();
+
+  for (const def of primaryDefinitions) {
+    const existing =
+      existingList.find((acc) => acc.id === def.id) ||
+      existingList.find((acc) => acc.isPrimary && acc.role === def.role);
+
+    const fp = computeSettingsFingerprint(def.rawPassword);
+    const hasReusableHash =
+      existing &&
+      existing.settingsFingerprint === fp &&
+      typeof existing.passwordHash === 'string' &&
+      existing.passwordHash.startsWith('scrypt$');
+
+    const passwordHash = hasReusableHash
+      ? existing.passwordHash
+      : getCachedPrimaryScryptHash(def.role, def.rawPassword, fp);
+
+    const normalizedUsername = def.username.trim();
+    usedUsernames.add(normalizedUsername.toLowerCase());
+
+    nextAccounts.push({
+      id: def.id,
+      username: normalizedUsername,
+      passwordHash,
+      role: def.role,
+      displayName: existing?.displayName?.trim() || def.defaultDisplayName,
+      phone: existing?.phone,
+      active: existing?.active !== false,
+      isPrimary: true,
+      notes: existing?.notes,
+      settingsFingerprint: fp,
+      createdAt: existing?.createdAt || nowIso,
+      updatedAt: existing?.updatedAt || nowIso,
+      lastLoginAt: existing?.lastLoginAt,
+    });
+  }
+
+  for (const acc of existingList) {
+    if (primaryIds.has(acc.id) || acc.isPrimary) continue;
+    const uname = String(acc.username || '').trim();
+    if (!uname || usedUsernames.has(uname.toLowerCase())) continue;
+    usedUsernames.add(uname.toLowerCase());
+
+    nextAccounts.push({
+      ...acc,
+      username: uname,
+      passwordHash: hashPasswordScrypt(acc.passwordHash || 'Hafsa@Staff2026'),
+      active: acc.active !== false,
+      isPrimary: false,
+      displayName: acc.displayName?.trim() || uname,
+      createdAt: acc.createdAt || nowIso,
+    });
+  }
+
+  parsed.staffAccounts = nextAccounts;
+}
+
+export function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
   const hasCanonicalCategories =
     Array.isArray(parsed.categories) &&
     parsed.categories.some((c) => c.id === 'cat-snacks') &&
@@ -53,6 +188,8 @@ function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
       cashierPassword: parsed.settings?.cashierPassword || 'Cash#Pos2026',
       accountantUsername: parsed.settings?.accountantUsername || 'accountant_fin',
       accountantPassword: parsed.settings?.accountantPassword || 'Acc#Fin2026',
+      riderUsername: parsed.settings?.riderUsername || 'rider_delivery',
+      riderPassword: parsed.settings?.riderPassword || 'Rider#Hafsa2026',
     };
   }
 
@@ -68,6 +205,8 @@ function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
         cashierPassword: parsed.settings.cashierPassword || 'Cash#Pos2026',
         accountantUsername: parsed.settings.accountantUsername || 'accountant_fin',
         accountantPassword: parsed.settings.accountantPassword || 'Acc#Fin2026',
+        riderUsername: parsed.settings.riderUsername || 'rider_delivery',
+        riderPassword: parsed.settings.riderPassword || 'Rider#Hafsa2026',
       };
       parsed.categories = structuredClone(initialDatabase.categories);
       parsed.shippingRates = structuredClone(initialDatabase.shippingRates);
@@ -98,6 +237,12 @@ function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
     }
     if (!parsed.settings.accountantPassword || parsed.settings.accountantPassword === 'accountant') {
       parsed.settings.accountantPassword = 'Acc#Fin2026';
+    }
+    if (!parsed.settings.riderUsername || parsed.settings.riderUsername === 'rider') {
+      parsed.settings.riderUsername = 'rider_delivery';
+    }
+    if (!parsed.settings.riderPassword || parsed.settings.riderPassword === 'rider') {
+      parsed.settings.riderPassword = 'Rider#Hafsa2026';
     }
     delete (parsed.settings as any).customerUsername;
     delete (parsed.settings as any).customerPassword;
@@ -225,6 +370,8 @@ function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
     }
   }
 
+  syncStaffAccounts(parsed);
+
   return parsed;
 }
 
@@ -307,18 +454,19 @@ export function saveDb(data: DatabaseSchema): void {
   }
 }
 
-async function ensurePostgresTable(
-  sql: NeonQueryFunction<false, false>
-): Promise<void> {
-  if (globalThis.__newNutsTableReady) return;
-  await sql`
-    CREATE TABLE IF NOT EXISTS store_state (
-      id TEXT PRIMARY KEY,
-      data JSONB NOT NULL,
-      updated_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `;
-  globalThis.__newNutsTableReady = true;
+function isErrorHttpResponse(val: unknown): boolean {
+  if (typeof Response !== 'undefined' && val instanceof Response && val.status >= 400) {
+    return true;
+  }
+  if (
+    val &&
+    typeof val === 'object' &&
+    typeof (val as { status?: unknown }).status === 'number' &&
+    ((val as { status: number }).status >= 400)
+  ) {
+    return true;
+  }
+  return false;
 }
 
 export async function getDbAsync(): Promise<DatabaseSchema> {
@@ -328,10 +476,20 @@ export async function getDbAsync(): Promise<DatabaseSchema> {
   }
 
   try {
+    await ensurePostgresSchema();
     const sql = neon(pgUrl);
-    await ensurePostgresTable(sql);
 
-    const rows = await sql`SELECT data FROM store_state WHERE id = 'main' LIMIT 1`;
+    const rows = await sql`
+      SELECT
+        data,
+        version,
+        (SELECT COUNT(*)::int FROM products) AS prod_count,
+        (SELECT COUNT(*)::int FROM staff_accounts) AS staff_count
+      FROM store_state
+      WHERE id = 'main'
+      LIMIT 1
+    `;
+
     if (Array.isArray(rows) && rows.length > 0 && rows[0]?.data) {
       const parsed =
         typeof rows[0].data === 'string'
@@ -342,29 +500,25 @@ export async function getDbAsync(): Promise<DatabaseSchema> {
         parsed.categories.some((c) => c.id === 'cat-snacks') &&
         Boolean(parsed.settings?.adminUsername) &&
         parsed.settings?.adminPassword !== 'admin';
+
       const normalized = normalizeDatabase(parsed);
       globalThis.__newNutsMemoryDb = normalized;
 
-      if (!hadCanonical) {
-        const serialized = JSON.stringify(normalized);
-        await sql`
-          INSERT INTO store_state (id, data, updated_at)
-          VALUES ('main', ${serialized}::jsonb, NOW())
-          ON CONFLICT (id) DO UPDATE
-          SET data = EXCLUDED.data,
-              updated_at = NOW()
-        `;
+      const needsRelationalHydration =
+        !hadCanonical ||
+        Number(rows[0].prod_count) === 0 ||
+        Number(rows[0].staff_count) === 0;
+
+      if (needsRelationalHydration) {
+        const currentVersion = Number(rows[0].version) || 1;
+        await syncAllRelationalTablesHttp(pgUrl, normalized, currentVersion);
       }
+
       return normalized;
     }
 
     const seed = ensureDbFile();
-    const serialized = JSON.stringify(seed);
-    await sql`
-      INSERT INTO store_state (id, data, updated_at)
-      VALUES ('main', ${serialized}::jsonb, NOW())
-      ON CONFLICT (id) DO NOTHING
-    `;
+    await syncAllRelationalTablesHttp(pgUrl, seed, 1);
     globalThis.__newNutsMemoryDb = seed;
     return seed;
   } catch (err) {
@@ -384,17 +538,12 @@ async function persistDbUnlocked(data: DatabaseSchema): Promise<void> {
 
   try {
     const sql = neon(pgUrl);
-    await ensurePostgresTable(sql);
-    const serialized = JSON.stringify(normalized);
-    await sql`
-      INSERT INTO store_state (id, data, updated_at)
-      VALUES ('main', ${serialized}::jsonb, NOW())
-      ON CONFLICT (id) DO UPDATE
-      SET data = EXCLUDED.data,
-          updated_at = NOW()
-    `;
+    await ensurePostgresSchema();
+    const rows = await sql`SELECT version FROM store_state WHERE id = 'main' LIMIT 1`;
+    const nextVersion = (Number(rows?.[0]?.version) || 0) + 1;
+    await syncAllRelationalTablesHttp(pgUrl, normalized, nextVersion);
   } catch (err) {
-    console.error('Failed to persist store state to Neon Postgres:', err);
+    console.error('Failed to persist store state & relational tables to Neon Postgres:', err);
   }
 }
 
@@ -412,14 +561,37 @@ export async function withDbTransaction<T>(
 ): Promise<T> {
   const previousLock = globalThis.__newNutsWriteMutex || Promise.resolve();
   let result!: T;
+
   const txPromise = previousLock.catch(() => {}).then(async () => {
+    const pgUrl = getPostgresUrl();
+
+    if (pgUrl) {
+      try {
+        const outcome = await executeAtomicPostgresTransaction<T>(
+          pgUrl,
+          normalizeDatabase,
+          () => ensureDbFile(),
+          mutator,
+          isErrorHttpResponse
+        );
+        result = outcome.result;
+        if (outcome.committedDb) {
+          saveDb(outcome.committedDb);
+        } else {
+          globalThis.__newNutsMemoryDb = undefined;
+        }
+        return;
+      } catch (err) {
+        globalThis.__newNutsMemoryDb = undefined;
+        throw err;
+      }
+    }
+
+    // Local JSON atomic mutex transaction with full rollback on error/4xx/5xx
     const db = await getDbAsync();
     try {
       result = await mutator(db);
-      const isHttpError =
-        (typeof Response !== 'undefined' && result instanceof Response && result.status >= 400) ||
-        (result && typeof result === 'object' && typeof (result as any).status === 'number' && (result as any).status >= 400);
-      if (!isHttpError) {
+      if (!isErrorHttpResponse(result)) {
         await persistDbUnlocked(db);
       } else {
         globalThis.__newNutsMemoryDb = undefined;
@@ -429,6 +601,7 @@ export async function withDbTransaction<T>(
       throw err;
     }
   });
+
   globalThis.__newNutsWriteMutex = txPromise;
   await txPromise;
   return result;

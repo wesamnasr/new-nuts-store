@@ -44,6 +44,7 @@ export default function DedicatedSupplierPortalPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<AdminRole>('supplier');
   const [username, setUsername] = useState<string>('');
+  const [supplierDisplayName, setSupplierDisplayName] = useState<string>('');
   const [token, setToken] = useState<string>('');
 
   // Login form state
@@ -194,6 +195,7 @@ export default function DedicatedSupplierPortalPage() {
           setToken(activeToken);
           setUserRole(verifiedRole);
           setUsername(data.username || 'supplier_arafat');
+          if (data.displayName) setSupplierDisplayName(data.displayName);
           setIsAuthenticated(true);
 
           await fetchData(activeToken);
@@ -264,6 +266,7 @@ export default function DedicatedSupplierPortalPage() {
         setToken(activeToken);
         setUserRole(verifiedRole);
         setUsername(data.username || loginUsername);
+        if (data.displayName) setSupplierDisplayName(data.displayName);
         setIsAuthenticated(true);
 
         showToast('تم تسجيل الدخول بنجاح إلى بوابة المورد ✅');
@@ -432,7 +435,7 @@ export default function DedicatedSupplierPortalPage() {
           costPerKg: item.costPerKg,
         })),
         notes: draftNotes.trim() || undefined,
-        supplierName: 'شركة أرافت للاستيراد والتوريد الزراعي',
+        supplierName: supplierDisplayName || 'شركة أرافت للاستيراد والتوريد الزراعي',
       };
 
       const res = await fetch('/api/supply-invoices', {

@@ -236,7 +236,10 @@ export interface Order {
   orderSource?: 'online' | 'pos';
   posOrderType?: PosOrderType;
   chairNumber?: 1 | 2 | 3 | 4; // For the 4-chair glass bar in front of Agricultural Mosque
+  cashierId?: string;
   cashierName?: string;
+  riderId?: string;
+  riderName?: string;
   shiftId?: string;
   customerName: string;
   customerPhone: string;
@@ -537,6 +540,7 @@ export interface PosExpense {
   title: string;
   amount: number;
   category: 'raw_materials' | 'packaging' | 'utilities' | 'delivery_rider' | 'other';
+  createdBy?: string;
   notes?: string;
   createdAt: string;
 }
@@ -589,7 +593,26 @@ export interface DatabaseSchema {
   posShifts?: PosShift[];
   posExpenses?: PosExpense[];
   supplyInvoices?: SupplyInvoice[];
+  staffAccounts?: StaffAccount[];
 }
+
+export interface StaffAccount {
+  id: string;
+  username: string;
+  passwordHash: string;
+  role: AdminRole;
+  displayName: string;
+  phone?: string;
+  active: boolean;
+  isPrimary?: boolean;
+  notes?: string;
+  settingsFingerprint?: string;
+  createdAt: string;
+  updatedAt?: string;
+  lastLoginAt?: string;
+}
+
+export type StaffAccountPublic = Omit<StaffAccount, 'passwordHash' | 'settingsFingerprint'>;
 
 export type StoreDatabase = DatabaseSchema;
 
@@ -598,6 +621,8 @@ export interface AdminAuthSession {
   expiresAt: number;
   role?: AdminRole;
   username?: string;
+  staffId?: string;
+  displayName?: string;
 }
 
 export interface ReviewSubmissionPayload {

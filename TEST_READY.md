@@ -41,7 +41,9 @@ node scripts/verify.mjs
 | **Tier 8** | **Inventory & POS Shifts** | Atomic stock depletion in kilograms (`stockKg`), POS shift lifecycle, drawer cash reconciliation (`expectedCash = opening + cashSales - expenses`, `variance = actual - expected`), scale barcode parsing, and architectural route deduplication. | **7** | **100%** |
 | **Tier 9** | **Supplier Portal & Invoices** | Dedicated `/supplier` portal, shortage tracking, draft pending invoices (`pending`), admin approval atomically incrementing stock and updating wholesale costs, admin rejection without stock changes. | **5** | **100%** |
 | **Tier 10** | **Accountant Portal & Audit** | Pure calculation engine (`src/lib/financials.ts`), dedicated read-only `/accountant` portal, 7 KPI cards, 5 tabs, 403 Forbidden mutation guardrails across all 7 routes, UTF-8 BOM CSV exports with CWE-1236 injection defense. | **5** | **100%** |
-| **TOTAL** | **Full Master Verification Suite** | **Comprehensive Production Acceptance Verification Across All 5 Subsystems** | **84** | **100%** |
+| **Tier 11** | **Package 1 — Unified Identity** | Official Hafsa Roastery brand lock (`royal_roastery`), theme-switcher removal, 5-role clean matrix, masked credential inputs. | **4** | **100%** |
+| **Tier 12** | **Package 2 — Neon SQL & Multi-Staff** | 10-table Neon Serverless Postgres relational DDL + ACID `SELECT FOR UPDATE` / HTTP versioned SQL transactions, `scrypt` multi-staff CRUD across all 5 roles, instant session revocation, operational staff attribution. | **6** | **100%** |
+| **TOTAL** | **Full Master Verification Suite** | **Comprehensive Production Acceptance Verification Across All Subsystems** | **94** | **100%** |
 
 ---
 

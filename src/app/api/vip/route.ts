@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDbAsync, saveDbAsync } from '@/lib/db';
+import { getDbAsync, withDbTransaction } from '@/lib/db';
 import { validateEgyptianPhone } from '@/lib/validation';
 import { calculateVipCashback } from '@/lib/pricing';
 import { verifyAdminRequest } from '@/lib/auth';
@@ -15,6 +15,12 @@ export async function GET(request: NextRequest) {
   if (!rawPhone) {
     const auth = verifyAdminRequest(request);
     if (auth.isAuthenticated) {
+      if (auth.role === 'delivery_rider') {
+        return NextResponse.json(
+          { error: 'عزل الأدوار: مندوب التوصيل غير مصرح له باستعراض دليل أعضاء VIP (403 Forbidden)' },
+          { status: 403 }
+        );
+      }
       return NextResponse.json({ vipMembers: db.vipMembers || [] });
     }
     return NextResponse.json({ error: 'يرجى إدخال رقم الموبايل للاستعلام عن محفظة حفصة VIP' }, { status: 400 });
@@ -40,10 +46,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const db = await getDbAsync();
-    if (!Array.isArray(db.vipMembers)) {
-      db.vipMembers = [];
-    }
+    await getDbAsync();
 
     const action = body.action || 'register';
 
@@ -56,7 +59,7 @@ export async function POST(request: NextRequest) {
           { status: 401 }
         );
       }
-      if (auth.role === 'accountant' || auth.role === 'supplier') {
+      if (auth.role === 'accountant' || auth.role === 'supplier' || auth.role === 'delivery_rider') {
         return NextResponse.json(
           { error: 'عزل الأدوار: هذا الدور غير مصرح له بتعديل أرصدة محفظة VIP (403 Forbidden)' },
           { status: 403 }
@@ -71,88 +74,93 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const normalizedPhone = phoneVal.normalized;
-      const nowIso = new Date().toISOString();
-      let memberIndex = db.vipMembers.findIndex((m) => m.phone === normalizedPhone);
-
-      if (memberIndex === -1) {
-        const newMember: VipMember = {
-          phone: normalizedPhone,
-          customerName: String(body.customerName || 'عميل فرع بني مزار').trim(),
-          pointsBalance: 0,
-          totalSpent: 0,
-          ordersCount: 0,
-          tier: 'gold',
-          qrCodeValue: `HAFSA-VIP-${normalizedPhone}`,
-          joinedAt: nowIso,
-          transactions: [],
-        };
-        db.vipMembers.unshift(newMember);
-        memberIndex = 0;
-      }
-
-      const member = db.vipMembers[memberIndex];
-      if (!Array.isArray(member.transactions)) {
-        member.transactions = [];
-      }
-
-      const syncMode = body.syncMode || 'invoice_cashback'; // 'invoice_cashback' | 'redeem_points' | 'manual_add'
-      if (syncMode === 'invoice_cashback') {
-        const invoiceAmount = Math.max(0, Number(body.amount) || 0);
-        const cashback = calculateVipCashback(
-          invoiceAmount,
-          db.settings.vipMinOrderForCashback || 150,
-          db.settings.vipCashbackPercentage || 5
-        );
-        const pointsAdded = cashback > 0 ? cashback : Math.max(1, Math.round(invoiceAmount * 0.05));
-        member.pointsBalance += pointsAdded;
-        member.totalSpent += invoiceAmount;
-        member.ordersCount += 1;
-        if (member.totalSpent >= 1500) member.tier = 'platinum';
-
-        member.transactions.unshift({
-          id: `vip-pos-${Date.now()}`,
-          type: 'earned',
-          amountEgp: pointsAdded,
-          description:
-            body.description ||
-            `كاش باك مشتريات كاشير فرع بني مزار (${invoiceAmount} ج.م)`,
-          date: nowIso,
-        });
-      } else if (syncMode === 'redeem_points') {
-        const redeemAmount = Math.max(0, Number(body.amount) || 0);
-        if (redeemAmount > member.pointsBalance) {
-          return NextResponse.json(
-            { error: `رصيد العميل الحالي (${member.pointsBalance} ج.م) أقل من المبلغ المطلوب خصمه (${redeemAmount} ج.م)` },
-            { status: 400 }
-          );
+      return await withDbTransaction(async (db) => {
+        if (!Array.isArray(db.vipMembers)) {
+          db.vipMembers = [];
         }
-        member.pointsBalance -= redeemAmount;
-        member.transactions.unshift({
-          id: `vip-pos-redeem-${Date.now()}`,
-          type: 'redeemed',
-          amountEgp: redeemAmount,
-          description:
-            body.description ||
-            `خصم فوري من كاشير فرع بني مزار بقيمة ${redeemAmount} ج.م`,
-          date: nowIso,
-        });
-      } else if (syncMode === 'manual_add') {
-        const bonusAmount = Math.max(0, Number(body.amount) || 0);
-        member.pointsBalance += bonusAmount;
-        member.transactions.unshift({
-          id: `vip-pos-bonus-${Date.now()}`,
-          type: 'manual_cashier',
-          amountEgp: bonusAmount,
-          description:
-            body.description ||
-            `إضافة رصيد هدية من إدارة محمصة حفصة (${bonusAmount} ج.م)`,
-          date: nowIso,
-        });
-      }
 
-      await saveDbAsync(db);
-      return NextResponse.json({ success: true, member });
+        const normalizedPhone = phoneVal.normalized;
+        const nowIso = new Date().toISOString();
+        let memberIndex = db.vipMembers.findIndex((m) => m.phone === normalizedPhone);
+
+        if (memberIndex === -1) {
+          const newMember: VipMember = {
+            phone: normalizedPhone,
+            customerName: String(body.customerName || 'عميل فرع بني مزار').trim(),
+            pointsBalance: 0,
+            totalSpent: 0,
+            ordersCount: 0,
+            tier: 'gold',
+            qrCodeValue: `HAFSA-VIP-${normalizedPhone}`,
+            joinedAt: nowIso,
+            transactions: [],
+          };
+          db.vipMembers.unshift(newMember);
+          memberIndex = 0;
+        }
+
+        const member = db.vipMembers[memberIndex];
+        if (!Array.isArray(member.transactions)) {
+          member.transactions = [];
+        }
+
+        const syncMode = body.syncMode || 'invoice_cashback';
+        if (syncMode === 'invoice_cashback') {
+          const invoiceAmount = Math.max(0, Number(body.amount) || 0);
+          const cashback = calculateVipCashback(
+            invoiceAmount,
+            db.settings.vipMinOrderForCashback || 150,
+            db.settings.vipCashbackPercentage || 5
+          );
+          const pointsAdded = cashback > 0 ? cashback : Math.max(1, Math.round(invoiceAmount * 0.05));
+          member.pointsBalance += pointsAdded;
+          member.totalSpent += invoiceAmount;
+          member.ordersCount += 1;
+          if (member.totalSpent >= 1500) member.tier = 'platinum';
+
+          member.transactions.unshift({
+            id: `vip-pos-${Date.now()}`,
+            type: 'earned',
+            amountEgp: pointsAdded,
+            description:
+              body.description ||
+              `كاش باك مشتريات كاشير فرع بني مزار (${invoiceAmount} ج.م)`,
+            date: nowIso,
+          });
+        } else if (syncMode === 'redeem_points') {
+          const redeemAmount = Math.max(0, Number(body.amount) || 0);
+          if (redeemAmount > member.pointsBalance) {
+            return NextResponse.json(
+              { error: `رصيد العميل الحالي (${member.pointsBalance} ج.م) أقل من المبلغ المطلوب خصمه (${redeemAmount} ج.م)` },
+              { status: 400 }
+            );
+          }
+          member.pointsBalance -= redeemAmount;
+          member.transactions.unshift({
+            id: `vip-pos-redeem-${Date.now()}`,
+            type: 'redeemed',
+            amountEgp: redeemAmount,
+            description:
+              body.description ||
+              `خصم فوري من كاشير فرع بني مزار بقيمة ${redeemAmount} ج.م`,
+            date: nowIso,
+          });
+        } else if (syncMode === 'manual_add') {
+          const bonusAmount = Math.max(0, Number(body.amount) || 0);
+          member.pointsBalance += bonusAmount;
+          member.transactions.unshift({
+            id: `vip-pos-bonus-${Date.now()}`,
+            type: 'manual_cashier',
+            amountEgp: bonusAmount,
+            description:
+              body.description ||
+              `إضافة رصيد هدية من إدارة محمصة حفصة (${bonusAmount} ج.م)`,
+            date: nowIso,
+          });
+        }
+
+        return NextResponse.json({ success: true, member });
+      });
     }
 
     // 2. Public Customer Registration / Lookup in Hafsa VIP Club
@@ -164,40 +172,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const normalizedPhone = phoneVal.normalized;
-    const existing = db.vipMembers.find((m) => m.phone === normalizedPhone);
-    if (existing) {
-      return NextResponse.json({ found: true, isNew: false, member: existing });
-    }
+    return await withDbTransaction(async (db) => {
+      if (!Array.isArray(db.vipMembers)) {
+        db.vipMembers = [];
+      }
 
-    const nowIso = new Date().toISOString();
-    const customerName = String(body.customerName || 'عضو نادي حفصة الذهبي').trim();
-    const welcomeBonus = 15; // 15 EGP welcome cashback gift for new VIP members in Bani Mazar
+      const normalizedPhone = phoneVal.normalized;
+      const existing = db.vipMembers.find((m) => m.phone === normalizedPhone);
+      if (existing) {
+        return NextResponse.json({ found: true, isNew: false, member: existing });
+      }
 
-    const newMember: VipMember = {
-      phone: normalizedPhone,
-      customerName,
-      pointsBalance: welcomeBonus,
-      totalSpent: 0,
-      ordersCount: 0,
-      tier: 'gold',
-      qrCodeValue: `HAFSA-VIP-${normalizedPhone}`,
-      joinedAt: nowIso,
-      transactions: [
-        {
-          id: `vip-welcome-${Date.now()}`,
-          type: 'earned',
-          amountEgp: welcomeBonus,
-          description: 'هدية ترحيبية مجانية عند الانضمام لنادي عملاء حفصة VIP — فرع بني مزار',
-          date: nowIso,
-        },
-      ],
-    };
+      const nowIso = new Date().toISOString();
+      const customerName = String(body.customerName || 'عضو نادي حفصة الذهبي').trim();
+      const welcomeBonus = 15;
 
-    db.vipMembers.unshift(newMember);
-    await saveDbAsync(db);
+      const newMember: VipMember = {
+        phone: normalizedPhone,
+        customerName,
+        pointsBalance: welcomeBonus,
+        totalSpent: 0,
+        ordersCount: 0,
+        tier: 'gold',
+        qrCodeValue: `HAFSA-VIP-${normalizedPhone}`,
+        joinedAt: nowIso,
+        transactions: [
+          {
+            id: `vip-welcome-${Date.now()}`,
+            type: 'earned',
+            amountEgp: welcomeBonus,
+            description: 'هدية ترحيبية مجانية عند الانضمام لنادي عملاء حفصة VIP — فرع بني مزار',
+            date: nowIso,
+          },
+        ],
+      };
 
-    return NextResponse.json({ found: true, isNew: true, member: newMember }, { status: 201 });
+      db.vipMembers.unshift(newMember);
+      return NextResponse.json({ found: true, isNew: true, member: newMember }, { status: 201 });
+    });
   } catch (error) {
     console.error('Error in VIP API:', error);
     return NextResponse.json({ error: 'حدث خطأ في خدمة محفظة حفصة VIP' }, { status: 500 });
