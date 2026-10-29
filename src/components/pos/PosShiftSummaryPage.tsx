@@ -144,13 +144,13 @@ export default function PosShiftSummaryPage({
 
             <div className="bg-white/10 rounded-2xl p-3.5 border border-white/15">
               <span className="text-[11px] text-[#FAF6F0]/75 block">
-                3. فودافون كاش + إنستاباي
+                3. فيزا الفرع + محافظ إلكترونية
               </span>
               <span className="font-cairo font-black text-lg text-white">
-                {activeShift.vodafoneCashTotal + activeShift.instapayTotal} ج.م
+                {(activeShift.cardSales || activeShift.cardSalesTotal || 0) + activeShift.vodafoneCashTotal + activeShift.instapayTotal} ج.م
               </span>
               <span className="text-[10px] text-[#FAF6F0]/60 block">
-                فودافون: {activeShift.vodafoneCashTotal}ج • إنستا: {activeShift.instapayTotal}ج
+                فيزا: {activeShift.cardSales || activeShift.cardSalesTotal || 0}ج • فودافون: {activeShift.vodafoneCashTotal}ج • إنستا: {activeShift.instapayTotal}ج
               </span>
             </div>
 

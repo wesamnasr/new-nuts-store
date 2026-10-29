@@ -224,7 +224,7 @@ export interface CartItem {
 
 export type OrderStatus = 'pending' | 'confirmed' | 'roasting_packing' | 'shipped' | 'delivered' | 'cancelled';
 
-export type PaymentMethod = 'cod' | 'instapay' | 'vodafone_cash' | 'vip_wallet';
+export type PaymentMethod = 'cod' | 'instapay' | 'vodafone_cash' | 'vip_wallet' | 'card';
 
 export type DeliveryMethodType = 'bandar_fast' | 'villages_scheduled' | 'store_pickup';
 
@@ -557,6 +557,7 @@ export interface PosShift {
   cashSales?: number;
   cashSalesTotal: number;
   cardSales?: number;
+  cardSalesTotal?: number;
   vodafoneCashTotal: number;
   instapayTotal: number;
   vipRedeemedTotal: number;

@@ -211,6 +211,7 @@ export async function POST(request: Request) {
         cashSales: 0,
         cashSalesTotal: 0,
         cardSales: 0,
+        cardSalesTotal: 0,
         vodafoneCashTotal: 0,
         instapayTotal: 0,
         vipRedeemedTotal: 0,
@@ -340,6 +341,142 @@ export async function POST(request: Request) {
       return NextResponse.json({
         success: true,
         order: canSeeProfits ? order : sanitizeOrderForCashier(order),
+      });
+    }
+
+    // 4.5 SYNC OFFLINE INVOICES QUEUE (POS EMERGENCY OFFLINE MODE)
+    if (action === 'sync_offline_invoices' || action === 'sync_offline_queue') {
+      const incomingInvoices = Array.isArray(body.invoices) ? body.invoices : [];
+      if (incomingInvoices.length === 0) {
+        return NextResponse.json({ success: true, syncedCount: 0, syncedOrders: [] });
+      }
+
+      const syncedOrders: Order[] = [];
+      const activeShift = db.posShifts.find((s) => s.status === 'open');
+
+      for (const inv of incomingInvoices) {
+        const orderNumber = inv.orderNumber || `POS-OFF-${Math.floor(1000 + Math.random() * 9000)}`;
+        // Deduplicate: check if order already exists
+        const existing = db.orders.find((o) => o.orderNumber === orderNumber || o.id === inv.id);
+        if (existing) {
+          syncedOrders.push(existing);
+          continue;
+        }
+
+        const items: CartItem[] = Array.isArray(inv.items) ? inv.items : [];
+        let subtotal = 0;
+        let rawCostTotal = 0;
+
+        const verifiedItems = items.map((item) => {
+          const qty = Math.max(1, Math.floor(Number(item.quantity) || 1));
+          const unitPrice = Math.max(1, Math.round(Number(item.unitPrice) || 0));
+          const prod = db.products.find((p) => p.id === item.productId);
+          let unitRawCost = Number(item.rawCostEgp) || 0;
+          if (!unitRawCost && prod) {
+            const matchedW = prod.weights?.find((w) => w.id === item.weightId || w.label === item.weightLabel);
+            const grams = item.customWeightGrams || matchedW?.weightGrams || matchedW?.grams || 250;
+            unitRawCost = getProductCostForWeight(prod, grams);
+          } else if (!unitRawCost) {
+            unitRawCost = Math.round(unitPrice * 0.7);
+          }
+          subtotal += unitPrice * qty;
+          rawCostTotal += unitRawCost * qty;
+          return {
+            ...item,
+            quantity: qty,
+            unitPrice,
+            rawCostEgp: unitRawCost,
+          };
+        });
+
+        const finalTotal = Math.max(0, Math.round(Number(inv.total) || subtotal));
+        const paymentMethod: PaymentMethod = inv.paymentMethod || 'cod';
+        const netProfitEgp = Math.round(finalTotal - (Number(inv.shippingCost) || 0) - rawCostTotal);
+
+        const newOrder: Order = {
+          id: inv.id || `pos-ord-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          orderNumber,
+          orderSource: 'pos',
+          posOrderType: inv.posOrderType || 'counter_takeaway',
+          chairNumber: inv.chairNumber,
+          cashierId: auth.username || auth.staffId || activeShift?.cashierId || 'cashier_pos',
+          cashierName: inv.cashierName || auth.displayName || activeShift?.cashierName || 'كاشير فرع بني مزار',
+          shiftId: activeShift?.id,
+          customerName: inv.customerName || 'عميل فرع بني مزار المباشر',
+          customerPhone: inv.customerPhone || '01000000000',
+          governorate: 'مركز بني مزار — فرع مسجد الزراعيين',
+          address: inv.address || 'استلام فوري من كاشير المحل (أمام مسجد الزراعيين)',
+          notes: inv.notes ? `[مزامنة طوارئ أوفلاين] ${inv.notes}` : '[مزامنة طوارئ أوفلاين]',
+          deliveryMethod: inv.posOrderType === 'phone_delivery' ? 'bandar_fast' : 'store_pickup',
+          items: verifiedItems,
+          subtotal: inv.subtotal || subtotal,
+          shippingCost: inv.shippingCost || 0,
+          discountAmount: inv.discountAmount || 0,
+          vipRedeemedAmount: inv.vipRedeemedAmount || 0,
+          vipWalletRedeemed: inv.vipWalletRedeemed || 0,
+          vipCashbackEarned: inv.vipCashbackEarned || 0,
+          total: finalTotal,
+          cashTendered: inv.cashTendered || finalTotal,
+          changeDue: inv.changeDue || 0,
+          rawCostTotal,
+          netProfitEgp,
+          paymentMethod,
+          paymentReference: inv.paymentReference,
+          status: 'delivered',
+          createdAt: inv.createdAt || new Date().toISOString(),
+        };
+
+        // Stock depletion
+        for (const item of verifiedItems) {
+          const qty = item.quantity || 1;
+          const prod = db.products.find((p) => p.id === item.productId);
+          if (prod) {
+            const matchedW = prod.weights?.find((w) => w.id === item.weightId || w.label === item.weightLabel);
+            const grams = item.customWeightGrams || matchedW?.weightGrams || matchedW?.grams || 250;
+            const consumedKg = (grams * qty) / 1000;
+            const currentStock = typeof prod.stockKg === 'number' ? prod.stockKg : 50;
+            prod.stockKg = Math.max(0, Math.round((currentStock - consumedKg) * 1000) / 1000);
+            if (prod.stockKg <= 0) prod.inStock = false;
+          }
+        }
+
+        db.orders.unshift(newOrder);
+        syncedOrders.push(newOrder);
+
+        // Update active shift
+        if (activeShift) {
+          activeShift.ordersCount += 1;
+          activeShift.totalRevenue += finalTotal;
+          activeShift.totalRawCost += rawCostTotal;
+          activeShift.totalNetProfit += netProfitEgp;
+          if (paymentMethod === 'cod') {
+            activeShift.cashSales = (activeShift.cashSales || 0) + finalTotal;
+            activeShift.cashSalesTotal = (activeShift.cashSalesTotal || 0) + finalTotal;
+          } else if (paymentMethod === 'card') {
+            activeShift.cardSales = (activeShift.cardSales || 0) + finalTotal;
+            activeShift.cardSalesTotal = (activeShift.cardSalesTotal || 0) + finalTotal;
+          } else if (paymentMethod === 'vodafone_cash') {
+            activeShift.cardSales = (activeShift.cardSales || 0) + finalTotal;
+            activeShift.cardSalesTotal = (activeShift.cardSalesTotal || 0) + finalTotal;
+            activeShift.vodafoneCashTotal += finalTotal;
+          } else if (paymentMethod === 'instapay') {
+            activeShift.cardSales = (activeShift.cardSales || 0) + finalTotal;
+            activeShift.cardSalesTotal = (activeShift.cardSalesTotal || 0) + finalTotal;
+            activeShift.instapayTotal += finalTotal;
+          }
+          const starting = Number(activeShift.startingCash ?? activeShift.openingCash ?? 0);
+          const cash = Number(activeShift.cashSales ?? activeShift.cashSalesTotal ?? 0);
+          const exp = Number(activeShift.expenses ?? activeShift.expensesTotal ?? 0);
+          activeShift.expectedCash = Math.max(0, starting + cash - exp);
+          activeShift.expectedCashInDrawer = activeShift.expectedCash;
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        syncedCount: syncedOrders.length,
+        syncedOrders: canSeeProfits ? syncedOrders : syncedOrders.map(sanitizeOrderForCashier),
+        activeShift: canSeeProfits ? activeShift || null : sanitizeShiftForCashier(activeShift || null),
       });
     }
 
@@ -706,11 +843,16 @@ export async function POST(request: Request) {
       if (paymentMethod === 'cod') {
         activeShift.cashSales = (activeShift.cashSales || 0) + finalTotal;
         activeShift.cashSalesTotal = (activeShift.cashSalesTotal || 0) + finalTotal;
+      } else if (paymentMethod === 'card') {
+        activeShift.cardSales = (activeShift.cardSales || 0) + finalTotal;
+        activeShift.cardSalesTotal = (activeShift.cardSalesTotal || 0) + finalTotal;
       } else if (paymentMethod === 'vodafone_cash') {
         activeShift.cardSales = (activeShift.cardSales || 0) + finalTotal;
+        activeShift.cardSalesTotal = (activeShift.cardSalesTotal || 0) + finalTotal;
         activeShift.vodafoneCashTotal += finalTotal;
       } else if (paymentMethod === 'instapay') {
         activeShift.cardSales = (activeShift.cardSales || 0) + finalTotal;
+        activeShift.cardSalesTotal = (activeShift.cardSalesTotal || 0) + finalTotal;
         activeShift.instapayTotal += finalTotal;
       }
 

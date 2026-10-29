@@ -45,7 +45,9 @@ import {
   ChevronUp,
   Calendar,
   AlertTriangle,
+  Scale,
 } from 'lucide-react';
+import { downloadScalePluCsv } from '@/lib/scale-plu';
 import {
   DateRangePreset,
   FinancialDateRangeFilter,
@@ -3453,6 +3455,18 @@ export default function AdminDashboardPage() {
                         إعادة ضبط الفلاتر ✕
                       </button>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        downloadScalePluCsv(products);
+                        showToast('✅ تم تصدير ملف أصناف وأسعار الميزان الإلكتروني (PLU CSV) بنجاح');
+                      }}
+                      className="bg-[#D4AF37] hover:bg-[#c9a12b] text-[#231710] text-xs font-black px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                      title="تصدير شيت الأصناف والأكواد والأسعار للميزان الإلكتروني (Cas, Rongta, Aclas)"
+                    >
+                      <Scale className="w-4 h-4 text-[#231710]" />
+                      <span>تصدير شيت الميزان (PLU CSV)</span>
+                    </button>
                     {isFullAdmin && (
                       <button
                         onClick={openCreateProductModal}

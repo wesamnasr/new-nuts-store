@@ -207,6 +207,8 @@ export default function SupermarketReceiptModal({
   const paymentLabel =
     order?.paymentMethod === 'cod'
       ? 'نقدي (كاش)'
+      : order?.paymentMethod === 'card'
+      ? 'فيزا ماكينة الفرع'
       : order?.paymentMethod === 'vodafone_cash'
         ? 'فودافون كاش'
         : order?.paymentMethod === 'instapay'
@@ -315,6 +317,10 @@ export default function SupermarketReceiptModal({
                   <div className="sr-row">
                     <span>مبيعات الكاش النقدية:</span>
                     <span className="sr-bold">+{shift.cashSalesTotal} ج.م</span>
+                  </div>
+                  <div className="sr-row">
+                    <span>مبيعات ماكينة الفيزا:</span>
+                    <span className="sr-bold">+{shift.cardSales || shift.cardSalesTotal || 0} ج.م</span>
                   </div>
                   <div className="sr-row">
                     <span>فودافون كاش + إنستاباي:</span>

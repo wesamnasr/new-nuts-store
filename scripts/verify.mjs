@@ -2494,6 +2494,98 @@ async function runTestSuite() {
         'verify_role_isolation.mjs must continue passing 100% of role isolation checks'
       );
     });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    suite('Tier 13: Package 3 — POS Cashier Hardware, Card Sales, Offline Queue & Scale PLU Sync');
+
+    await test('P3_POS_01: In-Store Card POS Machine Payment Integration & Isolated Drawer Math', async () => {
+      const storeTypesRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/types/store.ts'), 'utf8');
+      const posRouteRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/api/pos/route.ts'), 'utf8');
+      const receiptModalRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/components/SupermarketReceiptModal.tsx'), 'utf8');
+      const shiftSummaryRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/components/pos/PosShiftSummaryPage.tsx'), 'utf8');
+
+      assert.ok(
+        storeTypesRaw.includes("'card'") && storeTypesRaw.includes('cardSalesTotal?: number'),
+        'store.ts must define card PaymentMethod and cardSalesTotal on PosShift'
+      );
+      assert.ok(
+        posRouteRaw.includes("paymentMethod === 'card'") &&
+          posRouteRaw.includes('activeShift.cardSales') &&
+          posRouteRaw.includes('activeShift.cardSalesTotal'),
+        'api/pos must record card sales on active shift without inflating cashSalesTotal'
+      );
+      assert.ok(
+        receiptModalRaw.includes("'فيزا ماكينة الفرع'") && receiptModalRaw.includes('مبيعات ماكينة الفيزا'),
+        'SupermarketReceiptModal must render card payment label and dedicated Z-Report card line'
+      );
+      assert.ok(
+        shiftSummaryRaw.includes('فيزا الفرع'),
+        'PosShiftSummaryPage must render card sales in the electronic payment KPI block'
+      );
+    });
+
+    await test('P3_POS_02: POS Offline Queue Utility & Synchronization Contract', async () => {
+      const offlineLibPath = path.join(ROOT_DIR, 'src/lib/pos-offline.ts');
+      assert.ok(fs.existsSync(offlineLibPath), 'src/lib/pos-offline.ts must exist');
+      const offlineLibRaw = fs.readFileSync(offlineLibPath, 'utf8');
+      const posPageRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/pos/page.tsx'), 'utf8');
+      const posRouteRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/api/pos/route.ts'), 'utf8');
+
+      assert.ok(
+        offlineLibRaw.includes('enqueuePosOfflineInvoice') &&
+          offlineLibRaw.includes('syncPosOfflineQueue') &&
+          offlineLibRaw.includes('removePosOfflineInvoices'),
+        'pos-offline.ts must implement offline enqueue, sync and removal'
+      );
+      assert.ok(
+        posPageRaw.includes('saveOfflineFallback') &&
+          posPageRaw.includes('handleSyncOfflineQueue') &&
+          posPageRaw.includes('POS EMERGENCY OFFLINE QUEUE STATUS BANNER'),
+        'pos/page.tsx must implement offline fallback, emergency queue banner and automatic/manual sync'
+      );
+      assert.ok(
+        posRouteRaw.includes("action === 'sync_offline_invoices'"),
+        'api/pos must implement sync_offline_invoices action'
+      );
+    });
+
+    await test('P3_POS_03: Electronic Barcode Scale PLU CSV Export & Format Compliance', async () => {
+      const scalePluLibPath = path.join(ROOT_DIR, 'src/lib/scale-plu.ts');
+      const scalePluRoutePath = path.join(ROOT_DIR, 'src/app/api/admin/scale-plu/route.ts');
+      const adminPageRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/admin/page.tsx'), 'utf8');
+
+      assert.ok(fs.existsSync(scalePluLibPath), 'src/lib/scale-plu.ts must exist');
+      assert.ok(fs.existsSync(scalePluRoutePath), 'src/app/api/admin/scale-plu/route.ts must exist');
+
+      const scaleLibRaw = fs.readFileSync(scalePluLibPath, 'utf8');
+      const scaleRouteRaw = fs.readFileSync(scalePluRoutePath, 'utf8');
+
+      assert.ok(
+        scaleLibRaw.includes('generateScalePluCsv') && scaleLibRaw.includes('SCALE_PLU_HEADERS'),
+        'scale-plu.ts must export generateScalePluCsv with SCALE_PLU_HEADERS'
+      );
+      assert.ok(
+        scaleRouteRaw.includes("verifyAdminRequest(request, ['super_admin', 'admin', 'accountant', 'cashier'])"),
+        'scale-plu route must restrict access with RBAC check'
+      );
+      assert.ok(
+        adminPageRaw.includes('downloadScalePluCsv') && adminPageRaw.includes('تصدير شيت الميزان'),
+        'admin/page.tsx must include button to download scale PLU CSV'
+      );
+    });
+
+    await test('P3_POS_04: Runtime Execution of In-Store Card Sale, Offline Queue & Scale PLU Export', async () => {
+      const pkg3Out = execSync('node scripts/verify_package3_pos_hardware.mjs', {
+        cwd: ROOT_DIR,
+        encoding: 'utf8',
+        stdio: 'pipe',
+        timeout: 120000,
+      });
+      assert.ok(
+        pkg3Out.includes('ALL PACKAGE 3 POS HARDWARE, CARD & OFFLINE QUEUE CHECKS PASSED'),
+        'verify_package3_pos_hardware.mjs must pass 100% of live runtime assertions'
+      );
+    });
     
   } finally {
     // Database Restoration (State Isolation guarantee)

@@ -16,6 +16,9 @@ import {
   ChevronLeft,
   GripVertical,
   LogOut,
+  RefreshCw,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 import {
@@ -50,6 +53,11 @@ import {
   updateUrlQueryParams,
   useBrowserUrlSync,
 } from '@/lib/url-sync';
+import {
+  getPosOfflineQueue,
+  enqueuePosOfflineInvoice,
+  syncPosOfflineQueue,
+} from '@/lib/pos-offline';
 
 const ADMIN_SESSION_STORAGE_KEY = 'nuts_admin_session';
 const HELD_INVOICES_STORAGE_KEY = 'nuts_pos_held_invoices';
@@ -91,6 +99,11 @@ export default function HafsaPosCashierPage() {
 
   // Cashier is strictly isolated from wholesale raw costs and net profits
   const canSeeProfits = posRole === 'super_admin' || posRole === 'accountant';
+
+  // POS Emergency Offline Queue & Network Resilience
+  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [offlineQueueCount, setOfflineQueueCount] = useState<number>(0);
+  const [isSyncingOffline, setIsSyncingOffline] = useState<boolean>(false);
 
   // 6-Page POS Navigation State + Internal Sub-Sections State
   const [activePage, setActivePage] = useState<PosPageId>('direct_sales');
@@ -326,6 +339,61 @@ export default function HafsaPosCashierPage() {
     },
     [posToken]
   );
+
+  const handleSyncOfflineQueue = useCallback(async () => {
+    if (isSyncingOffline) return;
+    const currentQueue = getPosOfflineQueue();
+    if (currentQueue.length === 0) {
+      setOfflineQueueCount(0);
+      return;
+    }
+    setIsSyncingOffline(true);
+    try {
+      const res = await syncPosOfflineQueue(posToken);
+      if (res.success) {
+        setOfflineQueueCount(res.remainingCount);
+        await fetchPosData();
+        await refreshStore();
+        showToast(
+          `✅ تمت مزامنة ${res.syncedCount} فاتورة طوارئ بنجاح مع الخادم!`,
+          res.remainingCount > 0 ? `المتبقي: ${res.remainingCount}` : 'تم إفراغ طابور الطوارئ بالكامل'
+        );
+      } else {
+        showToast('⚠️ تعذر إتمام مزامنة بعض فواتير الطوارئ', res.error);
+      }
+    } catch (e: any) {
+      showToast('❌ خطأ في الاتصال أثناء المزامنة', e?.message);
+    } finally {
+      setIsSyncingOffline(false);
+    }
+  }, [isSyncingOffline, posToken, fetchPosData, refreshStore, showToast]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setIsOnline(navigator.onLine);
+    setOfflineQueueCount(getPosOfflineQueue().length);
+
+    const handleOnline = () => {
+      setIsOnline(true);
+      const queueLen = getPosOfflineQueue().length;
+      setOfflineQueueCount(queueLen);
+      if (queueLen > 0) {
+        handleSyncOfflineQueue();
+      }
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      setOfflineQueueCount(getPosOfflineQueue().length);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [handleSyncOfflineQueue]);
 
   // Verify Cashier Session on Mount
   useEffect(() => {
@@ -665,7 +733,64 @@ export default function HafsaPosCashierPage() {
       showToast('⚠️ الفاتورة فارغة، أضف صنفاً واحداً على الأقل');
       return;
     }
-    setPosLoading(true);
+    const currentlyOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+    const saveOfflineFallback = () => {
+      const offlineOrderNumber = `POS-OFF-${Math.floor(1000 + Math.random() * 9000)}`;
+      const offlineOrder: Order = {
+        id: `pos-off-${Date.now()}`,
+        orderNumber: offlineOrderNumber,
+        orderSource: 'pos',
+        posOrderType,
+        chairNumber: posOrderType === 'glass_bar_dine_in' ? chairNumber : undefined,
+        cashierId: posStaffDisplayName || 'cashier_pos',
+        cashierName: posStaffDisplayName || 'كاشير فرع بني مزار',
+        customerName: customerName.trim() || 'عميل فرع بني مزار المباشر',
+        customerPhone: customerPhone.trim() || '01000000000',
+        governorate: 'مركز بني مزار — فرع مسجد الزراعيين',
+        address: deliveryAddress.trim() || 'استلام فوري من كاشير المحل',
+        notes: invoiceNotes.trim() ? `[أوفلاين] ${invoiceNotes.trim()}` : '[أوفلاين]',
+        deliveryMethod: posOrderType === 'phone_delivery' ? 'bandar_fast' : 'store_pickup',
+        items: [...posItems],
+        subtotal: posSubtotal,
+        shippingCost: posShipping,
+        discountAmount: safeDiscount,
+        vipRedeemedAmount: 0,
+        vipWalletRedeemed: 0,
+        vipCashbackEarned: posVipCashbackEarned,
+        total: posNetTotal,
+        cashTendered: effectiveCashTendered,
+        changeDue,
+        paymentMethod,
+        paymentReference: paymentReference.trim() || undefined,
+        status: 'delivered',
+        createdAt: new Date().toISOString(),
+      };
+
+      enqueuePosOfflineInvoice(offlineOrder);
+      setOfflineQueueCount(getPosOfflineQueue().length);
+      playCashierBeep(1046.5, 0.25);
+      setPrintedOrder(offlineOrder);
+      setStickerPreviewItem(null);
+      setPrintedShift(null);
+      setPrintMode('receipt');
+      setPosItems([]);
+      setCashierDiscount(0);
+      setCashTenderedInput('');
+      setInvoiceNotes('');
+      setUseVipWallet(false);
+      showToast(
+        `⚠️ وضع الطوارئ (أوفلاين): تم حفظ الفاتورة ${offlineOrderNumber} محلياً وجاهزة للطباعة!`,
+        `سيتم ترحيل الفاتورة تلقائياً عند عودة الاتصال بالإنترنت`
+      );
+    };
+
+    if (currentlyOffline) {
+      saveOfflineFallback();
+      setPosLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch('/api/pos', {
         method: 'POST',
@@ -688,7 +813,7 @@ export default function HafsaPosCashierPage() {
           cashTendered: effectiveCashTendered,
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         showToast('❌ تعذر إصدار الفاتورة', data.error);
       } else {
@@ -710,7 +835,8 @@ export default function HafsaPosCashierPage() {
         );
       }
     } catch {
-      showToast('❌ خطأ في الاتصال بالخادم');
+      // Network failure fallback
+      saveOfflineFallback();
     } finally {
       setPosLoading(false);
     }
@@ -1365,6 +1491,36 @@ export default function HafsaPosCashierPage() {
         {/* MAIN WORKSPACE CONTENT: SELLING PAGES (WITH RESIZABLE CART)         */}
         {/* =================================================================== */}
         <main className="flex-1 min-w-0 w-full px-3 sm:px-4 pt-3 space-y-3">
+          {/* POS EMERGENCY OFFLINE QUEUE STATUS BANNER */}
+          {(!isOnline || offlineQueueCount > 0) && (
+            <div className="bg-gradient-to-r from-amber-600 to-orange-700 text-white rounded-2xl p-3 shadow-lg flex flex-wrap items-center justify-between gap-2.5 border-2 border-amber-300">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">⚠️</span>
+                <div>
+                  <h4 className="font-cairo font-black text-xs sm:text-sm text-white">
+                    {!isOnline
+                      ? 'وضع الطوارئ (انقطاع اتصال الإنترنت) — البيع والطباعة مستمران محلياً'
+                      : `طابور الطوارئ: يوجد ${offlineQueueCount} فواتير مسجلة محلياً في انتظار المزامنة`}
+                  </h4>
+                  <p className="text-[11px] text-amber-100">
+                    يمكنك إتمام البيع وطباعة بونات الكاشير كالمعتاد، وسيتم ترحيل الفواتير فور عودة الشبكة.
+                  </p>
+                </div>
+              </div>
+
+              {offlineQueueCount > 0 && (
+                <button
+                  type="button"
+                  disabled={isSyncingOffline}
+                  onClick={handleSyncOfflineQueue}
+                  className="bg-white text-orange-900 hover:bg-amber-100 font-cairo font-black text-xs px-3.5 py-1.5 rounded-xl shadow transition cursor-pointer flex items-center gap-1.5 shrink-0"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncingOffline ? 'animate-spin' : ''}`} />
+                  <span>{isSyncingOffline ? 'جارٍ المزامنة...' : `مزامنة الآن (${offlineQueueCount})`}</span>
+                </button>
+              )}
+            </div>
+          )}
           {/* Contained Horizontal POS Navigation Bar when embedded inside /admin */}
           {isEmbeddedInAdmin && (
             <div className="bg-[#231710] text-[#FAF6F0] rounded-2xl border-2 border-[#D4AF37] p-3 shadow-md space-y-2.5">
