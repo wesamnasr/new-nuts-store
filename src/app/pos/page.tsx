@@ -376,10 +376,10 @@ export default function HafsaPosCashierPage() {
             return;
           }
           if (verifiedRole === 'accountant' && !data.permissions?.includes('cashier_portal') && !window.location.pathname.startsWith('/admin')) {
-            window.location.replace('/accountant');
+            window.location.replace('/admin');
             return;
           }
-          if (verifiedRole === 'promo_partner') {
+          if (verifiedRole === 'delivery_rider') {
             setPosAuthenticated(false);
             setPosRole(verifiedRole);
             setPosLoginError(
@@ -464,10 +464,10 @@ export default function HafsaPosCashierPage() {
         return;
       }
       if (role === 'accountant') {
-        window.location.href = '/accountant';
+        window.location.href = '/admin';
         return;
       }
-      if (role === 'promo_partner') {
+      if (role === 'delivery_rider') {
         setPosLoginError('عزل الأدوار: هذا الحساب غير مصرح له بفتح شاشة الكاشير');
         return;
       }

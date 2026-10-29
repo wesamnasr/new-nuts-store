@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDbAsync, saveDbAsync } from '@/lib/db';
+import { getDbAsync, withDbTransaction } from '@/lib/db';
 import {
   Order,
   OrderStatus,
@@ -16,9 +16,12 @@ import {
   calculatePartitionedBox,
   calculateCoffeeBlendPrice,
   calculateVipCashback,
+  getProductPriceForWeight,
 } from '@/lib/pricing';
 import { getSafeImageUrl } from '@/lib/defaults';
 import { hasRolePermission, verifyAdminRequest } from '@/lib/auth';
+import { reverseOrderEffects, reapplyOrderEffects } from '@/lib/order-reversal';
+import { calculateOrderCogs, roundCurrency } from '@/lib/financials';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,7 +60,7 @@ export async function GET(request: NextRequest) {
         const orderNumMatch = o.orderNumber.toLowerCase() === normalized;
         const orderPhoneDigits = o.customerPhone.replace(/[\s\-\(\)\+]/g, '');
         const phoneMatch =
-          queryDigits.length >= 8 &&
+          queryDigits.length >= 10 &&
           (orderPhoneDigits.endsWith(queryDigits) || queryDigits.endsWith(orderPhoneDigits));
         return orderNumMatch || phoneMatch;
       })
@@ -74,12 +77,12 @@ export async function GET(request: NextRequest) {
         !hasRolePermission('supplier', 'accounting_portal', db.settings) &&
         !hasRolePermission('supplier', 'cashier_portal', db.settings) &&
         !hasRolePermission('supplier', 'overview', db.settings)) ||
-      auth.role === 'promo_partner'
+      auth.role === 'delivery_rider'
     ) {
       return NextResponse.json({ orders: [] });
     }
     // Role 3: Cashier sees orders for preparation/delivery without raw cost or net profit
-    if (auth.role === 'cashier' || auth.role === 'store_manager') {
+    if (auth.role === 'cashier') {
       return NextResponse.json({ orders: db.orders.map(stripOrderCosts) });
     }
     // Role 1 (Admin) & Role 4 (Accountant) see full financial order details
@@ -92,7 +95,6 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const db = await getDbAsync();
 
     // 1. Validate required basic fields
     if (!body.customerName?.trim() || !body.customerPhone?.trim() || !body.address?.trim()) {
@@ -128,7 +130,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'سلة المشتريات فارغة' }, { status: 400 });
     }
 
-    // 3. Server-side subtotal recalculation & price integrity
+    return await withDbTransaction(async (db) => {
+      // 3. Server-side subtotal recalculation & price integrity
     let serverSubtotal = 0;
     const verifiedItems: CartItem[] = [];
 
@@ -254,7 +257,14 @@ export async function POST(request: NextRequest) {
         rawItem.productId.startsWith('flash-promo-')
       ) {
         const promoId = rawItem.productId.replace('flash-promo-', '');
-        const matchedPromo = (db.promotions || []).find((p) => p.id === promoId);
+        const promoPool = db.flashPromotions || db.promotions || [];
+        const matchedPromo = promoPool.find((p) => p.id === promoId);
+        if (matchedPromo && matchedPromo.active === false) {
+          return NextResponse.json(
+            { error: 'هذا العرض الفوري غير نشط أو انتهت صلاحيته' },
+            { status: 400 }
+          );
+        }
         unitPrice = matchedPromo ? matchedPromo.promoPrice : Math.max(20, Number(rawItem.unitPrice) || 125);
         verifiedItems.push({
           ...rawItem,
@@ -339,9 +349,22 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
-        const dbWeight =
+        let dbWeight =
           dbProduct.weights.find((w) => w.id === rawItem.weightId) ||
           dbProduct.weights.find((w) => w.label === rawItem.weightLabel);
+
+        if (!dbWeight && (rawItem.weightId === 'w-2000' || rawItem.customWeightGrams === 2000 || rawItem.weightLabel?.includes('2000') || rawItem.weightLabel?.includes('2 كجم') || rawItem.weightLabel?.includes('2كجم'))) {
+          const p2000 = getProductPriceForWeight(dbProduct, 2000);
+          if (p2000 > 0) {
+            dbWeight = {
+              id: 'w-2000',
+              label: '2 كجم (2000 جم)',
+              weightGrams: 2000,
+              grams: 2000,
+              price: p2000,
+            };
+          }
+        }
         if (!dbWeight) {
           return NextResponse.json(
             { error: 'أحد الأصناف المطلوبة غير موجود في المتجر' },
@@ -390,6 +413,7 @@ export async function POST(request: NextRequest) {
         if (couponResult.isValid) {
           serverDiscountAmount = couponResult.discountAmount;
           validCouponCode = matchedCoupon.code;
+          matchedCoupon.usedCount = (matchedCoupon.usedCount || 0) + 1;
         }
       }
     }
@@ -584,17 +608,20 @@ export async function POST(request: NextRequest) {
         const prod = db.products.find((p) => p.id === item.productId);
         if (prod) {
           const matchedW = prod.weights?.find((w) => w.id === item.weightId || w.label === item.weightLabel);
-          const grams = item.customWeightGrams || matchedW?.weightGrams || matchedW?.grams || 250;
+          const grams = item.customWeightGrams || matchedW?.weightGrams || matchedW?.grams || (item.weightId === 'w-2000' ? 2000 : 250);
           const consumedKg = (grams * qty) / 1000;
           depleteProductStock(prod, consumedKg);
         }
       }
     }
 
+    const computedCogs = calculateOrderCogs(newOrder, db.products);
+    newOrder.rawCostTotal = computedCogs;
+    newOrder.netProfitEgp = roundCurrency(serverTotal - computedCogs);
     db.orders.unshift(newOrder);
-    await saveDbAsync(db);
 
-    return NextResponse.json({ order: newOrder }, { status: 201 });
+    return NextResponse.json({ order: stripOrderCosts(newOrder) }, { status: 201 });
+    });
   } catch (error) {
     console.error('Error creating order:', error);
     return NextResponse.json({ error: 'حدث خطأ أثناء تسجيل الطلب' }, { status: 500 });
@@ -603,23 +630,11 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const db = await getDbAsync();
     const auth = verifyAdminRequest(request);
     if (!auth.isAuthenticated) {
       return NextResponse.json(
         { error: 'غير مصرح لك بالوصول (401 Unauthorized)' },
         { status: 401 }
-      );
-    }
-
-    if (
-      (auth.role === 'supplier' && !hasRolePermission('supplier', 'orders', db.settings) && !hasRolePermission('supplier', 'cashier_portal', db.settings)) ||
-      (auth.role === 'accountant' && !hasRolePermission('accountant', 'cashier_portal', db.settings)) ||
-      auth.role === 'promo_partner'
-    ) {
-      return NextResponse.json(
-        { error: 'عزل الأدوار: هذا الدور غير مصرح له بتعديل حالات الطلبات' },
-        { status: 403 }
       );
     }
 
@@ -630,25 +645,50 @@ export async function PATCH(request: NextRequest) {
       notes?: string;
     };
 
-    const orderIndex = db.orders.findIndex((o) => o.id === orderId);
-    if (orderIndex === -1) {
-      return NextResponse.json({ error: 'الطلب غير موجود' }, { status: 404 });
+    if (!orderId) {
+      return NextResponse.json({ error: 'معرف الطلب مطلوب' }, { status: 400 });
     }
 
-    if (status) {
-      db.orders[orderIndex].status = status;
-    }
-    if (typeof notes === 'string') {
-      db.orders[orderIndex].notes = notes;
-    }
-    await saveDbAsync(db);
+    return await withDbTransaction(async (db) => {
+      if (
+        (auth.role === 'supplier' && !hasRolePermission('supplier', 'orders', db.settings) && !hasRolePermission('supplier', 'cashier_portal', db.settings)) ||
+        (auth.role === 'accountant' && !hasRolePermission('accountant', 'cashier_portal', db.settings)) ||
+        auth.role === 'delivery_rider'
+      ) {
+        return NextResponse.json(
+          { error: 'عزل الأدوار: هذا الدور غير مصرح له بتعديل حالات الطلبات' },
+          { status: 403 }
+        );
+      }
 
-    const returnedOrder =
-      auth.role === 'cashier' || auth.role === 'store_manager'
-        ? stripOrderCosts(db.orders[orderIndex])
-        : db.orders[orderIndex];
+      const orderIndex = db.orders.findIndex((o) => o.id === orderId);
+      if (orderIndex === -1) {
+        return NextResponse.json({ error: 'الطلب غير موجود' }, { status: 404 });
+      }
 
-    return NextResponse.json({ order: returnedOrder });
+      if (status) {
+        const prevStatus = db.orders[orderIndex].status;
+        if (status === 'cancelled' && prevStatus !== 'cancelled') {
+          reverseOrderEffects(db, db.orders[orderIndex]);
+        } else if (status !== 'cancelled' && prevStatus === 'cancelled') {
+          const reapply = reapplyOrderEffects(db, db.orders[orderIndex]);
+          if (!reapply.ok) {
+            return NextResponse.json({ error: reapply.error }, { status: 400 });
+          }
+        }
+        db.orders[orderIndex].status = status;
+      }
+      if (typeof notes === 'string') {
+        db.orders[orderIndex].notes = notes;
+      }
+
+      const returnedOrder =
+        auth.role === 'cashier'
+          ? stripOrderCosts(db.orders[orderIndex])
+          : db.orders[orderIndex];
+
+      return NextResponse.json({ order: returnedOrder });
+    });
   } catch (error) {
     console.error('Error updating order status:', error);
     return NextResponse.json({ error: 'فشل تحديث حالة الطلب' }, { status: 500 });
@@ -657,7 +697,6 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const db = await getDbAsync();
     const auth = verifyAdminRequest(request);
     if (!auth.isAuthenticated) {
       return NextResponse.json(
@@ -682,12 +721,17 @@ export async function DELETE(request: NextRequest) {
 
     if (orderId === 'all') {
       return NextResponse.json({ error: 'غير مسموح بمسح السجل بالكامل' }, { status: 400 });
-    } else {
-      db.orders = db.orders.filter((o) => o.id !== orderId);
     }
-    await saveDbAsync(db);
 
-    return NextResponse.json({ success: true, orders: db.orders });
+    return await withDbTransaction(async (db) => {
+      const targetOrder = db.orders.find((o) => o.id === orderId);
+      if (targetOrder && targetOrder.status !== 'cancelled') {
+        reverseOrderEffects(db, targetOrder);
+      }
+      db.orders = db.orders.filter((o) => o.id !== orderId);
+
+      return NextResponse.json({ success: true, orders: db.orders });
+    });
   } catch (error) {
     console.error('Error deleting order:', error);
     return NextResponse.json({ error: 'فشل حذف الطلب' }, { status: 500 });

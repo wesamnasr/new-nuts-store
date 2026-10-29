@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDbAsync, saveDbAsync } from '@/lib/db';
+import { getDbAsync, withDbTransaction } from '@/lib/db';
 import { SupplyInvoice, SupplyInvoiceItem } from '@/types/store';
 import { hasRolePermission, verifyAdminRequest } from '@/lib/auth';
 
@@ -88,28 +88,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const db = await getDbAsync();
-    const canCreateSupplyInvoice =
-      auth.role === 'super_admin' ||
-      auth.role === 'admin' ||
-      hasRolePermission(auth.role, 'supply_portal', db.settings);
-
-    if (!canCreateSupplyInvoice) {
-      if (auth.role === 'accountant') {
-        return NextResponse.json(
-          {
-            error:
-              'عزل الأدوار: المحاسب يتمتع بصلاحية تدقيق وقراءة فقط وممنوع من إنشاء فواتير توريد (403 Forbidden)',
-          },
-          { status: 403 }
-        );
-      }
-      return NextResponse.json(
-        { error: 'عزل الأدوار: غير مصرح لهذا الدور بإنشاء فواتير توريد (403 Forbidden)' },
-        { status: 403 }
-      );
-    }
-
     const body = await request.json();
     const rawItems = Array.isArray(body.items) ? body.items : [];
 
@@ -120,75 +98,102 @@ export async function POST(request: Request) {
       );
     }
 
-    const validatedItems: SupplyInvoiceItem[] = [];
+    return await withDbTransaction(async (db) => {
+      const canCreateSupplyInvoice =
+        auth.role === 'super_admin' ||
+        auth.role === 'admin' ||
+        hasRolePermission(auth.role, 'supply_portal', db.settings);
 
-    for (const item of rawItems) {
-      const qty = Number(item.quantityKg);
-      const cost = Number(item.costPerKg);
-
-      if (!item.productId || isNaN(qty) || qty <= 0 || isNaN(cost) || cost <= 0) {
+      if (!canCreateSupplyInvoice) {
+        if (auth.role === 'accountant') {
+          return NextResponse.json(
+            {
+              error:
+                'عزل الأدوار: المحاسب يتمتع بصلاحية تدقيق وقراءة فقط وممنوع من إنشاء فواتير توريد (403 Forbidden)',
+            },
+            { status: 403 }
+          );
+        }
+        if (auth.role === 'cashier') {
+          return NextResponse.json(
+            { error: 'عزل الأدوار: الكاشير غير مصرح له بإنشاء فواتير توريد (403 Forbidden)' },
+            { status: 403 }
+          );
+        }
         return NextResponse.json(
-          { error: 'بيانات الأصناف غير صالحة: يجب تحديد المنتج والكمية وتكلفة الكيلو بشكل صحيح' },
-          { status: 400 }
+          { error: 'عزل الأدوار: غير مصرح لهذا الدور بإنشاء فواتير توريد (403 Forbidden)' },
+          { status: 403 }
         );
       }
 
-      const matchedProduct = db.products.find((p) => p.id === item.productId);
-      const productName = item.productName || matchedProduct?.name || 'صنف توريد';
-      const totalCost = Math.round(qty * cost * 100) / 100;
+      const validatedItems: SupplyInvoiceItem[] = [];
 
-      validatedItems.push({
-        productId: item.productId,
-        productName,
-        quantityKg: Math.round(qty * 1000) / 1000,
-        costPerKg: Math.round(cost * 100) / 100,
-        totalCost,
-      });
-    }
+      for (const item of rawItems) {
+        const qty = Number(item.quantityKg);
+        const cost = Number(item.costPerKg);
 
-    const totalAmount = Math.round(
-      validatedItems.reduce((sum, item) => sum + item.totalCost, 0) * 100
-    ) / 100;
+        if (!item.productId || isNaN(qty) || qty <= 0 || isNaN(cost) || cost <= 0) {
+          return NextResponse.json(
+            { error: 'بيانات الأصناف غير صالحة: يجب تحديد المنتج والكمية وتكلفة الكيلو بشكل صحيح' },
+            { status: 400 }
+          );
+        }
 
-    const invoiceId = 'sup-inv-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
-    const invoiceNumber =
-      body.invoiceNumber && typeof body.invoiceNumber === 'string'
-        ? body.invoiceNumber
-        : 'SUP-' + Math.floor(1000 + Math.random() * 9000);
+        const matchedProduct = db.products.find((p) => p.id === item.productId);
+        const productName = item.productName || matchedProduct?.name || 'صنف توريد';
+        const totalCost = Math.round(qty * cost * 100) / 100;
 
-    const supplierId =
-      body.supplierId || db.settings?.supplierUsername || 'supplier_arafat';
-    const supplierName =
-      body.supplierName || 'شركة أرافت للاستيراد والتوريد الزراعي';
+        validatedItems.push({
+          productId: item.productId,
+          productName,
+          quantityKg: Math.round(qty * 1000) / 1000,
+          costPerKg: Math.round(cost * 100) / 100,
+          totalCost,
+        });
+      }
 
-    const newInvoice: SupplyInvoice = {
-      id: invoiceId,
-      invoiceNumber,
-      supplierId,
-      supplierName,
-      items: validatedItems,
-      totalAmount,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      notes: typeof body.notes === 'string' ? body.notes.trim() : undefined,
-    };
+      const totalAmount = Math.round(
+        validatedItems.reduce((sum, item) => sum + item.totalCost, 0) * 100
+      ) / 100;
 
-    // Crucial: Physical inventory and product costs MUST NOT change at this point.
-    if (!Array.isArray(db.supplyInvoices)) {
-      db.supplyInvoices = [];
-    }
-    db.supplyInvoices.unshift(newInvoice);
+      const invoiceId = 'sup-inv-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+      const invoiceNumber =
+        body.invoiceNumber && typeof body.invoiceNumber === 'string'
+          ? body.invoiceNumber
+          : 'SUP-' + Math.floor(1000 + Math.random() * 9000);
 
-    await saveDbAsync(db);
+      const supplierId =
+        body.supplierId || db.settings?.supplierUsername || 'supplier_arafat';
+      const supplierName =
+        body.supplierName || 'شركة أرافت للاستيراد والتوريد الزراعي';
 
-    return NextResponse.json(
-      {
-        success: true,
-        invoice: newInvoice,
-        message: 'تم إنشاء وإرسال فاتورة التوريد بنجاح وهي قيد مراجعة واعتماد الإدارة',
-      },
-      { status: 201 }
-    );
+      const newInvoice: SupplyInvoice = {
+        id: invoiceId,
+        invoiceNumber,
+        supplierId,
+        supplierName,
+        items: validatedItems,
+        totalAmount,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        notes: typeof body.notes === 'string' ? body.notes.trim() : undefined,
+      };
+
+      // Crucial: Physical inventory and product costs MUST NOT change at this point.
+      if (!Array.isArray(db.supplyInvoices)) {
+        db.supplyInvoices = [];
+      }
+      db.supplyInvoices.unshift(newInvoice);
+
+      return NextResponse.json(
+        {
+          success: true,
+          invoice: newInvoice,
+          message: 'تم إنشاء وإرسال فاتورة التوريد بنجاح وهي قيد مراجعة واعتماد الإدارة',
+        },
+        { status: 201 }
+      );
+    });
   } catch (err: any) {
     console.error('Error in POST /api/supply-invoices:', err);
     return NextResponse.json(
@@ -266,81 +271,77 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const db = await getDbAsync();
+    return await withDbTransaction(async (db) => {
+      if (!Array.isArray(db.supplyInvoices)) {
+        db.supplyInvoices = [];
+      }
 
-    if (!Array.isArray(db.supplyInvoices)) {
-      db.supplyInvoices = [];
-    }
-
-    const invoice = db.supplyInvoices.find(
-      (inv) => inv.id === invoiceId || inv.invoiceNumber === invoiceId
-    );
-
-    if (!invoice) {
-      return NextResponse.json(
-        { error: 'فاتورة التوريد المطلوبة غير موجودة (404 Not Found)' },
-        { status: 404 }
+      const invoice = db.supplyInvoices.find(
+        (inv) => inv.id === invoiceId || inv.invoiceNumber === invoiceId
       );
-    }
 
-    if (invoice.status === 'approved' && targetStatus === 'approved') {
-      return NextResponse.json(
-        { error: 'الفاتورة معتمدة بالفعل وتمت إضافة كمياتها للمخزون مسبقاً' },
-        { status: 400 }
-      );
-    }
+      if (!invoice) {
+        return NextResponse.json(
+          { error: 'فاتورة التوريد المطلوبة غير موجودة (404 Not Found)' },
+          { status: 404 }
+        );
+      }
 
-    if (targetStatus === 'approved') {
-      // Atomic stock increment and wholesale cost update
-      for (const item of invoice.items) {
-        const product = db.products.find((p) => p.id === item.productId);
-        if (product) {
-          const currentStock = typeof product.stockKg === 'number' ? product.stockKg : 0;
-          product.stockKg = Math.max(0, Math.round((currentStock + item.quantityKg) * 1000) / 1000);
-          if (product.stockKg > 0) {
-            product.inStock = true;
-          }
-          if (typeof item.costPerKg === 'number' && item.costPerKg > 0) {
-            product.costPerKg = Math.round(item.costPerKg * 100) / 100;
+      if (invoice.status === 'approved' && targetStatus === 'approved') {
+        return NextResponse.json(
+          { error: 'الفاتورة معتمدة بالفعل وتمت إضافة كمياتها للمخزون مسبقاً' },
+          { status: 400 }
+        );
+      }
+
+      if (targetStatus === 'approved') {
+        // Atomic stock increment and wholesale cost update
+        for (const item of invoice.items) {
+          const product = db.products.find((p) => p.id === item.productId);
+          if (product) {
+            const currentStock = typeof product.stockKg === 'number' ? product.stockKg : 0;
+            product.stockKg = Math.max(0, Math.round((currentStock + item.quantityKg) * 1000) / 1000);
+            if (product.stockKg > 0) {
+              product.inStock = true;
+            }
+            if (typeof item.costPerKg === 'number' && item.costPerKg > 0) {
+              product.costPerKg = Math.round(item.costPerKg * 100) / 100;
+            }
           }
         }
+
+        invoice.status = 'approved';
+        invoice.reviewedAt = new Date().toISOString();
+        invoice.reviewedBy = 'super_admin';
+        if (typeof body.adminNotes === 'string') {
+          invoice.adminNotes = body.adminNotes.trim();
+        }
+
+        return NextResponse.json({
+          success: true,
+          invoice,
+          message: 'تم اعتماد فاتورة التوريد وتحديث المخزون وتكلفة الأصناف بنجاح',
+        });
       }
 
-      invoice.status = 'approved';
-      invoice.reviewedAt = new Date().toISOString();
-      invoice.reviewedBy = 'super_admin';
-      if (typeof body.adminNotes === 'string') {
-        invoice.adminNotes = body.adminNotes.trim();
+      if (targetStatus === 'rejected') {
+        // Status rejection: Do NOT touch product stock or wholesale costs
+        invoice.status = 'rejected';
+        invoice.reviewedAt = new Date().toISOString();
+        invoice.reviewedBy = 'super_admin';
+        if (typeof body.adminNotes === 'string') {
+          invoice.adminNotes = body.adminNotes.trim();
+        }
+
+        return NextResponse.json({
+          success: true,
+          invoice,
+          message: 'تم رفض فاتورة التوريد دون تعديل المخزون',
+        });
       }
 
-      await saveDbAsync(db);
-
-      return NextResponse.json({
-        success: true,
-        invoice,
-        message: 'تم اعتماد فاتورة التوريد وتحديث المخزون وتكلفة الأصناف بنجاح',
-      });
-    }
-
-    if (targetStatus === 'rejected') {
-      // Status rejection: Do NOT touch product stock or wholesale costs
-      invoice.status = 'rejected';
-      invoice.reviewedAt = new Date().toISOString();
-      invoice.reviewedBy = 'super_admin';
-      if (typeof body.adminNotes === 'string') {
-        invoice.adminNotes = body.adminNotes.trim();
-      }
-
-      await saveDbAsync(db);
-
-      return NextResponse.json({
-        success: true,
-        invoice,
-        message: 'تم رفض فاتورة التوريد دون تعديل المخزون',
-      });
-    }
-
-    return NextResponse.json({ error: 'حالة غير مدعومة' }, { status: 400 });
+      return NextResponse.json({ error: 'حالة غير مدعومة' }, { status: 400 });
+    });
   } catch (err: any) {
     console.error('Error in PATCH /api/supply-invoices:', err);
     return NextResponse.json(

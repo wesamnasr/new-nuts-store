@@ -101,11 +101,14 @@ const CART_STORAGE_KEY = 'new_nuts_cart_v1';
 const VIP_PHONE_STORAGE_KEY = 'hafsa_vip_phone_v1';
 const PIXEL_LOG_STORAGE_KEY = 'hafsa_pixel_events_v1';
 const THEME_OVERRIDE_KEY = 'new_nuts_theme_override_v1';
+const PUBLIC_STORE_CACHE_KEY = 'new_nuts_public_cache_v1';
+const FOCUS_FETCH_COOLDOWN_MS = 15000;
 export const STORE_SYNC_STORAGE_KEY = 'new_nuts_store_sync_v1';
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [storeData, setStoreData] = useState<DatabaseSchema | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const lastFetchTimeRef = React.useRef<number>(0);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpenState] = useState<boolean>(false);
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
@@ -203,14 +206,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const refreshStore = useCallback(async () => {
     try {
+      lastFetchTimeRef.current = Date.now();
       const headers: Record<string, string> = {};
+      let hasStaffToken = false;
       if (typeof window !== 'undefined') {
         try {
           const savedToken =
             sessionStorage.getItem('admin_token') ||
             sessionStorage.getItem('hafsa_pos_token_v1') ||
+            localStorage.getItem('admin_token') ||
             '';
           if (savedToken) {
+            hasStaffToken = true;
             headers['Authorization'] = `Bearer ${savedToken}`;
             headers['x-admin-token'] = savedToken;
           }
@@ -221,6 +228,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         const data: DatabaseSchema = await res.json();
         setStoreData(data);
         setThemeOverrideState(null);
+        if (!hasStaffToken && typeof window !== 'undefined') {
+          try {
+            sessionStorage.setItem(PUBLIC_STORE_CACHE_KEY, JSON.stringify(data));
+          } catch {}
+        }
       }
     } catch (error) {
       console.error('Error loading store data:', error);
@@ -230,6 +242,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    try {
+      const cachedPublic = sessionStorage.getItem(PUBLIC_STORE_CACHE_KEY);
+      if (cachedPublic) {
+        const parsedCache = JSON.parse(cachedPublic) as DatabaseSchema;
+        if (parsedCache?.products?.length) {
+          setStoreData((prev) => prev || parsedCache);
+          setLoading(false);
+        }
+      }
+    } catch {}
     refreshStore();
     try {
       sessionStorage.removeItem(THEME_OVERRIDE_KEY);
@@ -255,10 +277,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
     };
     const handleWindowFocus = () => {
-      refreshStore();
+      if (Date.now() - lastFetchTimeRef.current > FOCUS_FETCH_COOLDOWN_MS) {
+        refreshStore();
+      }
     };
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
+      if (
+        document.visibilityState === 'visible' &&
+        Date.now() - lastFetchTimeRef.current > FOCUS_FETCH_COOLDOWN_MS
+      ) {
         refreshStore();
       }
     };

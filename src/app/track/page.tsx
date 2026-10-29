@@ -318,6 +318,13 @@ function TrackContent() {
                               ☕ البارستا: {item.coffeeBlendSpec.baristaLabel}
                             </span>
                           )}
+                          {item.isCustomMix && item.customBreakdown && item.customBreakdown.length > 0 && (
+                            <span className="block text-[10.5px] text-[#C88A4B] font-bold mt-0.5">
+                              🥜 المكونات: {item.customBreakdown
+                                .map((b) => `${b.productName} (${b.roastOption} - ${b.percentage}% - ${b.weightGrams}جم)`)
+                                .join(' + ')}
+                            </span>
+                          )}
                         </div>
                         <span className="font-black text-[#231710] tabular-nums">
                           {item.unitPrice * item.quantity} ج.م

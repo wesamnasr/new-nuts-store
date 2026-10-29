@@ -1,6 +1,6 @@
 # Test Infrastructure & Verification Specification
 
-**Project**: Arabic RTL Nuts E-Commerce Store ("محمصة الواحة الذهبية")  
+**Project**: محمصة حفصة للبن والمكسرات — فرع بني مزار (`HAFSA ROASTERY`)  
 **Target File**: `scripts/verify.mjs`  
 **Execution Command**: `npm test` (`node scripts/verify.mjs`)  
 **Runtime**: Node.js v24+ (Native ESM, zero external test dependencies)  
@@ -125,7 +125,7 @@ Valid formats must match:
 5. Order tracking confirms receipt of custom breakdown (`customBreakdown` items with grams and roasts).
 
 ### Scenario B: Merchant Admin Fulfillment & Accounting
-1. Admin logs into dashboard with password `admin`.
+1. Admin logs into dashboard with verified admin credentials.
 2. Admin reviews pending order with custom box breakdown.
 3. Admin updates order status to `shipped` via authenticated `PATCH /api/orders`.
 4. Admin renders Arabic printable invoice confirming complete customer, items, and tax breakdown.

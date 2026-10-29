@@ -26,11 +26,31 @@ import {
 } from '@/types/store';
 import { getSafeImageUrl } from '@/lib/defaults';
 import { updateUrlQueryParams, useBrowserUrlSync, buildUrlWithParams } from '@/lib/url-sync';
+import CustomMixBoxStudio from '@/components/boxes/CustomMixBoxStudio';
 
 function BuildBoxStudioContent() {
   const { storeData, addPartitionedBoxToCart, setIsCartOpen } = useStore();
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  const initialSizeRaw = searchParams.get('size');
+  const initialTabParam = searchParams.get('tab') || searchParams.get('mode');
+
+  const [activeMode, setActiveMode] = useState<'mix' | 'partitioned'>(() => {
+    if (initialSizeRaw && ['roqan_4', 'family_6', 'vip_6'].includes(initialSizeRaw)) {
+      return 'partitioned';
+    }
+    if (initialTabParam === 'partitioned') {
+      return 'partitioned';
+    }
+    return 'mix';
+  });
+
+  const customMixInitialCapacity = useMemo(() => {
+    if (initialSizeRaw === '500') return 500;
+    if (initialSizeRaw === '2000') return 2000;
+    return 1000;
+  }, [initialSizeRaw]);
 
   const initialSizeParam = searchParams.get('size') as PartitionedBoxSize | null;
   const [boxSize, setBoxSize] = useState<PartitionedBoxSize>(
@@ -51,6 +71,14 @@ function BuildBoxStudioContent() {
   const [justAdded, setJustAdded] = useState(false);
 
   useBrowserUrlSync((params) => {
+    const tab = params.get('tab') || params.get('mode');
+    const szRaw = params.get('size');
+    if (tab === 'partitioned' || (szRaw && ['roqan_4', 'family_6', 'vip_6'].includes(szRaw))) {
+      setActiveMode('partitioned');
+    } else if (tab === 'mix' || (szRaw && ['500', '1000', '2000'].includes(szRaw))) {
+      setActiveMode('mix');
+    }
+
     const sz = params.get('size') as PartitionedBoxSize | null;
     if (sz && PARTITIONED_BOX_PRESETS[sz]) {
       setBoxSize(sz);
@@ -221,28 +249,68 @@ function BuildBoxStudioContent() {
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-1.5 bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40 px-3 py-1 rounded-full text-xs font-black">
               <Gift className="w-3.5 h-3.5" />
-              <span>استوديو بوكس السهرة</span>
+              <span>استوديو تشكيل العلب والبوكسات المخصصة</span>
             </div>
             <h1 className="font-cairo text-2xl sm:text-3xl font-black text-white">
-              صمّم بوكس السهرة على ذوقك
+              صمّم علبتك وبوكس السهرة على ذوقك
             </h1>
             <p className="text-xs sm:text-sm text-[#F3ECE1]/85">
-              {''}
+              اختر بين تكوين علبة مشكلة بالنسب والأوزان (٥٠٠جم / ١كجم / ٢كجم) أو بوكس السهرة المقسم خانات
             </p>
           </div>
 
-          <button
+          {activeMode === 'partitioned' && (
+            <button
             type="button"
             onClick={handleAutoFillPreset}
             className="bg-[#D4AF37] hover:bg-[#C88A4B] text-[#231710] font-cairo font-black text-xs px-4 py-3 rounded-2xl shadow-lg flex items-center gap-2 self-start md:self-auto cursor-pointer transition"
           >
             <Wand2 className="w-4 h-4" />
             <span>تعبئة تلقائية ذكية (تشكيلة الشيف) ✨</span>
-          </button>
+            </button>
+          )}
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+        {/* Dual-Mode Segmented Control */}
+        <div className="flex p-1.5 bg-[#F3ECE1] rounded-2xl border border-[#D4AF37]/50 max-w-xl mx-auto shadow-xs">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveMode('mix');
+              updateUrlQueryParams({ tab: 'mix', size: '1000' });
+            }}
+            className={`flex-1 py-2.5 px-3 rounded-xl font-cairo font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
+              activeMode === 'mix'
+                ? 'bg-[#231710] text-[#D4AF37] shadow border border-[#D4AF37]'
+                : 'text-[#6E5D4F] hover:text-[#231710]'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>علبة مخصصة بالنسبة (500ج / 1كج / 2كج)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveMode('partitioned');
+              updateUrlQueryParams({ tab: 'partitioned', size: 'roqan_4' });
+            }}
+            className={`flex-1 py-2.5 px-3 rounded-xl font-cairo font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 transition cursor-pointer ${
+              activeMode === 'partitioned'
+                ? 'bg-[#231710] text-[#D4AF37] shadow border border-[#D4AF37]'
+                : 'text-[#6E5D4F] hover:text-[#231710]'
+            }`}
+          >
+            <Gift className="w-4 h-4" />
+            <span>بوكس السهرة المقسم (4 / 6 خانات)</span>
+          </button>
+        </div>
+
+        {activeMode === 'mix' ? (
+          <CustomMixBoxStudio initialCapacity={customMixInitialCapacity} />
+        ) : (
+          <div className="space-y-6">
         {/* Step 1: Select Box Size */}
         <div className="space-y-2.5">
           <h2 className="font-cairo text-base sm:text-lg font-black text-[#231710] flex items-center gap-2">
@@ -552,7 +620,7 @@ function BuildBoxStudioContent() {
                       type="button"
                       className="w-full py-1.5 rounded-xl bg-[#F3ECE1] hover:bg-[#231710] text-[#231710] hover:text-[#D4AF37] text-[10.5px] font-extrabold transition cursor-pointer"
                     >
-                      + ضع في الخانة #{activeSlotIdx + 1}
+                       + ضع في الخانة #{activeSlotIdx + 1}
                     </button>
                   </div>
                 );
@@ -561,8 +629,10 @@ function BuildBoxStudioContent() {
           </div>
         </div>
       </div>
+    )}
     </div>
-  );
+  </div>
+);
 }
 
 export default function BuildBoxPage() {

@@ -32,6 +32,7 @@ import { getSafeImageUrl } from '@/lib/defaults';
 import ProductCard from '@/components/ProductCard';
 import NutritionFactsCard from '@/components/product/NutritionFactsCard';
 import { updateUrlQueryParams, useBrowserUrlSync, buildUrlWithParams } from '@/lib/url-sync';
+import { getResolvedProductWeights } from '@/lib/pricing';
 
 interface ProductDetailClientProps {
   initialProduct: Product;
@@ -72,6 +73,8 @@ export default function ProductDetailClient({
     getSafeImageUrl(initialProduct.image)
   );
 
+  const availableWeights = useMemo(() => getResolvedProductWeights(product), [product]);
+
   // Variant selector states & Sub-section state synced with URL
   const [selectedWeight, setSelectedWeight] = useState<WeightVariant>(
     initialProduct.weights[1] || initialProduct.weights[0]
@@ -92,7 +95,7 @@ export default function ProductDetailClient({
   useBrowserUrlSync((params) => {
     const wParam = params.get('weight');
     if (wParam) {
-      const matchedW = product.weights.find(
+      const matchedW = availableWeights.find(
         (w) => w.id === wParam || String(w.weightGrams) === wParam || String(w.grams) === wParam
       );
       if (matchedW) setSelectedWeight(matchedW);
@@ -248,7 +251,7 @@ export default function ProductDetailClient({
         )
       : null;
 
-  const baseWeight = product.weights[0];
+  const baseWeight = availableWeights[0] || product.weights[0];
   const bulkSavingsEgp =
     baseWeight && selectedWeight && selectedWeight.weightGrams > baseWeight.weightGrams
       ? Math.max(
@@ -265,7 +268,9 @@ export default function ProductDetailClient({
       ? 'يكفي ٢-٣ أشخاص (حجم شخصي / تجريبي)'
       : selectedWeight.weightGrams <= 600
       ? 'حجم عائلي مثالي (٤-٦ أشخاص) • الأكثر طلباً'
-      : 'حجم ضيافة وتوفير (٨-١٢ شخص)';
+      : selectedWeight.weightGrams <= 1200
+      ? 'حجم ضيافة وتوفير (٨-١٢ شخص)'
+      : 'حجم توفير عائلي ضخم (٢ كجم) • مناسب للحفلات والولائم';
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-5">
@@ -416,10 +421,10 @@ export default function ProductDetailClient({
           {/* Interactive Weight Variant Selector */}
           <div className="space-y-1.5">
             <label className="text-[10.5px] font-extrabold text-brand-900 block">
-              1. اختر الوزن المطلوب (ثمن • ربع • نصف • كيلو):
+              1. اختر الوزن المطلوب (ثمن • ربع • نصف • كيلو • ٢ كجم):
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-              {product.weights.map((w) => {
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-1.5">
+              {availableWeights.map((w) => {
                 const isSelected = selectedWeight.id === w.id;
                 return (
                   <button

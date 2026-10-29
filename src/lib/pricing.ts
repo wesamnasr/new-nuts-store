@@ -33,7 +33,8 @@ export interface CustomBoxCalculationResult {
  */
 export function generateWeightsFromKiloPrice(
   pricePerKg: number,
-  originalPricePerKg?: number
+  originalPricePerKg?: number,
+  include2000g: boolean = false
 ): WeightVariant[] {
   const safeKilo = Math.max(0, Number(pricePerKg) || 0);
   const safeOrig =
@@ -41,7 +42,7 @@ export function generateWeightsFromKiloPrice(
       ? Number(originalPricePerKg)
       : undefined;
 
-  return [
+  const variants: WeightVariant[] = [
     {
       id: 'w-125',
       label: 'ثمن 125 جم',
@@ -75,6 +76,54 @@ export function generateWeightsFromKiloPrice(
       originalPrice: safeOrig ? Math.round(safeOrig) : undefined,
     },
   ];
+
+  if (include2000g) {
+    variants.push({
+      id: 'w-2000',
+      label: '2 كجم (2000 جم)',
+      weightGrams: 2000,
+      grams: 2000,
+      price: Math.round(safeKilo * 2),
+      originalPrice: safeOrig ? Math.round(safeOrig * 2) : undefined,
+    });
+  }
+
+  return variants;
+}
+
+/**
+ * Returns all 5 weight variants (including 2000g / 2kg bulk variant) for a product.
+ */
+export function generate5WeightsFromKiloPrice(
+  pricePerKg: number,
+  originalPricePerKg?: number
+): WeightVariant[] {
+  return generateWeightsFromKiloPrice(pricePerKg, originalPricePerKg, true);
+}
+
+/**
+ * Generates a standalone 2000g (2kg) weight variant with optional bulk discount.
+ */
+export function generate2000gWeightVariant(
+  pricePerKg: number,
+  originalPricePerKg?: number,
+  discountPercent: number = 0
+): WeightVariant {
+  const safeKilo = Math.max(0, Number(pricePerKg) || 0);
+  const safeOrig =
+    originalPricePerKg && originalPricePerKg > safeKilo
+      ? Number(originalPricePerKg)
+      : undefined;
+  const factor = 2 * (1 - discountPercent / 100);
+
+  return {
+    id: 'w-2000',
+    label: '2 كجم (2000 جم)',
+    weightGrams: 2000,
+    grams: 2000,
+    price: Math.round(safeKilo * factor),
+    originalPrice: safeOrig ? Math.round(safeOrig * 2) : undefined,
+  };
 }
 
 /**
@@ -923,6 +972,7 @@ export function calculatePosItemByGrams(
   else if (safeGrams === 250) weightLabel = 'ربع كيلو (250 جم)';
   else if (safeGrams === 500) weightLabel = 'نصف كيلو (500 جم)';
   else if (safeGrams === 1000) weightLabel = 'كيلو كامل (1000 جم)';
+  else if (safeGrams === 2000) weightLabel = '2 كجم (2000 جم)';
 
   const plu = getProductBarcode(product, productIndex).slice(0, 6).padEnd(6, '0');
   const gramsStr = String(Math.min(99999, safeGrams)).padStart(5, '0');
@@ -1036,27 +1086,41 @@ export function parseScaleBarcode(
  * Shared helper to resolve the 4 standard weight variants (125g, 250g, 500g, 1000g) for any product.
  * Eliminates duplicate weight fallback generation across ProductCard, ProductModal, ProductDetail, and POS.
  */
-export function getResolvedProductWeights(product: Product): WeightVariant[] {
+export function getResolvedProductWeights(
+  product: Product,
+  include2000g: boolean = false
+): WeightVariant[] {
+  let list: WeightVariant[];
   if (product.weights && product.weights.length >= 4) {
-    return product.weights;
-  }
-  const kiloWeight = product.weights?.find((w) => (w.grams || w.weightGrams) === 1000);
-  const fallbackKiloPrice =
-    product.pricePerKg ||
-    kiloWeight?.price ||
-    (product.weights?.[0]?.price ? product.weights[0].price * 4 : 400);
-  const generated = generateWeightsFromKiloPrice(
-    fallbackKiloPrice,
-    kiloWeight?.originalPrice
-  );
-  return generated.map((gw) => {
-    const existing = product.weights?.find(
-      (ew) => (ew.grams || ew.weightGrams) === gw.weightGrams
+    list = [...product.weights];
+  } else {
+    const kiloWeight = product.weights?.find((w) => (w.grams || w.weightGrams) === 1000);
+    const fallbackKiloPrice =
+      product.pricePerKg ||
+      kiloWeight?.price ||
+      (product.weights?.[0]?.price ? product.weights[0].price * 4 : 400);
+    const generated = generateWeightsFromKiloPrice(
+      fallbackKiloPrice,
+      kiloWeight?.originalPrice
     );
-    return existing
-      ? { ...gw, ...existing, grams: gw.weightGrams, weightGrams: gw.weightGrams }
-      : gw;
-  });
+    list = generated.map((gw) => {
+      const existing = product.weights?.find(
+        (ew) => (ew.grams || ew.weightGrams) === gw.weightGrams
+      );
+      return existing
+        ? { ...gw, ...existing, grams: gw.weightGrams, weightGrams: gw.weightGrams }
+        : gw;
+    });
+  }
+
+  const shouldAdd2000g = include2000g || (product as any).supports2kg === true;
+  if (shouldAdd2000g && !list.some((w) => (w.grams || w.weightGrams) === 2000)) {
+    const kiloWeight = list.find((w) => (w.grams || w.weightGrams) === 1000);
+    const kiloPrice = product.pricePerKg || kiloWeight?.price || 400;
+    list.push(generate2000gWeightVariant(kiloPrice, kiloWeight?.originalPrice));
+  }
+
+  return list;
 }
 
 /**
@@ -1068,6 +1132,7 @@ export function getShortWeightLabel(w: WeightVariant): string {
   if (g === 250) return 'ربع 250ج';
   if (g === 500) return 'نصف 500ج';
   if (g === 1000) return 'كيلو 1000ج';
+  if (g === 2000) return '2كجم 2000ج';
   return w.label;
 }
 

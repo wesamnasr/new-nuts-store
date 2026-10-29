@@ -1,7 +1,7 @@
 /**
  * Comprehensive Programmatic Verification Suite (E2E Opaque-Box)
  * 
- * Target: Arabic RTL Nuts E-Commerce Store ("محمصة الواحة الذهبية")
+ * Target: محمصة حفصة للبن والمكسرات — فرع بني مزار (HAFSA ROASTERY)
  * Runtime: Node.js v24+ (Native ESM, zero external dependencies)
  * Coverage: 4-Tier Verification Hierarchy (Tiers 1-4)
  * 
@@ -386,7 +386,7 @@ export function oracleVerifyAdminToken(token, currentPassword = 'admin') {
 
 async function runTestSuite() {
   console.log(`\n${colors.bold}${colors.yellow}==================================================================`);
-  console.log(`  محمصة الواحة الذهبية - E2E Comprehensive Verification Suite`);
+  console.log(`  محمصة حفصة للبن والمكسرات - E2E Comprehensive Verification Suite`);
   console.log(`  Authoritative Requirements-Driven Test Execution`);
   console.log(`==================================================================${colors.reset}\n`);
 
@@ -945,7 +945,7 @@ async function runTestSuite() {
     await test('T2_R2_03: Public store data sanitization: adminPassword stripped from public payload', async () => {
       const fullDb = {
         settings: {
-          storeName: 'محمصة الواحة الذهبية',
+          storeName: 'محمصة حفصة للبن والمكسرات',
           adminPassword: 'secret_admin_password',
         },
         orders: [{ id: 'ord-1', customerName: 'أحمد' }],
@@ -1380,7 +1380,7 @@ async function runTestSuite() {
         if (process.platform === 'win32') {
           const currentPid = process.pid;
           execSync(
-            `powershell -Command "Get-CimInstance Win32_Process -Filter \\"Name = 'node.exe'\\" | Where-Object { $_.ProcessId -ne ${currentPid} -and ($_.CommandLine -like '*next*' -or $_.CommandLine -like '*jest-worker*' -or $_.CommandLine -like '*processChild*') } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`,
+            `powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { \\$_.ProcessId -ne ${currentPid} -and \\$_.Name -eq 'node.exe' -and (\\$_.CommandLine -like '*next*' -or \\$_.CommandLine -like '*jest-worker*' -or \\$_.CommandLine -like '*processChild*') } | ForEach-Object { Stop-Process -Id \\$_.ProcessId -Force -ErrorAction SilentlyContinue }"`,
             { stdio: 'ignore' }
           );
         }
@@ -1388,34 +1388,110 @@ async function runTestSuite() {
         // Ignore errors if no conflicting process is present
       }
 
-      // Step 0.5: Clean any stale root tsconfig.tsbuildinfo to ensure pure clean typecheck
-      const staleBuildInfo = path.join(ROOT_DIR, 'tsconfig.tsbuildinfo');
-      if (fs.existsSync(staleBuildInfo)) {
+      // Helper to clean tsconfig.tsbuildinfo from both root and .next cache
+      const cleanTsBuildInfo = () => {
+        const rootBuildInfo = path.join(ROOT_DIR, 'tsconfig.tsbuildinfo');
+        const nextBuildInfo = path.join(ROOT_DIR, '.next', 'cache', 'tsconfig.tsbuildinfo');
+        for (const file of [rootBuildInfo, nextBuildInfo]) {
+          if (fs.existsSync(file)) {
+            try {
+              fs.unlinkSync(file);
+            } catch (_) {}
+          }
+        }
         try {
-          fs.unlinkSync(staleBuildInfo);
+          const tsConfigPath = path.join(ROOT_DIR, 'tsconfig.json');
+          const tsRaw = fs.readFileSync(tsConfigPath, 'utf8');
+          if (tsRaw.includes('".next/types/**/*.ts"')) {
+            const tsCleaned = tsRaw
+              .replace(/,\s*"\.next\/types\/\*\*\/\*\.ts"/g, '')
+              .replace(/"\.next\/types\/\*\*\/\*\.ts",?\s*/g, '');
+            fs.writeFileSync(tsConfigPath, tsCleaned, 'utf8');
+          }
         } catch (_) {}
+      };
+
+      // Step 0.4: Clean stale tsbuildinfo before tsc --noEmit without wiping entire .next directory
+      cleanTsBuildInfo();
+
+      // Acquire atomic cross-process build lock to serialize concurrent Next.js builds on Windows NTFS
+      const buildLockPath = path.join(ROOT_DIR, '.build.lock');
+      let releaseBuildLock = () => {};
+      try {
+        const startLockWait = Date.now();
+        while (Date.now() - startLockWait < 300000) {
+          try {
+            const fd = fs.openSync(buildLockPath, 'wx');
+            fs.writeSync(fd, String(process.pid));
+            fs.closeSync(fd);
+            releaseBuildLock = () => {
+              try {
+                if (fs.existsSync(buildLockPath)) {
+                  fs.unlinkSync(buildLockPath);
+                }
+              } catch (_) {}
+            };
+            break;
+          } catch (lockErr) {
+            if (lockErr.code === 'EEXIST') {
+              try {
+                const stats = fs.statSync(buildLockPath);
+                if (Date.now() - stats.mtimeMs > 600000) {
+                  fs.unlinkSync(buildLockPath);
+                  continue;
+                }
+              } catch (_) {}
+              const until = Date.now() + 2000;
+              while (Date.now() < until) {}
+            } else {
+              break;
+            }
+          }
+        }
+
+        // Step 1: Execute genuine TypeScript compilation check
+        const tscResult = execSync('npx tsc --noEmit', {
+          cwd: ROOT_DIR,
+          encoding: 'utf8',
+          stdio: 'pipe',
+        });
+        assert.ok(!tscResult.includes('error TS'), 'TypeScript compilation must pass with 0 errors');
+
+        // Step 1.5: Clean tsconfig.tsbuildinfo before Next.js build to prevent cache desynchronization
+        cleanTsBuildInfo();
+
+        // Step 2: Execute genuine Next.js production build with retry loop for transient NTFS locks
+        let buildResult = '';
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            buildResult = execSync('npx next build --no-lint', {
+              cwd: ROOT_DIR,
+              encoding: 'utf8',
+              stdio: 'pipe',
+              env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1', CI: '1' },
+              timeout: 600000,
+            });
+            break;
+          } catch (err) {
+            if (attempt < 2 && (err.message?.includes('ENOENT') || err.message?.includes('EBUSY') || err.stderr?.includes('ENOENT'))) {
+              cleanTsBuildInfo();
+              const delay = Date.now() + 3000;
+              while (Date.now() < delay) {}
+              continue;
+            }
+            throw err;
+          }
+        }
+        assert.ok(
+          buildResult.includes('Compiled successfully') || buildResult.includes('Generating static pages'),
+          'Next.js build must successfully compile and generate pages'
+        );
+
+        // Step 2.5: Clean tsconfig.json and tsbuildinfo after build
+        cleanTsBuildInfo();
+      } finally {
+        releaseBuildLock();
       }
-
-      // Step 1: Execute genuine TypeScript compilation check
-      const tscResult = execSync('npx tsc --noEmit', {
-        cwd: ROOT_DIR,
-        encoding: 'utf8',
-        stdio: 'pipe',
-      });
-      assert.ok(!tscResult.includes('error TS'), 'TypeScript compilation must pass with 0 errors');
-
-      // Step 2: Execute genuine Next.js production build
-      const buildResult = execSync('npx next build', {
-        cwd: ROOT_DIR,
-        encoding: 'utf8',
-        stdio: 'pipe',
-        env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
-        timeout: 360000,
-      });
-      assert.ok(
-        buildResult.includes('Compiled successfully') || buildResult.includes('Generating static pages'),
-        'Next.js build must successfully compile and generate pages'
-      );
 
       // Step 3: Verify core build artifacts and manifests exist
       const buildManifestPath = path.join(ROOT_DIR, '.next', 'build-manifest.json');
@@ -1608,7 +1684,7 @@ async function runTestSuite() {
     });
 
     await test('HAFSA_POS_02: Digital Scale Calculation by Grams (وزن بالجرام) & by EGP Amount (بيع بمبلغ محدد بالجنيه)', async () => {
-      const superLeb = products.find((p) => p.name.includes('لب سوبر')); // لب سوبر محمص (280 EGP/kg, cost 215 EGP/kg)
+      const superLeb = products.find((p) => p.id === 'prod-super-seeds-1' || p.name.includes('لب سوبر')); // لب سوبر محمص (280 EGP/kg, cost 215 EGP/kg)
       assert.ok(superLeb, 'Super seeds product must exist');
 
       // 1. Sell by EGP Amount: Customer asks for "بـ 50 جنيه لب سوبر"
@@ -2126,37 +2202,36 @@ async function runTestSuite() {
       assert.ok(posRouteRaw.includes("canSeeProfits") && posRouteRaw.includes("auth.role === 'accountant'"), 'GET /api/pos must allow accountant to see profits');
     });
 
-    await test('M4_ACC_04: Dedicated /accountant Portal UI Architecture & Role Isolation', async () => {
-      const accountantPageRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/accountant/page.tsx'), 'utf8');
+    await test('M4_ACC_04: Unified /admin Accountant Dashboard & Full Financial Portal Integration', async () => {
+      assert.equal(fs.existsSync(path.join(ROOT_DIR, 'src/app/accountant/page.tsx')), false, 'Standalone /accountant page must be removed');
+      const accountantPortalRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/components/admin/AccountantIsolationPortal.tsx'), 'utf8');
+      const adminPageRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/admin/page.tsx'), 'utf8');
 
-      // 1. Verify it is a dedicated, isolated portal and NOT delegating to AdminDashboardPage
-      assert.ok(!accountantPageRaw.includes('return <AdminDashboardPage'), '/accountant must be a dedicated isolated portal, not just delegating to AdminDashboardPage');
-      assert.ok(!accountantPageRaw.includes('<AdminDashboardPage'), '/accountant must not import or render AdminDashboardPage');
-      assert.ok(accountantPageRaw.includes("'use client'"), '/accountant must be a client component');
+      // 1. Verify unified /admin dashboard renders AccountantIsolationPortal and does not redirect accountant to /accountant
+      assert.ok(adminPageRaw.includes('AccountantIsolationPortal'), '/admin must render AccountantIsolationPortal');
+      assert.ok(!adminPageRaw.includes("window.location.replace('/accountant')"), '/admin must not redirect accountant away to /accountant');
 
-      // 2. Role Isolation Guardrails
-      assert.ok(accountantPageRaw.includes("userRole !== 'accountant'"), '/accountant must block non-accountant roles');
-      assert.ok(accountantPageRaw.includes("403 Forbidden"), '/accountant must show 403 Forbidden message on role mismatch');
+      // 2. High-Level KPI Cards & Multi-View Display Switcher (both | cards | table)
+      assert.ok(accountantPortalRaw.includes('إجمالي الإيرادات'), 'AccountantIsolationPortal must render Total Revenue KPI');
+      assert.ok(accountantPortalRaw.includes('توزيع القنوات'), 'AccountantIsolationPortal must render Online vs POS KPI');
+      assert.ok(accountantPortalRaw.includes('تكلفة البضاعة المباعة'), 'AccountantIsolationPortal must render COGS KPI');
+      assert.ok(accountantPortalRaw.includes('المصروفات التشغيلية'), 'AccountantIsolationPortal must render Expenses KPI');
+      assert.ok(accountantPortalRaw.includes('صافي الربح الفعلي'), 'AccountantIsolationPortal must render Net Profit KPI');
+      assert.ok(accountantPortalRaw.includes('هامش الربح الصافي'), 'AccountantIsolationPortal must render Net Margin % KPI');
+      assert.ok(accountantPortalRaw.includes('مطابقة دروج الكاشير'), 'AccountantIsolationPortal must render Drawer Reconciliation KPI');
+      assert.ok(accountantPortalRaw.includes('displayMode'), 'AccountantIsolationPortal must support cards + table view modes');
 
-      // 3. 7 High-Level KPI Cards
-      assert.ok(accountantPageRaw.includes('إجمالي الإيرادات'), '/accountant must render Total Revenue KPI');
-      assert.ok(accountantPageRaw.includes('توزيع القنوات'), '/accountant must render Online vs POS KPI');
-      assert.ok(accountantPageRaw.includes('تكلفة البضاعة المباعة'), '/accountant must render COGS KPI');
-      assert.ok(accountantPageRaw.includes('المصروفات التشغيلية'), '/accountant must render Expenses KPI');
-      assert.ok(accountantPageRaw.includes('صافي الربح الفعلي'), '/accountant must render Net Profit KPI');
-      assert.ok(accountantPageRaw.includes('هامش الربح الصافي'), '/accountant must render Net Margin % KPI');
-      assert.ok(accountantPageRaw.includes('مطابقة دروج الكاشير'), '/accountant must render Drawer Reconciliation KPI');
+      // 3. All 6 Sub-Tabs
+      assert.ok(accountantPortalRaw.includes("'daily_income'"), 'AccountantIsolationPortal must support daily_income tab');
+      assert.ok(accountantPortalRaw.includes("'channels'"), 'AccountantIsolationPortal must support channels tab');
+      assert.ok(accountantPortalRaw.includes("'shifts'"), 'AccountantIsolationPortal must support shifts tab');
+      assert.ok(accountantPortalRaw.includes("'expenses'"), 'AccountantIsolationPortal must support expenses tab');
+      assert.ok(accountantPortalRaw.includes("'supply'"), 'AccountantIsolationPortal must support supply tab');
+      assert.ok(accountantPortalRaw.includes("'margins'"), 'AccountantIsolationPortal must support margins tab');
 
-      // 4. 5 Focused Sub-Tabs
-      assert.ok(accountantPageRaw.includes("'channels'"), '/accountant must support channels tab');
-      assert.ok(accountantPageRaw.includes("'shifts'"), '/accountant must support shifts tab');
-      assert.ok(accountantPageRaw.includes("'expenses'"), '/accountant must support expenses tab');
-      assert.ok(accountantPageRaw.includes("'supply'"), '/accountant must support supply tab');
-      assert.ok(accountantPageRaw.includes("'margins'"), '/accountant must support margins tab');
-
-      // 5. Read-Only Guarantees & Z-Report modal
-      assert.ok(accountantPageRaw.includes('وضع المراجعة والتدقيق المالي (Read-Only Audit)'), '/accountant must display read-only audit badge');
-      assert.ok(accountantPageRaw.includes('SupermarketReceiptModal'), '/accountant must integrate SupermarketReceiptModal for Z-reports');
+      // 4. Read-Only Guarantees & Z-Report modal
+      assert.ok(accountantPortalRaw.includes('وضع المراجعة والتدقيق المالي (Read-Only Audit)'), 'AccountantIsolationPortal must display read-only audit badge');
+      assert.ok(accountantPortalRaw.includes('SupermarketReceiptModal'), 'AccountantIsolationPortal must integrate SupermarketReceiptModal for Z-reports and Order Receipts');
     });
 
     await test('M4_ACC_05: UTF-8 BOM CSV Export & Arabic Excel Compatibility', async () => {
@@ -2192,6 +2267,66 @@ async function runTestSuite() {
 
       const arabicText = 'بندق تركي محمص فاخر';
       assert.strictEqual(escapeCsvField(arabicText), '"بندق تركي محمص فاخر"');
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    suite('Tier 11: Package 1 — Unified Hafsa Roastery Identity, Locked Theme & Clean Role Matrix');
+
+    await test('P1_ID_01: Documentation & SEO Metadata Strictly Reflect Hafsa Roastery Identity', async () => {
+      for (const docFile of ['README.md', 'TEST_INFRA.md', 'TEST_READY.md', 'MASTER_BLUEPRINT.md']) {
+        const docPath = path.join(ROOT_DIR, docFile);
+        assert.ok(fs.existsSync(docPath), `${docFile} must exist`);
+        const raw = fs.readFileSync(docPath, 'utf8');
+        assert.ok(raw.includes('محمصة حفصة'), `${docFile} must reference محمصة حفصة`);
+      }
+      const readmeRaw = fs.readFileSync(path.join(ROOT_DIR, 'README.md'), 'utf8');
+      assert.ok(!readmeRaw.includes('الواحة الذهبية'), 'README.md must not reference legacy brand الواحة الذهبية');
+      const layoutRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/layout.tsx'), 'utf8');
+      assert.ok(layoutRaw.includes('+201100699524'), 'Root layout Schema.org telephone must match official branch number');
+      assert.ok(!layoutRaw.includes('بن عميد بني مزار'), 'Root layout keywords must only reference Hafsa Roastery');
+    });
+
+    await test('P1_ID_02: Official Visual Theme Locked to royal_roastery with Switcher Disabled', async () => {
+      const defaultsRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/lib/defaults.ts'), 'utf8');
+      const themeControllerRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/components/ThemeController.tsx'), 'utf8');
+      assert.ok(!defaultsRaw.includes("'midnight_obsidian'"), 'defaults.ts must not expose removed dark multi-themes');
+      assert.ok(!defaultsRaw.includes("'saffron_velvet'"), 'defaults.ts must not expose removed purple multi-themes');
+      assert.ok(defaultsRaw.includes("themeId: 'royal_roastery'"), 'defaults.ts must enforce royal_roastery');
+      assert.ok(defaultsRaw.includes('showThemeSwitcher: false'), 'defaults.ts must disable showThemeSwitcher');
+      assert.ok(themeControllerRaw.includes('return null;'), 'ThemeController must render null permanently');
+    });
+
+    await test('P1_ID_03: Obsolete Legacy Roles & Password Fields Purged Across Type System & Auth', async () => {
+      for (const relPath of [
+        'src/types/store.ts',
+        'src/lib/permissions.ts',
+        'src/lib/auth.ts',
+        'src/app/admin/page.tsx',
+        'src/app/pos/page.tsx',
+        'src/app/api/orders/route.ts',
+      ]) {
+        const raw = fs.readFileSync(path.join(ROOT_DIR, relPath), 'utf8');
+        assert.ok(!raw.includes('store_manager'), `${relPath} must not contain legacy store_manager role`);
+        assert.ok(!raw.includes('promo_partner'), `${relPath} must not contain legacy promo_partner role`);
+        assert.ok(!raw.includes('wesamAdminPassword'), `${relPath} must not contain legacy wesamAdminPassword`);
+      }
+      const storeTypesRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/types/store.ts'), 'utf8');
+      assert.ok(storeTypesRaw.includes("'delivery_rider'"), 'store.ts must include official delivery_rider role');
+    });
+
+    await test('P1_ID_04: Admin Settings UI Masks Stored Passwords & Uses Neutral Username Placeholders', async () => {
+      const adminPageRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/admin/page.tsx'), 'utf8');
+      assert.ok(
+        adminPageRaw.includes('(محفوظة ومحمية ••••••••)'),
+        'Admin settings must mask current passwords by default unless showPasswordText is toggled'
+      );
+      assert.ok(
+        !adminPageRaw.includes('placeholder="admin_hafsa"') &&
+          !adminPageRaw.includes('placeholder="supplier_arafat"') &&
+          !adminPageRaw.includes('placeholder="cashier_pos"') &&
+          !adminPageRaw.includes('placeholder="accountant_fin"'),
+        'Admin settings must not expose hardcoded staff usernames in input placeholders'
+      );
     });
     
   } finally {

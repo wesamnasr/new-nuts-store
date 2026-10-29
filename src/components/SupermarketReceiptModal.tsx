@@ -424,6 +424,13 @@ export default function SupermarketReceiptModal({
                                   {it.coffeeBlendSpec.baristaLabel}
                                 </div>
                               )}
+                              {it.isCustomMix && it.customBreakdown && it.customBreakdown.length > 0 && (
+                                <div className="sr-sub">
+                                  {it.customBreakdown
+                                    .map((b) => `${b.productName} (${b.roastOption} • ${b.percentage}% • ${b.weightGrams}جم)`)
+                                    .join(' + ')}
+                                </div>
+                              )}
                             </td>
                             <td style={{ textAlign: 'center' }} className="sr-bold">
                               {it.quantity}

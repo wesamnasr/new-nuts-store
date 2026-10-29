@@ -1,6 +1,25 @@
-import assert from 'node:assert/strict';
-import { NextRequest } from 'next/server';
-import {
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+// Check if running under tsx; if running under pure node, delegate to tsx
+const isRunningUnderTsx = Boolean(
+  process.env.TSX_EXEC_ACTIVE ||
+  process.execArgv.some((arg) => arg.includes('tsx'))
+);
+
+if (!isRunningUnderTsx) {
+  const targetScript = '"' + fileURLToPath(import.meta.url) + '"';
+  const result = spawnSync('npx', ['tsx', targetScript, ...process.argv.slice(2)], {
+    stdio: 'inherit',
+    env: { ...process.env, TSX_EXEC_ACTIVE: '1' },
+    shell: true,
+  });
+  process.exit(result.status ?? 0);
+}
+
+const { default: assert } = await import('node:assert/strict');
+const { NextRequest } = await import('next/server');
+const {
   generateAdminToken,
   verifyAdminToken,
   sanitizePublicStoreData,
@@ -8,12 +27,12 @@ import {
   hasRolePermission,
   ALL_DASHBOARD_PERMISSIONS,
   DEFAULT_ROLE_PERMISSIONS,
-} from '../src/lib/auth';
-import { getDbAsync } from '../src/lib/db';
-import { POST as loginPOST, GET as loginGET } from '../src/app/api/admin/login/route';
-import { GET as storeGET, PUT as storePUT } from '../src/app/api/store/route';
-import { GET as ordersGET, DELETE as ordersDELETE } from '../src/app/api/orders/route';
-import { GET as posGET } from '../src/app/api/pos/route';
+} = await import('../src/lib/auth.ts');
+const { getDbAsync } = await import('../src/lib/db.ts');
+const { POST: loginPOST, GET: loginGET } = await import('../src/app/api/admin/login/route.ts');
+const { GET: storeGET, PUT: storePUT } = await import('../src/app/api/store/route.ts');
+const { GET: ordersGET, DELETE: ordersDELETE } = await import('../src/app/api/orders/route.ts');
+const { GET: posGET } = await import('../src/app/api/pos/route.ts');
 
 async function runRoleIsolationChecks() {
   console.log('=== Verifying 4-Staff-Role Isolation Architecture ===');
@@ -250,7 +269,7 @@ async function runRoleIsolationChecks() {
   );
   assert.deepEqual(
     DEFAULT_ROLE_PERMISSIONS.accountant,
-    ['accounting_portal', 'orders', 'supply_invoices'],
+    ['overview', 'accounting_portal', 'orders', 'supply_invoices', 'products', 'operations', 'coupons'],
     'Default accountant permissions match expected tabs'
   );
   assert.deepEqual(

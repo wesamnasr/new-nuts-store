@@ -2573,7 +2573,7 @@
     "cashierPassword": "Cash#Pos2026",
     "cashierUsername": "cashier_pos",
     "instapayAddress": "hafsa.roastery@instapay",
-    "managerPassword": "manager",
+
     "announcementText": "🔥 تحميص يومي طازج • 5% كاش باك VIP • توصيل البندر خلال 30 دقيقة 🛵",
     "supplierPassword": "Sup#Arafat2026",
     "supplierUsername": "supplier_arafat",
@@ -2581,8 +2581,8 @@
     "accountantUsername": "accountant_fin",
     "vipCashbackPercent": 5,
     "vodafoneCashNumber": "01100699524",
-    "wesamAdminPassword": "wesam",
-    "promoPartnerPassword": "promo",
+
+
     "freeShippingThreshold": 300,
     "villageMinOrderAmount": 200,
     "vipMinOrderForCashback": 150

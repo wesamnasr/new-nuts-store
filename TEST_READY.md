@@ -2,7 +2,7 @@
 
 **Status**: READY FOR MILESTONE AUDITING & CI VERIFICATION  
 **Author**: E2E Test Suite Designer (`test_writer_e2e`)  
-**Target Project**: Arabic RTL Nuts E-Commerce Store ("محمصة الواحة الذهبية")  
+**Target Project**: محمصة حفصة للبن والمكسرات — فرع بني مزار (`HAFSA ROASTERY`)  
 **Execution Command**: `npm test` or `node scripts/verify.mjs`  
 **Execution Time**: ~0.4s  
 **Runtime Compatibility**: Node.js v24+ (Native ESM, zero external testing dependencies)  

@@ -799,6 +799,16 @@ export default function CheckoutPage() {
                           ☕ {item.coffeeBlendSpec.baristaLabel}
                         </div>
                       )}
+                      {item.isCustomMix && item.customBreakdown && item.customBreakdown.length > 0 && (
+                        <div className="text-[9.5px] text-[#C88A4B] font-bold mt-0.5 space-y-0.5">
+                          <span className="block">🥜 مكونات العلبة المشكلة:</span>
+                          <div className="text-[9px] text-[#6E5D4F]">
+                            {item.customBreakdown
+                              .map((b) => `${b.productName} (${b.roastOption} • ${b.percentage}% • ${b.weightGrams}جم)`)
+                              .join(' + ')}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <span className="font-black text-[#231710] shrink-0 tabular-nums">
                       {item.unitPrice * item.quantity} ج.م

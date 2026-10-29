@@ -18,6 +18,8 @@ declare global {
   var __newNutsMemoryDb: DatabaseSchema | undefined;
   // eslint-disable-next-line no-var
   var __newNutsTableReady: boolean | undefined;
+  // eslint-disable-next-line no-var
+  var __newNutsWriteMutex: Promise<void> | undefined;
 }
 
 function getPostgresUrl(): string | undefined {
@@ -99,6 +101,9 @@ function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
     }
     delete (parsed.settings as any).customerUsername;
     delete (parsed.settings as any).customerPassword;
+    delete (parsed.settings as any).managerPassword;
+    delete (parsed.settings as any).promoPartnerPassword;
+    delete (parsed.settings as any).wesamAdminPassword;
     if (typeof parsed.settings.vipCashbackPercent !== 'number') {
       parsed.settings.vipCashbackPercent = 5;
     }
@@ -124,6 +129,20 @@ function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
   if (!Array.isArray(parsed.promotions) || parsed.promotions.length === 0) {
     parsed.promotions = structuredClone(initialDatabase.promotions || []);
   }
+  for (const promo of parsed.promotions) {
+    if (promo.active !== false && promo.endsAt && Date.parse(promo.endsAt) < Date.now()) {
+      promo.endsAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    }
+  }
+  if (!Array.isArray(parsed.flashPromotions) || parsed.flashPromotions.length === 0) {
+    parsed.flashPromotions = structuredClone(parsed.promotions);
+  } else {
+    for (const promo of parsed.flashPromotions) {
+      if (promo.active !== false && promo.endsAt && Date.parse(promo.endsAt) < Date.now()) {
+        promo.endsAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      }
+    }
+  }
   if (!Array.isArray(parsed.posShifts) || parsed.posShifts.length === 0) {
     parsed.posShifts = structuredClone(initialDatabase.posShifts || []);
   }
@@ -138,7 +157,17 @@ function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
     for (const order of parsed.orders) {
       if ((order.status as string) === 'preparing') {
         order.status = 'roasting_packing';
-      } else if (!order.status || !['pending', 'confirmed', 'roasting_packing', 'shipped', 'delivered', 'cancelled'].includes(order.status)) {
+      } else if (
+        !order.status ||
+        ![
+          'pending',
+          'confirmed',
+          'roasting_packing',
+          'shipped',
+          'delivered',
+          'cancelled',
+        ].includes(order.status)
+      ) {
         order.status = 'pending';
       }
       if (Array.isArray(order.items)) {
@@ -344,7 +373,7 @@ export async function getDbAsync(): Promise<DatabaseSchema> {
   }
 }
 
-export async function saveDbAsync(data: DatabaseSchema): Promise<void> {
+async function persistDbUnlocked(data: DatabaseSchema): Promise<void> {
   const normalized = normalizeDatabase(data);
   saveDb(normalized);
 
@@ -367,4 +396,40 @@ export async function saveDbAsync(data: DatabaseSchema): Promise<void> {
   } catch (err) {
     console.error('Failed to persist store state to Neon Postgres:', err);
   }
+}
+
+export async function saveDbAsync(data: DatabaseSchema): Promise<void> {
+  const previousLock = globalThis.__newNutsWriteMutex || Promise.resolve();
+  const nextWrite = previousLock.catch(() => {}).then(async () => {
+    await persistDbUnlocked(data);
+  });
+  globalThis.__newNutsWriteMutex = nextWrite;
+  await nextWrite;
+}
+
+export async function withDbTransaction<T>(
+  mutator: (db: DatabaseSchema) => Promise<T> | T
+): Promise<T> {
+  const previousLock = globalThis.__newNutsWriteMutex || Promise.resolve();
+  let result!: T;
+  const txPromise = previousLock.catch(() => {}).then(async () => {
+    const db = await getDbAsync();
+    try {
+      result = await mutator(db);
+      const isHttpError =
+        (typeof Response !== 'undefined' && result instanceof Response && result.status >= 400) ||
+        (result && typeof result === 'object' && typeof (result as any).status === 'number' && (result as any).status >= 400);
+      if (!isHttpError) {
+        await persistDbUnlocked(db);
+      } else {
+        globalThis.__newNutsMemoryDb = undefined;
+      }
+    } catch (err) {
+      globalThis.__newNutsMemoryDb = undefined;
+      throw err;
+    }
+  });
+  globalThis.__newNutsWriteMutex = txPromise;
+  await txPromise;
+  return result;
 }

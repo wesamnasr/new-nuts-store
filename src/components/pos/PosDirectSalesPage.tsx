@@ -8,6 +8,8 @@ import {
   Plus,
   Tag,
   X,
+  AlertTriangle,
+  AlertCircle,
 } from 'lucide-react';
 import {
   CartItem,
@@ -35,6 +37,8 @@ interface PosDirectSalesPageProps {
   onSelectCategoryId?: (catId: string) => void;
 }
 
+const LOW_STOCK_THRESHOLD_KG = 5;
+
 const QUICK_WEIGHTS = [
   { grams: 125, label: 'ثمن' },
   { grams: 250, label: 'ربع' },
@@ -60,6 +64,7 @@ export default function PosDirectSalesPage({
   };
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [barcodeInput, setBarcodeInput] = useState<string>('');
+  const [stockFilter, setStockFilter] = useState<'all' | 'low_stock'>('all');
 
   // Per-card quick roast selection state
   const [cardRoasts, setCardRoasts] = useState<Record<string, string>>({});
@@ -82,6 +87,12 @@ export default function PosDirectSalesPage({
       if (selectedCategoryId !== 'all' && p.categoryId !== selectedCategoryId) {
         return false;
       }
+      if (stockFilter === 'low_stock') {
+        const s = typeof p.stockKg === 'number' ? p.stockKg : 50;
+        if (!(!p.inStock || s <= LOW_STOCK_THRESHOLD_KG)) {
+          return false;
+        }
+      }
       if (searchQuery.trim()) {
         const q = searchQuery.trim().toLowerCase();
         return (
@@ -93,7 +104,15 @@ export default function PosDirectSalesPage({
       }
       return true;
     });
-  }, [products, selectedCategoryId, searchQuery]);
+  }, [products, selectedCategoryId, searchQuery, stockFilter]);
+
+  const shortageCount = useMemo(() => {
+    return products.filter((p) => {
+      if (p.showInPos === false) return false;
+      const s = typeof p.stockKg === 'number' ? p.stockKg : 50;
+      return !p.inStock || s <= LOW_STOCK_THRESHOLD_KG;
+    }).length;
+  }, [products]);
 
   // Live Digital Scale Calculation (only when modal is open)
   const scaleCalculation = useMemo(() => {
@@ -242,20 +261,40 @@ export default function PosDirectSalesPage({
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
           <button
             type="button"
-            onClick={() => setSelectedCategoryId('all')}
+            onClick={() => {
+              setSelectedCategoryId('all');
+              setStockFilter('all');
+            }}
             className={`px-4 py-2 rounded-xl text-xs font-cairo font-black cursor-pointer shrink-0 transition ${
-              selectedCategoryId === 'all'
+              selectedCategoryId === 'all' && stockFilter === 'all'
                 ? 'bg-[#231710] text-[#D4AF37] shadow-xs'
                 : 'bg-[#FAF6F0] text-[#231710] hover:bg-[#F3ECE1]'
             }`}
           >
             الكل ({products.length})
           </button>
+          {shortageCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setStockFilter((prev) => (prev === 'low_stock' ? 'all' : 'low_stock'))}
+              className={`px-3 py-2 rounded-xl text-xs font-cairo font-black cursor-pointer flex items-center gap-1.5 shrink-0 transition ${
+                stockFilter === 'low_stock'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100'
+              }`}
+            >
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+              <span>النواقص ({shortageCount})</span>
+            </button>
+          )}
           {categories.map((cat) => (
             <button
               key={cat.id}
               type="button"
-              onClick={() => setSelectedCategoryId(cat.id)}
+              onClick={() => {
+                setSelectedCategoryId(cat.id);
+                setStockFilter('all');
+              }}
               className={`px-4 py-2 rounded-xl text-xs font-cairo font-black cursor-pointer flex items-center gap-1.5 shrink-0 transition ${
                 selectedCategoryId === cat.id
                   ? 'bg-[#231710] text-[#D4AF37] shadow-xs'
@@ -278,10 +317,20 @@ export default function PosDirectSalesPage({
           const activeRoast = cardRoasts[prod.id] || prod.roastOptions?.[0] || '';
           const hasMultipleRoasts = (prod.roastOptions?.length || 0) > 1;
 
+          const stockKg = typeof prod.stockKg === 'number' ? Math.max(0, prod.stockKg) : 50;
+          const isOutOfStock = !prod.inStock || stockKg <= 0;
+          const isLowStock = !isOutOfStock && stockKg <= LOW_STOCK_THRESHOLD_KG;
+
           return (
             <div
               key={prod.id}
-              className="bg-white rounded-2xl border-2 border-[#E6DFD3] hover:border-[#D4AF37] p-3 flex flex-col justify-between transition shadow-xs hover:shadow-md"
+              className={`rounded-2xl border-2 p-3 flex flex-col justify-between transition shadow-xs hover:shadow-md ${
+                isOutOfStock
+                  ? 'bg-red-50/20 border-red-300 opacity-80'
+                  : isLowStock
+                    ? 'bg-amber-50/20 border-amber-300 hover:border-amber-500 shadow-amber-500/5'
+                    : 'bg-white border-[#E6DFD3] hover:border-[#D4AF37]'
+              }`}
             >
               {/* Top: Image + Name */}
               <div>
@@ -289,28 +338,63 @@ export default function PosDirectSalesPage({
                   <img
                     src={getSafeImageUrl(prod.image)}
                     alt={prod.name}
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full object-cover ${isOutOfStock ? 'grayscale-40' : ''}`}
                   />
                   {/* Price per Kg Badge */}
                   <span className="absolute top-2 right-2 bg-[#231710]/90 text-[#D4AF37] text-[11px] font-black px-2.5 py-0.5 rounded-lg tabular-nums">
                     {prod.pricePerKg || 400} ج/كجم
                   </span>
 
+                  {/* Low-Stock / Out-of-Stock Indicator Badge */}
+                  {isOutOfStock ? (
+                    <span className="absolute top-2 left-2 bg-red-600/95 text-white text-[10px] font-cairo font-black px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-sm backdrop-blur-xs">
+                      <AlertCircle className="w-3 h-3 text-white shrink-0" />
+                      <span>نفد المخزون</span>
+                    </span>
+                  ) : isLowStock ? (
+                    <span className="absolute top-2 left-2 bg-amber-500/95 text-white text-[10px] font-cairo font-black px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-sm backdrop-blur-xs tabular-nums">
+                      <AlertTriangle className="w-3 h-3 text-white shrink-0" />
+                      <span>
+                        {stockKg >= 1 ? `متبقي ${stockKg} كجم` : `متبقي ${Math.round(stockKg * 1000)} جم`}
+                      </span>
+                    </span>
+                  ) : null}
+
                   {/* Custom Scale / Amount Trigger Button */}
                   <button
                     type="button"
+                    disabled={isOutOfStock}
                     onClick={() => openProductScaleModal(prod, 'by_amount_egp')}
                     title="وزن حر أو بيع بمبلغ بالجنيه"
-                    className="absolute bottom-2 left-2 bg-white/95 hover:bg-[#D4AF37] text-[#231710] px-2.5 py-1 rounded-lg text-[11px] font-cairo font-black flex items-center gap-1 shadow cursor-pointer transition"
+                    className={`absolute bottom-2 left-2 px-2.5 py-1 rounded-lg text-[11px] font-cairo font-black flex items-center gap-1 shadow transition ${
+                      isOutOfStock
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        : 'bg-white/95 hover:bg-[#D4AF37] text-[#231710] cursor-pointer'
+                    }`}
                   >
                     <Scale className="w-3.5 h-3.5" />
                     <span>مبلغ / وزن</span>
                   </button>
                 </div>
 
-                <h3 className="font-cairo font-black text-sm text-[#231710] line-clamp-1 mb-2">
+                <div className="flex items-start justify-between gap-1 mb-2">
+                  <h3 className="font-cairo font-black text-sm text-[#231710] line-clamp-1 flex-1">
                   {prod.name}
-                </h3>
+                  </h3>
+                  {isLowStock ? (
+                    <span className="text-[10px] font-black text-amber-700 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md shrink-0 tabular-nums">
+                      {stockKg} كجم
+                    </span>
+                  ) : isOutOfStock ? (
+                    <span className="text-[10px] font-black text-red-700 bg-red-100 border border-red-300 px-1.5 py-0.5 rounded-md shrink-0">
+                      0 كجم
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-[#6E5D4F] bg-[#FAF6F0] border border-[#E6DFD3] px-1.5 py-0.5 rounded-md shrink-0 tabular-nums">
+                      {stockKg} كجم
+                    </span>
+                  )}
+                </div>
 
                 {/* Simple Roast Toggle (Only if product has multiple roasts) */}
                 {hasMultipleRoasts && (
@@ -343,11 +427,29 @@ export default function PosDirectSalesPage({
                     <button
                       key={w.grams}
                       type="button"
-                      onClick={() => handleQuickAddWeight(prod, w.grams)}
-                      className="bg-[#FAF6F0] hover:bg-[#231710] text-[#231710] hover:text-[#D4AF37] border border-[#E6DFD3] hover:border-[#231710] rounded-xl py-2 px-2 flex items-center justify-between transition cursor-pointer group"
+                      disabled={isOutOfStock}
+                      onClick={() => {
+                        if (isOutOfStock) {
+                          playCashierBeep(300, 0.2);
+                          showToast('نفد المخزون', `صنف "${prod.name}" غير متوفر حالياً بالمخزن`);
+                          return;
+                        }
+                        handleQuickAddWeight(prod, w.grams);
+                      }}
+                      className={`rounded-xl py-2 px-2 flex items-center justify-between transition group ${
+                        isOutOfStock
+                          ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
+                          : isLowStock
+                            ? 'bg-[#FAF6F0] hover:bg-[#231710] text-[#231710] hover:text-[#D4AF37] border border-amber-200 hover:border-[#231710] cursor-pointer'
+                            : 'bg-[#FAF6F0] hover:bg-[#231710] text-[#231710] hover:text-[#D4AF37] border border-[#E6DFD3] hover:border-[#231710] cursor-pointer'
+                      }`}
                     >
                       <span className="font-cairo font-black text-xs">{w.label}</span>
-                      <span className="font-black text-xs text-[#3B6E4C] group-hover:text-[#D4AF37] tabular-nums">
+                      <span className={`font-black text-xs tabular-nums ${
+                        isOutOfStock
+                          ? 'text-gray-400'
+                          : 'text-[#3B6E4C] group-hover:text-[#D4AF37]'
+                      }`}>
                         {calc.unitPrice} ج
                       </span>
                     </button>
@@ -377,9 +479,21 @@ export default function PosDirectSalesPage({
                   <h3 className="font-cairo font-black text-base text-[#231710]">
                     {scaleModalProduct.name}
                   </h3>
-                  <span className="text-xs font-bold text-[#C88A4B] tabular-nums">
-                    سعر الكيلو: {scaleModalProduct.pricePerKg || 400} ج.م
-                  </span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs font-bold text-[#C88A4B] tabular-nums">
+                      سعر الكيلو: {scaleModalProduct.pricePerKg || 400} ج.م
+                    </span>
+                    <span className="text-xs text-[#E6DFD3]">•</span>
+                    <span
+                      className={`text-xs font-bold tabular-nums ${
+                        (scaleModalProduct.stockKg ?? 50) <= LOW_STOCK_THRESHOLD_KG
+                          ? 'text-amber-600 font-black'
+                          : 'text-[#6E5D4F]'
+                      }`}
+                    >
+                      المخزون المتاح: {scaleModalProduct.stockKg ?? 50} كجم
+                    </span>
+                  </div>
                 </div>
               </div>
               <button

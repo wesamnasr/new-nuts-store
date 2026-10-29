@@ -43,7 +43,20 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
+  Calendar,
+  AlertTriangle,
 } from 'lucide-react';
+import {
+  DateRangePreset,
+  FinancialDateRangeFilter,
+  filterItemsByDateRange,
+  calculateFinancialSummary,
+  calculateOrderCogs,
+  isOnlineOrder,
+  isPosOrder,
+  generateFinancialSummaryCsv,
+  triggerCsvDownload,
+} from '@/lib/financials';
 import { useStore, STORE_SYNC_STORAGE_KEY } from '@/context/StoreContext';
 import {
   OrderStatus,
@@ -80,6 +93,7 @@ import SupplierIsolationPortal from '@/components/admin/SupplierIsolationPortal'
 import AccountantIsolationPortal from '@/components/admin/AccountantIsolationPortal';
 import SupermarketReceiptModal from '@/components/SupermarketReceiptModal';
 import RolePermissionsManager from '@/components/admin/RolePermissionsManager';
+import SupplyInvoicesApprovalModule from '@/components/admin/SupplyInvoicesApprovalModule';
 import dynamic from 'next/dynamic';
 import { getResolvedRolePermissions, hasRolePermission } from '@/lib/permissions';
 import {
@@ -110,7 +124,7 @@ function readAndCompressImageFile(file: File, onDone: (dataUrl: string) => void)
     if (!src) return;
     const img = new Image();
     img.onload = () => {
-      const maxDim = 640;
+      const maxDim = 560;
       let width = img.width;
       let height = img.height;
       if (width > maxDim || height > maxDim) {
@@ -128,7 +142,12 @@ function readAndCompressImageFile(file: File, onDone: (dataUrl: string) => void)
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(img, 0, 0, width, height);
-        onDone(canvas.toDataURL('image/jpeg', 0.82));
+        const webpDataUrl = canvas.toDataURL('image/webp', 0.78);
+        if (webpDataUrl.startsWith('data:image/webp')) {
+          onDone(webpDataUrl);
+        } else {
+          onDone(canvas.toDataURL('image/jpeg', 0.78));
+        }
       } else {
         onDone(src);
       }
@@ -174,7 +193,7 @@ const ALL_ADMIN_TABS: AdminTab[] = [
 
 function getDefaultTabForRole(role: AdminRole): AdminTab {
   if (role === 'supplier') return 'supply_portal';
-  if (role === 'accountant') return 'accounting_portal';
+  if (role === 'accountant') return 'overview';
   if (role === 'cashier') return 'cashier_portal';
   return 'overview';
 }
@@ -334,9 +353,15 @@ export default function AdminDashboardPage() {
   const [supplyInvoiceFilter, setSupplyInvoiceFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [expandedAdminInvoiceId, setExpandedAdminInvoiceId] = useState<string | null>(null);
 
+  // Overview & Financial Date Range Filter State
+  const [overviewDatePreset, setOverviewDatePreset] = useState<DateRangePreset>('all');
+  const [overviewCustomStart, setOverviewCustomStart] = useState<string>('');
+  const [overviewCustomEnd, setOverviewCustomEnd] = useState<string>('');
+
   // Orders Filter, Sort & Search State
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState<'all' | OrderStatus>('all');
+  const [orderChannelFilter, setOrderChannelFilter] = useState<'all' | 'online' | 'pos'>('all');
   const [orderPaymentFilter, setOrderPaymentFilter] = useState<string>('all');
   const [orderGovernorateFilter, setOrderGovernorateFilter] = useState<string>('all');
   const [orderSort, setOrderSort] = useState<'newest' | 'oldest' | 'highest' | 'lowest'>('newest');
@@ -346,7 +371,7 @@ export default function AdminDashboardPage() {
   // Products Filter, Sort & Form State
   const [productSearch, setProductSearch] = useState('');
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
-  const [productStockFilter, setProductStockFilter] = useState<'all' | 'in' | 'out'>('all');
+  const [productStockFilter, setProductStockFilter] = useState<'all' | 'in' | 'low' | 'out'>('all');
   const [productFeaturedFilter, setProductFeaturedFilter] = useState<'all' | 'featured' | 'regular'>('all');
   const [productRoastFilter, setProductRoastFilter] = useState<string>('all');
   const [productSort, setProductSort] = useState<'default' | 'price_asc' | 'price_desc' | 'rating_desc'>('default');
@@ -373,7 +398,7 @@ export default function AdminDashboardPage() {
 
   // Coupons Filter & Form State
   const [couponSearch, setCouponSearch] = useState('');
-  const [couponStatusFilter, setCouponStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [couponStatusFilter, setCouponStatusFilter] = useState<'all' | 'active' | 'inactive' | 'expired'>('all');
   const [couponTypeFilter, setCouponTypeFilter] = useState<'all' | 'percentage' | 'fixed'>('all');
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   const [newCouponCode, setNewCouponCode] = useState('');
@@ -381,6 +406,8 @@ export default function AdminDashboardPage() {
   const [newCouponVal, setNewCouponVal] = useState(10);
   const [newCouponMin, setNewCouponMin] = useState(300);
   const [newCouponDesc, setNewCouponDesc] = useState('');
+  const [newCouponExpiresAt, setNewCouponExpiresAt] = useState('');
+  const [newCouponMaxUses, setNewCouponMaxUses] = useState('');
 
   // Reviews Filter & Form State
   const [reviewSearch, setReviewSearch] = useState('');
@@ -489,16 +516,12 @@ export default function AdminDashboardPage() {
                 })
               );
             }
-            if (false && resolvedRole === 'supplier') {
+            if (resolvedRole === 'supplier') {
               window.location.replace('/supplier');
               return;
             }
             if (resolvedRole === 'cashier') {
               window.location.replace('/pos');
-              return;
-            }
-            if (false && resolvedRole === 'accountant') {
-              window.location.replace('/accountant');
               return;
             }
             setCurrentRole(resolvedRole);
@@ -514,9 +537,13 @@ export default function AdminDashboardPage() {
                     requestedUrlTab as AdminPermissionId,
                     storeData?.settings
                   )));
+            const fallbackDefaultTab = getDefaultTabForRole(resolvedRole);
             const initialTab = isRequestedAllowed
               ? requestedUrlTab
-              : getDefaultTabForRole(resolvedRole);
+              : resolvedRole === 'accountant' &&
+                !hasRolePermission('accountant', fallbackDefaultTab as AdminPermissionId, storeData?.settings)
+              ? 'accounting_portal'
+              : fallbackDefaultTab;
             setActiveTab(initialTab);
             updateUrlQueryParams({ tab: initialTab }, { replace: true });
             setIsAuthenticated(true);
@@ -594,16 +621,12 @@ export default function AdminDashboardPage() {
           sessionStorage.setItem('hafsa_pos_token_v1', data.token);
           sessionStorage.setItem('hafsa_pos_role_v1', resolvedRole);
 
-          if (false && resolvedRole === 'supplier') {
+          if (resolvedRole === 'supplier') {
             window.location.href = '/supplier';
             return;
           }
           if (resolvedRole === 'cashier') {
             window.location.href = '/pos';
-            return;
-          }
-          if (false && resolvedRole === 'accountant') {
-            window.location.href = '/accountant';
             return;
           }
 
@@ -621,9 +644,13 @@ export default function AdminDashboardPage() {
                   requestedUrlTab as AdminPermissionId,
                   storeData?.settings
                 )));
+          const fallbackDefaultTab = getDefaultTabForRole(resolvedRole);
           const initialTab = isRequestedAllowed
             ? requestedUrlTab
-            : getDefaultTabForRole(resolvedRole);
+            : resolvedRole === 'accountant' &&
+              !hasRolePermission('accountant', fallbackDefaultTab as AdminPermissionId, storeData?.settings)
+            ? 'accounting_portal'
+            : fallbackDefaultTab;
           setActiveTab(initialTab);
           updateUrlQueryParams({ tab: initialTab }, { replace: true });
           setIsAuthenticated(true);
@@ -886,8 +913,44 @@ export default function AdminDashboardPage() {
     });
   }, [effectiveSupplyInvoices, supplyInvoiceFilter]);
 
+  const overviewDateFilter = useMemo<FinancialDateRangeFilter>(
+    () => ({
+      preset: overviewDatePreset,
+      startDate: overviewDatePreset === 'custom' ? overviewCustomStart : undefined,
+      endDate: overviewDatePreset === 'custom' ? overviewCustomEnd : undefined,
+    }),
+    [overviewDatePreset, overviewCustomStart, overviewCustomEnd]
+  );
+
+  const dateFilteredOrders = useMemo(
+    () => filterItemsByDateRange(orders, overviewDateFilter),
+    [orders, overviewDateFilter]
+  );
+
+  const overviewFinancialSummary = useMemo(() => {
+    return calculateFinancialSummary({
+      orders,
+      products,
+      posShifts: storeData?.posShifts || [],
+      posExpenses: storeData?.posExpenses || [],
+      supplyInvoices: effectiveSupplyInvoices,
+      vipMembers: storeData?.vipMembers || [],
+      dateFilter: overviewDateFilter,
+    });
+  }, [
+    orders,
+    products,
+    storeData?.posShifts,
+    storeData?.posExpenses,
+    effectiveSupplyInvoices,
+    storeData?.vipMembers,
+    overviewDateFilter,
+  ]);
+
   const filteredOrders = useMemo(() => {
-    const list = orders.filter((o) => {
+    const list = dateFilteredOrders.filter((o) => {
+      if (orderChannelFilter === 'online' && !isOnlineOrder(o)) return false;
+      if (orderChannelFilter === 'pos' && !isPosOrder(o)) return false;
       if (orderStatusFilter !== 'all') {
         const normStatus = (o.status as string) === 'preparing' ? 'roasting_packing' : o.status;
         if (normStatus !== orderStatusFilter) return false;
@@ -920,13 +983,93 @@ export default function AdminDashboardPage() {
       }
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
-  }, [orders, orderStatusFilter, orderPaymentFilter, orderGovernorateFilter, orderSearch, orderSort]);
+  }, [
+    dateFilteredOrders,
+    orderChannelFilter,
+    orderStatusFilter,
+    orderPaymentFilter,
+    orderGovernorateFilter,
+    orderSearch,
+    orderSort,
+  ]);
+
+  const filteredOrdersFinancials = useMemo(() => {
+    const valid = filteredOrders.filter((o) => o.status !== 'cancelled');
+    const revenue = Math.round(valid.reduce((s, o) => s + (o.total || 0), 0) * 100) / 100;
+    const cogs =
+      Math.round(valid.reduce((s, o) => s + calculateOrderCogs(o, products), 0) * 100) / 100;
+    const discounts =
+      Math.round(valid.reduce((s, o) => s + (o.discountAmount || 0), 0) * 100) / 100;
+    const shipping =
+      Math.round(valid.reduce((s, o) => s + (o.shippingCost || 0), 0) * 100) / 100;
+    const netProfit = Math.round((revenue - cogs) * 100) / 100;
+    const marginPercent = revenue > 0 ? Math.round((netProfit / revenue) * 1000) / 10 : 0;
+    return {
+      validCount: valid.length,
+      cancelledCount: filteredOrders.length - valid.length,
+      onlineCount: valid.filter((o) => isOnlineOrder(o)).length,
+      posCount: valid.filter((o) => isPosOrder(o)).length,
+      revenue,
+      cogs,
+      discounts,
+      shipping,
+      netProfit,
+      marginPercent,
+    };
+  }, [filteredOrders, products]);
+
+  const productsInventoryValuation = useMemo(() => {
+    let totalStockKg = 0;
+    let totalCostValuation = 0;
+    let totalRetailValuation = 0;
+    let marginSum = 0;
+    let marginCount = 0;
+
+    for (const p of products) {
+      const stockKg = typeof p.stockKg === 'number' ? Math.max(0, p.stockKg) : 0;
+      const w1000 = p.weights?.find((w) => w.weightGrams === 1000 || w.grams === 1000);
+      const retailPerKg =
+        typeof p.pricePerKg === 'number' && p.pricePerKg > 0
+          ? p.pricePerKg
+          : w1000?.price || (p.weights?.[0]?.price ? p.weights[0].price * 4 : 400);
+      const costPerKg =
+        typeof p.costPerKg === 'number' && p.costPerKg > 0
+          ? p.costPerKg
+          : Math.round(retailPerKg * 0.68);
+      const packCost = typeof p.packagingCost === 'number' ? p.packagingCost : 0;
+      const fullCostPerKg = costPerKg + packCost;
+
+      totalStockKg += stockKg;
+      totalCostValuation += stockKg * fullCostPerKg;
+      totalRetailValuation += stockKg * retailPerKg;
+
+      if (retailPerKg > 0) {
+        marginSum += ((retailPerKg - fullCostPerKg) / retailPerKg) * 100;
+        marginCount += 1;
+      }
+    }
+
+    return {
+      totalStockKg: Math.round(totalStockKg * 100) / 100,
+      totalCostValuation: Math.round(totalCostValuation * 100) / 100,
+      totalRetailValuation: Math.round(totalRetailValuation * 100) / 100,
+      potentialInventoryProfit:
+        Math.round((totalRetailValuation - totalCostValuation) * 100) / 100,
+      avgMarginPercent: marginCount > 0 ? Math.round((marginSum / marginCount) * 10) / 10 : 0,
+    };
+  }, [products]);
 
   const filteredProducts = useMemo(() => {
     const list = products.filter((p) => {
       if (productCategoryFilter !== 'all' && p.categoryId !== productCategoryFilter) return false;
       if (productStockFilter === 'in' && !p.inStock) return false;
-      if (productStockFilter === 'out' && p.inStock) return false;
+      if (productStockFilter === 'out' && p.inStock && (p.stockKg ?? 50) > 0) return false;
+      if (
+        productStockFilter === 'low' &&
+        (!p.inStock || (p.stockKg ?? 50) <= 0 || (p.stockKg ?? 50) > 5)
+      ) {
+        return false;
+      }
       if (productFeaturedFilter === 'featured' && !p.featured) return false;
       if (productFeaturedFilter === 'regular' && p.featured) return false;
       if (productRoastFilter !== 'all' && !p.roastOptions.includes(productRoastFilter as RoastOption)) {
@@ -1004,8 +1147,15 @@ export default function AdminDashboardPage() {
 
   const filteredCoupons = useMemo(() => {
     return coupons.filter((c) => {
-      if (couponStatusFilter === 'active' && !c.active) return false;
+      const isExpiredByDate = Boolean(c.expiresAt && new Date(c.expiresAt).getTime() < Date.now());
+      const isMaxedOut = Boolean(
+        typeof c.maxUses === 'number' && c.maxUses > 0 && (c.usedCount || 0) >= c.maxUses
+      );
+      if (couponStatusFilter === 'active' && (!c.active || isExpiredByDate || isMaxedOut)) {
+        return false;
+      }
       if (couponStatusFilter === 'inactive' && c.active) return false;
+      if (couponStatusFilter === 'expired' && !isExpiredByDate && !isMaxedOut) return false;
       if (couponTypeFilter !== 'all' && c.discountType !== couponTypeFilter) return false;
       if (couponSearch.trim()) {
         const q = couponSearch.trim().toLowerCase();
@@ -1174,39 +1324,45 @@ export default function AdminDashboardPage() {
     );
   }
 
-  // Metrics Calculation
-  const validOrders = orders.filter((o) => o.status !== 'cancelled');
+  // Metrics Calculation (Responsive to Date Range Filter)
+  const validOrders = dateFilteredOrders.filter((o) => o.status !== 'cancelled');
   const totalRevenue = validOrders.reduce((sum, o) => sum + o.total, 0);
-  const activeOrdersCount = orders.filter(
+  const activeOrdersCount = dateFilteredOrders.filter(
     (o) => o.status !== 'delivered' && o.status !== 'cancelled'
   ).length;
-  const deliveredOrdersCount = orders.filter((o) => o.status === 'delivered').length;
+  const deliveredOrdersCount = dateFilteredOrders.filter((o) => o.status === 'delivered').length;
   const averageOrderValue =
     validOrders.length > 0 ? Math.round(totalRevenue / validOrders.length) : 0;
-  const outOfStockProducts = products.filter((p) => !p.inStock);
+  const outOfStockProducts = products.filter(
+    (p) => !p.inStock || (typeof p.stockKg === 'number' && p.stockKg <= 0)
+  );
+  const lowStockProducts = products.filter(
+    (p) => p.inStock && typeof p.stockKg === 'number' && p.stockKg > 0 && p.stockKg <= 5
+  );
   const averageStoreRating =
     products.length > 0
       ? (products.reduce((s, p) => s + (p.rating || 5), 0) / products.length).toFixed(1)
       : '5.0';
 
-  // CSV Export handler
+  // CSV Export handler (exports currently filtered orders)
   const handleExportCsv = () => {
-    if (!orders || orders.length === 0) {
+    const targetOrders = filteredOrders.length > 0 ? filteredOrders : orders;
+    if (!targetOrders || targetOrders.length === 0) {
       showToast('لا توجد طلبات للتصدير حالياً');
       return;
     }
-    const csvContent = generateOrdersCsv(orders);
+    const csvContent = generateOrdersCsv(targetOrders);
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const dateStr = new Date().toISOString().split('T')[0];
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `golden-oasis-orders-${dateStr}.csv`);
+    link.setAttribute('download', `golden-oasis-orders-${overviewDatePreset}-${dateStr}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    showToast('تم تصدير الطلبات بنجاح إلى ملف CSV');
+    showToast(`تم تصدير ${targetOrders.length} طلب بنجاح إلى ملف CSV`);
   };
 
   // JSON Full Backup Export
@@ -1494,6 +1650,14 @@ export default function AdminDashboardPage() {
     }
 
     if (!newCouponCode.trim()) return;
+    const parsedMaxUses =
+      newCouponMaxUses.trim() !== '' && Number(newCouponMaxUses) > 0
+        ? Math.floor(Number(newCouponMaxUses))
+        : undefined;
+    const parsedExpiresAt = newCouponExpiresAt.trim()
+      ? new Date(`${newCouponExpiresAt.trim()}T23:59:59`).toISOString()
+      : undefined;
+
     const created: Coupon = {
       id: `coup-${Date.now()}`,
       code: newCouponCode.trim().toUpperCase(),
@@ -1504,10 +1668,15 @@ export default function AdminDashboardPage() {
       description:
         newCouponDesc.trim() ||
         `خصم ${newCouponVal}${newCouponType === 'percentage' ? '%' : ' ج.م'} للطلبات فوق ${newCouponMin} ج.م`,
+      expiresAt: parsedExpiresAt,
+      maxUses: parsedMaxUses,
+      usedCount: 0,
     };
     await updateStorePayload({ coupons: [...coupons, created] }, 'تمت إضافة كود الخصم الجديد');
     setNewCouponCode('');
     setNewCouponDesc('');
+    setNewCouponExpiresAt('');
+    setNewCouponMaxUses('');
   };
 
   // Review Moderation Handlers
@@ -1628,9 +1797,7 @@ export default function AdminDashboardPage() {
 
   const isFullAdmin =
     currentRole === 'super_admin' ||
-    currentRole === 'admin' ||
-    currentRole === 'store_manager' ||
-    currentRole === 'promo_partner';
+    currentRole === 'admin';
 
   // Sidebar navigation config isolated strictly by role
   const allNavItems: Array<{
@@ -1645,7 +1812,7 @@ export default function AdminDashboardPage() {
       id: 'overview',
       label: currentRole === 'accountant' ? 'الدخل اليومي والملخص المالي' : 'النظرة العامة',
       icon: <LayoutDashboard className="w-4 h-4" />,
-      roles: ['super_admin', 'admin', 'store_manager', 'accountant'],
+      roles: ['super_admin', 'admin', 'accountant'],
     },
     {
       id: 'supply_portal',
@@ -1664,7 +1831,7 @@ export default function AdminDashboardPage() {
         pendingSupplyInvoicesCount > 0
           ? 'bg-amber-500 text-brand-950 font-black animate-pulse'
           : 'bg-white/15 text-white',
-      roles: ['super_admin', 'admin', 'store_manager', 'accountant'],
+      roles: ['super_admin', 'admin', 'accountant'],
     },
     {
       id: 'accounting_portal',
@@ -1693,50 +1860,50 @@ export default function AdminDashboardPage() {
       icon: <Package className="w-4 h-4" />,
       badge: activeOrdersCount > 0 ? `${activeOrdersCount} جاري` : orders.length,
       badgeColor: activeOrdersCount > 0 ? 'bg-amber-500 text-brand-950' : 'bg-white/15 text-white',
-      roles: ['super_admin', 'admin', 'store_manager', 'accountant', 'cashier'],
+      roles: ['super_admin', 'admin', 'accountant', 'cashier'],
     },
     {
       id: 'products',
       label: currentRole === 'accountant' ? 'الأصناف والتكاليف والأسعار' : 'المنتجات والأسعار',
       icon: <ShoppingBag className="w-4 h-4" />,
       badge: products.length,
-      roles: ['super_admin', 'admin', 'store_manager', 'accountant'],
+      roles: ['super_admin', 'admin', 'accountant'],
     },
     {
       id: 'categories',
       label: currentRole === 'supplier' ? 'الأقسام والتصنيفات (عرض)' : 'الأقسام والتصنيفات',
       icon: <Layers className="w-4 h-4" />,
       badge: categories.length,
-      roles: ['super_admin', 'admin', 'store_manager', 'supplier'],
+      roles: ['super_admin', 'admin', 'supplier'],
     },
     {
       id: 'operations',
       label: currentRole === 'accountant' ? 'الورديات والمصروفات والـ VIP' : 'أدوات التشغيل',
       icon: <Sparkles className="w-4 h-4" />,
-      badge: currentRole === 'accountant' ? 'درج الكاشير' : 'الشركاء 4',
+      badge: currentRole === 'accountant' ? 'درج الكاشير' : 'VIP والعروض',
       badgeColor: 'bg-gold-500 text-brand-950',
-      roles: ['super_admin', 'admin', 'store_manager', 'promo_partner', 'accountant'],
+      roles: ['super_admin', 'admin', 'accountant'],
     },
     {
       id: 'shipping',
       label: 'الشحن والمحافظات',
       icon: <Truck className="w-4 h-4" />,
       badge: shippingRates.length,
-      roles: ['super_admin', 'admin', 'store_manager'],
+      roles: ['super_admin', 'admin'],
     },
     {
       id: 'coupons',
-      label: 'الكوبونات والعروض',
+      label: currentRole === 'accountant' ? 'الكوبونات والخصومات' : 'الكوبونات والعروض',
       icon: <Tag className="w-4 h-4" />,
       badge: coupons.filter((c) => c.active).length,
-      roles: ['super_admin', 'admin', 'promo_partner'],
+      roles: ['super_admin', 'admin', 'accountant'],
     },
     {
       id: 'reviews',
       label: 'تقييمات وآراء العملاء',
       icon: <Star className="w-4 h-4" />,
       badge: allReviewsFlattened.length,
-      roles: ['super_admin', 'admin', 'store_manager'],
+      roles: ['super_admin', 'admin'],
     },
     {
       id: 'settings',
@@ -2017,341 +2184,23 @@ export default function AdminDashboardPage() {
 
           {/* ROLE MODULE: SUPPLY INVOICES APPROVAL WORKFLOW */}
           {activeTab === 'supply_invoices' && canAccessTab('supply_invoices') && (
-            <div className="space-y-4">
-              {/* Header card with quick actions and stats */}
-              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 shadow-2xs space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center border border-amber-500/20">
-                      <ClipboardList className="w-5 h-5 text-amber-600" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-sm sm:text-base font-black text-brand-950">
-                          إدارة فواتير التوريد واعتماد الشحنات
-                        </h2>
-                        {pendingSupplyInvoicesCount > 0 && (
-                          <span className="bg-amber-500 text-brand-950 font-black text-[10.5px] px-2.5 py-0.5 rounded-full animate-pulse">
-                            {pendingSupplyInvoicesCount} بانتظار الاعتماد
-                          </span>
-                        )}
-                      </div>
-                      <p className="hidden">
-                        فحص ومراجعة فواتير التوريد الواردة من المورد، وتدقيق الأصناف والأسعار، واعتمادها لإضافة المخزون وتحديث التكلفة تلقائياً
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => fetchSupplyInvoices()}
-                      disabled={loadingSupplyInvoices}
-                      className="bg-brand-50 hover:bg-brand-100 text-brand-800 border border-brand-200 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
-                    >
-                      <RotateCcw className={`w-3.5 h-3.5 ${loadingSupplyInvoices ? 'animate-spin' : ''}`} />
-                      <span>تحديث الفواتير</span>
-                    </button>
-                    <Link
-                      href="/supplier"
-                      target="_blank"
-                      className="bg-amber-500 hover:bg-amber-400 text-brand-950 font-black px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs"
-                    >
-                      <Truck className="w-3.5 h-3.5" />
-                      <span>فتح بوابة المورد ↗</span>
-                    </Link>
-                  </div>
-                </div>
-
-                {/* KPI Metrics */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 border-t border-brand-100">
-                  <div className="bg-brand-50/70 p-2.5 rounded-xl border border-brand-100">
-                    <span className="text-[10px] font-bold text-brand-600 block">إجمالي الفواتير</span>
-                    <span className="text-base font-black text-brand-950">{effectiveSupplyInvoices.length}</span>
-                  </div>
-                  <div className="bg-amber-50 p-2.5 rounded-xl border border-amber-200">
-                    <span className="text-[10px] font-bold text-amber-700 block">فواتير معلقة (قيد المراجعة)</span>
-                    <span className="text-base font-black text-amber-800">{pendingSupplyInvoicesCount}</span>
-                  </div>
-                  <div className="bg-pistachio-50 p-2.5 rounded-xl border border-pistachio-200">
-                    <span className="text-[10px] font-bold text-pistachio-700 block">فواتير معتمدة ومضافة</span>
-                    <span className="text-base font-black text-pistachio-800">
-                      {effectiveSupplyInvoices.filter((i) => i.status === 'approved').length}
-                    </span>
-                  </div>
-                  <div className="bg-red-50 p-2.5 rounded-xl border border-red-200">
-                    <span className="text-[10px] font-bold text-red-700 block">فواتير مرفوضة</span>
-                    <span className="text-base font-black text-red-800">
-                      {effectiveSupplyInvoices.filter((i) => i.status === 'rejected').length}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Filter Tabs */}
-              <div className="flex items-center gap-2">
-                {(['all', 'pending', 'approved', 'rejected'] as const).map((st) => (
-                  <button
-                    key={st}
-                    onClick={() => {
-                      setSupplyInvoiceFilter(st);
-                      updateUrlQueryParams({ invStatus: st === 'all' ? null : st });
-                    }}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
-                      supplyInvoiceFilter === st
-                        ? 'bg-brand-900 text-white shadow-xs'
-                        : 'bg-white text-brand-700 border border-brand-200 hover:bg-brand-50'
-                    }`}
-                  >
-                    {st === 'all' && `جميع الفواتير (${effectiveSupplyInvoices.length})`}
-                    {st === 'pending' && `بانتظار المراجعة (${pendingSupplyInvoicesCount})`}
-                    {st === 'approved' && `المعتمدة (${effectiveSupplyInvoices.filter((i) => i.status === 'approved').length})`}
-                    {st === 'rejected' && `المرفوضة (${effectiveSupplyInvoices.filter((i) => i.status === 'rejected').length})`}
-                  </button>
-                ))}
-              </div>
-
-              {/* Invoices List */}
-              {filteredSupplyInvoices.length === 0 ? (
-                <div className="bg-white p-8 text-center rounded-2xl border border-brand-200 shadow-2xs space-y-2">
-                  <CheckCircle2 className="w-10 h-10 text-pistachio-600 mx-auto" />
-                  <h3 className="text-sm font-black text-brand-950">لا توجد فواتير توريد بهذه الحالة</h3>
-                  <p className="text-xs text-brand-600">
-                    يمكن للمورد إرسال فواتير توريد جديدة من بوابته المخصصة لتظهر هنا فوراً.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3.5">
-                  {filteredSupplyInvoices.map((inv) => {
-                    const isPending = inv.status === 'pending';
-                    const isExpanded = expandedAdminInvoiceId === inv.id || isPending;
-                    const totalKg = inv.items.reduce((s: number, i: SupplyInvoiceItem) => s + (i.quantityKg || 0), 0);
-                    const isActionLoading = actionLoadingInvoiceId === inv.id;
-
-                    return (
-                      <div
-                        key={inv.id}
-                        className={`bg-white rounded-2xl border shadow-2xs overflow-hidden transition ${
-                          isPending ? 'border-amber-300 ring-2 ring-amber-100' : 'border-brand-200'
-                        }`}
-                      >
-                        {/* Invoice Header */}
-                        <div className={`p-4 flex flex-wrap items-center justify-between gap-3 ${
-                          isPending ? 'bg-amber-50/50' : 'bg-brand-50/40'
-                        }`}>
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono font-black text-xs shrink-0 ${
-                              isPending
-                                ? 'bg-amber-500 text-brand-950 font-bold'
-                                : inv.status === 'approved'
-                                ? 'bg-pistachio-700 text-white'
-                                : 'bg-red-700 text-white'
-                            }`}>
-                              SUP
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-mono font-black text-brand-950 text-sm">
-                                  {inv.invoiceNumber}
-                                </span>
-                                {inv.status === 'pending' && (
-                                  <span className="bg-amber-100 border border-amber-300 text-amber-900 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                                    <Clock className="w-3 h-3 text-amber-600" />
-                                    <span>قيد المراجعة والاعتماد</span>
-                                  </span>
-                                )}
-                                {inv.status === 'approved' && (
-                                  <span className="bg-pistachio-100 border border-pistachio-300 text-pistachio-900 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                                    <CheckCircle2 className="w-3 h-3 text-pistachio-700" />
-                                    <span>معتمدة (تمت إضافة المخزون)</span>
-                                  </span>
-                                )}
-                                {inv.status === 'rejected' && (
-                                  <span className="bg-red-100 border border-red-300 text-red-900 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3 text-red-600" />
-                                    <span>مرفوضة من الإدارة</span>
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-[11px] text-brand-500 mt-0.5">
-                                المورد: <span className="font-extrabold text-brand-900">{inv.supplierName || inv.supplierId}</span> • تاريخ الإنشاء: {new Date(inv.createdAt).toLocaleString('ar-EG')} • {inv.items.length} أصناف ({totalKg} كجم)
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-4">
-                            <div className="text-left">
-                              <span className="text-[10px] text-brand-500 font-bold block">إجمالي الفاتورة</span>
-                              <span className="text-sm sm:text-base font-black text-pistachio-800">
-                                {inv.totalAmount.toLocaleString('ar-EG')} ج.م
-                              </span>
-                            </div>
-
-                            {!isPending && (
-                              <button
-                                type="button"
-                                onClick={() => setExpandedAdminInvoiceId(isExpanded ? null : inv.id)}
-                                className="bg-brand-100 hover:bg-brand-200 text-brand-900 p-2 rounded-xl transition"
-                                title={isExpanded ? 'إخفاء التفاصيل' : 'عرض الأصناف'}
-                              >
-                                {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Supplier Notes */}
-                        {inv.notes && (
-                          <div className="px-4 py-2 bg-brand-50/70 border-t border-brand-100 text-xs text-brand-800">
-                            <span className="font-extrabold text-brand-950">ملاحظات المورد: </span>
-                            <span>{inv.notes}</span>
-                          </div>
-                        )}
-
-                        {/* Line Items Table */}
-                        {isExpanded && (
-                          <div className="p-4 border-t border-brand-200 bg-white space-y-3">
-                            <div className="flex items-center justify-between">
-                              <h4 className="text-xs font-black text-brand-950">
-                                تفاصيل أصناف وكميات الشحنة ({inv.items.length} أصناف):
-                              </h4>
-                              {isPending && (
-                                <span className="text-[10.5px] text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200 font-bold">
-                                  💡 المخزون الفعلي الحالي لن يتأثر إلا بعد الضغط على "اعتماد الفاتورة"
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="overflow-x-auto rounded-xl border border-brand-200">
-                              <table className="w-full text-right border-collapse text-xs">
-                                <thead>
-                                  <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
-                                    <th className="p-2.5">اسم الصنف</th>
-                                    <th className="p-2.5 text-center">الكمية الموردة (كجم)</th>
-                                    <th className="p-2.5 text-center">تكلفة الكيلو (ج.م)</th>
-                                    <th className="p-2.5 text-center">إجمالي البند (ج.م)</th>
-                                    <th className="p-2.5 text-center">المخزون الحالي بالمتجر</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-brand-100">
-                                  {inv.items.map((item: SupplyInvoiceItem, idx: number) => {
-                                    const prod = products.find((p) => p.id === item.productId);
-                                    const currentStock = typeof prod?.stockKg === 'number' ? prod.stockKg : 0;
-                                    return (
-                                      <tr key={idx} className="hover:bg-brand-50/60">
-                                        <td className="p-2.5">
-                                          <div className="font-bold text-brand-950">{item.productName}</div>
-                                          {prod && (
-                                            <div className="text-[10px] text-brand-500 font-mono">
-                                              كود: {prod.slug}
-                                            </div>
-                                          )}
-                                        </td>
-                                        <td className="p-2.5 text-center font-black text-amber-900">
-                                          +{item.quantityKg} كجم
-                                        </td>
-                                        <td className="p-2.5 text-center font-black">
-                                          {item.costPerKg} ج.م
-                                        </td>
-                                        <td className="p-2.5 text-center font-black text-pistachio-800">
-                                          {item.totalCost} ج.م
-                                        </td>
-                                        <td className="p-2.5 text-center font-mono">
-                                          <span className="bg-brand-100 text-brand-900 px-2 py-0.5 rounded font-bold">
-                                            {currentStock} كجم
-                                          </span>
-                                          {isPending && (
-                                            <span className="text-[10px] text-pistachio-700 block font-bold mt-0.5">
-                                              → بعد الاعتماد: {Math.round((currentStock + item.quantityKg) * 1000) / 1000} كجم
-                                            </span>
-                                          )}
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
-                            </div>
-
-                            {/* Pending Action Box */}
-                            {isPending && (
-                              <div className="p-3.5 bg-amber-50/70 rounded-2xl border border-amber-200 space-y-3 mt-3">
-                                <div>
-                                  <label className="block text-[11px] font-black text-brand-950 mb-1">
-                                    ملاحظات الإدارة عند المراجعة (اختياري):
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={invoiceReviewNotes[inv.id] || ''}
-                                    onChange={(e) =>
-                                      setInvoiceReviewNotes((prev) => ({
-                                        ...prev,
-                                        [inv.id]: e.target.value,
-                                      }))
-                                    }
-                                    placeholder="مثال: تم فحص الشحنة ومطابقة الأوزان على ميزان الفرع واعتمادها"
-                                    className="w-full bg-white border border-brand-200 rounded-xl px-3 py-1.5 text-xs text-brand-950"
-                                  />
-                                </div>
-
-                                <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                                  <div className="text-[11px] text-brand-600 font-bold">
-                                    ⚠️ بالضغط على اعتماد الفاتورة سيتم فورياً إضافة الكميات إلى مخزون الأصناف وتحديث تكلفة الكيلو.
-                                  </div>
-
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      type="button"
-                                      disabled={isActionLoading}
-                                      onClick={() => handleReviewSupplyInvoice(inv.id, 'rejected')}
-                                      className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-300 font-extrabold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 disabled:opacity-50"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                      <span>رفض الفاتورة</span>
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      disabled={isActionLoading}
-                                      onClick={() => handleReviewSupplyInvoice(inv.id, 'approved')}
-                                      className="bg-pistachio-700 hover:bg-pistachio-800 text-white font-black text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow disabled:opacity-50"
-                                    >
-                                      {isActionLoading ? (
-                                        <RotateCcw className="w-3.5 h-3.5 animate-spin" />
-                                      ) : (
-                                        <Check className="w-3.5 h-3.5" />
-                                      )}
-                                      <span>اعتماد الفاتورة وإضافة المخزون</span>
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Reviewed History Notes */}
-                            {!isPending && (inv.adminNotes || inv.reviewedAt) && (
-                              <div className="p-3 bg-brand-50 rounded-xl border border-brand-200 text-xs space-y-0.5">
-                                <div className="text-brand-950 font-black">
-                                  حالة الفحص والاعتماد: {inv.status === 'approved' ? 'معتمدة ✓' : 'مرفوضة ✕'}
-                                </div>
-                                {inv.adminNotes && (
-                                  <div className="text-brand-700">ملاحظات الإدارة: {inv.adminNotes}</div>
-                                )}
-                                {inv.reviewedAt && (
-                                  <div className="text-[10px] text-brand-500">
-                                    تاريخ المراجعة: {new Date(inv.reviewedAt).toLocaleString('ar-EG')} بواسطة {inv.reviewedBy || 'الأدمن'}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            <SupplyInvoicesApprovalModule
+              effectiveSupplyInvoices={effectiveSupplyInvoices}
+              pendingSupplyInvoicesCount={pendingSupplyInvoicesCount}
+              loadingSupplyInvoices={loadingSupplyInvoices}
+              supplyInvoiceFilter={supplyInvoiceFilter}
+              setSupplyInvoiceFilter={setSupplyInvoiceFilter}
+              filteredSupplyInvoices={filteredSupplyInvoices}
+              expandedAdminInvoiceId={expandedAdminInvoiceId}
+              setExpandedAdminInvoiceId={setExpandedAdminInvoiceId}
+              actionLoadingInvoiceId={actionLoadingInvoiceId}
+              products={products}
+              invoiceReviewNotes={invoiceReviewNotes}
+              setInvoiceReviewNotes={setInvoiceReviewNotes}
+              fetchSupplyInvoices={() => fetchSupplyInvoices()}
+              handleReviewSupplyInvoice={handleReviewSupplyInvoice}
+              canApprove={isFullAdmin}
+            />
           )}
 
           {/* ROLE PORTAL 2: ACCOUNTANT ISOLATION PORTAL */}
@@ -2420,6 +2269,7 @@ export default function AdminDashboardPage() {
             <HafsaOperationsStudio
               adminToken={adminToken}
               onUpdateStorePayload={updateStorePayload}
+              canMutate={isFullAdmin}
             />
           )}
 
@@ -2428,6 +2278,81 @@ export default function AdminDashboardPage() {
           {/* ================================================================= */}
           {activeTab === 'overview' && canAccessTab('overview') && (
             <div className="space-y-4">
+              {/* Financial & Operational Date Range Filter Bar */}
+              <div className="bg-white p-3.5 rounded-2xl border border-brand-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1.5 text-xs font-black text-brand-950">
+                    <Calendar className="w-4 h-4 text-gold-600" />
+                    <span>الفترة الزمنية للتقارير والمؤشرات:</span>
+                  </div>
+                  <div className="inline-flex flex-wrap bg-brand-50 p-1 rounded-xl border border-brand-200 gap-1">
+                    {(
+                      [
+                        { id: 'all', label: 'كل الفترات' },
+                        { id: 'today', label: 'اليوم' },
+                        { id: 'this_week', label: 'آخر 7 أيام' },
+                        { id: 'this_month', label: 'هذا الشهر' },
+                        { id: 'custom', label: 'فترة مخصصة' },
+                      ] as const
+                    ).map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => setOverviewDatePreset(preset.id)}
+                        className={`px-3 py-1 rounded-lg text-[11px] font-extrabold transition cursor-pointer ${
+                          overviewDatePreset === preset.id
+                            ? 'bg-brand-950 text-gold-400 shadow-2xs'
+                            : 'text-brand-700 hover:bg-brand-100'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {overviewDatePreset === 'custom' && (
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <div className="flex items-center gap-1">
+                      <span className="font-bold text-brand-700">من:</span>
+                      <input
+                        type="date"
+                        value={overviewCustomStart}
+                        onChange={(e) => setOverviewCustomStart(e.target.value)}
+                        className="bg-brand-50 border border-brand-200 rounded-lg px-2 py-1 text-xs font-bold"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="font-bold text-brand-700">إلى:</span>
+                      <input
+                        type="date"
+                        value={overviewCustomEnd}
+                        onChange={(e) => setOverviewCustomEnd(e.target.value)}
+                        className="bg-brand-50 border border-brand-200 rounded-lg px-2 py-1 text-xs font-bold"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2">
+                  {(lowStockProducts.length > 0 || outOfStockProducts.length > 0) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProductStockFilter(lowStockProducts.length > 0 ? 'low' : 'out');
+                        selectTab('products');
+                      }}
+                      className="bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 text-[11px] font-black px-2.5 py-1 rounded-xl flex items-center gap-1 transition cursor-pointer"
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-700" />
+                      <span>
+                        تنبيه المخزون: {outOfStockProducts.length} نافد • {lowStockProducts.length} نواقص حرجة
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* 6 KPI Summary Cards */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
                 <div className="bg-white p-3 rounded-2xl border border-brand-200 shadow-2xs">
@@ -2502,6 +2427,180 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Financial Profit & Channel Breakdown Strip (Filtered by Date Range) */}
+              {(isFullAdmin || currentRole === 'accountant') && (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+                  <div className="bg-gradient-to-l from-blue-50 to-white p-3 rounded-2xl border border-blue-200 shadow-2xs">
+                    <div className="text-[10px] font-bold text-blue-800">🌐 مبيعات المتجر الأونلاين</div>
+                    <div className="text-sm font-black text-blue-950 mt-0.5">
+                      {overviewFinancialSummary.onlineMetrics.grossRevenue.toLocaleString()} ج.م
+                    </div>
+                    <div className="text-[9.5px] text-blue-700 font-semibold mt-0.5">
+                      {overviewFinancialSummary.onlineMetrics.orderCount} طلب أونلاين
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-l from-amber-50 to-white p-3 rounded-2xl border border-amber-200 shadow-2xs">
+                    <div className="text-[10px] font-bold text-amber-900">⚖️ مبيعات كاشير الفرع POS</div>
+                    <div className="text-sm font-black text-amber-950 mt-0.5">
+                      {overviewFinancialSummary.posMetrics.grossRevenue.toLocaleString()} ج.م
+                    </div>
+                    <div className="text-[9.5px] text-amber-800 font-semibold mt-0.5">
+                      {overviewFinancialSummary.posMetrics.orderCount} فاتورة كاشير
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-l from-brand-50 to-white p-3 rounded-2xl border border-brand-200 shadow-2xs">
+                    <div className="text-[10px] font-bold text-brand-700">📦 تكلفة البضاعة والمصروفات</div>
+                    <div className="text-sm font-black text-brand-950 mt-0.5">
+                      {(overviewFinancialSummary.totalCogs + overviewFinancialSummary.operatingExpenses).toLocaleString()} ج.م
+                    </div>
+                    <div className="text-[9.5px] text-brand-600 font-semibold mt-0.5">
+                      خامات: {overviewFinancialSummary.totalCogs.toLocaleString()} • مصروفات: {overviewFinancialSummary.operatingExpenses.toLocaleString()}
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-l from-pistachio-50 to-white p-3 rounded-2xl border border-pistachio-300 shadow-2xs">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-pistachio-800">
+                      <span>💰 صافي الربح الفعلي</span>
+                      <span className="bg-pistachio-200 text-pistachio-900 px-1.5 py-0.5 rounded font-black">
+                        {overviewFinancialSummary.netMarginPercent}%
+                      </span>
+                    </div>
+                    <div
+                      className={`text-sm font-black mt-0.5 ${
+                        overviewFinancialSummary.netOperatingProfit >= 0
+                          ? 'text-pistachio-700'
+                          : 'text-red-700'
+                      }`}
+                    >
+                      {overviewFinancialSummary.netOperatingProfit.toLocaleString()} ج.م
+                    </div>
+                    <div className="text-[9.5px] text-pistachio-700 font-semibold mt-0.5">
+                      بعد خصم تكلفة الجملة والمصروفات
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Second Row: Drawer Reconciliation, Inventory Valuation, Supply & VIP Liabilities, and Accounting Portal Shortcut */}
+              {(isFullAdmin || currentRole === 'accountant') && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                  <div className="bg-white p-3 rounded-2xl border border-brand-200 shadow-2xs flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between text-[10px] font-bold text-brand-700">
+                        <span>🧾 مطابقة دروج الكاشير (Z-Reports)</span>
+                        <span
+                          className={`px-1.5 py-0.5 rounded font-black ${
+                            overviewFinancialSummary.totalDrawerVariance < 0
+                              ? 'bg-red-100 text-red-700'
+                              : overviewFinancialSummary.totalDrawerVariance > 0
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-pistachio-100 text-pistachio-800'
+                          }`}
+                        >
+                          {overviewFinancialSummary.totalDrawerVariance === 0
+                            ? 'مطابق ✓'
+                            : overviewFinancialSummary.totalDrawerVariance > 0
+                            ? `+${overviewFinancialSummary.totalDrawerVariance} فائض`
+                            : `${overviewFinancialSummary.totalDrawerVariance} عجز`}
+                        </span>
+                      </div>
+                      <div className="text-xs font-black text-brand-950 mt-1">
+                        ✓ {overviewFinancialSummary.shiftAudits.filter((s) => s.varianceType === 'balanced').length} مطابق • ⚠️{' '}
+                        {overviewFinancialSummary.shiftAudits.filter((s) => s.varianceType === 'shortage').length} عجز • ➕{' '}
+                        {overviewFinancialSummary.shiftAudits.filter((s) => s.varianceType === 'surplus').length} زيادة
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => selectTab('accounting_portal', { subtab: 'shifts' })}
+                      className="mt-2 text-[10.5px] font-extrabold text-pistachio-700 hover:underline text-right cursor-pointer"
+                    >
+                      مراجعة تقارير Z-Report والورديات ←
+                    </button>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-2xl border border-brand-200 shadow-2xs flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between text-[10px] font-bold text-brand-700">
+                        <span>📦 تقييم المخزون الفعلي ({productsInventoryValuation.totalStockKg} كجم)</span>
+                        <span className="bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded font-black">
+                          هامش {productsInventoryValuation.avgMarginPercent}%
+                        </span>
+                      </div>
+                      <div className="text-xs font-black text-brand-950 mt-1">
+                        بالتكلفة: {productsInventoryValuation.totalCostValuation.toLocaleString()} ج.م • بالبيع:{' '}
+                        {productsInventoryValuation.totalRetailValuation.toLocaleString()} ج.م
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => selectTab('products')}
+                      className="mt-2 text-[10.5px] font-extrabold text-brand-700 hover:underline text-right cursor-pointer"
+                    >
+                      ربح المخزون الكامن: +{productsInventoryValuation.potentialInventoryProfit.toLocaleString()} ج.م ←
+                    </button>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-2xl border border-brand-200 shadow-2xs flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between text-[10px] font-bold text-brand-700">
+                        <span>🚚 التزامات الموردين ومحافظ VIP</span>
+                        <span className="bg-brand-100 text-brand-900 px-1.5 py-0.5 rounded font-black">
+                          {overviewFinancialSummary.supplyFinancials.pendingCount} معلقة
+                        </span>
+                      </div>
+                      <div className="text-xs font-black text-brand-950 mt-1">
+                        توريد معتمد: {overviewFinancialSummary.supplyFinancials.approvedTotal.toLocaleString()} ج.م • معلق:{' '}
+                        {overviewFinancialSummary.supplyFinancials.pendingTotal.toLocaleString()} ج.م
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => selectTab('supply_invoices')}
+                      className="mt-2 text-[10.5px] font-extrabold text-amber-800 hover:underline text-right cursor-pointer"
+                    >
+                      رصيد نقاط VIP للعملاء: {overviewFinancialSummary.vipLiabilities.totalPointsBalance.toLocaleString()} ج.م ←
+                    </button>
+                  </div>
+
+                  <div className="bg-gradient-to-l from-brand-950 to-brand-900 text-white p-3 rounded-2xl border border-gold-500/30 shadow-2xs flex flex-col justify-between">
+                    <div>
+                      <div className="text-[10px] font-black text-gold-400">
+                        📊 بوابة المحاسبة والتدقيق الشامل
+                      </div>
+                      <div className="text-xs font-extrabold text-white mt-0.5">
+                        6 سجلات تفصيلية (بطاقات + جداول) وتصدير Excel
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => selectTab('accounting_portal')}
+                        className="flex-1 bg-gold-500 hover:bg-gold-400 text-brand-950 text-[10.5px] font-black px-2.5 py-1.5 rounded-xl transition cursor-pointer"
+                      >
+                        فتح بوابة المحاسب ←
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const csv = generateFinancialSummaryCsv(overviewFinancialSummary);
+                          triggerCsvDownload(
+                            `hafsa_financial_summary_${new Date().toISOString().slice(0, 10)}.csv`,
+                            csv
+                          );
+                        }}
+                        className="bg-white/10 hover:bg-white/20 text-white text-[10.5px] font-bold px-2.5 py-1.5 rounded-xl border border-white/20 transition cursor-pointer"
+                        title="تصدير الملخص المالي CSV"
+                      >
+                        CSV
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Order Status Pipeline Breakdown */}
               <div className="bg-white p-3.5 rounded-2xl border border-brand-200 shadow-2xs space-y-2.5">
@@ -2613,20 +2712,30 @@ export default function AdminDashboardPage() {
                               {ord.total} ج.م
                             </td>
                             <td className="p-2.5 whitespace-nowrap">
-                              <select
-                                value={ord.status}
-                                onChange={(e) =>
-                                  handleOrderStatusChange(ord.id, e.target.value as OrderStatus)
-                                }
-                                className="bg-brand-50 border border-brand-200 rounded-lg px-2 py-1 text-[11px] font-bold"
-                              >
-                                <option value="pending">قيد المراجعة</option>
-                                <option value="confirmed">تم التأكيد</option>
-                                <option value="roasting_packing">جاري التحميص</option>
-                                <option value="shipped">خرج للتوصيل</option>
-                                <option value="delivered">تم التسليم</option>
-                                <option value="cancelled">ملغي</option>
-                              </select>
+                              {currentRole !== 'accountant' ? (
+                                <select
+                                  value={ord.status}
+                                  onChange={(e) =>
+                                    handleOrderStatusChange(ord.id, e.target.value as OrderStatus)
+                                  }
+                                  className="bg-brand-50 border border-brand-200 rounded-lg px-2 py-1 text-[11px] font-bold"
+                                >
+                                  <option value="pending">قيد المراجعة</option>
+                                  <option value="confirmed">تم التأكيد</option>
+                                  <option value="roasting_packing">جاري التحميص</option>
+                                  <option value="shipped">خرج للتوصيل</option>
+                                  <option value="delivered">تم التسليم</option>
+                                  <option value="cancelled">ملغي</option>
+                                </select>
+                              ) : (
+                                <span
+                                  className={`inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
+                                    getOrderStatusMeta(ord.status).badgeClass
+                                  }`}
+                                >
+                                  {getOrderStatusMeta(ord.status).label}
+                                </span>
+                              )}
                             </td>
                             <td className="p-2.5 text-center whitespace-nowrap">
                               <button
@@ -2651,33 +2760,85 @@ export default function AdminDashboardPage() {
                 <div className="space-y-4">
                   <div className="bg-white p-4 rounded-2xl border border-brand-200 shadow-2xs space-y-2.5">
                     <h3 className="text-xs sm:text-sm font-black text-brand-950 flex items-center justify-between">
-                      <span>حالة توفر المخزون</span>
+                      <span>حالة توفر المخزون وتنبيهات النواقص</span>
                       <span className="text-[10px] bg-pistachio-100 text-pistachio-700 px-2 py-0.5 rounded-full font-bold">
                         {products.length - outOfStockProducts.length} متاح
                       </span>
                     </h3>
 
-                    {outOfStockProducts.length === 0 ? (
+                    {outOfStockProducts.length === 0 && lowStockProducts.length === 0 ? (
                       <div className="p-3 rounded-xl bg-pistachio-50 border border-pistachio-200 text-pistachio-700 text-xs font-bold flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 shrink-0" />
-                        <span>جميع أصناف المتجر متوفرة حالياً في المخزون!</span>
+                        <span>جميع أصناف المتجر متوفرة بكميات آمنة في المخزون!</span>
                       </div>
                     ) : (
-                      <div className="space-y-1.5">
-                        {outOfStockProducts.map((p) => (
-                          <div
-                            key={p.id}
-                            className="flex items-center justify-between p-2 rounded-xl bg-red-50 border border-red-200 text-xs"
-                          >
-                            <span className="font-bold text-red-900 truncate">{p.name}</span>
-                            <button
-                              onClick={() => handleToggleProductStock(p.id)}
-                              className="bg-white text-pistachio-700 border border-pistachio-300 px-2 py-0.5 rounded-lg text-[10px] font-extrabold shrink-0"
-                            >
-                              إعادة التوفير
-                            </button>
+                      <div className="space-y-2">
+                        {outOfStockProducts.length > 0 && (
+                          <div className="space-y-1.5">
+                            <div className="text-[10.5px] font-black text-red-700 flex items-center justify-between">
+                              <span>❌ أصناف نافدة ({outOfStockProducts.length})</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setProductStockFilter('out');
+                                  selectTab('products');
+                                }}
+                                className="underline text-[10px] hover:text-red-900"
+                              >
+                                عرض الكل
+                              </button>
+                            </div>
+                            {outOfStockProducts.slice(0, 4).map((p) => (
+                              <div
+                                key={p.id}
+                                className="flex items-center justify-between p-2 rounded-xl bg-red-50 border border-red-200 text-xs"
+                              >
+                                <span className="font-bold text-red-900 truncate">{p.name}</span>
+                                {isFullAdmin ? (
+                                  <button
+                                    onClick={() => handleToggleProductStock(p.id)}
+                                    className="bg-white text-pistachio-700 border border-pistachio-300 px-2 py-0.5 rounded-lg text-[10px] font-extrabold shrink-0"
+                                  >
+                                    إعادة التوفير
+                                  </button>
+                                ) : (
+                                  <span className="text-[10px] font-black text-red-700 shrink-0">
+                                    0 كجم
+                                  </span>
+                                )}
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        )}
+
+                        {lowStockProducts.length > 0 && (
+                          <div className="space-y-1.5 pt-1">
+                            <div className="text-[10.5px] font-black text-amber-800 flex items-center justify-between">
+                              <span>⚠️ نواقص حرجة ≤ 5 كجم ({lowStockProducts.length})</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setProductStockFilter('low');
+                                  selectTab('products');
+                                }}
+                                className="underline text-[10px] hover:text-amber-950"
+                              >
+                                فلترة النواقص
+                              </button>
+                            </div>
+                            {lowStockProducts.slice(0, 5).map((p) => (
+                              <div
+                                key={p.id}
+                                className="flex items-center justify-between p-2 rounded-xl bg-amber-50 border border-amber-200 text-xs"
+                              >
+                                <span className="font-bold text-amber-950 truncate">{p.name}</span>
+                                <span className="font-mono font-black text-[10.5px] bg-white text-amber-800 border border-amber-300 px-2 py-0.5 rounded-lg shrink-0">
+                                  {p.stockKg} كجم متبقي
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -2703,17 +2864,21 @@ export default function AdminDashboardPage() {
 
                   <div className="flex items-center gap-2">
                     {(orderSearch ||
+                      orderChannelFilter !== 'all' ||
                       orderStatusFilter !== 'all' ||
                       orderPaymentFilter !== 'all' ||
                       orderGovernorateFilter !== 'all' ||
+                      overviewDatePreset !== 'all' ||
                       orderSort !== 'newest') && (
                       <button
                         type="button"
                         onClick={() => {
                           setOrderSearch('');
+                          setOrderChannelFilter('all');
                           setOrderStatusFilter('all');
                           setOrderPaymentFilter('all');
                           setOrderGovernorateFilter('all');
+                          setOverviewDatePreset('all');
                           setOrderSort('newest');
                         }}
                         className="text-[11px] bg-red-50 hover:bg-red-100 text-red-700 font-extrabold px-2.5 py-1.5 rounded-xl transition"
@@ -2733,7 +2898,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Multi-Criteria Filter Controls */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5">
                   <div className="relative">
                     <Search className="w-3.5 h-3.5 text-brand-500 absolute right-3 top-1/2 -translate-y-1/2" />
                     <input
@@ -2744,6 +2909,30 @@ export default function AdminDashboardPage() {
                       className="w-full bg-brand-50 border border-brand-200 rounded-xl pr-8 pl-3 py-1.5 text-xs font-bold focus:outline-none focus:border-brand-800"
                     />
                   </div>
+
+                  <select
+                    value={orderChannelFilter}
+                    onChange={(e) =>
+                      setOrderChannelFilter(e.target.value as 'all' | 'online' | 'pos')
+                    }
+                    className="bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-bold"
+                  >
+                    <option value="all">القناة: كل القنوات (أونلاين + كاشير)</option>
+                    <option value="online">🌐 المتجر الإلكتروني الأونلاين</option>
+                    <option value="pos">🧾 كاشير الفرع POS</option>
+                  </select>
+
+                  <select
+                    value={overviewDatePreset}
+                    onChange={(e) => setOverviewDatePreset(e.target.value as DateRangePreset)}
+                    className="bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-bold"
+                  >
+                    <option value="all">الفترة: كل الفترات</option>
+                    <option value="today">الفترة: طلبات اليوم</option>
+                    <option value="this_week">الفترة: آخر 7 أيام</option>
+                    <option value="this_month">الفترة: هذا الشهر</option>
+                    <option value="custom">الفترة: تاريخ مخصص</option>
+                  </select>
 
                   <select
                     value={orderGovernorateFilter}
@@ -2769,9 +2958,11 @@ export default function AdminDashboardPage() {
                     className="bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-bold"
                   >
                     <option value="all">كل طرق الدفع</option>
-                    <option value="cod">الدفع عند الاستلام (COD)</option>
-                    <option value="instapay">تحويل إنستا باي (InstaPay)</option>
-                    <option value="vodafone_cash">محفظة فودافون كاش</option>
+                    <option value="cod">💵 الدفع عند الاستلام (COD)</option>
+                    <option value="cash">💵 نقدي بالكاشير (POS)</option>
+                    <option value="instapay">⚡ تحويل إنستا باي (InstaPay)</option>
+                    <option value="vodafone_cash">📱 محفظة فودافون كاش</option>
+                    <option value="vip_wallet">👑 محفظة كاش باك VIP</option>
                   </select>
 
                   <select
@@ -2830,6 +3021,66 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
+              {/* Financial Audit Strip for Filtered Orders (Admin & Accountant) */}
+              {(isFullAdmin || currentRole === 'accountant') && (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+                  <div className="bg-white p-3 rounded-2xl border border-brand-200 shadow-2xs">
+                    <span className="text-[10px] font-bold text-brand-600 block">
+                      إجمالي مبيعات الفواتير المعروضة ({filteredOrdersFinancials.validCount} فاتورة)
+                    </span>
+                    <span className="text-base font-black text-brand-950 mt-0.5 block">
+                      {filteredOrdersFinancials.revenue.toLocaleString('ar-EG')} ج.م
+                    </span>
+                    <span className="text-[10px] text-brand-500 font-bold">
+                      🌐 {filteredOrdersFinancials.onlineCount} أونلاين • 🧾 {filteredOrdersFinancials.posCount} كاشير
+                    </span>
+                  </div>
+
+                  <div className="bg-amber-50/70 p-3 rounded-2xl border border-amber-200 shadow-2xs">
+                    <span className="text-[10px] font-bold text-amber-800 block">
+                      تكلفة البضاعة المباعة للفواتير (COGS)
+                    </span>
+                    <span className="text-base font-black text-amber-950 mt-0.5 block">
+                      {filteredOrdersFinancials.cogs.toLocaleString('ar-EG')} ج.م
+                    </span>
+                    <span className="text-[10px] text-amber-700 font-bold">
+                      خامات الجملة وتكاليف التغليف
+                    </span>
+                  </div>
+
+                  <div className="bg-blue-50/70 p-3 rounded-2xl border border-blue-200 shadow-2xs">
+                    <span className="text-[10px] font-bold text-blue-800 block">
+                      الخصومات الممنوحة والشحن المحصل
+                    </span>
+                    <span className="text-base font-black text-blue-950 mt-0.5 block">
+                      خصم: -{filteredOrdersFinancials.discounts.toLocaleString('ar-EG')} ج.م
+                    </span>
+                    <span className="text-[10px] text-blue-700 font-bold">
+                      شحن محصل: {filteredOrdersFinancials.shipping.toLocaleString('ar-EG')} ج.م
+                    </span>
+                  </div>
+
+                  <div className="bg-pistachio-50 p-3 rounded-2xl border border-pistachio-300 shadow-2xs">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-pistachio-800">
+                      <span>صافي ربح الفواتير المعروضة</span>
+                      <span className="bg-pistachio-200 text-pistachio-950 px-1.5 py-0.5 rounded font-black">
+                        {filteredOrdersFinancials.marginPercent}%
+                      </span>
+                    </div>
+                    <span
+                      className={`text-base font-black mt-0.5 block ${
+                        filteredOrdersFinancials.netProfit >= 0 ? 'text-pistachio-800' : 'text-red-700'
+                      }`}
+                    >
+                      +{filteredOrdersFinancials.netProfit.toLocaleString('ar-EG')} ج.م
+                    </span>
+                    <span className="text-[10px] text-pistachio-700 font-bold">
+                      بعد خصم تكلفة البضاعة والخصومات
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Orders Data Table */}
               {filteredOrders.length === 0 ? (
                 <div className="bg-white p-8 rounded-2xl border border-brand-200 text-center space-y-2">
@@ -2876,9 +3127,20 @@ export default function AdminDashboardPage() {
                             >
                               {/* Order Number & Date */}
                               <td className="p-3 whitespace-nowrap">
-                                <span className="inline-block font-mono font-black text-xs bg-brand-950 text-gold-400 px-2.5 py-1 rounded-lg">
-                                  {order.orderNumber}
-                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="inline-block font-mono font-black text-xs bg-brand-950 text-gold-400 px-2.5 py-1 rounded-lg">
+                                    {order.orderNumber}
+                                  </span>
+                                  <span
+                                    className={`text-[9.5px] font-black px-1.5 py-0.5 rounded ${
+                                      isPosOrder(order)
+                                        ? 'bg-emerald-100 text-emerald-900'
+                                        : 'bg-blue-100 text-blue-900'
+                                    }`}
+                                  >
+                                    {isPosOrder(order) ? '🧾 كاشير' : '🌐 أونلاين'}
+                                  </span>
+                                </div>
                                 <div className="text-[10px] text-brand-600 mt-1">
                                   {new Date(order.createdAt).toLocaleDateString('ar-EG', {
                                     dateStyle: 'medium',
@@ -2948,16 +3210,18 @@ export default function AdminDashboardPage() {
                                       <span className="text-amber-900 font-bold truncate">
                                         📝 {order.notes || 'بدون ملاحظات'}
                                       </span>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setEditingOrderNotesId(order.id);
-                                          setOrderNotesDraft(order.notes || '');
-                                        }}
-                                        className="text-brand-700 hover:underline font-bold shrink-0"
-                                      >
-                                        تعديل
-                                      </button>
+                                      {currentRole !== 'accountant' && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setEditingOrderNotesId(order.id);
+                                            setOrderNotesDraft(order.notes || '');
+                                          }}
+                                          className="text-brand-700 hover:underline font-bold shrink-0"
+                                        >
+                                          تعديل
+                                        </button>
+                                      )}
                                     </div>
                                   )}
                                 </div>
@@ -3003,8 +3267,12 @@ export default function AdminDashboardPage() {
                                 <span className="inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-brand-100 text-brand-900">
                                   {order.paymentMethod === 'cod'
                                     ? '💵 الدفع عند الاستلام'
+                                    : (order.paymentMethod as string) === 'cash'
+                                    ? '💵 نقدي بالكاشير (POS)'
                                     : order.paymentMethod === 'instapay'
                                     ? '⚡ إنستا باي'
+                                    : (order.paymentMethod as string) === 'vip_wallet'
+                                    ? '👑 محفظة كاش باك VIP'
                                     : '📱 فودافون كاش'}
                                 </span>
                                 {order.paymentReference && (
@@ -3027,17 +3295,16 @@ export default function AdminDashboardPage() {
                                     خصم: -{order.discountAmount} ج.م
                                   </div>
                                 )}
-                                {(isFullAdmin || currentRole === 'accountant') &&
-                                  typeof order.netProfitEgp === 'number' && (
-                                    <div className="mt-1 pt-1 border-t border-brand-100 text-[10px] space-y-0.5">
-                                      <div className="text-amber-800 font-bold">
-                                        تكلفة: {order.rawCostTotal || 0} ج.م
-                                      </div>
-                                      <div className="text-pistachio-700 font-black">
-                                        ربح صافي: +{order.netProfitEgp} ج.م
-                                      </div>
+                                {(isFullAdmin || currentRole === 'accountant') && (
+                                  <div className="mt-1 pt-1 border-t border-brand-100 text-[10px] space-y-0.5">
+                                    <div className="text-amber-800 font-bold">
+                                      تكلفة: {calculateOrderCogs(order, products)} ج.م
                                     </div>
-                                  )}
+                                    <div className="text-pistachio-700 font-black">
+                                      ربح صافي: +{Math.round((order.total - calculateOrderCogs(order, products)) * 100) / 100} ج.م
+                                    </div>
+                                  </div>
+                                )}
                               </td>
 
                               {/* Status Badge & Selector */}
@@ -3111,13 +3378,25 @@ export default function AdminDashboardPage() {
                       <tfoot>
                         <tr className="bg-brand-50 border-t-2 border-brand-200 font-black text-xs text-brand-950">
                           <td colSpan={5} className="p-3">
-                            إجمالي الطلبات المعروضة في الجدول ({filteredOrders.length} طلب)
+                            إجمالي الطلبات المعروضة في الجدول ({filteredOrders.length} طلب •{' '}
+                            {filteredOrdersFinancials.validCount} مؤكدة)
                           </td>
-                          <td colSpan={3} className="p-3 text-pistachio-700 text-sm">
-                            {filteredOrders
-                              .filter((o) => o.status !== 'cancelled')
-                              .reduce((s, o) => s + o.total, 0)}{' '}
-                            ج.م (صافي غير الملغي)
+                          <td colSpan={3} className="p-3">
+                            <div className="flex flex-wrap items-center gap-3">
+                              <span className="text-pistachio-700 text-sm">
+                                المبيعات: {filteredOrdersFinancials.revenue.toLocaleString('ar-EG')} ج.م
+                              </span>
+                              {(isFullAdmin || currentRole === 'accountant') && (
+                                <>
+                                  <span className="text-amber-800 text-xs">
+                                    • التكلفة: {filteredOrdersFinancials.cogs.toLocaleString('ar-EG')} ج.م
+                                  </span>
+                                  <span className="text-pistachio-800 bg-pistachio-100 px-2 py-0.5 rounded-lg text-xs">
+                                    صافي الربح: +{filteredOrdersFinancials.netProfit.toLocaleString('ar-EG')} ج.م ({filteredOrdersFinancials.marginPercent}%)
+                                  </span>
+                                </>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       </tfoot>
@@ -3169,13 +3448,15 @@ export default function AdminDashboardPage() {
                         إعادة ضبط الفلاتر ✕
                       </button>
                     )}
-                    <button
-                      onClick={openCreateProductModal}
-                      className="bg-brand-900 hover:bg-brand-950 text-white text-xs font-extrabold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs"
-                    >
-                      <Plus className="w-4 h-4 text-gold-400" />
-                      <span>إضافة منتج مكسرات جديد</span>
-                    </button>
+                    {isFullAdmin && (
+                      <button
+                        onClick={openCreateProductModal}
+                        className="bg-brand-900 hover:bg-brand-950 text-white text-xs font-extrabold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs"
+                      >
+                        <Plus className="w-4 h-4 text-gold-400" />
+                        <span>إضافة منتج مكسرات جديد</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -3210,11 +3491,14 @@ export default function AdminDashboardPage() {
 
                   <select
                     value={productStockFilter}
-                    onChange={(e) => setProductStockFilter(e.target.value as 'all' | 'in' | 'out')}
+                    onChange={(e) =>
+                      setProductStockFilter(e.target.value as 'all' | 'in' | 'low' | 'out')
+                    }
                     className="bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
                   >
                     <option value="all">كل حالات التوفر</option>
                     <option value="in">متوفر في المخزون</option>
+                    <option value="low">⚠️ نواقص حرجة (5 كجم فأقل)</option>
                     <option value="out">غير متوفر (نافد)</option>
                   </select>
 
@@ -3756,6 +4040,62 @@ export default function AdminDashboardPage() {
                 </form>
               )}
 
+              {/* 4 Inventory Valuation & Margin Summary Cards (Admin & Accountant) */}
+              {(isFullAdmin || currentRole === 'accountant') && (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+                  <div className="bg-white p-3.5 rounded-2xl border border-brand-200 shadow-2xs">
+                    <span className="text-[10px] font-bold text-brand-600 block">
+                      إجمالي الوزن الفعلي بالمخزن
+                    </span>
+                    <span className="text-base font-black text-brand-950 mt-0.5 block">
+                      {productsInventoryValuation.totalStockKg.toLocaleString('ar-EG')} كجم
+                    </span>
+                    <span className="text-[10px] text-brand-500 font-bold">
+                      موزعة على {products.length} صنف
+                    </span>
+                  </div>
+
+                  <div className="bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200 shadow-2xs">
+                    <span className="text-[10px] font-bold text-amber-800 block">
+                      قيمة المخزون بالتكلفة والجملة (رأس المال العامل)
+                    </span>
+                    <span className="text-base font-black text-amber-950 mt-0.5 block">
+                      {productsInventoryValuation.totalCostValuation.toLocaleString('ar-EG')} ج.م
+                    </span>
+                    <span className="text-[10px] text-amber-700 font-bold">
+                      شامل تكلفة الخامات والتغليف
+                    </span>
+                  </div>
+
+                  <div className="bg-blue-50/70 p-3.5 rounded-2xl border border-blue-200 shadow-2xs">
+                    <span className="text-[10px] font-bold text-blue-800 block">
+                      قيمة المخزون بسعر البيع للجمهور
+                    </span>
+                    <span className="text-base font-black text-blue-950 mt-0.5 block">
+                      {productsInventoryValuation.totalRetailValuation.toLocaleString('ar-EG')} ج.م
+                    </span>
+                    <span className="text-[10px] text-blue-700 font-bold">
+                      تقييم البيع التقديري للكيلو
+                    </span>
+                  </div>
+
+                  <div className="bg-pistachio-50 p-3.5 rounded-2xl border border-pistachio-300 shadow-2xs">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-pistachio-800">
+                      <span>الربح الكامن المتوقع من المخزون</span>
+                      <span className="bg-pistachio-200 text-pistachio-950 px-1.5 py-0.5 rounded font-black">
+                        {productsInventoryValuation.avgMarginPercent}%
+                      </span>
+                    </div>
+                    <span className="text-base font-black text-pistachio-800 mt-0.5 block">
+                      +{productsInventoryValuation.potentialInventoryProfit.toLocaleString('ar-EG')} ج.م
+                    </span>
+                    <span className="text-[10px] text-pistachio-700 font-bold">
+                      متوسط هامش الربح للصنف
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Products Data Table */}
               {filteredProducts.length === 0 ? (
                 <div className="bg-white p-8 rounded-2xl border border-brand-200 text-center space-y-2">
@@ -3787,6 +4127,9 @@ export default function AdminDashboardPage() {
                           <th className="p-3 whitespace-nowrap">الصنف والرابط</th>
                           <th className="p-3 whitespace-nowrap">القسم والمنشأ</th>
                           <th className="p-3">الأوزان والأسعار (ج.م)</th>
+                          {(isFullAdmin || currentRole === 'accountant') && (
+                            <th className="p-3 whitespace-nowrap">التكلفة وهامش الربح (للكيلو)</th>
+                          )}
                           <th className="p-3">خيارات التحميص</th>
                           <th className="p-3 whitespace-nowrap">التقييم والقيم</th>
                           <th className="p-3 whitespace-nowrap text-center">المخزون والقنوات والتمييز</th>
@@ -3858,6 +4201,62 @@ export default function AdminDashboardPage() {
                                 </div>
                               </td>
 
+                              {/* Cost & Profit Margin per Kg (Admin & Accountant) */}
+                              {(isFullAdmin || currentRole === 'accountant') &&
+                                (() => {
+                                  const w1000 = prod.weights.find(
+                                    (w) => w.weightGrams === 1000 || w.grams === 1000
+                                  );
+                                  const retailKg =
+                                    typeof prod.pricePerKg === 'number' && prod.pricePerKg > 0
+                                      ? prod.pricePerKg
+                                      : w1000?.price ||
+                                        (prod.weights[0]?.price ? prod.weights[0].price * 4 : 400);
+                                  const rawCostKg =
+                                    typeof prod.costPerKg === 'number' && prod.costPerKg > 0
+                                      ? prod.costPerKg
+                                      : Math.round(retailKg * 0.68);
+                                  const packCostKg =
+                                    typeof prod.packagingCost === 'number' ? prod.packagingCost : 0;
+                                  const totalCostKg = rawCostKg + packCostKg;
+                                  const profitKg = Math.round((retailKg - totalCostKg) * 100) / 100;
+                                  const marginPct =
+                                    retailKg > 0
+                                      ? Math.round((profitKg / retailKg) * 1000) / 10
+                                      : 0;
+                                  return (
+                                    <td className="p-3 whitespace-nowrap">
+                                      <div className="space-y-1 text-[10.5px]">
+                                        <div className="text-amber-900 font-bold">
+                                          تكلفة جملة: {rawCostKg} ج.م
+                                          {packCostKg > 0 ? ` (+${packCostKg} تغليف)` : ''}
+                                        </div>
+                                        <div className="text-brand-800 font-bold">
+                                          بيع الكيلو: {retailKg} ج.م
+                                        </div>
+                                        <div className="flex items-center gap-1.5 pt-0.5">
+                                          <span
+                                            className={`font-black ${
+                                              profitKg >= 0 ? 'text-pistachio-700' : 'text-red-700'
+                                            }`}
+                                          >
+                                            ربح: +{profitKg} ج.م
+                                          </span>
+                                          <span
+                                            className={`px-1.5 py-0.5 rounded font-black text-[9.5px] ${
+                                              marginPct < 15
+                                                ? 'bg-red-100 text-red-700'
+                                                : 'bg-pistachio-100 text-pistachio-900'
+                                            }`}
+                                          >
+                                            {marginPct}%
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </td>
+                                  );
+                                })()}
+
                               {/* Roast Options */}
                               <td className="p-3 min-w-[150px]">
                                 <div className="flex flex-wrap gap-1">
@@ -3891,13 +4290,14 @@ export default function AdminDashboardPage() {
                                 <div className="flex items-center justify-center gap-1">
                                   <button
                                     type="button"
-                                    onClick={() => handleToggleProductStock(prod.id)}
+                                    disabled={!isFullAdmin}
+                                    onClick={() => isFullAdmin && handleToggleProductStock(prod.id)}
                                     className={`text-[10px] font-extrabold px-2 py-0.5 rounded-lg border transition ${
                                       prod.inStock
                                         ? 'bg-pistachio-50 text-pistachio-700 border-pistachio-200 hover:bg-pistachio-100'
                                         : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
                                     }`}
-                                    title="تغيير حالة التوفر"
+                                    title="حالة التوفر"
                                   >
                                     {prod.inStock ? 'متوفر ✓' : 'نافد ✕'}
                                   </button>
@@ -3917,25 +4317,27 @@ export default function AdminDashboardPage() {
                                 <div className="flex items-center justify-center gap-1">
                                   <button
                                     type="button"
-                                    onClick={() => handleToggleProductShowOnline(prod.id)}
+                                    disabled={!isFullAdmin}
+                                    onClick={() => isFullAdmin && handleToggleProductShowOnline(prod.id)}
                                     className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border transition ${
                                       prod.showOnline !== false
                                         ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
                                         : 'bg-zinc-100 text-zinc-400 border-zinc-200 line-through'
                                     }`}
-                                    title="قناة المتجر الإلكتروني: انقر للتفعيل أو التعطيل"
+                                    title="قناة المتجر الإلكتروني"
                                   >
                                     🌐 {prod.showOnline !== false ? 'أونلاين' : 'معطل'}
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => handleToggleProductShowInPos(prod.id)}
+                                    disabled={!isFullAdmin}
+                                    onClick={() => isFullAdmin && handleToggleProductShowInPos(prod.id)}
                                     className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border transition ${
                                       prod.showInPos !== false
                                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                                         : 'bg-zinc-100 text-zinc-400 border-zinc-200 line-through'
                                     }`}
-                                    title="قناة الكاشير POS: انقر للتفعيل أو التعطيل"
+                                    title="قناة الكاشير POS"
                                   >
                                     🧾 {prod.showInPos !== false ? 'كاشير' : 'معطل'}
                                   </button>
@@ -3944,7 +4346,8 @@ export default function AdminDashboardPage() {
                                 <div>
                                   <button
                                     type="button"
-                                    onClick={() => handleToggleProductFeatured(prod.id)}
+                                    disabled={!isFullAdmin}
+                                    onClick={() => isFullAdmin && handleToggleProductFeatured(prod.id)}
                                     className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border transition ${
                                       prod.featured
                                         ? 'bg-gold-500/20 text-brand-950 border-gold-500/40'
@@ -3959,28 +4362,32 @@ export default function AdminDashboardPage() {
                               {/* Actions */}
                               <td className="p-3 whitespace-nowrap text-center">
                                 <div className="flex items-center justify-center gap-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setIsCreatingProduct(false);
-                                      setEditingProduct(prod);
-                                      updateUrlQueryParams({ productModal: prod.slug });
-                                    }}
-                                    className="bg-amber-100 hover:bg-amber-200 text-brand-950 text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg flex items-center gap-1"
-                                    title="تحرير شامل للمنتج"
-                                  >
-                                    <Edit3 className="w-3 h-3" />
-                                    <span>تحرير</span>
-                                  </button>
+                                  {isFullAdmin && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setIsCreatingProduct(false);
+                                          setEditingProduct(prod);
+                                          updateUrlQueryParams({ productModal: prod.slug });
+                                        }}
+                                        className="bg-amber-100 hover:bg-amber-200 text-brand-950 text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg flex items-center gap-1"
+                                        title="تحرير شامل للمنتج"
+                                      >
+                                        <Edit3 className="w-3 h-3" />
+                                        <span>تحرير</span>
+                                      </button>
 
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDuplicateProduct(prod)}
-                                    className="p-1.5 text-brand-700 hover:bg-brand-100 rounded-lg"
-                                    title="نسخ المنتج"
-                                  >
-                                    <Copy className="w-3.5 h-3.5" />
-                                  </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDuplicateProduct(prod)}
+                                        className="p-1.5 text-brand-700 hover:bg-brand-100 rounded-lg"
+                                        title="نسخ المنتج"
+                                      >
+                                        <Copy className="w-3.5 h-3.5" />
+                                      </button>
+                                    </>
+                                  )}
 
                                   <Link
                                     href={`/product/${prod.slug}`}
@@ -3991,14 +4398,16 @@ export default function AdminDashboardPage() {
                                     <ExternalLink className="w-3.5 h-3.5" />
                                   </Link>
 
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteProduct(prod.id)}
-                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
-                                    title="حذف المنتج"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
+                                  {isFullAdmin && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteProduct(prod.id)}
+                                      className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
+                                      title="حذف المنتج"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
                                 </div>
                               </td>
                             </tr>
@@ -4544,11 +4953,12 @@ export default function AdminDashboardPage() {
           {/* MODULE 7: COUPONS & PROMOTIONS DATA TABLE WITH FILTERS            */}
           {/* ================================================================= */}
           {activeTab === 'coupons' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <form
-                onSubmit={handleSaveCoupon}
-                className="bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 space-y-3 h-fit shadow-2xs"
-              >
+            <div className={`grid grid-cols-1 ${isFullAdmin ? 'lg:grid-cols-3' : ''} gap-4`}>
+              {isFullAdmin && (
+                <form
+                  onSubmit={handleSaveCoupon}
+                  className="bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 space-y-3 h-fit shadow-2xs"
+                >
                 <div className="flex items-center justify-between">
                   <h3 className="font-black text-sm text-brand-950">
                     {editingCoupon ? `تعديل كوبون: ${editingCoupon.code}` : '+ إضافة كود خصم جديد'}
@@ -4635,6 +5045,90 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-bold mb-1">
+                      تاريخ الانتهاء (اختياري)
+                    </label>
+                    <input
+                      type="date"
+                      value={
+                        editingCoupon
+                          ? editingCoupon.expiresAt
+                            ? editingCoupon.expiresAt.slice(0, 10)
+                            : ''
+                          : newCouponExpiresAt
+                      }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (editingCoupon) {
+                          setEditingCoupon({
+                            ...editingCoupon,
+                            expiresAt: val ? new Date(`${val}T23:59:59`).toISOString() : undefined,
+                          });
+                        } else {
+                          setNewCouponExpiresAt(val);
+                        }
+                      }}
+                      className="w-full bg-brand-50 border border-brand-200 rounded-lg px-2.5 py-1.5 text-xs font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold mb-1">
+                      الحد الأقصى للاستخدام (اختياري)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      placeholder="غير محدود (∞)"
+                      value={
+                        editingCoupon
+                          ? editingCoupon.maxUses !== undefined
+                            ? editingCoupon.maxUses
+                            : ''
+                          : newCouponMaxUses
+                      }
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        if (editingCoupon) {
+                          setEditingCoupon({
+                            ...editingCoupon,
+                            maxUses: raw && Number(raw) > 0 ? Math.floor(Number(raw)) : undefined,
+                          });
+                        } else {
+                          setNewCouponMaxUses(raw);
+                        }
+                      }}
+                      className="w-full bg-brand-50 border border-brand-200 rounded-lg px-2.5 py-1.5 text-xs font-bold"
+                    />
+                  </div>
+                </div>
+
+                {editingCoupon && (
+                  <div className="bg-brand-50 p-2.5 rounded-xl border border-brand-200 flex items-center justify-between text-xs">
+                    <div>
+                      <span className="text-brand-600 font-bold">مرات الاستخدام الفعلي: </span>
+                      <strong className="font-black text-brand-950">
+                        {editingCoupon.usedCount || 0} مرة
+                      </strong>
+                    </div>
+                    {(editingCoupon.usedCount || 0) > 0 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingCoupon({
+                            ...editingCoupon,
+                            usedCount: 0,
+                          })
+                        }
+                        className="text-[10px] bg-white hover:bg-amber-50 text-amber-800 border border-amber-300 font-extrabold px-2 py-0.5 rounded-lg"
+                      >
+                        تصفير العداد ↺
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-[10px] font-bold mb-1">وصف العرض الترويجي</label>
                   <input
@@ -4657,9 +5151,10 @@ export default function AdminDashboardPage() {
                   {editingCoupon ? 'حفظ تعديلات الكوبون' : '+ إضافة كود الخصم'}
                 </button>
               </form>
+              )}
 
               {/* Coupons Filter Bar & Data Table */}
-              <div className="lg:col-span-2 bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 space-y-3 h-fit shadow-2xs">
+              <div className={`${isFullAdmin ? 'lg:col-span-2' : ''} bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 space-y-3 h-fit shadow-2xs`}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
                     <Filter className="w-4 h-4 text-brand-800" />
@@ -4700,13 +5195,16 @@ export default function AdminDashboardPage() {
                   <select
                     value={couponStatusFilter}
                     onChange={(e) =>
-                      setCouponStatusFilter(e.target.value as 'all' | 'active' | 'inactive')
+                      setCouponStatusFilter(
+                        e.target.value as 'all' | 'active' | 'inactive' | 'expired'
+                      )
                     }
                     className="bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
                   >
                     <option value="all">الحالة: جميع الكوبونات</option>
-                    <option value="active">الكوبونات الفعالة فقط ✓</option>
-                    <option value="inactive">الكوبونات المتوقفة</option>
+                    <option value="active">الكوبونات الفعالة والصالحة ✓</option>
+                    <option value="inactive">الكوبونات المتوقفة يدوياً</option>
+                    <option value="expired">منتهية الصلاحية / مكتملة الحد ⚠️</option>
                   </select>
 
                   <select
@@ -4727,78 +5225,143 @@ export default function AdminDashboardPage() {
                     <thead>
                       <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
                         <th className="p-2.5 whitespace-nowrap">كود الخصم</th>
-                        <th className="p-2.5 whitespace-nowrap">نوع الخصم</th>
                         <th className="p-2.5 whitespace-nowrap">قيمة الخصم</th>
                         <th className="p-2.5 whitespace-nowrap">الحد الأدنى</th>
+                        <th className="p-2.5 whitespace-nowrap">الاستخدام والصلاحية</th>
                         <th className="p-2.5">الوصف الترويجي</th>
                         <th className="p-2.5 whitespace-nowrap text-center">الحالة</th>
-                        <th className="p-2.5 whitespace-nowrap text-center">إجراءات</th>
+                        {isFullAdmin && (
+                          <th className="p-2.5 whitespace-nowrap text-center">إجراءات</th>
+                        )}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-brand-100">
-                      {filteredCoupons.map((c) => (
-                        <tr key={c.id} className="hover:bg-brand-50/70 transition">
-                          <td className="p-2.5 whitespace-nowrap">
-                            <span className="font-mono font-black text-xs text-brand-950 bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-200">
-                              {c.code}
-                            </span>
-                          </td>
-                          <td className="p-2.5 whitespace-nowrap text-[11px] font-bold text-brand-700">
-                            {c.discountType === 'percentage' ? 'نسبة مئوية (%)' : 'مبلغ ثابت (ج.م)'}
-                          </td>
-                          <td className="p-2.5 whitespace-nowrap font-black text-pistachio-700">
-                            {c.discountType === 'percentage' ? `${c.value}%` : `${c.value} ج.م`}
-                          </td>
-                          <td className="p-2.5 whitespace-nowrap font-bold text-brand-900">
-                            {c.minOrderAmount} ج.م
-                          </td>
-                          <td className="p-2.5 text-[11px] text-brand-600">{c.description}</td>
-                          <td className="p-2.5 whitespace-nowrap text-center">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = coupons.map((item) =>
-                                  item.id === c.id ? { ...item, active: !item.active } : item
-                                );
-                                updateStorePayload(
-                                  { coupons: updated },
-                                  'تم تحديث حالة تفعيل الكوبون'
-                                );
-                              }}
-                              className={`text-[10px] font-extrabold px-2.5 py-1 rounded-lg border ${
-                                c.active
-                                  ? 'bg-pistachio-100 text-pistachio-700 border-pistachio-300'
-                                  : 'bg-brand-100 text-brand-500 border-brand-200'
-                              }`}
-                            >
-                              {c.active ? 'فعال ✓' : 'متوقف'}
-                            </button>
-                          </td>
-                          <td className="p-2.5 whitespace-nowrap text-center">
-                            <div className="flex items-center justify-center gap-1">
+                      {filteredCoupons.map((c) => {
+                        const used = c.usedCount || 0;
+                        const max = typeof c.maxUses === 'number' && c.maxUses > 0 ? c.maxUses : null;
+                        const isMaxedOut = Boolean(max !== null && used >= max);
+                        const isExpiredByDate = Boolean(
+                          c.expiresAt && new Date(c.expiresAt).getTime() < Date.now()
+                        );
+                        const usagePct = max ? Math.min(100, Math.round((used / max) * 100)) : 0;
+
+                        return (
+                          <tr key={c.id} className="hover:bg-brand-50/70 transition">
+                            <td className="p-2.5 whitespace-nowrap">
+                              <span className="font-mono font-black text-xs text-brand-950 bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-200">
+                                {c.code}
+                              </span>
+                            </td>
+                            <td className="p-2.5 whitespace-nowrap">
+                              <div className="font-black text-pistachio-700">
+                                {c.discountType === 'percentage' ? `${c.value}%` : `${c.value} ج.م`}
+                              </div>
+                              <div className="text-[10px] text-brand-500">
+                                {c.discountType === 'percentage' ? 'نسبة مئوية' : 'مبلغ ثابت'}
+                              </div>
+                            </td>
+                            <td className="p-2.5 whitespace-nowrap font-bold text-brand-900">
+                              {c.minOrderAmount} ج.م
+                            </td>
+                            <td className="p-2.5 whitespace-nowrap min-w-[140px]">
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between text-[10.5px] font-bold">
+                                  <span className={isMaxedOut ? 'text-red-700 font-black' : 'text-brand-800'}>
+                                    الاستخدام: {used} / {max ?? '∞'}
+                                  </span>
+                                  {isMaxedOut && (
+                                    <span className="bg-red-100 text-red-700 px-1.5 py-0.5 rounded text-[9px] font-black">
+                                      مكتمل الحد
+                                    </span>
+                                  )}
+                                </div>
+                                {max !== null && (
+                                  <div className="w-full h-1.5 bg-brand-100 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full ${
+                                        isMaxedOut ? 'bg-red-500' : 'bg-pistachio-600'
+                                      }`}
+                                      style={{ width: `${usagePct}%` }}
+                                    />
+                                  </div>
+                                )}
+                                <div className="text-[10px]">
+                                  {c.expiresAt ? (
+                                    isExpiredByDate ? (
+                                      <span className="text-red-600 font-extrabold">
+                                        ⚠️ منتهي ({c.expiresAt.slice(0, 10)})
+                                      </span>
+                                    ) : (
+                                      <span className="text-amber-800 font-bold">
+                                        📅 ينتهي: {c.expiresAt.slice(0, 10)}
+                                      </span>
+                                    )
+                                  ) : (
+                                    <span className="text-brand-500">⏳ مفتوح المدة</span>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-2.5 text-[11px] text-brand-600">{c.description}</td>
+                            <td className="p-2.5 whitespace-nowrap text-center">
                               <button
                                 type="button"
-                                onClick={() => setEditingCoupon(c)}
-                                className="p-1.5 bg-amber-100 hover:bg-amber-200 text-brand-950 rounded-lg"
-                                title="تعديل"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
+                                disabled={!isFullAdmin}
                                 onClick={() => {
-                                  const updated = coupons.filter((item) => item.id !== c.id);
-                                  updateStorePayload({ coupons: updated }, 'تم حذف الكوبون');
+                                  if (!isFullAdmin) return;
+                                  const updated = coupons.map((item) =>
+                                    item.id === c.id ? { ...item, active: !item.active } : item
+                                  );
+                                  updateStorePayload(
+                                    { coupons: updated },
+                                    'تم تحديث حالة تفعيل الكوبون'
+                                  );
                                 }}
-                                className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg"
-                                title="حذف"
+                                className={`text-[10px] font-extrabold px-2.5 py-1 rounded-lg border ${
+                                  c.active && !isExpiredByDate && !isMaxedOut
+                                    ? 'bg-pistachio-100 text-pistachio-700 border-pistachio-300'
+                                    : c.active && (isExpiredByDate || isMaxedOut)
+                                    ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                    : 'bg-brand-100 text-brand-500 border-brand-200'
+                                }`}
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                {!c.active
+                                  ? 'متوقف'
+                                  : isExpiredByDate
+                                  ? 'منتهي الصلاحية ⚠️'
+                                  : isMaxedOut
+                                  ? 'مكتمل العدد ⚠️'
+                                  : 'فعال ✓'}
                               </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            {isFullAdmin && (
+                              <td className="p-2.5 whitespace-nowrap text-center">
+                                <div className="flex items-center justify-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingCoupon(c)}
+                                    className="p-1.5 bg-amber-100 hover:bg-amber-200 text-brand-950 rounded-lg"
+                                    title="تعديل"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = coupons.filter((item) => item.id !== c.id);
+                                      updateStorePayload({ coupons: updated }, 'تم حذف الكوبون');
+                                    }}
+                                    className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg"
+                                    title="حذف"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -5269,13 +5832,13 @@ export default function AdminDashboardPage() {
                           type="text"
                           value={newAdminUsername}
                           onChange={(e) => setNewAdminUsername(e.target.value)}
-                          placeholder="admin_hafsa"
+                          placeholder="أدخل اسم مستخدم المدير..."
                           className="w-full bg-white border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
                         />
                       </div>
                       <div>
                         <span className="block text-[10px] font-bold text-brand-600 mb-0.5">
-                          كلمة المرور (الحالية: {settings.adminPassword || 'Hafsa@Admin2026'}):
+                          كلمة المرور {showPasswordText && settings.adminPassword ? `(الحالية: ${settings.adminPassword})` : '(محفوظة ومحمية ••••••••)'}:
                         </span>
                         <input
                           type={showPasswordText ? 'text' : 'password'}
@@ -5300,13 +5863,13 @@ export default function AdminDashboardPage() {
                           type="text"
                           value={newSupplierUsername}
                           onChange={(e) => setNewSupplierUsername(e.target.value)}
-                          placeholder="supplier_arafat"
+                          placeholder="أدخل اسم مستخدم المورد..."
                           className="w-full bg-white border border-amber-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
                         />
                       </div>
                       <div>
                         <span className="block text-[10px] font-bold text-amber-800 mb-0.5">
-                          كلمة المرور (الحالية: {settings.supplierPassword || 'Sup#Arafat2026'}):
+                          كلمة المرور {showPasswordText && settings.supplierPassword ? `(الحالية: ${settings.supplierPassword})` : '(محفوظة ومحمية ••••••••)'}:
                         </span>
                         <input
                           type={showPasswordText ? 'text' : 'password'}
@@ -5331,13 +5894,13 @@ export default function AdminDashboardPage() {
                           type="text"
                           value={newCashierUsername}
                           onChange={(e) => setNewCashierUsername(e.target.value)}
-                          placeholder="cashier_pos"
+                          placeholder="أدخل اسم مستخدم الكاشير..."
                           className="w-full bg-white border border-sky-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
                         />
                       </div>
                       <div>
                         <span className="block text-[10px] font-bold text-sky-800 mb-0.5">
-                          كلمة المرور (الحالية: {settings.cashierPassword || 'Cash#Pos2026'}):
+                          كلمة المرور {showPasswordText && settings.cashierPassword ? `(الحالية: ${settings.cashierPassword})` : '(محفوظة ومحمية ••••••••)'}:
                         </span>
                         <input
                           type={showPasswordText ? 'text' : 'password'}
@@ -5362,13 +5925,13 @@ export default function AdminDashboardPage() {
                           type="text"
                           value={newAccountantUsername}
                           onChange={(e) => setNewAccountantUsername(e.target.value)}
-                          placeholder="accountant_fin"
+                          placeholder="أدخل اسم مستخدم المحاسب..."
                           className="w-full bg-white border border-pistachio-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
                         />
                       </div>
                       <div>
                         <span className="block text-[10px] font-bold text-pistachio-800 mb-0.5">
-                          كلمة المرور (الحالية: {settings.accountantPassword || 'Acc#Fin2026'}):
+                          كلمة المرور {showPasswordText && settings.accountantPassword ? `(الحالية: ${settings.accountantPassword})` : '(محفوظة ومحمية ••••••••)'}:
                         </span>
                         <input
                           type={showPasswordText ? 'text' : 'password'}
@@ -5433,6 +5996,7 @@ export default function AdminDashboardPage() {
         <SupermarketReceiptModal
           order={selectedInvoiceOrder}
           mode="receipt"
+          showProfit={isFullAdmin || currentRole === 'accountant'}
           settings={settings}
           onClose={() => {
             setSelectedInvoiceOrder(null);

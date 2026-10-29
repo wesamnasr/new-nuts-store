@@ -9,6 +9,50 @@ import {
   SystemRole,
 } from '@/types/store';
 import { getDb } from '@/lib/db';
+import {
+  ALL_DASHBOARD_PERMISSIONS,
+  DEFAULT_ROLE_PERMISSIONS,
+  DASHBOARD_PERMISSION_META,
+  getResolvedRolePermissions,
+  hasRolePermission,
+  getAllowedRolesForPermission,
+  getEffectiveRolePermissions,
+} from '@/lib/permissions';
+
+export {
+  ALL_DASHBOARD_PERMISSIONS,
+  DEFAULT_ROLE_PERMISSIONS,
+  DASHBOARD_PERMISSION_META,
+  getResolvedRolePermissions,
+  hasRolePermission,
+  getAllowedRolesForPermission,
+  getEffectiveRolePermissions,
+};
+
+export function hashPasswordScrypt(plainPassword: string): string {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derived = crypto.scryptSync(plainPassword, salt, 64).toString('hex');
+  return `scrypt$${salt}$${derived}`;
+}
+
+export function verifyPasswordConstantTime(
+  candidatePassword: string,
+  storedPassword: string
+): boolean {
+  if (!candidatePassword || !storedPassword) return false;
+  if (storedPassword.startsWith('scrypt$')) {
+    const parts = storedPassword.split('$');
+    if (parts.length !== 3) return false;
+    const [, salt, expectedHex] = parts;
+    const derived = crypto.scryptSync(candidatePassword, salt, 64);
+    const expectedBuf = Buffer.from(expectedHex, 'hex');
+    if (derived.length !== expectedBuf.length) return false;
+    return crypto.timingSafeEqual(derived, expectedBuf);
+  }
+  const candHash = crypto.createHash('sha256').update(candidatePassword).digest();
+  const storedHash = crypto.createHash('sha256').update(storedPassword).digest();
+  return crypto.timingSafeEqual(candHash, storedHash);
+}
 
 const SESSION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 const SECRET_SALT = process.env.ADMIN_JWT_SECRET || 'golden-oasis-admin-secret-salt-v1';
@@ -25,193 +69,8 @@ export const ROLE_LABELS_AR: Record<SystemRole, string> = {
   supplier: 'المورد (إدارة التوريد والمخزون)',
   cashier: 'الكاشير (نقطة البيع وتجهيز الطلبات)',
   accountant: 'المحاسب (المراجعة المالية والورديات)',
-  store_manager: 'مدير التشغيل والطلبات',
-  promo_partner: 'شريك العروض والتسويق',
+  delivery_rider: 'مندوب التوصيل (البندر ودورات القرى)',
 };
-
-export const ALL_DASHBOARD_PERMISSIONS: AdminPermissionId[] = [
-  'overview',
-  'orders',
-  'products',
-  'categories',
-  'supply_portal',
-  'supply_invoices',
-  'accounting_portal',
-  'cashier_portal',
-  'operations',
-  'shipping',
-  'coupons',
-  'reviews',
-  'settings',
-];
-
-export const DEFAULT_ROLE_PERMISSIONS: RolePermissionsConfig = {
-  supplier: ['supply_portal', 'supply_invoices', 'categories'],
-  accountant: ['accounting_portal', 'orders', 'supply_invoices'],
-  cashier: ['cashier_portal', 'orders'],
-};
-
-export interface DashboardPermissionMeta {
-  id: AdminPermissionId;
-  label: string;
-  description: string;
-  badgeCategory: string;
-}
-
-export const DASHBOARD_PERMISSION_META: DashboardPermissionMeta[] = [
-  {
-    id: 'overview',
-    label: 'نظرة عامة والإحصائيات',
-    description: 'لوحة المؤشرات العامة ومبيعات المتجر وصافي الأرباح والتقارير السريعة',
-    badgeCategory: 'الإدارة العامة',
-  },
-  {
-    id: 'orders',
-    label: 'الطلبات والعملاء',
-    description: 'استعراض ومتابعة طلبات الأونلاين والكاشير وتحديث حالات التجهيز والتوصيل',
-    badgeCategory: 'المبيعات والطلبات',
-  },
-  {
-    id: 'products',
-    label: 'المنتجات والمخزون',
-    description: 'إضافة وتعديل المنتجات وأسعار البيع للجمهور والعروض وتوافر الأصناف',
-    badgeCategory: 'المنتجات والمخزون',
-  },
-  {
-    id: 'categories',
-    label: 'الأقسام والتصنيفات',
-    description: 'إدارة أقسام المتجر وتصنيفات المحمصة وترتيب ظهورها',
-    badgeCategory: 'المنتجات والمخزون',
-  },
-  {
-    id: 'supply_portal',
-    label: 'بوابة التوريد والمخزون (المورد)',
-    description: 'تحديث أسعار التكلفة بالجملة، التغليف، بلد المنشأ، النواقص، وإرسال دفعات التوريد',
-    badgeCategory: 'التوريد والمشتريات',
-  },
-  {
-    id: 'supply_invoices',
-    label: 'فواتير التوريد (عرفات)',
-    description: 'استعراض سجل فواتير التوريد، إنشاء فواتير توريد جديدة، ومتابعة حالة الاعتماد',
-    badgeCategory: 'التوريد والمشتريات',
-  },
-  {
-    id: 'accounting_portal',
-    label: 'بوابة المحاسبة والتدقيق المالي (المحاسب)',
-    description: 'التقارير المالية الشاملة، أرباح القنوات، مراجعة ورديات الكاشير (Z-Report)، المصروفات، وتصدير Excel',
-    badgeCategory: 'المالية والمحاسبة',
-  },
-  {
-    id: 'cashier_portal',
-    label: 'نقطة البيع والورديات (الكاشير POS)',
-    description: 'شاشة كاشير الفرع التفاعلية، الميزان، البوكسات، توليفة البن، الفواتير الفورية، وإغلاق الوردية',
-    badgeCategory: 'نقطة البيع POS',
-  },
-  {
-    id: 'operations',
-    label: 'العمليات والـ VIP والعروض',
-    description: 'إدارة عملاء محفظة VIP الكاش باك، العروض الخاطفة، وسجل الورديات والمصروفات',
-    badgeCategory: 'الإدارة والتسويق',
-  },
-  {
-    id: 'shipping',
-    label: 'الشحن والتوصيل (بني مزار)',
-    description: 'إدارة مناطق الشحن وأسعار التوصيل للبندر والقرى والحد الأدنى للطلبات',
-    badgeCategory: 'الإعدادات والتشغيل',
-  },
-  {
-    id: 'coupons',
-    label: 'كوبونات الخصم',
-    description: 'إنشاء وتفعيل وإيقاف أكواد وكوبونات الخصم التسويقية',
-    badgeCategory: 'الإدارة والتسويق',
-  },
-  {
-    id: 'reviews',
-    label: 'تقييمات العملاء',
-    description: 'مراجعة وإدارة تعليقات وتقييمات المشترين على المنتجات',
-    badgeCategory: 'الإدارة والتسويق',
-  },
-  {
-    id: 'settings',
-    label: 'إعدادات المتجر والمظهر',
-    description: 'تعديل بيانات المتجر، الثيمات، محتوى الصفحات، وأرقام الدفع والتواصل',
-    badgeCategory: 'الإعدادات والتشغيل',
-  },
-];
-
-/**
- * Resolve role permissions from StoreSettings, falling back to DEFAULT_ROLE_PERMISSIONS.
- */
-export function getResolvedRolePermissions(
-  settings?: StoreSettings | null
-): RolePermissionsConfig {
-  const raw = settings?.rolePermissions;
-  const sanitizeList = (
-    list: unknown,
-    fallback: AdminPermissionId[]
-  ): AdminPermissionId[] => {
-    if (!Array.isArray(list)) return [...fallback];
-    const valid = list.filter(
-      (item): item is AdminPermissionId =>
-        typeof item === 'string' &&
-        ALL_DASHBOARD_PERMISSIONS.includes(item as AdminPermissionId)
-    );
-    return Array.from(new Set(valid));
-  };
-
-  return {
-    supplier: sanitizeList(raw?.supplier, DEFAULT_ROLE_PERMISSIONS.supplier),
-    accountant: sanitizeList(raw?.accountant, DEFAULT_ROLE_PERMISSIONS.accountant),
-    cashier: sanitizeList(raw?.cashier, DEFAULT_ROLE_PERMISSIONS.cashier),
-  };
-}
-
-/**
- * Check if a given role has access to a specific dashboard permission/page.
- * Admin ('super_admin' / 'admin') always has full access to all permissions.
- */
-export function hasRolePermission(
-  role: AdminRole | string | null | undefined,
-  permission: AdminPermissionId,
-  settings?: StoreSettings | null
-): boolean {
-  const normalized = normalizeAdminRole(role);
-  if (normalized === 'super_admin') {
-    return true;
-  }
-  const resolved = getResolvedRolePermissions(settings);
-  if (
-    normalized === 'supplier' ||
-    normalized === 'accountant' ||
-    normalized === 'cashier'
-  ) {
-    return resolved[normalized].includes(permission);
-  }
-  if (normalized === 'store_manager') {
-    return permission === 'orders' || permission === 'cashier_portal';
-  }
-  if (normalized === 'promo_partner') {
-    return permission === 'coupons' || permission === 'reviews';
-  }
-  return false;
-}
-
-/**
- * Return the list of AdminRoles allowed to access a given permission/capability.
- */
-export function getAllowedRolesForPermission(
-  permission: AdminPermissionId,
-  settings?: StoreSettings | null
-): AdminRole[] {
-  const allowed: AdminRole[] = ['super_admin', 'admin'];
-  const nonAdminRoles: NonAdminStaffRole[] = ['supplier', 'accountant', 'cashier'];
-  for (const r of nonAdminRoles) {
-    if (hasRolePermission(r, permission, settings)) {
-      allowed.push(r);
-    }
-  }
-  return allowed;
-}
 
 /**
  * Resolve the configured username for a specific role from StoreSettings.
@@ -227,10 +86,8 @@ export function getRoleUsernameFromSettings(
       return settings?.cashierUsername || 'cashier_pos';
     case 'accountant':
       return settings?.accountantUsername || 'accountant_fin';
-    case 'store_manager':
-      return 'manager';
-    case 'promo_partner':
-      return 'promo';
+    case 'delivery_rider':
+      return settings?.riderUsername || 'rider_delivery';
     case 'admin':
     case 'super_admin':
     default:
@@ -252,10 +109,8 @@ export function getRolePasswordFromSettings(
       return settings?.cashierPassword || 'Cash#Pos2026';
     case 'accountant':
       return settings?.accountantPassword || 'Acc#Fin2026';
-    case 'store_manager':
-      return settings?.managerPassword || 'manager';
-    case 'promo_partner':
-      return settings?.promoPartnerPassword || 'promo';
+    case 'delivery_rider':
+      return settings?.riderPassword || 'Rider#Hafsa2026';
     case 'admin':
     case 'super_admin':
     default:
@@ -271,8 +126,7 @@ export function normalizeAdminRole(role?: AdminRole | string | null): AdminRole 
     role === 'supplier' ||
     role === 'cashier' ||
     role === 'accountant' ||
-    role === 'store_manager' ||
-    role === 'promo_partner'
+    role === 'delivery_rider'
   ) {
     return role;
   }
@@ -450,7 +304,7 @@ export function verifyAdminRequest(
  * Remove all sensitive password fields from StoreSettings.
  */
 export function stripAllPasswords(settings: StoreSettings): StoreSettings {
-  const sanitizedSettings = { ...settings };
+  const sanitizedSettings = { ...settings } as Record<string, unknown>;
   delete sanitizedSettings.adminUsername;
   delete sanitizedSettings.adminPassword;
   delete sanitizedSettings.supplierUsername;
@@ -459,12 +313,13 @@ export function stripAllPasswords(settings: StoreSettings): StoreSettings {
   delete sanitizedSettings.cashierPassword;
   delete sanitizedSettings.accountantUsername;
   delete sanitizedSettings.accountantPassword;
-  delete (sanitizedSettings as any).customerUsername;
-  delete (sanitizedSettings as any).customerPassword;
+  delete sanitizedSettings.riderUsername;
+  delete sanitizedSettings.riderPassword;
+  delete sanitizedSettings.customerUsername;
+  delete sanitizedSettings.customerPassword;
   delete sanitizedSettings.managerPassword;
   delete sanitizedSettings.promoPartnerPassword;
-  delete sanitizedSettings.wesamAdminPassword;
-  return sanitizedSettings;
+  return sanitizedSettings as unknown as StoreSettings;
 }
 
 /**
@@ -570,7 +425,7 @@ export function sanitizeStoreDataForRole(
   }
 
   // Role 3: Cashier (الكاشير) -> POS & Order Fulfillment by default, dynamically adaptable via rolePermissions
-  if (normalized === 'cashier' || normalized === 'store_manager') {
+  if (normalized === 'cashier') {
     const canSeeWholesaleAndProfit =
       normalized === 'cashier' &&
       (hasRolePermission('cashier', 'supply_portal', db.settings) ||
@@ -649,7 +504,7 @@ export function sanitizeStoreDataForRole(
     };
   }
 
-  // Promo Partner fallback
+  // Role 5: Delivery Rider fallback (strictly isolated from financials, shifts, VIP directory & supply invoices)
   return {
     ...db,
     settings: safeSettings,
@@ -657,6 +512,7 @@ export function sanitizeStoreDataForRole(
     posShifts: [],
     posExpenses: [],
     vipMembers: [],
+    supplyInvoices: [],
   };
 }
 

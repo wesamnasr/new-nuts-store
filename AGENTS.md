@@ -11,7 +11,7 @@ When building or modifying authentication, login forms, or role-based access con
    - The backend authentication endpoint (`/api/admin/login`) must resolve the authenticated user's role strictly from their verified `(username, password)` pair.
    - Upon successful login (or session verification), automatically redirect the user to the portal permitted for their specialization across the 4 staff roles:
      - **Admin (`super_admin` / `admin`):** `/admin`
-     - **Accountant (`accountant`):** `/accountant`
+     - **Accountant (`accountant`):** `/admin` (unified Admin Dashboard showing the accountant's permitted tabs: `overview`, `accounting_portal`, `orders`, `supply_invoices`, `products`, `operations`, `coupons`)
      - **Cashier (`cashier`):** `/pos`
      - **Supplier (`supplier`):** `/supplier`
    - If an already-authenticated non-admin user navigates to a route outside their specialization (e.g., `/admin`), automatically redirect them to their permitted portal.

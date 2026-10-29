@@ -139,6 +139,9 @@ export interface Coupon {
   discountType: 'percentage' | 'fixed';
   value: number;       // e.g. 10 for 10% or 50 for 50 EGP
   minOrderAmount: number;
+  expiresAt?: string;
+  maxUses?: number;
+  usedCount?: number;
   active: boolean;
   description: string;
 }
@@ -214,6 +217,8 @@ export interface CartItem {
   boxSlotsCount?: 4 | 6;
   boxSlots?: BoxSlotSelection[];
   isCoffeeBlend?: boolean;
+  isFlashPromo?: boolean;
+  flashPromoId?: string;
   coffeeBlendSpec?: CustomCoffeeBlendSpec;
 }
 
@@ -259,6 +264,7 @@ export interface Order {
   netProfitEgp?: number;      // Net profit in EGP on this order/invoice
   paymentMethod: PaymentMethod;
   paymentReference?: string; // phone/handle or screenshot reference for InstaPay / Wallet
+  inventoryReversed?: boolean; // Tracks whether stock & VIP points were restored upon cancellation
   status: OrderStatus;
   createdAt: string;
 }
@@ -412,12 +418,12 @@ export interface StorePageContent {
 }
 
 export type StoreThemeId =
-  | 'royal_roastery'
-  | 'emerald_palace'
-  | 'midnight_obsidian'
-  | 'levant_heritage'
-  | 'modern_minimal'
-  | 'saffron_velvet';
+  | 'royal_roastery';
+
+
+
+
+
 
 export type HeroLayoutStyle = 'split' | 'centered' | 'showcase';
 export type NavbarStyle = 'classic' | 'floating' | 'dark_royal';
@@ -433,7 +439,7 @@ export interface StoreThemeConfig {
   showThemeSwitcher: boolean;
 }
 
-export type StaffRole = 'super_admin' | 'supplier' | 'cashier' | 'accountant';
+export type StaffRole = 'super_admin' | 'supplier' | 'cashier' | 'accountant' | 'delivery_rider';
 
 export type AdminPermissionId =
   | 'overview'
@@ -460,8 +466,8 @@ export type AdminRole =
   | 'supplier'
   | 'cashier'
   | 'accountant'
-  | 'store_manager'
-  | 'promo_partner';
+  | 'delivery_rider'
+  | 'admin';
 
 export type SystemRole = AdminRole;
 
@@ -517,9 +523,9 @@ export interface StoreSettings {
   cashierPassword?: string;
   accountantUsername?: string;
   accountantPassword?: string;
-  managerPassword?: string;
-  promoPartnerPassword?: string;
-  wesamAdminPassword?: string;
+  riderUsername?: string;
+  riderPassword?: string;
+
   pageContent?: StorePageContent;
   themeConfig?: StoreThemeConfig;
   rolePermissions?: RolePermissionsConfig;
@@ -579,10 +585,13 @@ export interface DatabaseSchema {
   orders: Order[];
   vipMembers?: VipMember[];
   promotions?: FlashPromotion[];
+  flashPromotions?: FlashPromotion[];
   posShifts?: PosShift[];
   posExpenses?: PosExpense[];
   supplyInvoices?: SupplyInvoice[];
 }
+
+export type StoreDatabase = DatabaseSchema;
 
 export interface AdminAuthSession {
   token: string;

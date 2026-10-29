@@ -9,10 +9,22 @@ import {
   getRolePasswordFromSettings,
   getRoleUsernameFromSettings,
   normalizeAdminRole,
+  verifyPasswordConstantTime,
 } from '@/lib/auth';
 import { AdminPermissionId, AdminRole, SystemRole } from '@/types/store';
 
 export const dynamic = 'force-dynamic';
+
+const LOGIN_RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
+const LOGIN_MAX_FAILED_ATTEMPTS = 10;
+const loginFailuresByIp = new Map<string, { count: number; resetAt: number }>();
+
+function getClientIp(request: NextRequest): string | null {
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+  const realIp = request.headers.get('x-real-ip');
+  return realIp ? realIp.trim() : null;
+}
 
 function getRoleRedirectPath(role: AdminRole): string {
   switch (role) {
@@ -21,7 +33,6 @@ function getRoleRedirectPath(role: AdminRole): string {
     case 'cashier':
       return '/pos';
     case 'accountant':
-      return '/accountant';
     case 'super_admin':
     case 'admin':
     default:
@@ -60,6 +71,20 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const clientIp = getClientIp(request);
+    if (clientIp) {
+      const existing = loginFailuresByIp.get(clientIp);
+      if (existing) {
+        if (Date.now() > existing.resetAt) {
+          loginFailuresByIp.delete(clientIp);
+        } else if (existing.count >= LOGIN_MAX_FAILED_ATTEMPTS) {
+          return NextResponse.json(
+            { error: 'تم تجاوز الحد المسموح لمحاولات تسجيل الدخول، يرجى الانتظار دقائق والمحاولة مجدداً' },
+            { status: 429 }
+          );
+        }
+      }
+    }
     const body = await request.json().catch(() => ({}));
     const {
       username,
@@ -104,7 +129,7 @@ export async function POST(request: NextRequest) {
             !hasUsernameInput ||
             normalizedInputUser === adminUser ||
             normalizedInputUser === 'admin_hafsa';
-          const passOk = password === configuredPassword;
+          const passOk = verifyPasswordConstantTime(password, configuredPassword);
           return userOk && passOk;
         }
         case 'supplier': {
@@ -112,7 +137,7 @@ export async function POST(request: NextRequest) {
             !hasUsernameInput ||
             normalizedInputUser === supplierUser ||
             normalizedInputUser === 'supplier_arafat';
-          const passOk = password === supplierPass;
+          const passOk = verifyPasswordConstantTime(password, supplierPass);
           return userOk && passOk;
         }
         case 'cashier': {
@@ -120,7 +145,7 @@ export async function POST(request: NextRequest) {
             !hasUsernameInput ||
             normalizedInputUser === cashierUser ||
             normalizedInputUser === 'cashier_pos';
-          const passOk = password === cashierPass;
+          const passOk = verifyPasswordConstantTime(password, cashierPass);
           return userOk && passOk;
         }
         case 'accountant': {
@@ -128,7 +153,7 @@ export async function POST(request: NextRequest) {
             !hasUsernameInput ||
             normalizedInputUser === accountantUser ||
             normalizedInputUser === 'accountant_fin';
-          const passOk = password === accountantPass;
+          const passOk = verifyPasswordConstantTime(password, accountantPass);
           return userOk && passOk;
         }
         default:
@@ -165,10 +190,25 @@ export async function POST(request: NextRequest) {
     }
 
     if (!matchedRole) {
+      if (clientIp) {
+        const curr = loginFailuresByIp.get(clientIp);
+        if (!curr || Date.now() > curr.resetAt) {
+          loginFailuresByIp.set(clientIp, {
+            count: 1,
+            resetAt: Date.now() + LOGIN_RATE_LIMIT_WINDOW_MS,
+          });
+        } else {
+          curr.count += 1;
+        }
+      }
       return NextResponse.json(
         { error: 'اسم المستخدم أو كلمة المرور غير صحيحة' },
         { status: 401 }
       );
+    }
+
+    if (clientIp) {
+      loginFailuresByIp.delete(clientIp);
     }
 
     const matchedUsername = getRoleUsernameFromSettings(db.settings, matchedRole);

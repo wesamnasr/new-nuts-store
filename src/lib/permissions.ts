@@ -13,8 +13,7 @@ export const ROLE_LABELS_AR: Record<SystemRole, string> = {
   supplier: 'المورد (إدارة التوريد والمخزون)',
   cashier: 'الكاشير (نقطة البيع وتجهيز الطلبات)',
   accountant: 'المحاسب (المراجعة المالية والورديات)',
-  store_manager: 'مدير التشغيل والطلبات',
-  promo_partner: 'شريك العروض والتسويق',
+  delivery_rider: 'مندوب التوصيل (البندر ودورات القرى)',
 };
 
 export const ALL_DASHBOARD_PERMISSIONS: AdminPermissionId[] = [
@@ -36,11 +35,12 @@ export const ALL_DASHBOARD_PERMISSIONS: AdminPermissionId[] = [
 export const DEFAULT_ROLE_PERMISSIONS: RolePermissionsConfig = {
   supplier: ['supply_portal', 'supply_invoices', 'categories'],
   accountant: [
+    'overview',
     'accounting_portal',
     'orders',
     'supply_invoices',
-    'operations',
     'products',
+    'operations',
     'coupons',
   ],
   cashier: ['cashier_portal', 'orders'],
@@ -86,7 +86,7 @@ export const DASHBOARD_PERMISSION_META: DashboardPermissionMeta[] = [
   },
   {
     id: 'supply_invoices',
-    label: 'فواتير التوريد (عرفات)',
+    label: 'فواتير التوريد',
     description: 'استعراض سجل فواتير التوريد، إنشاء فواتير توريد جديدة، ومتابعة حالة الاعتماد',
     badgeCategory: 'التوريد والمشتريات',
   },
@@ -110,8 +110,8 @@ export const DASHBOARD_PERMISSION_META: DashboardPermissionMeta[] = [
   },
   {
     id: 'shipping',
-    label: 'الشحن والتوصيل (بني مزار)',
-    description: 'إدارة مناطق الشحن وأسعار التوصيل للبندر والقرى والحد الأدنى للطلبات',
+    label: 'الشحن والتوصيل (بني مزار والمحافظات)',
+    description: 'إدارة مناطق الشحن وأسعار التوصيل للبندر والقرى والمحافظات والحد الأدنى للطلبات',
     badgeCategory: 'الإعدادات والتشغيل',
   },
   {
@@ -129,22 +129,21 @@ export const DASHBOARD_PERMISSION_META: DashboardPermissionMeta[] = [
   {
     id: 'settings',
     label: 'إعدادات المتجر والمظهر',
-    description: 'تعديل بيانات المتجر، الثيمات، محتوى الصفحات، وأرقام الدفع والتواصل',
+    description: 'تعديل بيانات المتجر، الهوية الرسمية، محتوى الصفحات، وأرقام الدفع والتواصل',
     badgeCategory: 'الإعدادات والتشغيل',
   },
 ];
 
 export function normalizeClientAdminRole(
   role?: string | null
-): 'super_admin' | 'supplier' | 'cashier' | 'accountant' | 'store_manager' | 'promo_partner' {
+): 'super_admin' | 'supplier' | 'cashier' | 'accountant' | 'delivery_rider' {
   if (!role || role === 'admin' || role === 'super_admin') {
     return 'super_admin';
   }
   if (role === 'supplier') return 'supplier';
   if (role === 'cashier') return 'cashier';
   if (role === 'accountant') return 'accountant';
-  if (role === 'store_manager') return 'store_manager';
-  if (role === 'promo_partner') return 'promo_partner';
+  if (role === 'delivery_rider') return 'delivery_rider';
   return 'super_admin';
 }
 
@@ -165,9 +164,7 @@ export function getResolvedRolePermissions(
     return Array.from(new Set(valid));
   };
 
-  const rawAccountant = sanitizeList(raw?.accountant, DEFAULT_ROLE_PERMISSIONS.accountant).filter(
-    (p) => p !== 'overview'
-  );
+  const rawAccountant = sanitizeList(raw?.accountant, DEFAULT_ROLE_PERMISSIONS.accountant);
   const isLegacyThreeTabAccountant =
     rawAccountant.length <= 3 &&
     rawAccountant.every((p) =>
@@ -202,12 +199,6 @@ export function hasRolePermission(
   ) {
     return resolved[normalized].includes(permission);
   }
-  if (normalized === 'store_manager') {
-    return permission === 'orders' || permission === 'cashier_portal';
-  }
-  if (normalized === 'promo_partner') {
-    return permission === 'coupons' || permission === 'reviews';
-  }
   return false;
 }
 
@@ -223,4 +214,23 @@ export function getAllowedRolesForPermission(
     }
   }
   return allowed;
+}
+
+export function getEffectiveRolePermissions(
+  role: AdminRole | string | null | undefined,
+  settings?: StoreSettings | null
+): AdminPermissionId[] {
+  const normalized = normalizeClientAdminRole(role);
+  if (normalized === 'super_admin') {
+    return [...ALL_DASHBOARD_PERMISSIONS];
+  }
+  const resolved = getResolvedRolePermissions(settings);
+  if (
+    normalized === 'supplier' ||
+    normalized === 'accountant' ||
+    normalized === 'cashier'
+  ) {
+    return resolved[normalized];
+  }
+  return [];
 }

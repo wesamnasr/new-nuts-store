@@ -71,11 +71,11 @@ export const VILLAGE_DELIVERY_BATCHES: string[] = [
 export const STORE_THEMES: StoreThemePresetMeta[] = [
   {
     id: 'royal_roastery',
-    name: '1. هوية محمصة حفصة الرسمية (أوف وايت رخامي وإسبريسو)',
+    name: 'هوية محمصة حفصة الرسمية (أوف وايت رخامي وإسبريسو)',
     subtitle: 'رخامي دافئ (#FAF6F0) • إسبريسو (#231710) • أوك عسلي (#C88A4B) • ذهبي (#D4AF37)',
     description:
-      'الهوية البصرية المعتمدة لمحمصة حفصة في بني مزار أمام مسجد الزراعيين: خلفية رخامية دافئة (#FAF6F0)، كروت كريمي اللوز (#F3ECE1)، هيدر وفوتر إسبريسو (#231710)، ولمسات بديل الخشب (#C88A4B) والذهبي الملكي (#D4AF37).',
-    badge: '👑 الهوية المعتمدة 100%',
+      'الهوية البصرية المعتمدة والموحدة لمحمصة حفصة في بني مزار أمام مسجد الزراعيين: خلفية رخامية دافئة (#FAF6F0)، كروت كريمي اللوز (#F3ECE1)، هيدر وفوتر إسبريسو (#231710)، ولمسات بديل الخشب (#C88A4B) والذهبي الملكي (#D4AF37).',
+    badge: '👑 الهوية الرسمية المعتمدة 100%',
     isDark: false,
     swatches: {
       primary: '#231710',
@@ -89,111 +89,6 @@ export const STORE_THEMES: StoreThemePresetMeta[] = [
       navbarStyle: 'classic',
       cardStyle: 'classic',
       borderRadius: 'rounded',
-    },
-  },
-  {
-    id: 'modern_minimal',
-    name: '2. أزرق سماوي ملكي (فاتح)',
-    subtitle: 'خلفية سماوية ثلجية • خطوط كحلية غامقة',
-    description: 'ثيم عصري فاتح بالكامل بدرجات الأزرق السماوي الهادئ وبطاقات ناصعة مع خطوط كحلية غامقة عالية التباين.',
-    badge: '☀️ فاتح • خط غامق',
-    isDark: false,
-    swatches: {
-      primary: '#0a192f',
-      secondary: '#1d4ed8',
-      accent: '#0284c7',
-      bg: '#e2eefc',
-      card: '#f8fbff',
-    },
-    defaults: {
-      heroLayout: 'showcase',
-      navbarStyle: 'floating',
-      cardStyle: 'soft_elevated',
-      borderRadius: 'pill',
-    },
-  },
-  {
-    id: 'levant_heritage',
-    name: '3. البوتيك الحرفي للمحمصة (Artisanal Pantry)',
-    subtitle: 'أوف وايت رخامي (#FAF6F0) • إسبريسو محمص (#231710) وفستق حلبي (#3B6E4C)',
-    description: 'نظام تصميم حرفي عضوي يجمع بين الرخام الدافئ وبديل الخشب العسلي والذهب الملكي.',
-    badge: '☀️ فاتح • حرفي عضوي',
-    isDark: false,
-    swatches: {
-      primary: '#231710',
-      secondary: '#C88A4B',
-      accent: '#D4AF37',
-      bg: '#FAF6F0',
-      card: '#F3ECE1',
-    },
-    defaults: {
-      heroLayout: 'split',
-      navbarStyle: 'classic',
-      cardStyle: 'classic',
-      borderRadius: 'rounded',
-    },
-  },
-  {
-    id: 'midnight_obsidian',
-    name: '4. الفحم الملكي والذهب (غامق)',
-    subtitle: 'خلفية سوداء فحمية • خطوط بيضاء وذهبية فاتحة',
-    description: 'ثيم ليلي أسود فحمي فاخر يحوّل جميع الصفحات والبطاقات إلى اللون الداكن مع خطوط بيضاء وذهبية ساطعة.',
-    badge: '🌙 غامق • خط فاتح',
-    isDark: true,
-    swatches: {
-      primary: '#f8fafc',
-      secondary: '#f59e0b',
-      accent: '#fbbf24',
-      bg: '#0b0d13',
-      card: '#151924',
-    },
-    defaults: {
-      heroLayout: 'showcase',
-      navbarStyle: 'floating',
-      cardStyle: 'soft_elevated',
-      borderRadius: 'rounded',
-    },
-  },
-  {
-    id: 'emerald_palace',
-    name: '5. الزمرد الليلي العميق (غامق)',
-    subtitle: 'خلفية خضراء زمردية داكنة • خطوط نعناعية وعاجية فاتحة',
-    description: 'ثيم ليلي زمردي فخم بخلفيات وبطاقات خضراء داكنة جداً مع خطوط عاجية ونعناعية فاتحة ولمسات ذهبية.',
-    badge: '🌙 غامق • خط فاتح',
-    isDark: true,
-    swatches: {
-      primary: '#ecfdf5',
-      secondary: '#10b981',
-      accent: '#34d399',
-      bg: '#041a13',
-      card: '#092b20',
-    },
-    defaults: {
-      heroLayout: 'centered',
-      navbarStyle: 'dark_royal',
-      cardStyle: 'editorial',
-      borderRadius: 'rounded',
-    },
-  },
-  {
-    id: 'saffron_velvet',
-    name: '6. المخمل البنفسجي الملكي (غامق)',
-    subtitle: 'خلفية بنفسجية ليلية • خطوط لؤلؤية وكهرمانية فاتحة',
-    description: 'ثيم ليلي ملكي بدرجات البنفسجي العميق والتوتي الداكن مع خطوط لؤلؤية فاتحة وأزرار كهرمانية مضيئة.',
-    badge: '🌙 غامق • خط فاتح',
-    isDark: true,
-    swatches: {
-      primary: '#fdf4ff',
-      secondary: '#c026d3',
-      accent: '#f59e0b',
-      bg: '#130722',
-      card: '#210e38',
-    },
-    defaults: {
-      heroLayout: 'split',
-      navbarStyle: 'dark_royal',
-      cardStyle: 'editorial',
-      borderRadius: 'sharp',
     },
   },
 ];
@@ -207,14 +102,8 @@ export const DEFAULT_THEME_CONFIG: StoreThemeConfig = {
   showThemeSwitcher: false,
 };
 
-export function getResolvedThemeConfig(settings?: StoreSettings | null): StoreThemeConfig {
-  if (!settings?.themeConfig) {
-    return DEFAULT_THEME_CONFIG;
-  }
-  return {
-    ...DEFAULT_THEME_CONFIG,
-    ...settings.themeConfig,
-  };
+export function getResolvedThemeConfig(_settings?: StoreSettings | null): StoreThemeConfig {
+  return { ...DEFAULT_THEME_CONFIG };
 }
 
 export const DEFAULT_PAGE_CONTENT: StorePageContent = {

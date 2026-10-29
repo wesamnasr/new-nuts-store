@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDbAsync, saveDbAsync } from '@/lib/db';
+import { getDbAsync, withDbTransaction } from '@/lib/db';
 import {
   CartItem,
   Order,
@@ -17,6 +17,7 @@ import {
 import { validateEgyptianPhone } from '@/lib/validation';
 import { getSafeImageUrl } from '@/lib/defaults';
 import { hasRolePermission, verifyAdminRequest } from '@/lib/auth';
+import { reverseOrderEffects, reapplyOrderEffects } from '@/lib/order-reversal';
 
 export const dynamic = 'force-dynamic';
 
@@ -117,38 +118,37 @@ export async function POST(request: Request) {
       );
     }
 
-    const dbForGet = await getDbAsync();
-    if (
-      auth.role === 'supplier' &&
-      !hasRolePermission('supplier', 'cashier_portal', dbForGet.settings) &&
-      !hasRolePermission('supplier', 'accounting_portal', dbForGet.settings) &&
-      !hasRolePermission('supplier', 'operations', dbForGet.settings)
-    ) {
-      return NextResponse.json(
-        { error: 'عزل الأدوار: المورد غير مصرح له بإصدار فواتير الكاشير' },
-        { status: 403 }
-      );
-    }
-
-    if (auth.role === 'accountant' && !hasRolePermission('accountant', 'cashier_portal', dbForGet.settings)) {
-      return NextResponse.json(
-        { error: 'عزل الأدوار: المحاسب بصلاحية قراءة فقط وممنوع من إصدار فواتير الكاشير' },
-        { status: 403 }
-      );
-    }
-
-    const canSeeProfits =
-      auth.isAuthenticated &&
-      (auth.role === 'super_admin' || (auth.role as string) === 'admin');
-
     const body = await request.json();
     const action = body.action || 'create_invoice';
-    const db = await getDbAsync();
 
-    if (!Array.isArray(db.posShifts)) db.posShifts = [];
-    if (!Array.isArray(db.posExpenses)) db.posExpenses = [];
-    if (!Array.isArray(db.vipMembers)) db.vipMembers = [];
-    if (!Array.isArray(db.orders)) db.orders = [];
+    return await withDbTransaction(async (db) => {
+      if (
+        auth.role === 'supplier' &&
+        !hasRolePermission('supplier', 'cashier_portal', db.settings) &&
+        !hasRolePermission('supplier', 'accounting_portal', db.settings) &&
+        !hasRolePermission('supplier', 'operations', db.settings)
+      ) {
+        return NextResponse.json(
+          { error: 'عزل الأدوار: المورد غير مصرح له بإصدار فواتير الكاشير' },
+          { status: 403 }
+        );
+      }
+
+      if (auth.role === 'accountant' && !hasRolePermission('accountant', 'cashier_portal', db.settings)) {
+        return NextResponse.json(
+          { error: 'عزل الأدوار: المحاسب بصلاحية قراءة فقط وممنوع من إصدار فواتير الكاشير' },
+          { status: 403 }
+        );
+      }
+
+      const canSeeProfits =
+        auth.isAuthenticated &&
+        (auth.role === 'super_admin' || (auth.role as string) === 'admin');
+
+      if (!Array.isArray(db.posShifts)) db.posShifts = [];
+      if (!Array.isArray(db.posExpenses)) db.posExpenses = [];
+      if (!Array.isArray(db.vipMembers)) db.vipMembers = [];
+      if (!Array.isArray(db.orders)) db.orders = [];
 
     // 1. OPEN NEW SHIFT
     if (action === 'open_shift') {
@@ -204,7 +204,6 @@ export async function POST(request: Request) {
       };
 
       db.posShifts.unshift(newShift);
-      await saveDbAsync(db);
       return NextResponse.json({
         success: true,
         activeShift: canSeeProfits ? newShift : sanitizeShiftForCashier(newShift),
@@ -243,7 +242,6 @@ export async function POST(request: Request) {
         activeShift.notes = body.notes.trim();
       }
 
-      await saveDbAsync(db);
       return NextResponse.json({
         success: true,
         closedShift: canSeeProfits ? activeShift : sanitizeShiftForCashier(activeShift),
@@ -284,7 +282,6 @@ export async function POST(request: Request) {
         activeShift.expectedCashInDrawer = activeShift.expectedCash;
       }
 
-      await saveDbAsync(db);
       return NextResponse.json({
         success: true,
         expense: newExpense,
@@ -304,8 +301,16 @@ export async function POST(request: Request) {
       if (!order) {
         return NextResponse.json({ error: 'الطلب غير موجود' }, { status: 404 });
       }
+      const prevStatus = order.status;
+      if (status === 'cancelled' && prevStatus !== 'cancelled') {
+        reverseOrderEffects(db, order);
+      } else if (status !== 'cancelled' && prevStatus === 'cancelled') {
+        const reapply = reapplyOrderEffects(db, order);
+        if (!reapply.ok) {
+          return NextResponse.json({ error: reapply.error }, { status: 400 });
+        }
+      }
       order.status = status;
-      await saveDbAsync(db);
       return NextResponse.json({
         success: true,
         order: canSeeProfits ? order : sanitizeOrderForCashier(order),
@@ -366,10 +371,55 @@ export async function POST(request: Request) {
 
       let unitRawCost = Number(item.rawCostEgp) || 0;
       if (!unitRawCost) {
-        if (prod && item.customWeightGrams) {
+        if (item.isPartitionedBox && Array.isArray(item.partitionedSlots)) {
+          const slotsCost = item.partitionedSlots.reduce((sum, s) => {
+            const slotProd = db.products.find((p) => p.id === s.productId);
+            const g = s.slotGrams || s.weightGrams || (item.partitionedBoxSize === 'roqan_4' ? 100 : 125);
+            return sum + (slotProd ? getProductCostForWeight(slotProd, g) : 20);
+          }, 0);
+          unitRawCost = Math.round(slotsCost + (item.partitionedBoxSize === 'roqan_4' ? 10 : 15));
+        } else if (item.isCustomMix && Array.isArray(item.customBreakdown)) {
+          const cap = Number(item.boxCapacityGrams) || 500;
+          unitRawCost = Math.round(
+            item.customBreakdown.reduce((sum, b) => {
+              const bProd = db.products.find((p) => p.id === b.productId);
+              const g = b.weightGrams || (cap * (b.percentage || 0)) / 100;
+              return sum + (bProd ? getProductCostForWeight(bProd, g) : 25);
+            }, 0)
+          );
+        } else if (item.isCoffeeBlend && item.coffeeBlendSpec) {
+          const coffeeProd =
+            prod || db.products.find((p) => p.categoryId === 'cat-coffee-espresso');
+          const g = item.coffeeBlendSpec.weightGrams || 250;
+          unitRawCost = coffeeProd
+            ? getProductCostForWeight(coffeeProd, g)
+            : Math.round(unitPrice * 0.65);
+        } else if (
+          (item.isFlashPromo && item.flashPromoId) ||
+          (typeof item.productId === 'string' && item.productId.startsWith('flash-promo-'))
+        ) {
+          const promoId =
+            item.flashPromoId ||
+            (typeof item.productId === 'string' ? item.productId.replace('flash-promo-', '') : '');
+          const promoPool = db.flashPromotions || db.promotions || [];
+          const matchedPromo = promoPool.find((p) => p.id === promoId);
+          if (matchedPromo && typeof matchedPromo.totalRawCost === 'number') {
+            unitRawCost = matchedPromo.totalRawCost;
+          } else if (matchedPromo && Array.isArray(matchedPromo.items)) {
+            unitRawCost = matchedPromo.items.reduce((sum, pi) => {
+              const piProd = db.products.find((p) => p.id === pi.productId);
+              const g = Number(pi.weightGrams) || 250;
+              const q = Number(pi.quantity) || 1;
+              const cost = piProd ? getProductCostForWeight(piProd, g) : Number(pi.unitCost) || 25;
+              return sum + cost * q;
+            }, matchedPromo.packagingCost || 10);
+          } else {
+            unitRawCost = Math.round(unitPrice * 0.7);
+          }
+        } else if (prod && item.customWeightGrams) {
           unitRawCost = getProductCostForWeight(prod, item.customWeightGrams);
         } else if (prod) {
-          const matchedW = prod.weights.find((w) => w.id === item.weightId);
+          const matchedW = prod.weights?.find((w) => w.id === item.weightId);
           const grams = matchedW?.weightGrams || matchedW?.grams || 250;
           unitRawCost = getProductCostForWeight(prod, grams);
         } else {
@@ -576,6 +626,27 @@ export async function POST(request: Request) {
           prod.stockKg = Math.max(0, Math.round((currentStock - consumedKg) * 1000) / 1000);
           if (prod.stockKg <= 0) prod.inStock = false;
         }
+      } else if (
+        (item.isFlashPromo && item.flashPromoId) ||
+        (typeof item.productId === 'string' && item.productId.startsWith('flash-promo-'))
+      ) {
+        const promoId =
+          item.flashPromoId ||
+          (typeof item.productId === 'string' ? item.productId.replace('flash-promo-', '') : '');
+        const promoPool = db.flashPromotions || db.promotions || [];
+        const promo = promoPool.find((fp) => fp.id === promoId);
+        if (promo && Array.isArray(promo.items) && promo.items.length > 0) {
+          for (const pi of promo.items) {
+            const promoProd = db.products.find((p) => p.id === pi.productId);
+            if (promoProd) {
+              const itemGrams = (Number(pi.weightGrams) || 250) * (Number(pi.quantity) || 1);
+              const consumedKg = (itemGrams * qty) / 1000;
+              const currentStock = typeof promoProd.stockKg === 'number' ? promoProd.stockKg : 50;
+              promoProd.stockKg = Math.max(0, Math.round((currentStock - consumedKg) * 1000) / 1000);
+              if (promoProd.stockKg <= 0) promoProd.inStock = false;
+            }
+          }
+        }
       } else {
         const prod = db.products.find((p) => p.id === item.productId);
         if (prod) {
@@ -618,8 +689,6 @@ export async function POST(request: Request) {
       activeShift.expectedCashInDrawer = activeShift.expectedCash;
     }
 
-    await saveDbAsync(db);
-
     return NextResponse.json(
       {
         success: true,
@@ -631,6 +700,7 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     );
+    });
   } catch (error) {
     console.error('POST /api/pos error:', error);
     return NextResponse.json(

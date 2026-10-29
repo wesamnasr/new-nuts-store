@@ -132,6 +132,29 @@ export function validateCoupon(
     };
   }
 
+  if (coupon.expiresAt) {
+    const expiryTime = Date.parse(coupon.expiresAt);
+    if (!Number.isNaN(expiryTime) && expiryTime < Date.now()) {
+      return {
+        isValid: false,
+        discountAmount: 0,
+        error: 'انتهت صلاحية كود الخصم هذا',
+      };
+    }
+  }
+
+  if (
+    typeof coupon.maxUses === 'number' &&
+    coupon.maxUses > 0 &&
+    (coupon.usedCount || 0) >= coupon.maxUses
+  ) {
+    return {
+      isValid: false,
+      discountAmount: 0,
+      error: 'تم استنفاد الحد الأقصى لاستخدام كود الخصم هذا',
+    };
+  }
+
   const safeSubtotal = Math.max(0, Number(subtotal) || 0);
 
   if (safeSubtotal < coupon.minOrderAmount) {

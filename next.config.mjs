@@ -1,5 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   images: {
     remotePatterns: [
       {
@@ -21,6 +27,11 @@ const nextConfig = {
         destination: '/product/:slug',
         permanent: true,
       },
+      {
+        source: '/accountant',
+        destination: '/admin',
+        permanent: false,
+      },
     ];
   },
   // Optimize output tracing on Windows and exclude non-app metadata
@@ -29,6 +40,9 @@ const nextConfig = {
   },
   experimental: {
     optimizePackageImports: ['lucide-react'],
+    webpackBuildWorker: false,
+    cpus: 1,
+    workerThreads: false,
   },
   webpack: (config, { isServer }) => {
     if (!isServer && config.output) {

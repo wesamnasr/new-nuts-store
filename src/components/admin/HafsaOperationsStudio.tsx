@@ -34,11 +34,13 @@ interface HafsaOperationsStudioProps {
     partial: Record<string, any>,
     successToast: string
   ) => Promise<void | boolean>;
+  canMutate?: boolean;
 }
 
 export default function HafsaOperationsStudio({
   adminToken,
   onUpdateStorePayload,
+  canMutate = true,
 }: HafsaOperationsStudioProps) {
   const { storeData, refreshStore, showToast, pixelEvents } = useStore();
 
@@ -415,13 +417,19 @@ export default function HafsaOperationsStudio({
                         <strong>{previewWeights[3].price}ج</strong>
                       </td>
                       <td className="p-2.5">
-                        <button
-                          type="button"
-                          onClick={() => handleApplySingleKiloUpdate(prod)}
-                          className="bg-[#3B6E4C] hover:opacity-90 text-white px-3 py-1.5 rounded-lg text-[11px] font-black cursor-pointer"
-                        >
-                          ⚡ تحديث الـ 4 أوزان
-                        </button>
+                        {canMutate ? (
+                          <button
+                            type="button"
+                            onClick={() => handleApplySingleKiloUpdate(prod)}
+                            className="bg-[#3B6E4C] hover:opacity-90 text-white px-3 py-1.5 rounded-lg text-[11px] font-black cursor-pointer"
+                          >
+                            ⚡ تحديث الـ 4 أوزان
+                          </button>
+                        ) : (
+                          <span className="text-[10.5px] font-bold text-[#6E5D4F] bg-[#FAF6F0] px-2.5 py-1 rounded-lg border border-[#E6DFD3]">
+                            عرض محاسبي
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );
@@ -533,17 +541,23 @@ export default function HafsaOperationsStudio({
                 <span>👑 عرض سري خاص بأعضاء نادي حفصة VIP فقط</span>
               </label>
 
-              <button
-                type="submit"
-                disabled={!profitSafety.isSafe}
-                className={`px-4 py-2 rounded-xl text-xs font-black cursor-pointer ${
-                  profitSafety.isSafe
-                    ? 'bg-[#231710] text-[#D4AF37]'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                + اعتماد ونشر العرض
-              </button>
+              {canMutate ? (
+                <button
+                  type="submit"
+                  disabled={!profitSafety.isSafe}
+                  className={`px-4 py-2 rounded-xl text-xs font-black cursor-pointer ${
+                    profitSafety.isSafe
+                      ? 'bg-[#231710] text-[#D4AF37]'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  + اعتماد ونشر العرض
+                </button>
+              ) : (
+                <span className="text-[11px] font-bold text-[#6E5D4F] bg-white px-3 py-1.5 rounded-xl border border-[#E6DFD3]">
+                  وضع محاكاة الربحية للمحاسب
+                </span>
+              )}
             </div>
           </form>
 
@@ -564,13 +578,15 @@ export default function HafsaOperationsStudio({
                       {p.costPrice} ج.م)
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDeletePromo(p.id)}
-                    className="text-[#B83B2B] p-1 hover:bg-red-50 rounded cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {canMutate && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePromo(p.id)}
+                      className="text-[#B83B2B] p-1 hover:bg-red-50 rounded cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -605,9 +621,17 @@ export default function HafsaOperationsStudio({
           </div>
 
           <div className="lg:col-span-7 space-y-2">
-            <h3 className="font-cairo text-sm font-black text-[#231710]">
-              أعضاء نادي حفصة VIP المسجلين ({vipMembers.length})
-            </h3>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="font-cairo text-sm font-black text-[#231710]">
+                أعضاء نادي حفصة VIP المسجلين ({vipMembers.length})
+              </h3>
+              <div className="text-xs font-black bg-[#FAF6F0] border border-[#E6DFD3] px-3 py-1 rounded-xl text-[#231710]">
+                إجمالي رصيد النقاط المستحق للعملاء:{' '}
+                <span className="text-[#3B6E4C]">
+                  {vipMembers.reduce((s, m) => s + (m.pointsBalance || 0), 0).toLocaleString('ar-EG')} ج.م
+                </span>
+              </div>
+            </div>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {vipMembers.map((m) => (
                 <div
@@ -771,12 +795,14 @@ export default function HafsaOperationsStudio({
               📊 أحداث البيكسل المسجلة في الجلسة الحالية: {pixelEvents.length} حدث (AddToCart /
               CustomizeProduct / Purchase)
             </span>
-            <button
-              type="submit"
-              className="bg-[#231710] text-[#D4AF37] px-5 py-2.5 rounded-xl text-xs font-black cursor-pointer"
-            >
-              حفظ إعدادات التسويق والتوصيل
-            </button>
+            {canMutate && (
+              <button
+                type="submit"
+                className="bg-[#231710] text-[#D4AF37] px-5 py-2.5 rounded-xl text-xs font-black cursor-pointer"
+              >
+                حفظ إعدادات التسويق والتوصيل
+              </button>
+            )}
           </div>
         </form>
       )}
