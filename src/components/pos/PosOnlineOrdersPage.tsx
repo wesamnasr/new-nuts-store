@@ -33,6 +33,7 @@ interface PosOnlineOrdersPageProps {
   ) => void;
   availableRiders?: Array<{ id: string; displayName?: string; username?: string }>;
   onAssignRider?: (orderId: string, riderId: string, riderName: string) => Promise<void>;
+  onSettleRiderCod?: (payload: { orderId?: string; settleAll?: boolean }) => Promise<void>;
 }
 
 export default function PosOnlineOrdersPage({
@@ -46,6 +47,7 @@ export default function PosOnlineOrdersPage({
   onChangeDeliveryFilter,
   availableRiders,
   onAssignRider,
+  onSettleRiderCod,
 }: PosOnlineOrdersPageProps) {
   const [viewMode, setViewMode] = useState<'kanban' | 'grid'>('kanban');
   const [internalDeliveryFilter, setInternalDeliveryFilter] = useState<
@@ -60,6 +62,28 @@ export default function PosOnlineOrdersPage({
   };
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [settlingId, setSettlingId] = useState<string | null>(null);
+
+  const unsettledCodOrders = useMemo(
+    () =>
+      onlineQueueOrders.filter(
+        (o) =>
+          o.status === 'delivered' &&
+          o.paymentMethod === 'cod' &&
+          o.orderSource !== 'pos' &&
+          !o.riderCodSettled
+      ),
+    [onlineQueueOrders]
+  );
+
+  const unsettledCodTotal = useMemo(
+    () =>
+      unsettledCodOrders.reduce(
+        (sum, o) => sum + Math.max(0, Math.round(Number(o.cashCollected ?? o.total ?? 0))),
+        0
+      ),
+    [unsettledCodOrders]
+  );
 
   const filteredOrders = useMemo(() => {
     return onlineQueueOrders.filter((ord) => {
@@ -317,6 +341,39 @@ export default function PosOnlineOrdersPage({
             </span>
           </div>
 
+          {ord.status === 'delivered' && ord.paymentMethod === 'cod' && (
+            <div
+              className={`rounded-xl p-2 border flex items-center justify-between gap-2 text-[11px] font-bold ${
+                ord.riderCodSettled
+                  ? 'bg-[#3B6E4C]/10 border-[#3B6E4C]/30 text-[#3B6E4C]'
+                  : 'bg-[#C88A4B]/10 border-[#C88A4B]/40 text-[#231710]'
+              }`}
+            >
+              <span>
+                {ord.riderCodSettled
+                  ? `✅ تم توريد عهدة الكاش بالدرج (${ord.cashCollected ?? ord.total} ج.م)`
+                  : `⏳ عهدة كاش بطرف المندوب (${ord.cashCollected ?? ord.total} ج.م)`}
+              </span>
+              {!ord.riderCodSettled && onSettleRiderCod && (
+                <button
+                  type="button"
+                  disabled={settlingId === ord.id}
+                  onClick={async () => {
+                    setSettlingId(ord.id);
+                    try {
+                      await onSettleRiderCod({ orderId: ord.id });
+                    } finally {
+                      setSettlingId(null);
+                    }
+                  }}
+                  className="bg-[#231710] hover:bg-[#3a261a] text-[#D4AF37] px-2.5 py-1 rounded-lg text-[10.5px] font-cairo font-black shrink-0 cursor-pointer disabled:opacity-50"
+                >
+                  {settlingId === ord.id ? 'جاري التوريد...' : '💰 استلام بالدرج'}
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center gap-1">
             {(ord.status === 'pending' || ord.status === 'confirmed') && (
               <button
@@ -381,6 +438,42 @@ export default function PosOnlineOrdersPage({
 
   return (
     <div className="space-y-4">
+      {/* 0. Unsettled Rider COD Handover Banner */}
+      {unsettledCodOrders.length > 0 && onSettleRiderCod && (
+        <div className="bg-[#231710] text-[#FAF6F0] rounded-3xl p-4 border-2 border-[#D4AF37] shadow-md flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <span className="bg-[#D4AF37] text-[#231710] px-2.5 py-0.5 rounded-full text-[10.5px] font-black">
+                🛵 عهدة مناديب بانتظار التوريد للدرج
+              </span>
+              <span className="text-xs font-black text-[#D4AF37] tabular-nums">
+                {unsettledCodOrders.length} طلب مُسلَّم • إجمالي {unsettledCodTotal} ج.م
+              </span>
+            </div>
+            <p className="text-xs text-[#FAF6F0]/80">
+              عند استلام نقدية الدليفري من المندوب، اضغط لتوريدها فوراً في درج الكاشير وتحديث معادلة الجرد (Z-Report).
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={settlingId === '__ALL__'}
+            onClick={async () => {
+              setSettlingId('__ALL__');
+              try {
+                await onSettleRiderCod({ settleAll: true });
+              } finally {
+                setSettlingId(null);
+              }
+            }}
+            className="bg-[#D4AF37] hover:bg-[#c9a12b] text-[#231710] font-cairo font-black text-xs px-4 py-2.5 rounded-xl shadow cursor-pointer disabled:opacity-50 tabular-nums"
+          >
+            {settlingId === '__ALL__'
+              ? 'جاري توريد العهدة...'
+              : `💰 استلام كل عهد المناديب بالدرج (+${unsettledCodTotal} ج.م)`}
+          </button>
+        </div>
+      )}
+
       {/* 1. Top Control Bar: View Switcher (Kanban vs Grid) + Delivery Type Filters */}
       <div className="bg-white rounded-3xl p-4 border border-[#E6DFD3] shadow-xs space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">

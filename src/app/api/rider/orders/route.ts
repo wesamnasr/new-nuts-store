@@ -114,6 +114,26 @@ export async function GET(request: NextRequest) {
   const totalCodToCollect = baseRiderPool
     .filter((o) => o.status !== 'delivered' && o.status !== 'cancelled' && o.paymentMethod === 'cod')
     .reduce((sum, o) => sum + (o.total || 0), 0);
+  const unsettledCodOrders = baseRiderPool.filter(
+    (o) =>
+      o.status === 'delivered' &&
+      o.paymentMethod === 'cod' &&
+      o.orderSource !== 'pos' &&
+      !o.riderCodSettled
+  );
+  const unsettledCodBalance = unsettledCodOrders.reduce(
+    (sum, o) => sum + Number(o.cashCollected ?? o.total ?? 0),
+    0
+  );
+  const settledCodTotal = baseRiderPool
+    .filter(
+      (o) =>
+        o.status === 'delivered' &&
+        o.paymentMethod === 'cod' &&
+        o.orderSource !== 'pos' &&
+        o.riderCodSettled === true
+    )
+    .reduce((sum, o) => sum + Number(o.cashCollected ?? o.total ?? 0), 0);
 
   return NextResponse.json({
     success: true,
@@ -123,6 +143,9 @@ export async function GET(request: NextRequest) {
       pendingDelivery,
       deliveredToday,
       totalCodToCollect,
+      unsettledCodBalance,
+      settledCodTotal,
+      unsettledOrdersCount: unsettledCodOrders.length,
     },
     rider: {
       staffId: auth.staffId,
@@ -216,6 +239,13 @@ export async function PATCH(request: NextRequest) {
         targetOrder.cashCollected = Number(cashCollected) || 0;
       } else if (status === 'delivered' && targetOrder.paymentMethod === 'cod') {
         targetOrder.cashCollected = targetOrder.total;
+      }
+      if (
+        status === 'delivered' &&
+        targetOrder.paymentMethod === 'cod' &&
+        targetOrder.riderCodSettled === undefined
+      ) {
+        targetOrder.riderCodSettled = false;
       }
 
       return NextResponse.json({

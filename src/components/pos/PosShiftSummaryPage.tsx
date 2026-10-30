@@ -171,7 +171,9 @@ export default function PosShiftSummaryPage({
                 {activeShift.expectedCashInDrawer} ج.م
               </span>
               <span className="text-[9.5px] text-[#FAF6F0]/75 block">
-                (العهدة + الكاش - المصروفات)
+                {(activeShift.riderCodSettledTotal || 0) > 0
+                  ? `(العهدة + الكاش + توريد المناديب ${activeShift.riderCodSettledTotal}ج - المصروفات)`
+                  : '(العهدة + الكاش - المصروفات)'}
               </span>
             </div>
 
@@ -202,9 +204,15 @@ export default function PosShiftSummaryPage({
             )}
           </div>
 
-          {/* Secondary Bar: VIP Wallet Activity & Shift Timestamps */}
+          {/* Secondary Bar: Rider COD Handover, VIP Wallet Activity & Shift Timestamps */}
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/15 text-xs tabular-nums">
             <div className="flex flex-wrap items-center gap-4">
+              <span>
+                🛵 توريدات عهدة المناديب (COD) بالدرج:{' '}
+                <strong className="text-[#D4AF37]">
+                  +{activeShift.riderCodSettledTotal || 0} ج.م
+                </strong>
+              </span>
               <span>
                 👑 رصيد VIP المسترد في الوردية:{' '}
                 <strong className="text-[#D4AF37]">

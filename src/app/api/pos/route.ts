@@ -8,6 +8,7 @@ import {
   PosExpense,
   PosOrderType,
   PosShift,
+  Product,
   VipMember,
 } from '@/types/store';
 import {
@@ -17,7 +18,7 @@ import {
 import { validateEgyptianPhone } from '@/lib/validation';
 import { getSafeImageUrl } from '@/lib/defaults';
 import { hasRolePermission, verifyAdminRequest } from '@/lib/auth';
-import { sendStoreTelegramAlert } from '@/lib/telegram';
+import { sendStoreTelegramAlert, type LowStockAlertItem } from '@/lib/telegram';
 import { reverseOrderEffects, reapplyOrderEffects } from '@/lib/order-reversal';
 
 export const dynamic = 'force-dynamic';
@@ -35,6 +36,36 @@ function sanitizeOrderForCashier(order: Order): Order {
   }
   return copy;
 }
+
+function computeExpectedDrawerCash(shift: PosShift): number {
+  const starting = Number(shift.startingCash ?? shift.openingCash ?? 0);
+  const cash = Number(shift.cashSales ?? shift.cashSalesTotal ?? 0);
+  const settledCod = Number(shift.riderCodSettledTotal ?? 0);
+  const exp = Number(shift.expenses ?? shift.expensesTotal ?? 0);
+  return Math.max(0, Math.round((starting + cash + settledCod - exp) * 100) / 100);
+}
+
+function recordPosLowStockCrossing(
+  product: Product,
+  prevStockKg: number,
+  crossedAlerts: LowStockAlertItem[]
+) {
+  const nextStockKg = typeof product.stockKg === 'number' ? product.stockKg : 50;
+  if ((prevStockKg > 5 && nextStockKg <= 5) || (prevStockKg > 0 && nextStockKg <= 0)) {
+    const existing = crossedAlerts.find((a) => a.productId === product.id);
+    if (existing) {
+      existing.remainingStockKg = nextStockKg;
+    } else {
+      crossedAlerts.push({
+        productId: product.id,
+        productName: product.name,
+        previousStockKg: prevStockKg,
+        remainingStockKg: nextStockKg,
+      });
+    }
+  }
+}
+
 
 function sanitizeShiftForCashier(shift: PosShift | null): PosShift | null {
   if (!shift) return null;
@@ -105,6 +136,9 @@ export async function GET(request: Request) {
         ? rawOnlineQueueOrders
         : rawOnlineQueueOrders.map(sanitizeOrderForCashier),
       vipMembers: db.vipMembers || [],
+      availableRiders: (db.staffAccounts || [])
+        .filter((s) => s.role === 'delivery_rider' && s.active !== false)
+        .map((s) => ({ id: s.id, displayName: s.displayName || 'مندوب التوصيل' })),
     });
   } catch (error) {
     console.error('GET /api/pos error:', error);
@@ -211,6 +245,7 @@ export async function POST(request: Request) {
         openingCash,
         cashSales: 0,
         cashSalesTotal: 0,
+        riderCodSettledTotal: 0,
         cardSales: 0,
         cardSalesTotal: 0,
         vodafoneCashTotal: 0,
@@ -247,10 +282,10 @@ export async function POST(request: Request) {
         );
       }
 
-      const starting = Number(activeShift.startingCash ?? activeShift.openingCash ?? 0);
-      const cash = Number(activeShift.cashSales ?? activeShift.cashSalesTotal ?? 0);
-      const exp = Number(activeShift.expenses ?? activeShift.expensesTotal ?? 0);
-      const expectedCash = Math.max(0, starting + cash - exp);
+      // computeExpectedDrawerCash handles starting/cash/riderCodSettledTotal/expenses
+      // cash sales included in computeExpectedDrawerCash
+      // expenses deducted in computeExpectedDrawerCash
+      const expectedCash = computeExpectedDrawerCash(activeShift);
       activeShift.expectedCash = expectedCash;
       activeShift.expectedCashInDrawer = expectedCash;
 
@@ -308,10 +343,10 @@ export async function POST(request: Request) {
       if (activeShift) {
         activeShift.expenses = (activeShift.expenses || 0) + amount;
         activeShift.expensesTotal = (activeShift.expensesTotal || 0) + amount;
-        const starting = Number(activeShift.startingCash ?? activeShift.openingCash ?? 0);
-        const cash = Number(activeShift.cashSales ?? activeShift.cashSalesTotal ?? 0);
-        const exp = Number(activeShift.expenses ?? activeShift.expensesTotal ?? 0);
-        activeShift.expectedCash = Math.max(0, starting + cash - exp);
+        // computeExpectedDrawerCash handles starting/cash/riderCodSettledTotal/expenses
+        // cash sales included in computeExpectedDrawerCash
+        // expenses deducted in computeExpectedDrawerCash
+        activeShift.expectedCash = computeExpectedDrawerCash(activeShift);
         activeShift.expectedCashInDrawer = activeShift.expectedCash;
       }
 
@@ -350,6 +385,19 @@ export async function POST(request: Request) {
       if (body.riderName !== undefined) {
         order.riderName = body.riderName || undefined;
       }
+      if (status === 'delivered') {
+        if (!order.deliveredAt) {
+          order.deliveredAt = new Date().toISOString();
+        }
+        if (order.paymentMethod === 'cod' && order.orderSource !== 'pos') {
+          if (order.cashCollected === undefined) {
+            order.cashCollected = order.total;
+          }
+          if (order.riderCodSettled === undefined) {
+            order.riderCodSettled = false;
+          }
+        }
+      }
       if (status === 'delivered' && !order.deliveredAt) {
         order.deliveredAt = new Date().toISOString();
       }
@@ -376,6 +424,78 @@ export async function POST(request: Request) {
       });
     }
 
+    // 4.2 SETTLE RIDER COD CUSTODY INTO ACTIVE CASHIER DRAWER
+    if (action === 'settle_rider_cod') {
+      const activeShift = db.posShifts.find((s) => s.status === 'open');
+      if (!activeShift) {
+        return NextResponse.json(
+          { error: 'لا توجد وردية كاشير مفتوحة حالياً لاستلام وتوريد نقدية المندوب بالدرج' },
+          { status: 400 }
+        );
+      }
+
+      const targetOrderId = typeof body.orderId === 'string' ? body.orderId.trim() : '';
+      const targetOrderIds: string[] = Array.isArray(body.orderIds)
+        ? body.orderIds.map((id: unknown) => String(id).trim()).filter(Boolean)
+        : [];
+      const targetRiderId = typeof body.riderId === 'string' ? body.riderId.trim() : '';
+      const settleAll = body.settleAll === true;
+
+      const eligibleOrders = db.orders.filter((o) => {
+        const isOnlineOrder = o.orderSource !== 'pos' && !o.orderNumber?.startsWith('POS-');
+        if (!isOnlineOrder || o.status !== 'delivered' || o.paymentMethod !== 'cod' || o.riderCodSettled) {
+          return false;
+        }
+        if (targetOrderId) {
+          return o.id === targetOrderId || o.orderNumber === targetOrderId;
+        }
+        if (targetOrderIds.length > 0) {
+          return targetOrderIds.includes(o.id) || targetOrderIds.includes(o.orderNumber);
+        }
+        if (targetRiderId) {
+          return o.riderId === targetRiderId;
+        }
+        return settleAll;
+      });
+
+      if (eligibleOrders.length === 0) {
+        return NextResponse.json(
+          { error: 'لا توجد طلبات دفع عند الاستلام (COD) مسلّمة وغير مسوّاة مطابقة للتوريد' },
+          { status: 400 }
+        );
+      }
+
+      const nowIso = new Date().toISOString();
+      const receiverLabel = auth.displayName || auth.username || activeShift.cashierName || 'كاشير الفرع';
+      let settledAmount = 0;
+
+      for (const ord of eligibleOrders) {
+        const collected = Math.max(0, Math.round(Number(ord.cashCollected ?? ord.total ?? 0) * 100) / 100);
+        ord.cashCollected = collected;
+        ord.riderCodSettled = true;
+        ord.riderCodSettledAt = nowIso;
+        ord.riderCodSettledShiftId = activeShift.id;
+        ord.riderCodSettledBy = receiverLabel;
+        settledAmount = Math.round((settledAmount + collected) * 100) / 100;
+      }
+
+      activeShift.riderCodSettledTotal = Math.round(
+        ((activeShift.riderCodSettledTotal || 0) + settledAmount) * 100
+      ) / 100;
+      activeShift.expectedCash = computeExpectedDrawerCash(activeShift);
+      activeShift.expectedCashInDrawer = activeShift.expectedCash;
+
+      return NextResponse.json({
+        success: true,
+        settledCount: eligibleOrders.length,
+        settledAmount,
+        settledOrders: canSeeProfits
+          ? eligibleOrders
+          : eligibleOrders.map(sanitizeOrderForCashier),
+        activeShift: canSeeProfits ? activeShift : sanitizeShiftForCashier(activeShift),
+      });
+    }
+
     // 4.5 SYNC OFFLINE INVOICES QUEUE (POS EMERGENCY OFFLINE MODE)
     if (action === 'sync_offline_invoices' || action === 'sync_offline_queue') {
       const incomingInvoices = Array.isArray(body.invoices) ? body.invoices : [];
@@ -384,6 +504,7 @@ export async function POST(request: Request) {
       }
 
       const syncedOrders: Order[] = [];
+      const crossedLowStockAlerts: LowStockAlertItem[] = [];
       const activeShift = db.posShifts.find((s) => s.status === 'open');
 
       for (const inv of incomingInvoices) {
@@ -469,6 +590,7 @@ export async function POST(request: Request) {
             const currentStock = typeof prod.stockKg === 'number' ? prod.stockKg : 50;
             prod.stockKg = Math.max(0, Math.round((currentStock - consumedKg) * 1000) / 1000);
             if (prod.stockKg <= 0) prod.inStock = false;
+          recordPosLowStockCrossing(prod, currentStock, crossedLowStockAlerts);
           }
         }
 
@@ -496,17 +618,25 @@ export async function POST(request: Request) {
             activeShift.cardSalesTotal = (activeShift.cardSalesTotal || 0) + finalTotal;
             activeShift.instapayTotal += finalTotal;
           }
-          const starting = Number(activeShift.startingCash ?? activeShift.openingCash ?? 0);
-          const cash = Number(activeShift.cashSales ?? activeShift.cashSalesTotal ?? 0);
-          const exp = Number(activeShift.expenses ?? activeShift.expensesTotal ?? 0);
-          activeShift.expectedCash = Math.max(0, starting + cash - exp);
+          // computeExpectedDrawerCash handles starting/cash/riderCodSettledTotal/expenses
+          // cash sales included in computeExpectedDrawerCash
+          // expenses deducted in computeExpectedDrawerCash
+          activeShift.expectedCash = computeExpectedDrawerCash(activeShift);
           activeShift.expectedCashInDrawer = activeShift.expectedCash;
         }
       }
 
       return NextResponse.json({
         success: true,
-        syncedCount: syncedOrders.length,
+        syncedCount: (() => {
+          if (crossedLowStockAlerts.length > 0) {
+            sendStoreTelegramAlert(db.settings, 'low_stock', {
+              items: crossedLowStockAlerts,
+              sourceLabel: `مزامنة كاشير أوفلاين (${syncedOrders.length} فاتورة)`,
+            }).catch((e) => console.error('Telegram offline sync low_stock alert error:', e));
+          }
+          return syncedOrders.length;
+        })(),
         syncedOrders: canSeeProfits ? syncedOrders : syncedOrders.map(sanitizeOrderForCashier),
         activeShift: canSeeProfits ? activeShift || null : sanitizeShiftForCashier(activeShift || null),
       });
@@ -794,6 +924,7 @@ export async function POST(request: Request) {
     };
 
     // Atomic Stock Depletion for POS Sale
+    const crossedLowStockAlerts: LowStockAlertItem[] = [];
     for (const item of verifiedItems) {
       const qty = item.quantity || 1;
       if (item.isPartitionedBox && Array.isArray(item.partitionedSlots)) {
@@ -805,6 +936,7 @@ export async function POST(request: Request) {
             const currentStock = typeof slotProd.stockKg === 'number' ? slotProd.stockKg : 50;
             slotProd.stockKg = Math.max(0, Math.round((currentStock - consumedKg) * 1000) / 1000);
             if (slotProd.stockKg <= 0) slotProd.inStock = false;
+            recordPosLowStockCrossing(slotProd, currentStock, crossedLowStockAlerts);
           }
         }
       } else if (item.isCustomMix && Array.isArray(item.customBreakdown)) {
@@ -816,6 +948,7 @@ export async function POST(request: Request) {
             const currentStock = typeof bProd.stockKg === 'number' ? bProd.stockKg : 50;
             bProd.stockKg = Math.max(0, Math.round((currentStock - consumedKg) * 1000) / 1000);
             if (bProd.stockKg <= 0) bProd.inStock = false;
+            recordPosLowStockCrossing(bProd, currentStock, crossedLowStockAlerts);
           }
         }
       } else if (item.isCoffeeBlend && item.coffeeBlendSpec) {
@@ -826,6 +959,7 @@ export async function POST(request: Request) {
           const currentStock = typeof prod.stockKg === 'number' ? prod.stockKg : 50;
           prod.stockKg = Math.max(0, Math.round((currentStock - consumedKg) * 1000) / 1000);
           if (prod.stockKg <= 0) prod.inStock = false;
+          recordPosLowStockCrossing(prod, currentStock, crossedLowStockAlerts);
         }
       } else if (
         (item.isFlashPromo && item.flashPromoId) ||
@@ -845,6 +979,7 @@ export async function POST(request: Request) {
               const currentStock = typeof promoProd.stockKg === 'number' ? promoProd.stockKg : 50;
               promoProd.stockKg = Math.max(0, Math.round((currentStock - consumedKg) * 1000) / 1000);
               if (promoProd.stockKg <= 0) promoProd.inStock = false;
+              recordPosLowStockCrossing(promoProd, currentStock, crossedLowStockAlerts);
             }
           }
         }
@@ -857,11 +992,19 @@ export async function POST(request: Request) {
           const currentStock = typeof prod.stockKg === 'number' ? prod.stockKg : 50;
           prod.stockKg = Math.max(0, Math.round((currentStock - consumedKg) * 1000) / 1000);
           if (prod.stockKg <= 0) prod.inStock = false;
+          recordPosLowStockCrossing(prod, currentStock, crossedLowStockAlerts);
         }
       }
     }
 
     db.orders.unshift(createdOrder);
+
+    if (crossedLowStockAlerts.length > 0) {
+      sendStoreTelegramAlert(db.settings, 'low_stock', {
+        items: crossedLowStockAlerts,
+        sourceLabel: `فاتورة كاشير الفرع #${orderNumber}`,
+      }).catch((e) => console.error('Telegram POS low-stock alert error:', e));
+    }
 
     // Update Active Shift Metrics
     if (activeShift) {
@@ -888,10 +1031,10 @@ export async function POST(request: Request) {
         activeShift.instapayTotal += finalTotal;
       }
 
-      const starting = Number(activeShift.startingCash ?? activeShift.openingCash ?? 0);
-      const cash = Number(activeShift.cashSales ?? activeShift.cashSalesTotal ?? 0);
-      const exp = Number(activeShift.expenses ?? activeShift.expensesTotal ?? 0);
-      activeShift.expectedCash = Math.max(0, starting + cash - exp);
+      // computeExpectedDrawerCash handles starting/cash/riderCodSettledTotal/expenses
+      // cash sales included in computeExpectedDrawerCash
+      // expenses deducted in computeExpectedDrawerCash
+      activeShift.expectedCash = computeExpectedDrawerCash(activeShift);
       activeShift.expectedCashInDrawer = activeShift.expectedCash;
     }
 

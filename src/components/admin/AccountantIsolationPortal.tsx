@@ -438,6 +438,40 @@ export default function AccountantIsolationPortal({
     };
   }, [dailyIncomeCards, posShifts]);
 
+  const riderCodCustodyAudit = useMemo(() => {
+    let unsettledOrdersCount = 0;
+    let unsettledAmount = 0;
+    let settledOrdersCount = 0;
+    let settledAmount = 0;
+
+    for (const o of filteredOrders) {
+      if (o.orderSource === 'pos') continue;
+      if (o.paymentMethod !== 'cod') continue;
+      if (o.status !== 'delivered') continue;
+      const amt = Math.max(0, Math.round(Number(o.cashCollected ?? o.total ?? 0)));
+      if (o.riderCodSettled) {
+        settledOrdersCount += 1;
+        settledAmount += amt;
+      } else {
+        unsettledOrdersCount += 1;
+        unsettledAmount += amt;
+      }
+    }
+
+    const drawerSettledShiftsTotal = posShifts.reduce(
+      (sum, s) => sum + Math.max(0, Math.round(Number(s.riderCodSettledTotal || 0))),
+      0
+    );
+
+    return {
+      unsettledOrdersCount,
+      unsettledAmount,
+      settledOrdersCount,
+      settledAmount,
+      drawerSettledShiftsTotal,
+    };
+  }, [filteredOrders, posShifts]);
+
   const paymentBreakdown = useMemo(() => {
     let cod = 0;
     let instapay = 0;
@@ -1124,6 +1158,65 @@ export default function AccountantIsolationPortal({
           <p className="text-[10.5px] text-amber-700 mt-1 font-bold">
             توريد معلق: {report.supplyFinancials.pendingTotal.toLocaleString('ar-EG')} ج.م ({report.vipLiabilities.membersCount} عضو VIP)
           </p>
+        </div>
+      </div>
+
+      {/* ===================================================================== */}
+      {/* READ-ONLY RIDER COD CUSTODY & CASH DRAWER HANDOVER AUDIT STRIP         */}
+      {/* ===================================================================== */}
+      <div className="bg-white rounded-2xl p-4 border border-brand-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+            <Truck className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-xs sm:text-sm font-black text-brand-950">
+                مراجعة ذمم وعهد تحصيل المناديب (Rider COD Custody Audit)
+              </h3>
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                🔒 رقابة محاسبية للقراءة فقط
+              </span>
+            </div>
+            <p className="text-[10.5px] text-brand-600 font-bold">
+              مطابقة نقدية طلبات الأونلاين المُسلَّمة (الدفع عند الاستلام) بين عهدة الطيارين ودرج الكاشير
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full lg:w-auto tabular-nums">
+          <div className="px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200">
+            <span className="block text-[10px] font-bold text-amber-800">
+              عهد نقدية بطرف المناديب (تحت التوريد)
+            </span>
+            <span className="text-sm font-black text-amber-950">
+              {riderCodCustodyAudit.unsettledAmount.toLocaleString('ar-EG')} ج.م{' '}
+              <span className="text-[10px] font-bold text-amber-700">
+                ({riderCodCustodyAudit.unsettledOrdersCount} طلب)
+              </span>
+            </span>
+          </div>
+
+          <div className="px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200">
+            <span className="block text-[10px] font-bold text-emerald-800">
+              عهد المناديب المورَّدة لدرج الكاشير
+            </span>
+            <span className="text-sm font-black text-emerald-950">
+              {riderCodCustodyAudit.settledAmount.toLocaleString('ar-EG')} ج.م{' '}
+              <span className="text-[10px] font-bold text-emerald-700">
+                ({riderCodCustodyAudit.settledOrdersCount} طلب)
+              </span>
+            </span>
+          </div>
+
+          <div className="px-3.5 py-2 rounded-xl bg-brand-50 border border-brand-200">
+            <span className="block text-[10px] font-bold text-brand-700">
+              إجمالي التوريد المسجل بدفاتر الورديات
+            </span>
+            <span className="text-sm font-black text-brand-950">
+              {riderCodCustodyAudit.drawerSettledShiftsTotal.toLocaleString('ar-EG')} ج.م
+            </span>
+          </div>
         </div>
       </div>
 

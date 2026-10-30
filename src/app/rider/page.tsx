@@ -56,6 +56,9 @@ export default function DeliveryRiderPage() {
     pendingDelivery: 0,
     deliveredToday: 0,
     totalCodToCollect: 0,
+    unsettledCodBalance: 0,
+    settledCodTotal: 0,
+    unsettledOrdersCount: 0,
   });
   const [activeTab, setActiveTab] = useState<
     'all' | 'bandar_fast' | 'villages_scheduled' | 'delivered'
@@ -433,10 +436,45 @@ export default function DeliveryRiderPage() {
           <div className="bg-white p-3 rounded-2xl border border-[#D4AF37]/40 bg-gradient-to-br from-white to-[#F3ECE1] shadow-xs space-y-1">
             <span className="text-[11px] font-bold text-[#6E5D4F] flex items-center gap-1">
               <DollarSign className="w-3.5 h-3.5 text-[#231710]" />
-              <span>تحصيل كاش (COD)</span>
+              <span>مطلوب تحصيله بالطريق</span>
             </span>
             <div className="text-xl font-cairo font-black text-[#231710] tabular-nums">
               {stats.totalCodToCollect} <span className="text-xs">ج.م</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Rider Cash Custody & Branch Handover Strip */}
+        <div
+          className={`p-3.5 rounded-2xl border flex flex-wrap items-center justify-between gap-3 ${
+            (stats.unsettledCodBalance || 0) > 0
+              ? 'bg-amber-50 border-amber-400 text-amber-950'
+              : 'bg-emerald-50/70 border-emerald-300 text-emerald-950'
+          }`}
+        >
+          <div className="space-y-0.5">
+            <div className="text-xs font-cairo font-black flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-[#C88A4B]" />
+              <span>ذمة عهدة التحصيل النقدي (COD Custody):</span>
+            </div>
+            <p className="text-[11px] font-bold text-[#6E5D4F]">
+              {(stats.unsettledCodBalance || 0) > 0
+                ? `لديك عهدة نقدية محصلة من ${stats.unsettledOrdersCount || 0} طلب بانتظار تسليمها لكاشير فرع بني مزار`
+                : 'ذمتك النقدية خالية ومسوّاة بالكامل مع درج كاشير الفرع ✅'}
+            </p>
+          </div>
+          <div className="flex items-center gap-3 tabular-nums">
+            <div className="bg-white px-3 py-1.5 rounded-xl border border-amber-300 text-right">
+              <span className="block text-[10px] font-bold text-[#6E5D4F]">عهدة مطلوبة للفرع</span>
+              <span className="font-cairo font-black text-sm text-[#B83B2B]">
+                {stats.unsettledCodBalance || 0} ج.م
+              </span>
+            </div>
+            <div className="bg-white px-3 py-1.5 rounded-xl border border-emerald-300 text-right">
+              <span className="block text-[10px] font-bold text-[#6E5D4F]">تم توريده للكاشير</span>
+              <span className="font-cairo font-black text-sm text-[#3B6E4C]">
+                {stats.settledCodTotal || 0} ج.م
+              </span>
             </div>
           </div>
         </div>
@@ -726,18 +764,38 @@ export default function DeliveryRiderPage() {
                         </button>
                       </div>
                     ) : (
-                      <div className="bg-emerald-100 text-emerald-900 py-2.5 px-4 rounded-2xl text-xs font-black flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          <span>تم تسليم هذا الطلب بنجاح</span>
+                      <div className="space-y-1.5">
+                        <div className="bg-emerald-100 text-emerald-900 py-2.5 px-4 rounded-2xl text-xs font-black flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            <span>تم تسليم هذا الطلب بنجاح</span>
+                          </div>
+                          {order.deliveredAt && (
+                            <span className="text-[10px] font-bold tabular-nums">
+                              {new Date(order.deliveredAt).toLocaleTimeString('ar-EG', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          )}
                         </div>
-                        {order.deliveredAt && (
-                          <span className="text-[10px] font-bold tabular-nums">
-                            {new Date(order.deliveredAt).toLocaleTimeString('ar-EG', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
+                        {isCod && (
+                          <div
+                            className={`py-2 px-3 rounded-xl text-[11px] font-black flex items-center justify-between border ${
+                              order.riderCodSettled
+                                ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                                : 'bg-amber-50 border-amber-400 text-amber-950'
+                            }`}
+                          >
+                            <span>
+                              {order.riderCodSettled
+                                ? `✅ تم توريد العهدة لدرج الفرع (${order.riderCodSettledBy || 'الكاشير'})`
+                                : '⏳ عهدة محصلة بطرفك — سلمها لكاشير الفرع'}
+                            </span>
+                            <span className="tabular-nums">
+                              {order.cashCollected ?? order.total} ج.م
+                            </span>
+                          </div>
                         )}
                       </div>
                     )}

@@ -17,7 +17,14 @@ export interface TelegramNotificationResult {
   error?: string;
 }
 
-export type TelegramNotificationEventType = 'new_order' | 'supply_invoice' | 'z_report';
+export type TelegramNotificationEventType = 'new_order' | 'supply_invoice' | 'z_report' | 'low_stock';
+
+export interface LowStockAlertItem {
+  productId: string;
+  productName: string;
+  previousStockKg: number;
+  remainingStockKg: number;
+}
 
 /**
  * Escapes characters that have special meaning in Telegram HTML mode
@@ -237,13 +244,40 @@ export function formatShiftZReportTelegramMessage(shift: PosShift): string {
 ━━━━━━━━━━━━━━━━━━━━
 💵 <b>إجمالي المبيعات الكلي:</b> <b>${shift.totalRevenue} جنيه مصري</b>
 💰 <b>عهدة الكاش الفعلية بالدرج:</b> <b>${shift.actualClosingCash ?? shift.actualCash ?? 0} ج.م</b>
-   (المتوقع دفترياً: ${shift.expectedCashInDrawer ?? shift.expectedCash ?? 0} ج.م)
+   (المتوقع دفترياً: ${shift.expectedCashInDrawer ?? shift.expectedCash ?? 0} ج.م)${(shift.riderCodSettledTotal || 0) > 0 ? `\n🛵 <b>توريدات عهدة المناديب (COD) بالدرج:</b> <b>+${shift.riderCodSettledTotal} ج.م</b>` : ''}
 💳 <b>مبيعات ماكينة الفيزا (Card):</b> <b>${shift.cardSalesTotal ?? shift.cardSales ?? 0} ج.م</b>
 📱 <b>مدفوعات المحافظ الإلكترونية:</b> ${(shift.vodafoneCashTotal || 0) + (shift.instapayTotal || 0)} ج.م
 💸 <b>مصروفات الوردية المسجلة:</b> <b>${shift.expensesTotal ?? shift.expenses ?? 0} ج.م</b>
 ⚖️ <b>نتيجة مطابقة درج النقدية:</b> ${varianceLabel}
 ━━━━━━━━━━━━━━━━━━━━
 ⏰ <b>توقيت تقفيل الوردية:</b> ${new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+/**
+ * Formats a critical low-stock (<= 5 kg) or out-of-stock alert into an Arabic Telegram message
+ */
+export function formatLowStockTelegramMessage(
+  items: LowStockAlertItem[],
+  sourceLabel = 'مبيعات الفرع / المتجر الإلكتروني'
+): string {
+  const lines = (items || [])
+    .map((item, idx) => {
+      const statusBadge =
+        item.remainingStockKg <= 0
+          ? '🚨 <b>نفد بالكامل (0 كجم)</b>'
+          : `⚠️ <b>حد حرج (${item.remainingStockKg} كجم متبقي)</b>`;
+      return `${idx + 1}. <b>${escapeTelegramHtml(item.productName)}</b> — ${statusBadge} <i>(كان ${item.previousStockKg} كجم)</i>`;
+    })
+    .join('\n');
+
+  return `⚠️ <b>تنبيه نقص مخزون حرج (≤ 5 كجم) | محمصة حفصة</b>
+━━━━━━━━━━━━━━━━━━━━
+📡 <b>مصدر السحب:</b> ${escapeTelegramHtml(sourceLabel)}
+📋 <b>الأصناف التي تتطلب توريداً عاجلاً (${items?.length || 0}):</b>
+${lines}
+━━━━━━━━━━━━━━━━━━━━
+📦 <i>يرجى مراجعة بوابة التوريد والمخزون لرفع فاتورة استعاضة فورية.</i>
+⏰ <b>التوقيت:</b> ${new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
 /**
@@ -280,6 +314,9 @@ export async function sendStoreTelegramAlert(
   if (eventType === 'z_report' && settings.telegramNotifyZReport === false) {
     return { success: false, skipped: true, error: 'Z-Report Telegram notifications disabled' };
   }
+  if (eventType === 'low_stock' && settings.telegramNotifyLowStock === false) {
+    return { success: false, skipped: true, error: 'Low stock Telegram notifications disabled' };
+  }
 
   let messageHtml = '';
 
@@ -290,6 +327,14 @@ export async function sendStoreTelegramAlert(
       messageHtml = formatSupplyInvoiceTelegramMessage(data as SupplyInvoice);
     } else if (eventType === 'z_report') {
       messageHtml = formatShiftZReportTelegramMessage(data as PosShift);
+    } else if (eventType === 'low_stock') {
+      const payload = Array.isArray(data)
+        ? { items: data as LowStockAlertItem[], sourceLabel: undefined }
+        : (data as { items: LowStockAlertItem[]; sourceLabel?: string });
+      if (!Array.isArray(payload?.items) || payload.items.length === 0) {
+        return { success: false, skipped: true, error: 'No low-stock items to notify' };
+      }
+      messageHtml = formatLowStockTelegramMessage(payload.items, payload.sourceLabel);
     }
   } catch (err: any) {
     return { success: false, error: `Failed to format Telegram message: ${err?.message || err}` };

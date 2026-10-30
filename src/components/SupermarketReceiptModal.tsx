@@ -330,6 +330,12 @@ export default function SupermarketReceiptModal({
                     <span>مصروفات الدرج النثرية:</span>
                     <span>-{shift.expensesTotal} ج.م</span>
                   </div>
+                  {shift && (shift.riderCodSettledTotal || 0) > 0 && (
+                    <div className="sr-row">
+                      <span>توريدات عهدة المناديب (COD):</span>
+                      <span className="sr-bold">+{shift.riderCodSettledTotal} ج.م</span>
+                    </div>
+                  )}
                   <div className="sr-total-box sr-row">
                     <span>النقدية بالدرج:</span>
                     <span>{shift.expectedCashInDrawer} ج.م</span>
@@ -481,7 +487,13 @@ export default function SupermarketReceiptModal({
                       </div>
                     )}
 
-                    <div className="sr-total-box sr-row">
+                    {shift && (shift.riderCodSettledTotal || 0) > 0 && (
+                    <div className="sr-row">
+                      <span>توريدات عهدة المناديب (COD):</span>
+                      <span className="sr-bold">+{shift.riderCodSettledTotal} ج.م</span>
+                    </div>
+                  )}
+                  <div className="sr-total-box sr-row">
                       <span>الإجمالي المطلوب:</span>
                       <span>{order.total} ج.م</span>
                     </div>

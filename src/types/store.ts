@@ -271,6 +271,10 @@ export interface Order {
   deliveredAt?: string;       // Timestamp when rider confirmed delivery
   riderNotes?: string;        // Rider operational delivery notes
   cashCollected?: number;     // Cash amount collected by rider on COD
+  riderCodSettled?: boolean;  // Whether collected COD cash was handed over to branch drawer
+  riderCodSettledAt?: string; // Timestamp when COD cash was settled at branch
+  riderCodSettledShiftId?: string; // POS shift ID that received the settled COD cash
+  riderCodSettledBy?: string; // Cashier or Admin display name who received the cash
   status: OrderStatus;
   createdAt: string;
 }
@@ -541,6 +545,7 @@ export interface StoreSettings {
   telegramNotifyNewOrders?: boolean;
   telegramNotifySupplyInvoices?: boolean;
   telegramNotifyZReport?: boolean;
+  telegramNotifyLowStock?: boolean;
 
   pageContent?: StorePageContent;
   themeConfig?: StoreThemeConfig;
@@ -569,6 +574,7 @@ export interface PosShift {
   openingCash: number;
   cashSales?: number;
   cashSalesTotal: number;
+  riderCodSettledTotal?: number;
   cardSales?: number;
   cardSalesTotal?: number;
   vodafoneCashTotal: number;

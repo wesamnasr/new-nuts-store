@@ -23,7 +23,7 @@ import { hasRolePermission, verifyAdminRequest } from '@/lib/auth';
 import { reverseOrderEffects, reapplyOrderEffects } from '@/lib/order-reversal';
 import { calculateOrderCogs, roundCurrency } from '@/lib/financials';
 import { verifyVipPin, validateVipPinFormat, hashVipPin } from '@/lib/vip-pin';
-import { sendStoreTelegramAlert } from '@/lib/telegram';
+import { sendStoreTelegramAlert, type LowStockAlertItem } from '@/lib/telegram';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,11 +41,29 @@ function stripOrderCosts(order: Order): Order {
   return copy;
 }
 
-function depleteProductStock(product: Product, consumedKg: number) {
+function depleteProductStock(product: Product, consumedKg: number, crossedAlerts?: LowStockAlertItem[]) {
+  const prevStockKg = typeof product.stockKg === 'number' ? product.stockKg : 50;
   const currentStock = typeof product.stockKg === 'number' ? product.stockKg : 50;
   product.stockKg = Math.max(0, Math.round((currentStock - consumedKg) * 1000) / 1000);
   if (product.stockKg <= 0) {
     product.inStock = false;
+  }
+  const nextStockKg = product.stockKg;
+  if (
+    crossedAlerts &&
+    ((prevStockKg > 5 && nextStockKg <= 5) || (prevStockKg > 0 && nextStockKg <= 0))
+  ) {
+    const existing = crossedAlerts.find((a) => a.productId === product.id);
+    if (existing) {
+      existing.remainingStockKg = nextStockKg;
+    } else {
+      crossedAlerts.push({
+        productId: product.id,
+        productName: product.name,
+        previousStockKg: prevStockKg,
+        remainingStockKg: nextStockKg,
+      });
+    }
   }
 }
 
@@ -387,6 +405,88 @@ export async function POST(request: NextRequest) {
       serverSubtotal += unitPrice * quantity;
     }
 
+    // 3.5 Atomic Anti-Oversell Stock Availability Guard
+    const requiredKgByProduct = new Map<string, number>();
+    const addRequiredKg = (prodId: string | undefined, kg: number) => {
+      if (!prodId || !(kg > 0)) return;
+      requiredKgByProduct.set(
+        prodId,
+        Math.round(((requiredKgByProduct.get(prodId) || 0) + kg) * 1000) / 1000
+      );
+    };
+
+    for (const item of verifiedItems) {
+      const qty = item.quantity || 1;
+      if (item.isPartitionedBox && Array.isArray(item.partitionedSlots)) {
+        for (const slot of item.partitionedSlots) {
+          const slotGrams =
+            slot.slotGrams ||
+            slot.weightGrams ||
+            (item.partitionedBoxSize === 'roqan_4' ? 100 : 125);
+          addRequiredKg(slot.productId, (slotGrams * qty) / 1000);
+        }
+      } else if (item.isCustomMix && Array.isArray(item.customBreakdown)) {
+        for (const b of item.customBreakdown) {
+          const constituentGrams =
+            b.weightGrams || (((b.percentage || 0) * (item.boxCapacityGrams || 500)) / 100);
+          addRequiredKg(b.productId, (constituentGrams * qty) / 1000);
+        }
+      } else if (item.isCoffeeBlend && item.coffeeBlendSpec) {
+        const totalGrams = Number(item.coffeeBlendSpec.weightGrams) || 250;
+        const prod = db.products.find(
+          (p) => p.id === item.productId || p.categoryId === 'cat-coffee-espresso'
+        );
+        if (prod) {
+          addRequiredKg(prod.id, (totalGrams * qty) / 1000);
+        }
+      } else if (typeof item.productId === 'string' && item.productId.startsWith('flash-promo-')) {
+        const promoId = item.productId.replace('flash-promo-', '');
+        const promo = (db.promotions || db.flashPromotions || []).find((p) => p.id === promoId);
+        if (promo && Array.isArray(promo.items)) {
+          for (const pi of promo.items) {
+            addRequiredKg(pi.productId, ((pi.weightGrams || 250) * (pi.quantity || 1) * qty) / 1000);
+          }
+        }
+      } else {
+        const prod = db.products.find((p) => p.id === item.productId);
+        if (prod) {
+          const matchedW = prod.weights?.find(
+            (w) => w.id === item.weightId || w.label === item.weightLabel
+          );
+          const grams =
+            item.customWeightGrams ||
+            matchedW?.weightGrams ||
+            matchedW?.grams ||
+            (item.weightId === 'w-2000' ? 2000 : 250);
+          addRequiredKg(prod.id, (grams * qty) / 1000);
+        }
+      }
+    }
+
+    for (const [prodId, requiredKg] of requiredKgByProduct.entries()) {
+      const prod = db.products.find((p) => p.id === prodId);
+      if (!prod) continue;
+      const availableKg = typeof prod.stockKg === 'number' ? prod.stockKg : 50;
+      if (prod.inStock === false || availableKg <= 0) {
+        return NextResponse.json(
+          {
+            error: `عذراً، الصنف «${prod.name}» نفد من المخزون حالياً ولا يمكن إتمام الطلب لحين إعادة التوريد.`,
+          },
+          { status: 400 }
+        );
+      }
+      if (availableKg + 1e-6 < requiredKg) {
+        const availableGrams = Math.max(0, Math.round(availableKg * 1000));
+        const requestedGrams = Math.round(requiredKg * 1000);
+        return NextResponse.json(
+          {
+            error: `عذراً، الكمية المطلوبة من «${prod.name}» (${requestedGrams} جم) تتجاوز الرصيد المتاح بالمخزن حالياً (${availableGrams} جم).`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // 4. Enforce Bani Mazar Village Minimum Order (200 EGP) when deliveryMethod === 'villages_scheduled'
     const deliveryMethod: DeliveryMethodType | undefined = body.deliveryMethod;
     const minOrderVillages = db.settings.minOrderVillages || 200;
@@ -584,6 +684,7 @@ export async function POST(request: NextRequest) {
     };
 
     // 9. Atomic Stock Depletion across all items
+    const crossedLowStockAlerts: LowStockAlertItem[] = [];
     for (const item of verifiedItems) {
       const qty = item.quantity || 1;
       if (item.isPartitionedBox && Array.isArray(item.partitionedSlots)) {
@@ -592,7 +693,7 @@ export async function POST(request: NextRequest) {
           if (slotProd) {
             const slotGrams = slot.slotGrams || slot.weightGrams || (item.partitionedBoxSize === 'roqan_4' ? 100 : 125);
             const consumedKg = (slotGrams * qty) / 1000;
-            depleteProductStock(slotProd, consumedKg);
+            depleteProductStock(slotProd, consumedKg, crossedLowStockAlerts);
           }
         }
       } else if (item.isCustomMix && Array.isArray(item.customBreakdown)) {
@@ -601,14 +702,14 @@ export async function POST(request: NextRequest) {
           if (bProd) {
             const constituentGrams = b.weightGrams || ((b.percentage || 0) * (item.boxCapacityGrams || 500) / 100);
             const consumedKg = (constituentGrams * qty) / 1000;
-            depleteProductStock(bProd, consumedKg);
+            depleteProductStock(bProd, consumedKg, crossedLowStockAlerts);
           }
         }
       } else if (item.isCoffeeBlend && item.coffeeBlendSpec) {
         const totalGrams = item.coffeeBlendSpec.weightGrams || 250;
         const prod = db.products.find((p) => p.id === item.productId || p.categoryId === 'cat-coffee-espresso');
         if (prod) {
-          depleteProductStock(prod, (totalGrams * qty) / 1000);
+          depleteProductStock(prod, (totalGrams * qty) / 1000, crossedLowStockAlerts);
         }
       } else if (typeof item.productId === 'string' && item.productId.startsWith('flash-promo-')) {
         const promoId = item.productId.replace('flash-promo-', '');
@@ -618,7 +719,7 @@ export async function POST(request: NextRequest) {
             const promoProd = db.products.find((p) => p.id === pi.productId);
             if (promoProd) {
               const consumedKg = (pi.weightGrams * (pi.quantity || 1) * qty) / 1000;
-              depleteProductStock(promoProd, consumedKg);
+              depleteProductStock(promoProd, consumedKg, crossedLowStockAlerts);
             }
           }
         }
@@ -628,7 +729,7 @@ export async function POST(request: NextRequest) {
           const matchedW = prod.weights?.find((w) => w.id === item.weightId || w.label === item.weightLabel);
           const grams = item.customWeightGrams || matchedW?.weightGrams || matchedW?.grams || (item.weightId === 'w-2000' ? 2000 : 250);
           const consumedKg = (grams * qty) / 1000;
-          depleteProductStock(prod, consumedKg);
+          depleteProductStock(prod, consumedKg, crossedLowStockAlerts);
         }
       }
     }
@@ -642,6 +743,13 @@ export async function POST(request: NextRequest) {
     sendStoreTelegramAlert(db.settings, 'new_order', newOrder).catch((e) =>
       console.error('Telegram notification error:', e)
     );
+
+    if (crossedLowStockAlerts.length > 0) {
+      sendStoreTelegramAlert(db.settings, 'low_stock', {
+        items: crossedLowStockAlerts,
+        sourceLabel: `طلب إلكتروني رقم #${orderNumber}`,
+      }).catch((e) => console.error('Telegram low-stock alert error:', e));
+    }
 
     return NextResponse.json({ order: stripOrderCosts(newOrder) }, { status: 201 });
     });
@@ -706,6 +814,18 @@ export async function PATCH(request: NextRequest) {
           }
         }
         db.orders[orderIndex].status = status;
+        if (status === 'delivered') {
+          if (!db.orders[orderIndex].deliveredAt) {
+            db.orders[orderIndex].deliveredAt = new Date().toISOString();
+          }
+          if (
+            db.orders[orderIndex].paymentMethod === 'cod' &&
+            db.orders[orderIndex].orderSource !== 'pos' &&
+            db.orders[orderIndex].cashCollected === undefined
+          ) {
+            db.orders[orderIndex].cashCollected = db.orders[orderIndex].total;
+          }
+        }
       }
       if (typeof notes === 'string') {
         db.orders[orderIndex].notes = notes;

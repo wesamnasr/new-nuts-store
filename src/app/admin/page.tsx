@@ -827,8 +827,10 @@ export default function AdminDashboardPage() {
   const [telegramNotifyOrders, setTelegramNotifyOrders] = useState(settings?.telegramNotifyNewOrders !== false);
   const [telegramNotifySupply, setTelegramNotifySupply] = useState(settings?.telegramNotifySupplyInvoices !== false);
   const [telegramNotifyZReport, setTelegramNotifyZReport] = useState(settings?.telegramNotifyZReport !== false);
+  const [telegramNotifyLowStock, setTelegramNotifyLowStock] = useState(settings?.telegramNotifyLowStock !== false);
   const [telegramTesting, setTelegramTesting] = useState(false);
   const [telegramTestFeedback, setTelegramTestFeedback] = useState<{ success: boolean; message: string } | null>(null);
+  const [settlingCodOrderId, setSettlingCodOrderId] = useState<string | null>(null);
 
   const prevAdminOrdersCountRef = useRef<number>(0);
   const isInitialAdminOrdersRef = useRef<boolean>(true);
@@ -844,8 +846,38 @@ export default function AdminDashboardPage() {
       setTelegramNotifyOrders(settings.telegramNotifyNewOrders !== false);
       setTelegramNotifySupply(settings.telegramNotifySupplyInvoices !== false);
       setTelegramNotifyZReport(settings.telegramNotifyZReport !== false);
+      setTelegramNotifyLowStock(settings.telegramNotifyLowStock !== false);
     }
-  }, [settings?.telegramNotificationsEnabled, settings?.telegramNotifyNewOrders, settings?.telegramNotifySupplyInvoices, settings?.telegramNotifyZReport]);
+  }, [settings?.telegramNotificationsEnabled, settings?.telegramNotifyNewOrders, settings?.telegramNotifySupplyInvoices, settings?.telegramNotifyZReport, settings?.telegramNotifyLowStock]);
+
+  const handleAdminSettleRiderCod = async (orderId: string) => {
+    try {
+      setSettlingCodOrderId(orderId);
+      const res = await fetch('/api/pos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+          'x-admin-token': adminToken,
+        },
+        body: JSON.stringify({
+          action: 'settle_rider_cod',
+          orderId,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data?.error || 'تعذر توريد عهدة المندوب بالدرج (تأكد من وجود وردية مفتوحة)', 'error');
+        return;
+      }
+      await refreshStore();
+      showToast(`💰 تم استلام وتوريد عهدة المندوب (${data.settledAmount} ج.م) في درج الوردية المفتوحة بنجاح ✅`);
+    } catch {
+      showToast('حدث خطأ في الاتصال أثناء توريد عهدة المندوب', 'error');
+    } finally {
+      setSettlingCodOrderId(null);
+    }
+  };
 
   // Audio chime on new incoming unfulfilled orders in Admin
   useEffect(() => {
@@ -3401,6 +3433,35 @@ export default function AdminDashboardPage() {
                                     مرجع: {order.paymentReference}
                                   </div>
                                 )}
+                                {order.orderSource !== 'pos' &&
+                                  order.paymentMethod === 'cod' &&
+                                  order.status === 'delivered' && (
+                                    <div className="mt-1.5 space-y-1">
+                                      <span
+                                        className={`inline-block text-[9.5px] font-black px-2 py-0.5 rounded-full border ${
+                                          order.riderCodSettled
+                                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                            : 'bg-amber-50 text-amber-800 border-amber-300'
+                                        }`}
+                                      >
+                                        {order.riderCodSettled
+                                          ? '✅ تم توريد العهدة بالدرج'
+                                          : `⏳ بعهدة المندوب (${order.cashCollected ?? order.total} ج)`}
+                                      </span>
+                                      {!order.riderCodSettled && currentRole !== 'accountant' && (
+                                        <button
+                                          type="button"
+                                          disabled={settlingCodOrderId === order.id}
+                                          onClick={() => handleAdminSettleRiderCod(order.id)}
+                                          className="block w-full bg-brand-900 hover:bg-brand-950 text-gold-400 text-[10px] font-black px-2 py-1 rounded-lg transition cursor-pointer disabled:opacity-50"
+                                        >
+                                          {settlingCodOrderId === order.id
+                                            ? 'جاري التوريد...'
+                                            : '💰 توريد الكاش بالدرج'}
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
                               </td>
 
                               {/* Total & Breakdown */}
@@ -5782,6 +5843,17 @@ export default function AdminDashboardPage() {
                     workingHours: String(formData.get('workingHours') || settings.workingHours),
                     pageContent: cmsDraft,
                     themeConfig: themeDraft,
+                    telegramBotToken: String(
+                      formData.get('telegramBotToken') ?? settings.telegramBotToken ?? ''
+                    ).trim(),
+                    telegramChatId: String(
+                      formData.get('telegramChatId') ?? settings.telegramChatId ?? ''
+                    ).trim(),
+                    telegramNotificationsEnabled: telegramEnabled,
+                    telegramNotifyNewOrders: telegramNotifyOrders,
+                    telegramNotifySupplyInvoices: telegramNotifySupply,
+                    telegramNotifyZReport: telegramNotifyZReport,
+                    telegramNotifyLowStock: telegramNotifyLowStock,
                     ...(newAdminUsername.trim()
                       ? { adminUsername: newAdminUsername.trim() }
                       : {}),
@@ -6174,6 +6246,15 @@ export default function AdminDashboardPage() {
                             className="rounded text-sky-600"
                           />
                           <span>تقفيل وردية الكاشير (Z-Report)</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 text-[11px] font-bold text-sky-950 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={telegramNotifyLowStock}
+                            onChange={(e) => setTelegramNotifyLowStock(e.target.checked)}
+                            className="rounded text-sky-600"
+                          />
+                          <span>تنبيهات النواقص الحرجة (≤ 5 كجم)</span>
                         </label>
                       </div>
 

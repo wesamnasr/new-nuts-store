@@ -969,6 +969,64 @@ export default function HafsaPosCashierPage() {
     } catch {}
   };
 
+  const handleAssignOnlineOrderRider = async (
+    orderId: string,
+    riderId: string,
+    riderName: string
+  ) => {
+    try {
+      const res = await fetch('/api/pos', {
+        method: 'POST',
+        headers: getPosAuthHeaders(),
+        body: JSON.stringify({
+          action: 'assign_rider',
+          orderId,
+          riderId,
+          riderName,
+        }),
+      });
+      if (res.ok) {
+        await fetchPosData();
+        await refreshStore();
+        showToast(
+          riderId
+            ? `🛵 تم إسناد الطلب للمندوب (${riderName})`
+            : 'تم إلغاء إسناد المندوب من الطلب'
+        );
+      }
+    } catch {}
+  };
+
+  const handleSettleRiderCod = async (payload: {
+    orderId?: string;
+    settleAll?: boolean;
+  }) => {
+    try {
+      const res = await fetch('/api/pos', {
+        method: 'POST',
+        headers: getPosAuthHeaders(),
+        body: JSON.stringify({
+          action: 'settle_rider_cod',
+          ...payload,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast('⚠️ تعذر توريد عهدة المندوب بالدرج', data?.error || 'تأكد من وجود وردية مفتوحة');
+        return;
+      }
+      playCashierBeep(1040, 0.2);
+      await fetchPosData();
+      await refreshStore();
+      showToast(
+        `💰 تم استلام وتوريد ${data.settledAmount} ج.م (${data.settledCount} طلب) في درج الكاشير!`,
+        'تم تحديث النقدية المتوقعة بالدرج وتصفية عهدة المندوب'
+      );
+    } catch {
+      showToast('❌ خطأ في الاتصال أثناء توريد عهدة المندوب');
+    }
+  };
+
   const handleOpenStickerModal = (sticker: StickerPreviewData) => {
     setStickerPreviewItem(sticker);
     setPrintedOrder(null);
@@ -1948,6 +2006,9 @@ export default function HafsaPosCashierPage() {
                   playCashierBeep={playCashierBeep}
                   deliveryFilter={onlineDeliveryFilter}
                   onChangeDeliveryFilter={setOnlineDeliveryFilter}
+                  availableRiders={availableRiders}
+                  onAssignRider={handleAssignOnlineOrderRider}
+                  onSettleRiderCod={handleSettleRiderCod}
                 />
               )}
             </div>

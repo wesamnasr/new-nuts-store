@@ -54,6 +54,7 @@ export interface ShiftReconciliationAudit {
   closedAt?: string;
   openingCash: number;
   cashSalesTotal: number;
+  riderCodSettledTotal?: number;
   electronicSalesTotal: number;
   expensesTotal: number;
   expectedCashInDrawer: number;
@@ -353,6 +354,7 @@ export function calculateChannelMetrics(
 export function calculateShiftAudit(shift: PosShift): ShiftReconciliationAudit {
   const openingCash = roundCurrency(shift.openingCash ?? shift.startingCash ?? 0);
   const cashSalesTotal = roundCurrency(shift.cashSalesTotal ?? shift.cashSales ?? 0);
+  const riderCodSettledTotal = roundCurrency(shift.riderCodSettledTotal ?? 0);
   const electronicSalesTotal = roundCurrency(
     (shift.cardSales || 0) +
     (shift.vodafoneCashTotal || 0) +
@@ -363,7 +365,7 @@ export function calculateShiftAudit(shift: PosShift): ShiftReconciliationAudit {
   const expectedCashInDrawer = roundCurrency(
     shift.expectedCashInDrawer ??
     shift.expectedCash ??
-    (openingCash + cashSalesTotal - expensesTotal)
+    (openingCash + cashSalesTotal + riderCodSettledTotal - expensesTotal)
   );
 
   const actualClosingCash =
@@ -398,6 +400,7 @@ export function calculateShiftAudit(shift: PosShift): ShiftReconciliationAudit {
     closedAt: shift.closedAt || shift.endTime,
     openingCash,
     cashSalesTotal,
+    riderCodSettledTotal,
     electronicSalesTotal,
     expensesTotal,
     expectedCashInDrawer,

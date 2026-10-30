@@ -464,6 +464,8 @@ export function stripAllPasswords(settings: StoreSettings): StoreSettings {
   delete sanitizedSettings.customerPassword;
   delete sanitizedSettings.managerPassword;
   delete sanitizedSettings.promoPartnerPassword;
+  delete sanitizedSettings.telegramBotToken;
+  delete sanitizedSettings.telegramChatId;
   return sanitizedSettings as unknown as StoreSettings;
 }
 

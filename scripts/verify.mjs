@@ -2855,6 +2855,83 @@ async function runTestSuite() {
         'verify_package6_production_readiness.mjs must pass 100% of live assertions'
       );
     });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TIER 17: PACKAGE 7 — RIDER COD CUSTODY SETTLEMENT, ANTI-OVERSELL STOCK GUARD & LOW-STOCK ALERTS
+    // ─────────────────────────────────────────────────────────────────────────
+    suite('Tier 17: Package 7 — Rider COD Drawer Settlement, Atomic Anti-Oversell Guard & Critical Low-Stock Alerts');
+
+    await test('P7_COD_01: Rider COD Custody Handover Action (settle_rider_cod) & Shift Z-Report Drawer Integration', async () => {
+      const posRouteRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/api/pos/route.ts'), 'utf8');
+      const riderRouteRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/api/rider/orders/route.ts'), 'utf8');
+      const posOnlineRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/components/pos/PosOnlineOrdersPage.tsx'), 'utf8');
+      const shiftSummaryRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/components/pos/PosShiftSummaryPage.tsx'), 'utf8');
+      const receiptModalRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/components/SupermarketReceiptModal.tsx'), 'utf8');
+      const accountantRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/components/admin/AccountantIsolationPortal.tsx'), 'utf8');
+
+      assert.ok(
+        posRouteRaw.includes("action === 'settle_rider_cod'") &&
+          posRouteRaw.includes('computeExpectedDrawerCash') &&
+          posRouteRaw.includes('riderCodSettledTotal'),
+        'POS API must implement settle_rider_cod and include riderCodSettledTotal in expected drawer cash'
+      );
+      assert.ok(
+        riderRouteRaw.includes('unsettledCodBalance') && riderRouteRaw.includes('settledCodTotal'),
+        'Rider API must compute unsettledCodBalance and settledCodTotal'
+      );
+      assert.ok(
+        posOnlineRaw.includes('onSettleRiderCod') &&
+          shiftSummaryRaw.includes('riderCodSettledTotal') &&
+          receiptModalRaw.includes('riderCodSettledTotal') &&
+          accountantRaw.includes('riderCodCustodyAudit'),
+        'POS Online Queue, Shift Summary, 80mm Z-Report, and Read-Only Accountant Portal must integrate Rider COD Custody'
+      );
+    });
+
+    await test('P7_STK_02: Atomic Anti-Oversell Stock Availability Guard on Online Checkout (/api/orders)', async () => {
+      const ordersRouteRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/api/orders/route.ts'), 'utf8');
+      assert.ok(
+        ordersRouteRaw.includes('requiredKgByProduct') &&
+          ordersRouteRaw.includes('الرصيد المتاح بالمخزن حالياً') &&
+          ordersRouteRaw.includes('نفد من المخزون حالياً'),
+        'POST /api/orders must enforce atomic cumulative stockKg validation before order creation'
+      );
+    });
+
+    await test('P7_NOTIF_03: Critical Low-Stock (<= 5 kg) Telegram Alert, Admin Settings Persistence & Secret Stripping', async () => {
+      const telegramLibRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/lib/telegram.ts'), 'utf8');
+      const authLibRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/lib/auth.ts'), 'utf8');
+      const adminPageRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/admin/page.tsx'), 'utf8');
+
+      assert.ok(
+        telegramLibRaw.includes('formatLowStockTelegramMessage') &&
+          telegramLibRaw.includes("eventType === 'low_stock'"),
+        'telegram.ts must support low_stock event formatting and dispatching'
+      );
+      assert.ok(
+        authLibRaw.includes('delete sanitizedSettings.telegramBotToken') &&
+          authLibRaw.includes('delete sanitizedSettings.telegramChatId'),
+        'stripAllPasswords in auth.ts must strip secret Telegram Bot credentials from public responses'
+      );
+      assert.ok(
+        adminPageRaw.includes('telegramNotifyLowStock: telegramNotifyLowStock') &&
+          adminPageRaw.includes('telegramNotificationsEnabled: telegramEnabled'),
+        'Admin Settings form submission must persist all Telegram configuration fields'
+      );
+    });
+
+    await test('P7_RUN_04: Live Runtime Execution of Package 7 COD Settlement, Stock Guard & Alerts Suite', async () => {
+      const pkg7Out = execSync('node scripts/verify_package7_cod_settlement_and_stock_guard.mjs', {
+        cwd: ROOT_DIR,
+        encoding: 'utf8',
+        stdio: 'pipe',
+        timeout: 120000,
+      });
+      assert.ok(
+        pkg7Out.includes('ALL PACKAGE 7 COD SETTLEMENT, STOCK GUARD & LOW-STOCK ALERT CHECKS PASSED'),
+        'verify_package7_cod_settlement_and_stock_guard.mjs must pass 100% of live assertions'
+      );
+    });
     
   } finally {
     // Database Restoration (State Isolation guarantee)
