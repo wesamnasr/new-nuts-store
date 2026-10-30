@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
   LayoutDashboard,
@@ -46,6 +46,9 @@ import {
   Calendar,
   AlertTriangle,
   Scale,
+  Volume2,
+  VolumeX,
+  Send,
 } from 'lucide-react';
 import { downloadScalePluCsv } from '@/lib/scale-plu';
 import {
@@ -60,6 +63,8 @@ import {
   triggerCsvDownload,
 } from '@/lib/financials';
 import { useStore, STORE_SYNC_STORAGE_KEY } from '@/context/StoreContext';
+import { playOrderAlertChime, isAudioMuted, toggleAudioMuted } from '@/lib/audio-chime';
+import ImageUploadDropzone from '@/components/admin/ImageUploadDropzone';
 import {
   OrderStatus,
   Product,
@@ -441,6 +446,8 @@ export default function AdminDashboardPage() {
   const [newCashierPassword, setNewCashierPassword] = useState('');
   const [newAccountantUsername, setNewAccountantUsername] = useState('');
   const [newAccountantPassword, setNewAccountantPassword] = useState('');
+
+
   const [showPasswordText, setShowPasswordText] = useState(false);
 
   // Sync CMS & Theme draft when storeData loads/updates
@@ -812,6 +819,82 @@ export default function AdminDashboardPage() {
   const shippingRates = storeData?.shippingRates || [];
   const coupons = storeData?.coupons || [];
   const settings = storeData?.settings;
+
+  // Package 5: Audio Chimes & Telegram Bot State
+  const [isSoundMuted, setIsSoundMuted] = useState(false);
+  const [telegramEnabled, setTelegramEnabled] = useState(Boolean(settings?.telegramNotificationsEnabled));
+  const [telegramNotifyOrders, setTelegramNotifyOrders] = useState(settings?.telegramNotifyNewOrders !== false);
+  const [telegramNotifySupply, setTelegramNotifySupply] = useState(settings?.telegramNotifySupplyInvoices !== false);
+  const [telegramNotifyZReport, setTelegramNotifyZReport] = useState(settings?.telegramNotifyZReport !== false);
+  const [telegramTesting, setTelegramTesting] = useState(false);
+  const [telegramTestFeedback, setTelegramTestFeedback] = useState<{ success: boolean; message: string } | null>(null);
+
+  const prevAdminOrdersCountRef = useRef<number>(0);
+  const isInitialAdminOrdersRef = useRef<boolean>(true);
+
+  useEffect(() => {
+    setIsSoundMuted(isAudioMuted());
+  }, []);
+
+  // Sync telegram state when settings load
+  useEffect(() => {
+    if (settings) {
+      setTelegramEnabled(Boolean(settings.telegramNotificationsEnabled));
+      setTelegramNotifyOrders(settings.telegramNotifyNewOrders !== false);
+      setTelegramNotifySupply(settings.telegramNotifySupplyInvoices !== false);
+      setTelegramNotifyZReport(settings.telegramNotifyZReport !== false);
+    }
+  }, [settings?.telegramNotificationsEnabled, settings?.telegramNotifyNewOrders, settings?.telegramNotifySupplyInvoices, settings?.telegramNotifyZReport]);
+
+  // Audio chime on new incoming unfulfilled orders in Admin
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const unfulfilled = orders.filter((o) => o.status === 'pending' || o.status === 'confirmed');
+    if (!isInitialAdminOrdersRef.current && unfulfilled.length > prevAdminOrdersCountRef.current) {
+      playOrderAlertChime();
+      showToast('🔔 طلب أونلاين جديد بالمتجر!', `يوجد ${unfulfilled.length} طلبات قيد الانتظار والتجهيز`);
+    }
+    isInitialAdminOrdersRef.current = false;
+    prevAdminOrdersCountRef.current = unfulfilled.length;
+  }, [orders, isAuthenticated, showToast]);
+
+  // Automated background polling every 20 seconds in Admin
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const interval = setInterval(() => {
+      refreshStore();
+    }, 20000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, refreshStore]);
+
+  // Handle Telegram Test Ping
+  const handleTestTelegram = async (botToken: string, chatId: string) => {
+    setTelegramTesting(true);
+    setTelegramTestFeedback(null);
+    try {
+      const res = await fetch('/api/admin/telegram-test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify({ token: botToken, chatId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTelegramTestFeedback({ success: true, message: data.message });
+      } else {
+        setTelegramTestFeedback({
+          success: false,
+          message: data.error || 'فشل الاتصال بسيرفر تلجرام. تحقق من التوكن وChat ID',
+        });
+      }
+    } catch (err: any) {
+      setTelegramTestFeedback({ success: false, message: `خطأ في الاتصال: ${err?.message || err}` });
+    } finally {
+      setTelegramTesting(false);
+    }
+  };
 
   const selectTab = useCallback(
     (nextTab: AdminTab, extraParams?: Record<string, string | null>) => {
@@ -3741,40 +3824,21 @@ export default function AdminDashboardPage() {
                     </div>
 
                     <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-[11px] font-bold">صورة المنتج</label>
-                        <label className="text-[10px] bg-brand-900 hover:bg-brand-950 text-gold-400 font-bold px-2 py-0.5 rounded-lg cursor-pointer flex items-center gap-1 transition">
-                          <Upload className="w-3 h-3" />
-                          <span>رفع صورة من الجهاز</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                readAndCompressImageFile(file, (dataUrl) => {
-                                  setEditingProduct({ ...editingProduct, image: dataUrl });
-                                });
-                              }
-                            }}
-                          />
-                        </label>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={getSafeImageUrl(editingProduct.image)}
-                          alt="معاينة"
-                          className="w-9 h-9 rounded-lg object-cover border border-brand-200 shrink-0 bg-brand-50"
-                        />
+                      <ImageUploadDropzone
+                        currentImage={editingProduct.image}
+                        onImageSelected={(url) => setEditingProduct({ ...editingProduct, image: url })}
+                        label="صورة المنتج المضغوطة (WebP)"
+                      />
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="text-[10.5px] font-bold text-brand-600 shrink-0">أو رابط يدوي:</span>
                         <input
                           type="text"
                           value={editingProduct.image}
                           onChange={(e) =>
                             setEditingProduct({ ...editingProduct, image: e.target.value })
                           }
-                          placeholder="/images/products/pistachio.jpg أو رابط صورة"
-                          className="w-full bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-mono"
+                          placeholder="/images/products/pistachio.jpg أو رابط صورة خارجي"
+                          className="w-full bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1 text-xs font-mono"
                         />
                       </div>
                       <div className="flex flex-wrap gap-1.5 mt-2">
@@ -6023,6 +6087,124 @@ export default function AdminDashboardPage() {
                         />
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Package 5: Telegram Bot Automated Push Alerts Card */}
+                <div className="pt-4 border-t border-brand-200 space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-black text-brand-950 flex items-center gap-1.5">
+                        <Send className="w-4 h-4 text-sky-600" />
+                        <span>إشعارات بوت تلجرام الفورية (Telegram Bot Webhook Alerts)</span>
+                      </h4>
+                      <p className="text-[10.5px] text-brand-600 mt-0.5">
+                        إرسال إشعارات لحظية ومجانية لإدارة المحمصة على تليجرام عند وصول طلبات أونلاين جديدة، فواتير التوريد، وتقفيل الوردية اليومية (Z-Report).
+                      </p>
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer bg-sky-50 px-3 py-1.5 rounded-xl border border-sky-200">
+                      <input
+                        type="checkbox"
+                        checked={telegramEnabled}
+                        onChange={(e) => setTelegramEnabled(e.target.checked)}
+                        className="w-4 h-4 rounded text-sky-600 cursor-pointer"
+                      />
+                      <span className="text-xs font-black text-sky-950">تفعيل إشعارات تلجرام</span>
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-sky-50/50 p-3.5 rounded-xl border border-sky-200">
+                    <div>
+                      <label className="block text-[11px] font-bold text-sky-950 mb-1">
+                        توكن بوت تلجرام (Bot Token):
+                      </label>
+                      <input
+                        name="telegramBotToken"
+                        defaultValue={settings?.telegramBotToken || ''}
+                        placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ..."
+                        className="w-full bg-white border border-sky-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold outline-none"
+                      />
+                      <span className="text-[9.5px] text-sky-700 block mt-0.5">
+                        يتم الحصول عليه مجاناً عبر محادثة @BotFather في تلجرام
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-sky-950 mb-1">
+                        معرف المحادثة أو القناة (Chat ID):
+                      </label>
+                      <input
+                        name="telegramChatId"
+                        defaultValue={settings?.telegramChatId || ''}
+                        placeholder="-1001234567890 أو رقم حسابك الشخصي"
+                        className="w-full bg-white border border-sky-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold outline-none"
+                      />
+                      <span className="text-[9.5px] text-sky-700 block mt-0.5">
+                        معرف الشات أو المجموعة الخاصة بإدارة المحمصة
+                      </span>
+                    </div>
+
+                    <div className="sm:col-span-2 pt-2 border-t border-sky-200/60 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <label className="flex items-center gap-1.5 text-[11px] font-bold text-sky-950 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={telegramNotifyOrders}
+                            onChange={(e) => setTelegramNotifyOrders(e.target.checked)}
+                            className="rounded text-sky-600"
+                          />
+                          <span>طلبات الأونلاين الجديدة</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 text-[11px] font-bold text-sky-950 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={telegramNotifySupply}
+                            onChange={(e) => setTelegramNotifySupply(e.target.checked)}
+                            className="rounded text-sky-600"
+                          />
+                          <span>فواتير التوريد والمخزون</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 text-[11px] font-bold text-sky-950 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={telegramNotifyZReport}
+                            onChange={(e) => setTelegramNotifyZReport(e.target.checked)}
+                            className="rounded text-sky-600"
+                          />
+                          <span>تقفيل وردية الكاشير (Z-Report)</span>
+                        </label>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={telegramTesting}
+                        onClick={async (e) => {
+                          const form = (e.currentTarget as HTMLElement).closest('form');
+                          const tokenInput = form?.querySelector('input[name="telegramBotToken"]') as HTMLInputElement;
+                          const chatInput = form?.querySelector('input[name="telegramChatId"]') as HTMLInputElement;
+                          const tokenVal = tokenInput?.value || settings?.telegramBotToken || '';
+                          const chatVal = chatInput?.value || settings?.telegramChatId || '';
+                          handleTestTelegram(tokenVal, chatVal);
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-[11px] font-black flex items-center gap-1 transition cursor-pointer"
+                      >
+                        <Send className="w-3 h-3" />
+                        <span>{telegramTesting ? 'جاري الإرسال...' : 'إرسال إشعار تجريبي (Test)'}</span>
+                      </button>
+                    </div>
+
+                    {telegramTestFeedback && (
+                      <div
+                        className={`sm:col-span-2 text-xs font-bold p-2.5 rounded-xl border flex items-center gap-1.5 ${
+                          telegramTestFeedback.success
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            : 'bg-rose-50 text-rose-800 border-rose-200'
+                        }`}
+                      >
+                        <span>{telegramTestFeedback.success ? '✅' : '⚠️'}</span>
+                        <span>{telegramTestFeedback.message}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 

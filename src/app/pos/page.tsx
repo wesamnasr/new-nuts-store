@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -19,7 +19,10 @@ import {
   RefreshCw,
   Wifi,
   WifiOff,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
+import { playOrderAlertChime, isAudioMuted, toggleAudioMuted } from '@/lib/audio-chime';
 import { useStore } from '@/context/StoreContext';
 import {
   AdminRole,
@@ -165,6 +168,13 @@ export default function HafsaPosCashierPage() {
   const [posExpenses, setPosExpenses] = useState<PosExpense[]>([]);
   const [recentPosOrders, setRecentPosOrders] = useState<Order[]>([]);
   const [onlineQueueOrders, setOnlineQueueOrders] = useState<Order[]>([]);
+  const [isPosAudioMuted, setIsPosAudioMuted] = useState(false);
+  const prevOnlineOrderIdsRef = useRef<Set<string>>(new Set());
+  const isInitialPosFetchRef = useRef<boolean>(true);
+
+  useEffect(() => {
+    setIsPosAudioMuted(isAudioMuted());
+  }, []);
   const [availableRiders, setAvailableRiders] = useState<Array<{ id: string; displayName?: string; username?: string }>>([]);
   const [posLoading, setPosLoading] = useState<boolean>(false);
 
@@ -332,7 +342,24 @@ export default function HafsaPosCashierPage() {
           setPosShifts(data.posShifts || []);
           setPosExpenses(data.posExpenses || []);
           setRecentPosOrders(data.recentPosOrders || []);
-          setOnlineQueueOrders(data.onlineQueueOrders || []);
+          const incoming = data.onlineQueueOrders || [];
+          if (!isInitialPosFetchRef.current) {
+            const newlyArrived = incoming.filter(
+              (o: Order) =>
+                !prevOnlineOrderIdsRef.current.has(o.id) &&
+                (o.status === 'pending' || o.status === 'confirmed' || o.status === 'roasting_packing')
+            );
+            if (newlyArrived.length > 0) {
+              playOrderAlertChime();
+              showToast(
+                `🔔 طلب أونلاين جديد بالفرع (${newlyArrived[0].orderNumber})!`,
+                `العميل: ${newlyArrived[0].customerName} — الإجمالي: ${newlyArrived[0].total} ج.م`
+              );
+            }
+          }
+          isInitialPosFetchRef.current = false;
+          prevOnlineOrderIdsRef.current = new Set(incoming.map((o: Order) => o.id));
+          setOnlineQueueOrders(incoming);
           if (data.availableRiders) setAvailableRiders(data.availableRiders);
         }
       } catch (e) {
@@ -1568,6 +1595,18 @@ export default function HafsaPosCashierPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = toggleAudioMuted();
+                      setIsPosAudioMuted(next);
+                    }}
+                    title={isPosAudioMuted ? 'تفعيل جرس تنبيهات الطلبات' : 'كتم جرس تنبيهات الطلبات'}
+                    className={`py-2 px-2.5 rounded-xl text-xs font-cairo font-bold transition flex items-center gap-1.5 cursor-pointer ${isPosAudioMuted ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'bg-white/10 hover:bg-white/20 text-[#D4AF37] border border-white/15'}`}
+                  >
+                    {isPosAudioMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-[#D4AF37]" />}
+                    <span className="hidden sm:inline">{isPosAudioMuted ? 'الصوت مكتوم' : 'الجرس نشط'}</span>
+                  </button>
                   {activeShift ? (
                     <button
                       type="button"

@@ -17,6 +17,7 @@ import {
 import { validateEgyptianPhone } from '@/lib/validation';
 import { getSafeImageUrl } from '@/lib/defaults';
 import { hasRolePermission, verifyAdminRequest } from '@/lib/auth';
+import { sendStoreTelegramAlert } from '@/lib/telegram';
 import { reverseOrderEffects, reapplyOrderEffects } from '@/lib/order-reversal';
 
 export const dynamic = 'force-dynamic';
@@ -264,6 +265,11 @@ export async function POST(request: Request) {
       activeShift.actualClosingCash = actualCash;
       activeShift.variance = variance;
       activeShift.cashDifference = variance;
+
+      // Telegram Z-Report Notification Trigger (non-blocking)
+      sendStoreTelegramAlert(db.settings, 'z_report', activeShift).catch((e: any) =>
+        console.error('Telegram Z-Report error:', e)
+      );
       if (body.notes) {
         activeShift.notes = body.notes.trim();
       }

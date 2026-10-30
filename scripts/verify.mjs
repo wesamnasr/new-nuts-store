@@ -2678,6 +2678,107 @@ async function runTestSuite() {
         'verify_package4_rider_and_vip_pin.mjs must pass 100% of live runtime assertions'
       );
     });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    suite('Tier 15: Package 5 — Instant Audio Chimes, Telegram Bot Webhook & WebP Image Upload');
+
+    await test('P5_NOTIF_01: Telegram HTML Escaper and Rich Arabic Message Formatters Contract', async () => {
+      const telegramLib = await import('../src/lib/telegram.ts');
+      assert.equal(
+        telegramLib.escapeTelegramHtml('بن محوج <خاص> & مكسرات "فاخرة"'),
+        'بن محوج &lt;خاص&gt; &amp; مكسرات "فاخرة"',
+        'escapeTelegramHtml must sanitize HTML special characters'
+      );
+
+      const dummyOrder = {
+        id: 'ord-test-p5',
+        orderNumber: 'NUT-1099',
+        customerName: 'محمود عبد الرازق',
+        customerPhone: '01099887766',
+        address: 'بني مزار - شارع بورسعيد',
+        deliveryMethod: 'bandar_fast',
+        paymentMethod: 'cod',
+        subtotal: 280,
+        shippingCost: 20,
+        discountAmount: 0,
+        total: 300,
+        items: [
+          {
+            cartItemId: 'i-1',
+            productId: 'p-1',
+            productName: 'بندق تركي مقشر محمص',
+            weightLabel: '250 جم',
+            roastOption: 'محمص مملح',
+            unitPrice: 200,
+            quantity: 1,
+          },
+        ],
+        createdAt: new Date().toISOString(),
+        status: 'pending',
+      };
+
+      const orderMsg = telegramLib.formatOrderTelegramMessage(dummyOrder, {
+        storeName: 'محمصة حفصة للبن والمكسرات',
+      });
+
+      assert.ok(orderMsg.includes('NUT-1099') && orderMsg.includes('300 جنيه مصري'), 'Must format order number and total');
+      assert.ok(orderMsg.includes('محمود عبد الرازق') && orderMsg.includes('بندق تركي مقشر محمص'), 'Must format customer and items');
+    });
+
+    await test('P5_NOTIF_02: Audio Chimes Native Synthesis Frequencies & Persistent Mute Controller', async () => {
+      const audioPath = path.join(ROOT_DIR, 'src/lib/audio-chime.ts');
+      assert.ok(fs.existsSync(audioPath), 'audio-chime.ts must exist');
+      const audioRaw = fs.readFileSync(audioPath, 'utf8');
+
+      assert.ok(
+        audioRaw.includes('playOrderAlertChime') &&
+        audioRaw.includes('playSuccessChime') &&
+        audioRaw.includes('isAudioMuted') &&
+        audioRaw.includes('toggleAudioMuted'),
+        'audio-chime.ts must export alert, success, and mute controller utilities'
+      );
+
+      assert.ok(
+        audioRaw.includes('587.33') && audioRaw.includes('739.99') && audioRaw.includes('880.0'),
+        'playOrderAlertChime must produce 3-tone musical progression (D5, F#5, A5)'
+      );
+    });
+
+    await test('P5_NOTIF_03: WebP Image Upload Endpoint Security, MIME Guard & Compression Dropzone', async () => {
+      const uploadApiRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/api/admin/upload-image/route.ts'), 'utf8');
+      const dropzoneRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/components/admin/ImageUploadDropzone.tsx'), 'utf8');
+      const adminPageRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/admin/page.tsx'), 'utf8');
+
+      assert.ok(
+        uploadApiRaw.includes("verifyAdminRequest(request, ['super_admin'])"),
+        'upload-image route must restrict access to super_admin'
+      );
+      assert.ok(
+        uploadApiRaw.includes('image/webp') && uploadApiRaw.includes('MAX_IMAGE_BYTES'),
+        'upload-image route must guard MIME types and enforce byte limits'
+      );
+      assert.ok(
+        dropzoneRaw.includes("toDataURL('image/webp'"),
+        'ImageUploadDropzone must compress images to WebP via HTML5 Canvas'
+      );
+      assert.ok(
+        adminPageRaw.includes('<ImageUploadDropzone') && adminPageRaw.includes('إشعارات بوت تلجرام الفورية'),
+        'admin page must mount ImageUploadDropzone and Telegram Bot settings card'
+      );
+    });
+
+    await test('P5_NOTIF_04: Runtime Execution of Telegram Alerts, Audio Notifications & WebP Suite', async () => {
+      const pkg5Out = execSync('node scripts/verify_package5_notifications_and_webp.mjs', {
+        cwd: ROOT_DIR,
+        encoding: 'utf8',
+        stdio: 'pipe',
+        timeout: 120000,
+      });
+      assert.ok(
+        pkg5Out.includes('ALL PACKAGE 5 NOTIFICATIONS & WEBP CHECKS PASSED'),
+        'verify_package5_notifications_and_webp.mjs must pass 100% of live assertions'
+      );
+    });
     
   } finally {
     // Database Restoration (State Isolation guarantee)

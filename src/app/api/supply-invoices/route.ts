@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getDbAsync, withDbTransaction } from '@/lib/db';
 import { SupplyInvoice, SupplyInvoiceItem } from '@/types/store';
 import { hasRolePermission, verifyAdminRequest } from '@/lib/auth';
+import { sendStoreTelegramAlert } from '@/lib/telegram';
 
 export const dynamic = 'force-dynamic';
 
@@ -208,6 +209,11 @@ export async function POST(request: Request) {
       }
       db.supplyInvoices.unshift(newInvoice);
 
+      // Telegram Push Notification Trigger (non-blocking)
+      sendStoreTelegramAlert(db.settings, 'supply_invoice', newInvoice).catch((e) =>
+        console.error('Telegram supply notification error:', e)
+      );
+
       return NextResponse.json(
         {
           success: true,
@@ -325,6 +331,7 @@ export async function PATCH(request: Request) {
         }
 
         invoice.status = 'approved';
+        sendStoreTelegramAlert(db.settings, 'supply_invoice', invoice).catch((e) => console.error('Telegram supply approval error:', e));
         invoice.reviewedAt = new Date().toISOString();
         invoice.reviewedBy = reviewerLabel;
         if (typeof body.adminNotes === 'string') {

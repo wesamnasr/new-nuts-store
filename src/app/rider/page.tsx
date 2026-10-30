@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
   Bike,
@@ -21,7 +21,10 @@ import {
   ShieldCheck,
   Calendar,
   Lock,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
+import { playOrderAlertChime, isAudioMuted, toggleAudioMuted } from '@/lib/audio-chime';
 import { Order, OrderStatus } from '@/types/store';
 import { formatWhatsAppPhone } from '@/lib/validation';
 
@@ -41,6 +44,13 @@ export default function DeliveryRiderPage() {
 
   // Rider Dashboard state
   const [orders, setOrders] = useState<Order[]>([]);
+  const [isAudioMutedState, setIsAudioMutedState] = useState(false);
+  const prevOrderIdsRef = useRef<Set<string>>(new Set());
+  const isInitialFetchRef = useRef<boolean>(true);
+
+  useEffect(() => {
+    setIsAudioMutedState(isAudioMuted());
+  }, []);
   const [stats, setStats] = useState({
     totalAssigned: 0,
     pendingDelivery: 0,
@@ -81,7 +91,24 @@ export default function DeliveryRiderPage() {
       const data = await res.json();
       if (data.success) {
         setIsAuthenticated(true);
-        setOrders(data.orders || []);
+        const incoming: Order[] = data.orders || [];
+        if (!isInitialFetchRef.current) {
+          const newlyAssigned = incoming.filter(
+            (o: Order) =>
+              !prevOrderIdsRef.current.has(o.id) &&
+              (o.status === 'pending' || o.status === 'confirmed' || o.status === 'roasting_packing' || o.status === 'shipped')
+          );
+          if (newlyAssigned.length > 0) {
+            playOrderAlertChime();
+            setFeedback({
+              type: 'success',
+              text: `🔔 تم إسناد طلب جديد لك: ${newlyAssigned[0].orderNumber} (العميل: ${newlyAssigned[0].customerName})`,
+            });
+          }
+        }
+        isInitialFetchRef.current = false;
+        prevOrderIdsRef.current = new Set(incoming.map((o: Order) => o.id));
+        setOrders(incoming);
         if (data.stats) setStats(data.stats);
         if (data.rider) setRiderInfo(data.rider);
       }
@@ -94,6 +121,10 @@ export default function DeliveryRiderPage() {
 
   useEffect(() => {
     fetchRiderOrders();
+    const interval = setInterval(() => {
+      fetchRiderOrders();
+    }, 15000);
+    return () => clearInterval(interval);
   }, [fetchRiderOrders]);
 
   // Handle staff login adhering strictly to AGENTS.md
@@ -315,6 +346,17 @@ export default function DeliveryRiderPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                const next = toggleAudioMuted();
+                setIsAudioMutedState(next);
+              }}
+              title={isAudioMutedState ? 'تفعيل جرس التنبيهات الصوتية' : 'كتم جرس التنبيهات الصوتية'}
+              className={`p-2 rounded-xl transition cursor-pointer flex items-center gap-1 ${isAudioMutedState ? 'bg-rose-500/25 text-rose-300' : 'bg-white/10 text-[#D4AF37] hover:bg-white/20'}`}
+            >
+              {isAudioMutedState ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-[#D4AF37]" />}
+            </button>
             <button
               type="button"
               onClick={() => fetchRiderOrders()}

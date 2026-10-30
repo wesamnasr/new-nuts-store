@@ -23,6 +23,7 @@ import { hasRolePermission, verifyAdminRequest } from '@/lib/auth';
 import { reverseOrderEffects, reapplyOrderEffects } from '@/lib/order-reversal';
 import { calculateOrderCogs, roundCurrency } from '@/lib/financials';
 import { verifyVipPin, validateVipPinFormat, hashVipPin } from '@/lib/vip-pin';
+import { sendStoreTelegramAlert } from '@/lib/telegram';
 
 export const dynamic = 'force-dynamic';
 
@@ -636,6 +637,11 @@ export async function POST(request: NextRequest) {
     newOrder.rawCostTotal = computedCogs;
     newOrder.netProfitEgp = roundCurrency(serverTotal - computedCogs);
     db.orders.unshift(newOrder);
+
+    // Telegram Push Notification Trigger (non-blocking)
+    sendStoreTelegramAlert(db.settings, 'new_order', newOrder).catch((e) =>
+      console.error('Telegram notification error:', e)
+    );
 
     return NextResponse.json({ order: stripOrderCosts(newOrder) }, { status: 201 });
     });

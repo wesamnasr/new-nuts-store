@@ -534,6 +534,14 @@ export interface StoreSettings {
   riderUsername?: string;
   riderPassword?: string;
 
+  // Telegram Bot Notifications Integration
+  telegramBotToken?: string;
+  telegramChatId?: string;
+  telegramNotificationsEnabled?: boolean;
+  telegramNotifyNewOrders?: boolean;
+  telegramNotifySupplyInvoices?: boolean;
+  telegramNotifyZReport?: boolean;
+
   pageContent?: StorePageContent;
   themeConfig?: StoreThemeConfig;
   rolePermissions?: RolePermissionsConfig;
