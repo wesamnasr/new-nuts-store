@@ -2779,6 +2779,82 @@ async function runTestSuite() {
         'verify_package5_notifications_and_webp.mjs must pass 100% of live assertions'
       );
     });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TIER 16: PACKAGE 6 — PRODUCTION READINESS, SAFE OPERATIONAL PURGE & RESET GUARD
+    // ─────────────────────────────────────────────────────────────────────────
+    suite('Tier 16: Package 6 — Production Readiness, Safe Operational Purge & Atomic Relational Reset Guard');
+
+    await test('P6_PRD_01: Dedicated /api/admin/reset-transactions Endpoint & Super Admin Exclusive RBAC Guard', async () => {
+      const resetApiRoute = path.join(ROOT_DIR, 'src/app/api/admin/reset-transactions/route.ts');
+      assert.ok(fs.existsSync(resetApiRoute), 'src/app/api/admin/reset-transactions/route.ts must exist');
+      const resetRouteRaw = fs.readFileSync(resetApiRoute, 'utf8');
+
+      assert.ok(
+        resetRouteRaw.includes("verifyAdminRequest(request, ['super_admin'])"),
+        'reset-transactions route must strictly enforce super_admin access'
+      );
+      assert.ok(
+        resetRouteRaw.includes('withDbTransaction') &&
+        resetRouteRaw.includes('db.orders = []') &&
+        resetRouteRaw.includes('db.posShifts = []') &&
+        resetRouteRaw.includes('db.posExpenses = []') &&
+        resetRouteRaw.includes('db.supplyInvoices = []'),
+        'reset-transactions must purge transactional entities atomically'
+      );
+      assert.ok(
+        resetRouteRaw.includes('تصفير العمليات التجريبية'),
+        'reset-transactions must require confirmation text «تصفير العمليات التجريبية»'
+      );
+    });
+
+    await test('P6_PRD_02: Core Catalog, Staff Accounts & Settings Anti-Corruption Guarantees', async () => {
+      const resetRouteRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/api/admin/reset-transactions/route.ts'), 'utf8');
+      assert.ok(
+        resetRouteRaw.includes('db.products.length === 0') &&
+        resetRouteRaw.includes('db.categories.length === 0') &&
+        resetRouteRaw.includes('db.staffAccounts.length === 0'),
+        'reset-transactions must contain anti-corruption checks preventing catalog or staff deletion'
+      );
+    });
+
+    await test('P6_PRD_03: Interactive PreLaunchResetSafeguard UI Component & Admin Mounting', async () => {
+      const safeguardCompPath = path.join(ROOT_DIR, 'src/components/admin/PreLaunchResetSafeguard.tsx');
+      assert.ok(fs.existsSync(safeguardCompPath), 'PreLaunchResetSafeguard.tsx must exist');
+      const safeguardRaw = fs.readFileSync(safeguardCompPath, 'utf8');
+      const adminPageRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/admin/page.tsx'), 'utf8');
+      const opsStudioRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/components/admin/HafsaOperationsStudio.tsx'), 'utf8');
+
+      assert.ok(
+        safeguardRaw.includes('خزنة تصفير العمليات التجريبية') &&
+        safeguardRaw.includes('المدير العام فقط') &&
+        safeguardRaw.includes('تصفير العمليات التجريبية'),
+        'PreLaunchResetSafeguard must declare Super Admin exclusivity and confirmation phrase'
+      );
+      assert.ok(
+        adminPageRaw.includes('<PreLaunchResetSafeguard') &&
+        adminPageRaw.includes("currentRole === 'super_admin'"),
+        'admin/page.tsx must mount PreLaunchResetSafeguard for super_admin'
+      );
+      assert.ok(
+        opsStudioRaw.includes('pre_launch_reset') &&
+        opsStudioRaw.includes('<PreLaunchResetSafeguard'),
+        'HafsaOperationsStudio must support pre_launch_reset subtab'
+      );
+    });
+
+    await test('P6_PRD_04: Runtime Execution of Production Readiness, Purge Guardrails & Relational SQL Reset Suite', async () => {
+      const pkg6Out = execSync('node scripts/verify_package6_production_readiness.mjs', {
+        cwd: ROOT_DIR,
+        encoding: 'utf8',
+        stdio: 'pipe',
+        timeout: 120000,
+      });
+      assert.ok(
+        pkg6Out.includes('ALL PACKAGE 6 PRODUCTION READINESS & SAFE PURGE CHECKS PASSED'),
+        'verify_package6_production_readiness.mjs must pass 100% of live assertions'
+      );
+    });
     
   } finally {
     // Database Restoration (State Isolation guarantee)

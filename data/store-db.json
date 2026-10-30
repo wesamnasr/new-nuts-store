@@ -2573,7 +2573,6 @@
     "cashierPassword": "Cash#Pos2026",
     "cashierUsername": "cashier_pos",
     "instapayAddress": "hafsa.roastery@instapay",
-
     "announcementText": "🔥 تحميص يومي طازج • 5% كاش باك VIP • توصيل البندر خلال 30 دقيقة 🛵",
     "supplierPassword": "Sup#Arafat2026",
     "supplierUsername": "supplier_arafat",
@@ -2581,11 +2580,11 @@
     "accountantUsername": "accountant_fin",
     "vipCashbackPercent": 5,
     "vodafoneCashNumber": "01100699524",
-
-
     "freeShippingThreshold": 300,
     "villageMinOrderAmount": 200,
-    "vipMinOrderForCashback": 150
+    "vipMinOrderForCashback": 150,
+    "riderUsername": "rider_delivery",
+    "riderPassword": "Rider#Hafsa2026"
   },
   "posShifts": [
     {
@@ -2769,7 +2768,7 @@
       ],
       "title": "باقة لمة الخميس الكبرى",
       "active": true,
-      "endsAt": "2026-10-18T01:30:38.951Z",
+      "endsAt": "2026-10-31T13:20:23.569Z",
       "subtitle": "بوكس العيلة (6 خانات) + ربع بن تركي محوج بالحبهان + 2 كوباية قبة كاندي (Dome Cups)",
       "isVipOnly": false,
       "promoPrice": 385,
@@ -2816,7 +2815,7 @@
       ],
       "title": "عرض المزاج والروقان السريع",
       "active": true,
-      "endsAt": "2026-10-17T20:30:38.951Z",
+      "endsAt": "2026-10-31T13:20:23.569Z",
       "subtitle": "بوكس روقان المقسم (4 خانات) + ثمن بن تركي محوج طازج + كوباية كاندي قبة",
       "isVipOnly": false,
       "promoPrice": 190,
@@ -2863,7 +2862,7 @@
       ],
       "title": "عرض نادي حفصة VIP السري (لأعضاء المحفظة)",
       "active": true,
-      "endsAt": "2026-10-18T11:30:38.951Z",
+      "endsAt": "2026-10-31T13:20:23.569Z",
       "subtitle": "بوكس هدايا VIP الملكي (6 خانات) + برطمان عسل نحل بالمكسرات + ربع بن محوج ملكي",
       "isVipOnly": true,
       "promoPrice": 615,
@@ -3069,6 +3068,215 @@
       "status": "pending",
       "createdAt": "2026-10-18T14:15:00.000Z",
       "notes": "توريد دفعة فستق وكاجو استيراد جديد - بانتظار الفحص والموافقة"
+    }
+  ],
+  "flashPromotions": [
+    {
+      "id": "promo-thursday-bundle",
+      "badge": "عرض الشريك الرابع الخاطف 🔥",
+      "image": "/images/products/royal-mix.jpg",
+      "items": [
+        {
+          "quantity": 1,
+          "unitCost": 145,
+          "productId": "prod-box-family-250",
+          "productName": "بوكس العيلة واللمة (6 خانات)",
+          "weightGrams": 250,
+          "weightLabel": "بوكس 6 خانات",
+          "unitRetailPrice": 250
+        },
+        {
+          "quantity": 1,
+          "unitCost": 102,
+          "productId": "prod-hafsa-turkish-coffee-1",
+          "productName": "بن حفصة التركي بالتحويجة السرية",
+          "weightGrams": 250,
+          "weightLabel": "ربع 250 جم",
+          "unitRetailPrice": 140
+        },
+        {
+          "quantity": 2,
+          "unitCost": 22,
+          "productId": "prod-gummy-candy-1",
+          "productName": "كوباية القبة الجاهزة (Dome Cup)",
+          "weightGrams": 125,
+          "weightLabel": "كوباية قبة وسط",
+          "unitRetailPrice": 35
+        }
+      ],
+      "title": "باقة لمة الخميس الكبرى",
+      "active": true,
+      "endsAt": "2026-10-31T13:20:23.569Z",
+      "subtitle": "بوكس العيلة (6 خانات) + ربع بن تركي محوج بالحبهان + 2 كوباية قبة كاندي (Dome Cups)",
+      "isVipOnly": false,
+      "promoPrice": 385,
+      "isProfitSafe": true,
+      "netProfitEgp": 79,
+      "totalRawCost": 306,
+      "packagingCost": 15,
+      "originalRetailPrice": 460,
+      "profitMarginPercent": 20.5,
+      "minSafeMarginPercent": 15
+    },
+    {
+      "id": "promo-roqan-coffee",
+      "badge": "وفر 40 جنيه ⚡",
+      "image": "/images/products/pistachio.jpg",
+      "items": [
+        {
+          "quantity": 1,
+          "unitCost": 75,
+          "productId": "prod-box-roqan-125",
+          "productName": "بوكس روقان المقسم (4 خانات)",
+          "weightGrams": 125,
+          "weightLabel": "بوكس 4 خانات",
+          "unitRetailPrice": 125
+        },
+        {
+          "quantity": 1,
+          "unitCost": 51,
+          "productId": "prod-hafsa-turkish-coffee-1",
+          "productName": "بن حفصة التركي بالتحويجة السرية",
+          "weightGrams": 125,
+          "weightLabel": "ثمن 125 جم",
+          "unitRetailPrice": 70
+        },
+        {
+          "quantity": 1,
+          "unitCost": 20,
+          "productId": "prod-gummy-candy-1",
+          "productName": "كوباية القبة الجاهزة (Dome Cup)",
+          "weightGrams": 125,
+          "weightLabel": "كوباية قبة",
+          "unitRetailPrice": 35
+        }
+      ],
+      "title": "عرض المزاج والروقان السريع",
+      "active": true,
+      "endsAt": "2026-10-31T13:20:23.569Z",
+      "subtitle": "بوكس روقان المقسم (4 خانات) + ثمن بن تركي محوج طازج + كوباية كاندي قبة",
+      "isVipOnly": false,
+      "promoPrice": 190,
+      "isProfitSafe": true,
+      "netProfitEgp": 34,
+      "totalRawCost": 156,
+      "packagingCost": 10,
+      "originalRetailPrice": 230,
+      "profitMarginPercent": 17.9,
+      "minSafeMarginPercent": 15
+    },
+    {
+      "id": "promo-vip-secret-1",
+      "badge": "حصري لأعضاء VIP 👑",
+      "image": "/images/products/stuffed-dates.jpg",
+      "items": [
+        {
+          "quantity": 1,
+          "unitCost": 310,
+          "productId": "prod-royal-mix-1",
+          "productName": "بوكس الزيارات والهدايا الملكي VIP",
+          "weightGrams": 250,
+          "weightLabel": "بوكس VIP 6 خانات",
+          "unitRetailPrice": 450
+        },
+        {
+          "quantity": 1,
+          "unitCost": 78,
+          "productId": "prod-honey-nuts-jar-1",
+          "productName": "برطمان عسل نحل بالمكسرات الملكية",
+          "weightGrams": 250,
+          "weightLabel": "برطمان ربع كيلو",
+          "unitRetailPrice": 115
+        },
+        {
+          "quantity": 1,
+          "unitCost": 102,
+          "productId": "prod-hafsa-turkish-coffee-1",
+          "productName": "بن حفصة التركي بالتحويجة السرية",
+          "weightGrams": 250,
+          "weightLabel": "ربع 250 جم",
+          "unitRetailPrice": 140
+        }
+      ],
+      "title": "عرض نادي حفصة VIP السري (لأعضاء المحفظة)",
+      "active": true,
+      "endsAt": "2026-10-31T13:20:23.569Z",
+      "subtitle": "بوكس هدايا VIP الملكي (6 خانات) + برطمان عسل نحل بالمكسرات + ربع بن محوج ملكي",
+      "isVipOnly": true,
+      "promoPrice": 615,
+      "isProfitSafe": true,
+      "netProfitEgp": 105,
+      "totalRawCost": 510,
+      "packagingCost": 20,
+      "originalRetailPrice": 705,
+      "profitMarginPercent": 17.1,
+      "minSafeMarginPercent": 15
+    }
+  ],
+  "staffAccounts": [
+    {
+      "id": "staff-primary-super_admin",
+      "username": "admin_hafsa",
+      "passwordHash": "scrypt$d00b5ad2ad9f320dcbbf9690352435f2$ba08789d852b565d476e1a28325f3ba88f72169875a5c412d29b268f934f74ca8d6815a6640b90066b6c415d76bc7658a6c7ba7807e1b643b1878af0cf7a6395",
+      "role": "super_admin",
+      "displayName": "إدارة محمصة حفصة (المدير العام)",
+      "active": true,
+      "isPrimary": true,
+      "settingsFingerprint": "4bbb76198d3fcb7762044e9a",
+      "createdAt": "2026-10-30T13:20:23.569Z",
+      "updatedAt": "2026-10-30T13:20:23.569Z",
+      "lastLoginAt": "2026-10-30T13:20:24.988Z"
+    },
+    {
+      "id": "staff-primary-accountant",
+      "username": "accountant_fin",
+      "passwordHash": "scrypt$e90d938b17c1723bc6895939741dc9e2$cf162bdc30730da7bf1bd23f1f71cdf81ad21fa4fbc542a677320fa8434fcfe9234d35ab59d52fdb215cba516b8b3db89ec42ec0feef24137647317180e377db",
+      "role": "accountant",
+      "displayName": "المحاسب المالي الرئيسي",
+      "active": true,
+      "isPrimary": true,
+      "settingsFingerprint": "bde204c3e00159f9432ea29f",
+      "createdAt": "2026-10-30T13:20:23.569Z",
+      "updatedAt": "2026-10-30T13:20:23.569Z",
+      "lastLoginAt": "2026-10-30T13:20:24.526Z"
+    },
+    {
+      "id": "staff-primary-cashier",
+      "username": "cashier_pos",
+      "passwordHash": "scrypt$baf21ba6f0664265c4ee5d429d762a02$bc1d8797b7e232ae78f01e5bad00986e3026eefb9b3d882d22caeafff68e61aaf597b6dde0b63e6a40d041226e0ad7d3b0bcbdf4d4e881619ce748d73fa6cb41",
+      "role": "cashier",
+      "displayName": "كاشير صالة فرع بني مزار (أساسي)",
+      "active": true,
+      "isPrimary": true,
+      "settingsFingerprint": "3bfc4805554aabbc1bc7cf87",
+      "createdAt": "2026-10-30T13:20:23.569Z",
+      "updatedAt": "2026-10-30T13:20:23.569Z",
+      "lastLoginAt": "2026-10-30T13:20:24.262Z"
+    },
+    {
+      "id": "staff-primary-supplier",
+      "username": "supplier_arafat",
+      "passwordHash": "scrypt$432260743ba70014b39ef8f166f42755$29f7945f8d7ba67e54734906dedfcb4636ea5a136d886bddf25e92d95d221da0e0ec24bd2213d978a6ae052707281b553a91fa2e59fcf6a6c7b3ed082c3c5ccb",
+      "role": "supplier",
+      "displayName": "مسؤول التوريد والمخزون الرئيسي",
+      "active": true,
+      "isPrimary": true,
+      "settingsFingerprint": "65bb0309a6b6991e736a7fbe",
+      "createdAt": "2026-10-30T13:20:23.569Z",
+      "updatedAt": "2026-10-30T13:20:23.569Z",
+      "lastLoginAt": "2026-10-30T13:20:23.996Z"
+    },
+    {
+      "id": "staff-primary-delivery_rider",
+      "username": "rider_delivery",
+      "passwordHash": "scrypt$82e8583a09f720e1beeab272958687d9$cd911ab23ff4e131d258918c732fdce7ce951e3d355226bfbca9021fecd76b3ec6879efd6ae37a3ffca8b284238b0e583eff9ee60493544f069c5b1506c590c6",
+      "role": "delivery_rider",
+      "displayName": "مندوب التوصيل الرئيسي (بني مزار)",
+      "active": true,
+      "isPrimary": true,
+      "settingsFingerprint": "697991cc02f215252502ec42",
+      "createdAt": "2026-10-30T13:20:23.569Z",
+      "updatedAt": "2026-10-30T13:20:23.569Z"
     }
   ]
 }

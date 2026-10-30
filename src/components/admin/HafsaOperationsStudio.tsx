@@ -21,7 +21,8 @@ import {
   generateWeightsFromKiloPrice,
   calculatePromoProfitSafety,
 } from '@/lib/pricing';
-import { FlashPromotion, Product } from '@/types/store';
+import { FlashPromotion, Product, AdminRole } from '@/types/store';
+import PreLaunchResetSafeguard from './PreLaunchResetSafeguard';
 import {
   updateUrlQueryParams,
   buildUrlWithParams,
@@ -35,27 +36,29 @@ interface HafsaOperationsStudioProps {
     successToast: string
   ) => Promise<void | boolean>;
   canMutate?: boolean;
+  currentRole?: AdminRole;
 }
 
 export default function HafsaOperationsStudio({
   adminToken,
   onUpdateStorePayload,
   canMutate = true,
+  currentRole = 'super_admin',
 }: HafsaOperationsStudioProps) {
   const { storeData, refreshStore, showToast, pixelEvents } = useStore();
 
   const [subTab, setSubTab] = useState<
-    'kilo_updater' | 'partner4_promos' | 'vip_cashier' | 'qr_codes' | 'wesam_marketing'
+    'kilo_updater' | 'partner4_promos' | 'vip_cashier' | 'qr_codes' | 'wesam_marketing' | 'pre_launch_reset'
   >('kilo_updater');
 
   useBrowserUrlSync((params) => {
     const st = params.get('subtab');
     if (
       st &&
-      ['kilo_updater', 'partner4_promos', 'vip_cashier', 'qr_codes', 'wesam_marketing'].includes(st)
+      ['kilo_updater', 'partner4_promos', 'vip_cashier', 'qr_codes', 'wesam_marketing', 'pre_launch_reset'].includes(st)
     ) {
       setSubTab(
-        st as 'kilo_updater' | 'partner4_promos' | 'vip_cashier' | 'qr_codes' | 'wesam_marketing'
+        st as 'kilo_updater' | 'partner4_promos' | 'vip_cashier' | 'qr_codes' | 'wesam_marketing' | 'pre_launch_reset'
       );
     } else if (!st) {
       setSubTab('kilo_updater');
@@ -311,6 +314,10 @@ export default function HafsaOperationsStudio({
           {
             id: 'wesam_marketing',
             label: '📈 التسويق والتوصيل',
+          },
+          {
+            id: 'pre_launch_reset',
+            label: '🛡️ تصفير العمليات (الافتتاح)',
           },
         ].map((tab) => (
           <a
@@ -805,6 +812,29 @@ export default function HafsaOperationsStudio({
             )}
           </div>
         </form>
+      )}
+
+      {/* TAB 6: Pre-Launch Operational Reset & Purge (Super Admin Only) */}
+      {subTab === 'pre_launch_reset' && (
+        <div className="space-y-4">
+          {currentRole === 'super_admin' ? (
+            <PreLaunchResetSafeguard
+              adminToken={adminToken}
+              isSuperAdmin={true}
+              onResetComplete={refreshStore}
+            />
+          ) : (
+            <div className="bg-amber-50 border border-amber-300 rounded-2xl p-5 text-amber-950 flex items-center gap-3">
+              <ShieldCheck className="w-6 h-6 text-amber-700 shrink-0" />
+              <div>
+                <h4 className="text-xs font-black">أداة مقصورة حصرياً على المدير العام (Super Admin)</h4>
+                <p className="text-[11px] text-amber-800 mt-0.5">
+                  تصفير العمليات التجريبية والورديات قبل الافتتاح الرسمي يتطلب صلاحية المدير العام لتأمين بيانات الفرع.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

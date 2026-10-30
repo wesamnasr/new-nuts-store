@@ -268,7 +268,7 @@ export function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
     parsed.products = structuredClone(initialDatabase.products);
   }
 
-  if (!Array.isArray(parsed.vipMembers) || parsed.vipMembers.length === 0) {
+  if (!Array.isArray(parsed.vipMembers)) {
     parsed.vipMembers = structuredClone(initialDatabase.vipMembers || []);
   }
   if (!Array.isArray(parsed.promotions) || parsed.promotions.length === 0) {
@@ -288,7 +288,7 @@ export function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
       }
     }
   }
-  if (!Array.isArray(parsed.posShifts) || parsed.posShifts.length === 0) {
+  if (!Array.isArray(parsed.posShifts)) {
     parsed.posShifts = structuredClone(initialDatabase.posShifts || []);
   }
   if (!Array.isArray(parsed.posExpenses)) {

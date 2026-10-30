@@ -96,6 +96,7 @@ import {
   DEFAULT_THEME_CONFIG,
 } from '@/lib/defaults';
 import HafsaOperationsStudio from '@/components/admin/HafsaOperationsStudio';
+import PreLaunchResetSafeguard from '@/components/admin/PreLaunchResetSafeguard';
 import SupplierIsolationPortal from '@/components/admin/SupplierIsolationPortal';
 import AccountantIsolationPortal from '@/components/admin/AccountantIsolationPortal';
 import SupermarketReceiptModal from '@/components/SupermarketReceiptModal';
@@ -2389,6 +2390,7 @@ export default function AdminDashboardPage() {
               adminToken={adminToken}
               onUpdateStorePayload={updateStorePayload}
               canMutate={isFullAdmin}
+              currentRole={currentRole}
             />
           )}
 
@@ -6248,6 +6250,17 @@ export default function AdminDashboardPage() {
                     />
                   </label>
                 </div>
+
+                {/* Pre-Launch Operational Reset Safeguard (Super Admin Only) */}
+                {currentRole === 'super_admin' && (
+                  <PreLaunchResetSafeguard
+                    adminToken={adminToken}
+                    isSuperAdmin={true}
+                    onResetComplete={() => {
+                      refreshStore();
+                    }}
+                  />
+                )}
               </div>
             </div>
           )}
