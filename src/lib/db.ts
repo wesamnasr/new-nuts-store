@@ -297,6 +297,9 @@ export function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
   if (!Array.isArray(parsed.supplyInvoices)) {
     parsed.supplyInvoices = structuredClone(initialDatabase.supplyInvoices || []);
   }
+  if (!Array.isArray(parsed.inventoryAdjustments)) {
+    parsed.inventoryAdjustments = [];
+  }
 
   if (Array.isArray(parsed.orders)) {
     for (const order of parsed.orders) {

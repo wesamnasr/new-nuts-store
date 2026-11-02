@@ -2932,6 +2932,70 @@ async function runTestSuite() {
         'verify_package7_cod_settlement_and_stock_guard.mjs must pass 100% of live assertions'
       );
     });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    suite('Tier 18: Package 8 — Weighted Average Cost (WAC), Inventory Adjustments Ledger & POS Stock Guard');
+
+    await test('P8_WAC_01: Weighted Average Cost (WAC) Valuation & Supply Invoice DDL Contracts', async () => {
+      const supplyRouteRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/api/supply-invoices/route.ts'), 'utf8');
+      const pgSchemaRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/lib/postgres-schema.ts'), 'utf8');
+
+      assert.ok(
+        supplyRouteRaw.includes('Weighted Average Cost (WAC)') &&
+          supplyRouteRaw.includes('totalValuation = (currentStock * currentCost) + (incomingQty * incomingCost)'),
+        'supply-invoices PATCH must apply Weighted Average Cost (WAC) formula on approval'
+      );
+      assert.ok(
+        pgSchemaRaw.includes("'inventory_adjustments'") &&
+          pgSchemaRaw.includes('CREATE TABLE IF NOT EXISTS inventory_adjustments'),
+        'postgres-schema.ts must register inventory_adjustments in RELATIONAL_TABLES and DDL'
+      );
+    });
+
+    await test('P8_ADJ_02: Inventory Adjustments API Route, Shrinkage Types & Strict RBAC Audit', async () => {
+      const adjRouteRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/api/admin/inventory-adjustments/route.ts'), 'utf8');
+      assert.ok(
+        adjRouteRaw.includes("auth.role === 'delivery_rider'") &&
+          adjRouteRaw.includes("auth.role === 'cashier'") &&
+          adjRouteRaw.includes("auth.role === 'accountant'"),
+        'inventory-adjustments must guard against unauthorized roles and restrict accountant to read-only'
+      );
+      assert.ok(
+        adjRouteRaw.includes('roasting_shrinkage') &&
+          adjRouteRaw.includes('physical_count_discrepancy') &&
+          adjRouteRaw.includes('totalCostImpact'),
+        'inventory-adjustments must track roasting shrinkage, count discrepancies and compute totalCostImpact'
+      );
+    });
+
+    await test('P8_POS_03: In-Store POS Out-Of-Stock Protection & 58mm Barista Recipe Sticker', async () => {
+      const posRouteRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/app/api/pos/route.ts'), 'utf8');
+      const receiptModalRaw = fs.readFileSync(path.join(ROOT_DIR, 'src/components/SupermarketReceiptModal.tsx'), 'utf8');
+
+      assert.ok(
+        posRouteRaw.includes('POS In-Store Physical Stock Availability Guard') &&
+          posRouteRaw.includes('نافد تماماً من صوامع الفرع (الرصيد: 0 كجم)'),
+        'POST /api/pos must block selling depleted products without explicit override'
+      );
+      assert.ok(
+        receiptModalRaw.includes('recipeLines?: string[]') &&
+          receiptModalRaw.includes('مكونات الخلطة / البوكس:'),
+        'SupermarketReceiptModal must support barista / box recipe lines on 58mm sticker'
+      );
+    });
+
+    await test('P8_RUN_04: Live Runtime Execution of Package 8 WAC, Inventory Adjustments & POS Guard Suite', async () => {
+      const pkg8Out = execSync('node scripts/verify_package8_wac_inventory_adjustments_and_pos_guard.mjs', {
+        cwd: ROOT_DIR,
+        encoding: 'utf8',
+        stdio: 'pipe',
+        timeout: 120000,
+      });
+      assert.ok(
+        pkg8Out.includes('ALL 5/5 PACKAGE 8 WAC, INVENTORY ADJUSTMENT & POS GUARD CHECKS PASSED'),
+        'verify_package8_wac_inventory_adjustments_and_pos_guard.mjs must pass 100% of live assertions'
+      );
+    });
     
   } finally {
     // Database Restoration (State Isolation guarantee)

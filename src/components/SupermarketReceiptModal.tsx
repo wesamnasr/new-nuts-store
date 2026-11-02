@@ -13,6 +13,8 @@ export interface StickerPreviewData {
   price: number;
   barcode: string;
   date: string;
+  recipeLines?: string[];
+  baristaNotes?: string;
 }
 
 interface SupermarketReceiptModalProps {
@@ -284,6 +286,17 @@ export default function SupermarketReceiptModal({
                 <div className="sr-bold text-[10.5px]">
                   {sticker.weightLabel} • {sticker.roastOrSpec}
                 </div>
+                {Array.isArray(sticker.recipeLines) && sticker.recipeLines.length > 0 && (
+                  <div className="text-[9.5px] border border-dashed border-black/40 rounded p-1 text-right space-y-0.5 my-1 bg-black/5">
+                    <div className="font-bold text-[10px] text-center">مكونات الخلطة / البوكس:</div>
+                    {sticker.recipeLines.map((line, idx) => (
+                      <div key={idx} className="leading-tight">• {line}</div>
+                    ))}
+                  </div>
+                )}
+                {sticker.baristaNotes && (
+                  <div className="text-[9px] italic text-center text-black/80">{sticker.baristaNotes}</div>
+                )}
                 <div className="sr-total-box sr-center">السعر: {sticker.price} ج.م</div>
                 <div className="sr-barcode">||{sticker.barcode}||</div>
                 <div className="text-[9px]">تاريخ التعبئة: {sticker.date} • بني مزار</div>

@@ -614,6 +614,32 @@ export interface DatabaseSchema {
   posExpenses?: PosExpense[];
   supplyInvoices?: SupplyInvoice[];
   staffAccounts?: StaffAccount[];
+  inventoryAdjustments?: InventoryAdjustment[];
+}
+
+export type InventoryAdjustmentReason =
+  | 'physical_count_discrepancy'
+  | 'roasting_shrinkage'
+  | 'damaged_spoilage'
+  | 'sample_hospitality'
+  | 'correction';
+
+export interface InventoryAdjustment {
+  id: string;
+  adjustmentNumber: string;
+  productId: string;
+  productName: string;
+  previousStockKg: number;
+  newStockKg: number;
+  differenceKg: number;
+  unitCostPerKg: number;
+  totalCostImpact: number;
+  reason: InventoryAdjustmentReason;
+  reasonLabel: string;
+  notes?: string;
+  adjustedBy: string;
+  adjustedByRole: AdminRole;
+  createdAt: string;
 }
 
 export interface StaffAccount {

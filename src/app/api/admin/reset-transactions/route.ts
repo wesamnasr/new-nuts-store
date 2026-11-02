@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
       if (clearVipMembers) {
         db.vipMembers = [];
       }
+      db.inventoryAdjustments = [];
 
       // Catalog & System Integrity Assertion: Ensure core entities were NOT compromised
       if (!Array.isArray(db.products) || db.products.length === 0) {

@@ -12,6 +12,7 @@ export const RELATIONAL_TABLES = [
   'supply_invoices',
   'vip_members',
   'coupons',
+  'inventory_adjustments',
 ] as const;
 
 declare global {
@@ -206,6 +207,23 @@ const SCHEMA_DDL_STATEMENTS: string[] = [
     used_count INT NOT NULL DEFAULT 0,
     payload JSONB NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS inventory_adjustments (
+    id TEXT PRIMARY KEY,
+    adjustment_number TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    product_name TEXT NOT NULL,
+    previous_stock_kg NUMERIC(12, 3) NOT NULL,
+    new_stock_kg NUMERIC(12, 3) NOT NULL,
+    difference_kg NUMERIC(12, 3) NOT NULL,
+    unit_cost_per_kg NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    total_cost_impact NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    reason TEXT NOT NULL,
+    adjusted_by TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    payload JSONB NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_adj_product_created ON inventory_adjustments (product_id, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_adj_reason ON inventory_adjustments (reason)`,
 ];
 
 export async function ensurePostgresSchema(overrideUrl?: string): Promise<void> {
@@ -613,6 +631,52 @@ export function buildRelationalSyncStatements(
                used_count = EXCLUDED.used_count,
                payload = EXCLUDED.payload`,
       values: [JSON.stringify(couponList)],
+    });
+  }
+
+  // 11. inventory_adjustments
+  const adjustmentList = Array.isArray(db.inventoryAdjustments) ? db.inventoryAdjustments : [];
+  const adjustmentIds = adjustmentList.map((a) => a.id);
+  stmts.push({
+    text: `DELETE FROM inventory_adjustments WHERE NOT (id = ANY($1::text[]))`,
+    values: [adjustmentIds],
+  });
+  if (adjustmentList.length > 0) {
+    stmts.push({
+      text: `INSERT INTO inventory_adjustments (
+               id, adjustment_number, product_id, product_name,
+               previous_stock_kg, new_stock_kg, difference_kg,
+               unit_cost_per_kg, total_cost_impact, reason,
+               adjusted_by, created_at, payload
+             )
+             SELECT
+               elem->>'id',
+               COALESCE(elem->>'adjustmentNumber', elem->>'id'),
+               COALESCE(elem->>'productId', ''),
+               COALESCE(elem->>'productName', ''),
+               COALESCE(NULLIF(elem->>'previousStockKg', '')::numeric, 0),
+               COALESCE(NULLIF(elem->>'newStockKg', '')::numeric, 0),
+               COALESCE(NULLIF(elem->>'differenceKg', '')::numeric, 0),
+               COALESCE(NULLIF(elem->>'unitCostPerKg', '')::numeric, 0),
+               COALESCE(NULLIF(elem->>'totalCostImpact', '')::numeric, 0),
+               COALESCE(elem->>'reason', 'correction'),
+               COALESCE(elem->>'adjustedBy', 'الإدارة'),
+               COALESCE(NULLIF(elem->>'createdAt', '')::timestamptz, NOW()),
+               elem
+             FROM jsonb_array_elements($1::jsonb) AS elem
+             ON CONFLICT (id) DO UPDATE SET
+               adjustment_number = EXCLUDED.adjustment_number,
+               product_id = EXCLUDED.product_id,
+               product_name = EXCLUDED.product_name,
+               previous_stock_kg = EXCLUDED.previous_stock_kg,
+               new_stock_kg = EXCLUDED.new_stock_kg,
+               difference_kg = EXCLUDED.difference_kg,
+               unit_cost_per_kg = EXCLUDED.unit_cost_per_kg,
+               total_cost_impact = EXCLUDED.total_cost_impact,
+               reason = EXCLUDED.reason,
+               adjusted_by = EXCLUDED.adjusted_by,
+               payload = EXCLUDED.payload`,
+      values: [JSON.stringify(adjustmentList)],
     });
   }
 

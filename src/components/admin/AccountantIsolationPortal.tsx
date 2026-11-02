@@ -34,6 +34,7 @@ import {
   ChevronUp,
   LayoutGrid,
   Table as TableIcon,
+  Scale,
 } from 'lucide-react';
 import {
   Coupon,
@@ -62,6 +63,7 @@ import {
   useBrowserUrlSync,
 } from '@/lib/url-sync';
 import SupermarketReceiptModal from '@/components/SupermarketReceiptModal';
+import InventoryAdjustmentModal from '@/components/admin/InventoryAdjustmentModal';
 
 export type AccountantReportSubTab =
   | 'daily_income'
@@ -134,6 +136,7 @@ export default function AccountantIsolationPortal({
   const [activeSubTab, setActiveSubTab] = useState<AccountantReportSubTab>('daily_income');
   // Display Mode: Both Cards & Tables (default), Cards only, or Table only
   const [displayMode, setDisplayMode] = useState<AccountantDisplayMode>('both');
+  const [showInventoryModal, setShowInventoryModal] = useState<boolean>(false);
 
   // Filter States
   const [datePreset, setDatePreset] = useState<DateRangePreset>('all');
@@ -729,6 +732,14 @@ export default function AccountantIsolationPortal({
             >
               <Download className="w-3.5 h-3.5" />
               <span>سجل التوريدات (CSV)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowInventoryModal(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#C88A4B] hover:bg-[#b0753a] text-white font-black text-xs shadow transition cursor-pointer"
+            >
+              <Scale className="w-3.5 h-3.5" />
+              <span>دفتر تسويات وهالك الجرد (Audit)</span>
             </button>
           </div>
         </div>
@@ -2835,6 +2846,13 @@ export default function AccountantIsolationPortal({
           onClose={() => setSelectedInvoiceOrder(null)}
         />
       )}
+
+      <InventoryAdjustmentModal
+        isOpen={showInventoryModal}
+        onClose={() => setShowInventoryModal(false)}
+        products={products}
+        currentRole="accountant"
+      />
     </div>
   );
 }

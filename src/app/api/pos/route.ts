@@ -686,6 +686,23 @@ export async function POST(request: Request) {
       }
     }
 
+    // POS In-Store Physical Stock Availability Guard
+    if (body.allowOutOfStockOverride !== true) {
+      for (const item of rawItems) {
+        if (item.productId && !item.productId.startsWith('flash-promo-') && !item.isPartitionedBox && !item.isCustomMix && !item.isCoffeeBlend) {
+          const prod = db.products.find((p) => p.id === item.productId);
+          if (prod && (prod.inStock === false || (typeof prod.stockKg === 'number' && prod.stockKg <= 0))) {
+            return NextResponse.json(
+              {
+                error: `عذراً، الصنف «${prod.name}» نافد تماماً من صوامع الفرع (الرصيد: 0 كجم). يرجى مراجعة الرف أو تفعيل التجاوز الإداري.`,
+              },
+              { status: 400 }
+            );
+          }
+        }
+      }
+    }
+
     let subtotal = 0;
     let rawCostTotal = 0;
 

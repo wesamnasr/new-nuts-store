@@ -8,7 +8,7 @@
  * 3. Cashier Shift Closing Z-Report (Revenue, Cash in Drawer, Card Sales, Expenses, Variance)
  */
 
-import type { Order, PosShift, StoreSettings, SupplyInvoice } from '@/types/store';
+import type { Order, PosShift, StoreSettings, SupplyInvoice, InventoryAdjustment } from '@/types/store';
 
 export interface TelegramNotificationResult {
   success: boolean;
@@ -17,7 +17,7 @@ export interface TelegramNotificationResult {
   error?: string;
 }
 
-export type TelegramNotificationEventType = 'new_order' | 'supply_invoice' | 'z_report' | 'low_stock';
+export type TelegramNotificationEventType = 'new_order' | 'supply_invoice' | 'z_report' | 'low_stock' | 'inventory_adjustment';
 
 export interface LowStockAlertItem {
   productId: string;
@@ -280,6 +280,26 @@ ${lines}
 ⏰ <b>التوقيت:</b> ${new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
+export function formatInventoryAdjustmentTelegramMessage(adj: InventoryAdjustment): string {
+  const diffSign = adj.differenceKg > 0 ? '+' : '';
+  const diffFormatted = `${diffSign}${adj.differenceKg} كجم`;
+  const costImpactFormatted = `${adj.totalCostImpact > 0 ? '+' : ''}${adj.totalCostImpact} ج.م`;
+
+  return `⚖️ <b>إشعار تسوية جرد المخزون | محمصة حفصة</b>
+━━━━━━━━━━━━━━━━━━━━
+🔢 <b>رقم الحركة:</b> <code>#${escapeTelegramHtml(adj.adjustmentNumber)}</code>
+📦 <b>الصنف:</b> <b>${escapeTelegramHtml(adj.productName)}</b>
+🏷️ <b>السبب:</b> ${escapeTelegramHtml(adj.reasonLabel || adj.reason)}
+━━━━━━━━━━━━━━━━━━━━
+📉 <b>الرصيد السابق:</b> ${adj.previousStockKg} كجم
+📈 <b>الرصيد الفعلي بعد الجرد:</b> ${adj.newStockKg} كجم
+⚖️ <b>الفارق الجردي:</b> <b>${diffFormatted}</b>
+💰 <b>الأثر المالي للتكلفة:</b> <b>${costImpactFormatted}</b>
+👤 <b>القائم بالتسوية:</b> ${escapeTelegramHtml(adj.adjustedBy)} (${escapeTelegramHtml(adj.adjustedByRole)})
+${adj.notes ? `📝 <b>ملاحظات:</b> ${escapeTelegramHtml(adj.notes)}\n` : ''}━━━━━━━━━━━━━━━━━━━━
+⏰ <b>التوقيت:</b> ${new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
 /**
  * High-level automated dispatcher that checks store settings and dispatches Telegram notifications safely
  */
@@ -335,6 +355,8 @@ export async function sendStoreTelegramAlert(
         return { success: false, skipped: true, error: 'No low-stock items to notify' };
       }
       messageHtml = formatLowStockTelegramMessage(payload.items, payload.sourceLabel);
+    } else if (eventType === 'inventory_adjustment') {
+      messageHtml = formatInventoryAdjustmentTelegramMessage(data as InventoryAdjustment);
     }
   } catch (err: any) {
     return { success: false, error: `Failed to format Telegram message: ${err?.message || err}` };

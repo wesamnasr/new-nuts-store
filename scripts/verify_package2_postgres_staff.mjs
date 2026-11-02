@@ -74,7 +74,7 @@ async function runPackage2Verification() {
     console.log('=== Verifying Package 2: Neon Relational Engine & Multi-Staff RBAC ===');
 
     // 1. Relational Schema & Atomic Parameterized Sync Builder
-    assert.strictEqual(RELATIONAL_TABLES.length, 10, 'Must define all 10 relational tables');
+    assert.ok(RELATIONAL_TABLES.length >= 10, 'Must define all core relational tables (at least 10)');
     const db = await getDbAsync();
     const stmts = buildRelationalSyncStatements(db, 2, 1);
     assert.ok(stmts.length >= 10, 'Must generate relational upsert/cleanup statements for all tables');

@@ -97,6 +97,7 @@ import {
 } from '@/lib/defaults';
 import HafsaOperationsStudio from '@/components/admin/HafsaOperationsStudio';
 import PreLaunchResetSafeguard from '@/components/admin/PreLaunchResetSafeguard';
+import InventoryAdjustmentModal from '@/components/admin/InventoryAdjustmentModal';
 import SupplierIsolationPortal from '@/components/admin/SupplierIsolationPortal';
 import AccountantIsolationPortal from '@/components/admin/AccountantIsolationPortal';
 import SupermarketReceiptModal from '@/components/SupermarketReceiptModal';
@@ -353,6 +354,7 @@ export default function AdminDashboardPage() {
 
   // Invoice Modal State
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<Order | null>(null);
+  const [isInventoryAdjustmentModalOpen, setIsInventoryAdjustmentModalOpen] = useState<boolean>(false);
 
   // Supply Invoices Approval & Management State
   const [supplyInvoices, setSupplyInvoices] = useState<SupplyInvoice[]>([]);
@@ -3674,6 +3676,17 @@ export default function AdminDashboardPage() {
                     </button>
                     {isFullAdmin && (
                       <button
+                        type="button"
+                        onClick={() => setIsInventoryAdjustmentModalOpen(true)}
+                        className="bg-[#C88A4B] hover:bg-[#b0753a] text-white text-xs font-black px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                        title="تسوية الجرد الفعلي ومطابقة أرصدة الصوامع والمخزن"
+                      >
+                        <Scale className="w-4 h-4 text-white" />
+                        <span>تسوية الجرد الفعلي للمخزون</span>
+                      </button>
+                    )}
+                    {isFullAdmin && (
+                      <button
                         onClick={openCreateProductModal}
                         className="bg-brand-900 hover:bg-brand-950 text-white text-xs font-extrabold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs"
                       >
@@ -6361,6 +6374,17 @@ export default function AdminDashboardPage() {
           }}
         />
       )}
+
+      {/* PHYSICAL INVENTORY ADJUSTMENT & AUDIT MODAL */}
+      <InventoryAdjustmentModal
+        isOpen={isInventoryAdjustmentModalOpen}
+        onClose={() => setIsInventoryAdjustmentModalOpen(false)}
+        products={products}
+        currentRole={currentRole}
+        onStockUpdated={() => {
+          refreshStore();
+        }}
+      />
     </div>
   );
 }

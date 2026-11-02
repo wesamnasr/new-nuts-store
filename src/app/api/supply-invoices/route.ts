@@ -315,17 +315,31 @@ export async function PATCH(request: Request) {
       const reviewerLabel = auth.displayName || auth.username || 'super_admin';
 
       if (targetStatus === 'approved') {
-        // Atomic stock increment and wholesale cost update
+        // Atomic stock increment and Weighted Average Cost (WAC) update
         for (const item of invoice.items) {
           const product = db.products.find((p) => p.id === item.productId);
           if (product) {
-            const currentStock = typeof product.stockKg === 'number' ? product.stockKg : 0;
-            product.stockKg = Math.max(0, Math.round((currentStock + item.quantityKg) * 1000) / 1000);
+            const currentStock = typeof product.stockKg === 'number' ? Math.max(0, product.stockKg) : 0;
+            const currentCost = typeof product.costPerKg === 'number' && product.costPerKg > 0
+              ? product.costPerKg
+              : (typeof product.pricePerKg === 'number' ? Math.round(product.pricePerKg * 0.65) : 300);
+            const incomingQty = Math.max(0, Number(item.quantityKg) || 0);
+            const incomingCost = Math.max(0, Number(item.costPerKg) || 0);
+
+            product.stockKg = Math.max(0, Math.round((currentStock + incomingQty) * 1000) / 1000);
             if (product.stockKg > 0) {
               product.inStock = true;
             }
-            if (typeof item.costPerKg === 'number' && item.costPerKg > 0) {
-              product.costPerKg = Math.round(item.costPerKg * 100) / 100;
+
+            // Weighted Average Cost (WAC): ((currentStock * currentCost) + (incomingQty * incomingCost)) / (currentStock + incomingQty)
+            if (incomingCost > 0) {
+              if (currentStock > 0) {
+                const totalValuation = (currentStock * currentCost) + (incomingQty * incomingCost);
+                const totalStock = currentStock + incomingQty;
+                product.costPerKg = totalStock > 0 ? Math.round((totalValuation / totalStock) * 100) / 100 : incomingCost;
+              } else {
+                product.costPerKg = Math.round(incomingCost * 100) / 100;
+              }
             }
           }
         }
