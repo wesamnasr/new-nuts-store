@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Upload, Image as ImageIcon, CheckCircle2, X, Sparkles, AlertCircle } from 'lucide-react';
+import { Upload, Image as ImageIcon, CheckCircle2, X, AlertCircle } from 'lucide-react';
 import { getSafeImageUrl } from '@/lib/defaults';
 
 interface ImageUploadDropzoneProps {
@@ -144,14 +144,13 @@ export default function ImageUploadDropzone({
   return (
     <div className="space-y-2 font-cairo">
       <div className="flex items-center justify-between">
-        <label className="text-[11px] font-black text-brand-950 flex items-center gap-1">
-          <ImageIcon className="w-3.5 h-3.5 text-gold-500" />
+        <label className="text-[11px] font-bold text-[#231710] flex items-center gap-1.5">
+          <ImageIcon className="w-3.5 h-3.5 text-[#9A6836]" />
           <span>{label}</span>
         </label>
         {stats && (
-          <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-emerald-600" />
-            <span>وفر {stats.savedPercent}% من الحجم</span>
+          <span className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold px-2 py-0.5 rounded-full">
+            وفر {stats.savedPercent}% من الحجم
           </span>
         )}
       </div>
@@ -160,10 +159,10 @@ export default function ImageUploadDropzone({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`relative border-2 border-dashed rounded-2xl p-3 transition text-center cursor-pointer ${
+        className={`relative border border-dashed rounded-2xl p-3 transition text-center cursor-pointer ${
           isDragging
-            ? 'border-gold-500 bg-gold-50/50'
-            : 'border-brand-200 bg-brand-50/60 hover:bg-brand-50 hover:border-brand-300'
+            ? 'border-[#9A6836] bg-[#FAF6F0]'
+            : 'border-[#E8E0D5] bg-[#FAF6F0]/70 hover:bg-[#FAF6F0] hover:border-[#C8B9A6]'
         }`}
         onClick={() => fileInputRef.current?.click()}
       >
@@ -182,43 +181,43 @@ export default function ImageUploadDropzone({
 
         {currentImage ? (
           <div className="flex items-center gap-3 text-right">
-            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-brand-200 bg-white shrink-0">
+            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-[#E8E0D5] bg-white shrink-0">
               <img
                 src={getSafeImageUrl(currentImage)}
                 alt="معاينة الصورة"
                 className="w-full h-full object-cover"
               />
-              <div className="absolute top-1 right-1 bg-brand-950/80 text-gold-400 text-[9px] font-mono px-1 rounded">
+              <div className="absolute top-1 right-1 bg-[#231710]/85 text-white text-[9px] font-mono px-1 rounded">
                 WebP
               </div>
             </div>
 
             <div className="flex-1 min-w-0 space-y-1">
-              <div className="flex items-center gap-1 text-xs font-black text-brand-950">
+              <div className="flex items-center gap-1 text-xs font-bold text-[#231710]">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span className="truncate">الصورة محددة ومضغوطة بنجاح</span>
               </div>
 
               {stats ? (
-                <div className="text-[10px] text-brand-600 space-y-0.5">
+                <div className="text-[10px] text-[#6B5644] space-y-0.5">
                   <div>الحجم الأصلي: <span className="font-mono">{formatFileSize(stats.originalBytes)}</span></div>
                   <div>الحجم بعد الضغط: <span className="font-mono font-bold text-emerald-700">{formatFileSize(stats.compressedBytes)}</span> (WebP)</div>
                 </div>
               ) : (
-                <div className="text-[10.5px] text-brand-600 truncate font-mono">
+                <div className="text-[10.5px] text-[#6B5644] truncate font-mono">
                   {currentImage.startsWith('data:') ? 'بيانات مضغوطة WebP Data URL' : currentImage}
                 </div>
               )}
 
-              <div className="text-[10px] text-gold-600 font-bold">
+              <div className="text-[10px] text-[#9A6836] font-bold">
                 انقر أو اسحب ملفاً جديداً لاستبدال الصورة
               </div>
             </div>
           </div>
         ) : (
           <div className="py-3 space-y-2">
-            <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-800 flex items-center justify-center mx-auto">
-              <Upload className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-full bg-white border border-[#E8E0D5] text-[#231710] flex items-center justify-center mx-auto">
+              <Upload className="w-4 h-4" />
             </div>
             <div>
               <span className="text-xs font-extrabold text-brand-950 block">

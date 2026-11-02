@@ -12,7 +12,6 @@ import {
   Layers,
   Users,
   Clock,
-  Sparkles,
 } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 
@@ -58,12 +57,12 @@ export default function PreLaunchResetSafeguard({
 
   const handleExecuteReset = async () => {
     if (!isSuperAdmin) {
-      showToast('⚠️ هذه العملية مقصورة حصرياً على رتبة المدير العام (Super Admin)');
+      showToast('هذه العملية مقصورة حصرياً على المدير العام فقط');
       return;
     }
 
     if (!isPhraseMatching) {
-      showToast('⚠️ يرجى كتابة نص التأكيد بدقة للمتابعة');
+      showToast('يرجى كتابة نص التأكيد بدقة للمتابعة');
       return;
     }
 
@@ -99,7 +98,7 @@ export default function PreLaunchResetSafeguard({
         purged: data.purged,
       });
 
-      showToast('✅ تم تصفير العمليات بنجاح والفرع جاهز للافتتاح الرسمي!');
+      showToast('تم تصفير العمليات بنجاح والفرع جاهز للافتتاح الرسمي');
       setConfirmationInput('');
 
       await refreshStore();
@@ -111,55 +110,55 @@ export default function PreLaunchResetSafeguard({
         success: false,
         text: err?.message || 'تعذر الاتصال بالخادم لإجراء التصفير',
       });
-      showToast('❌ فشل تنفيذ التصفير');
+      showToast('فشل تنفيذ التصفير');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="bg-white rounded-2xl border-2 border-[#D4AF37]/50 shadow-sm overflow-hidden text-[#231710]">
+    <div className="bg-white rounded-2xl border border-[#E8E0D5] overflow-hidden text-[#231710]">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-[#231710] via-[#352319] to-[#231710] text-[#FAF6F0] p-4 sm:p-5 flex items-center justify-between border-b border-[#D4AF37]/40">
+      <div className="bg-[#FAF6F0] p-4 sm:p-5 flex items-center justify-between border-b border-[#E8E0D5]">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#D4AF37]/20 border border-[#D4AF37] flex items-center justify-center text-[#D4AF37]">
-            <ShieldAlert className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-xl bg-white border border-[#E8E0D5] flex items-center justify-center text-[#9A6836] shrink-0">
+            <ShieldAlert className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm sm:text-base font-black text-[#D4AF37] flex items-center gap-2">
+            <h3 className="text-sm sm:text-base font-bold text-[#231710] flex items-center flex-wrap gap-2">
               <span>خزنة تصفير العمليات التجريبية (جاهزية الافتتاح الرسمي)</span>
-              <span className="text-[10px] bg-[#D4AF37] text-[#231710] font-black px-2 py-0.5 rounded-full">
+              <span className="text-[10px] bg-white text-[#231710] border border-[#E8E0D5] font-bold px-2.5 py-0.5 rounded-full">
                 المدير العام فقط
               </span>
             </h3>
-            <p className="text-[11px] text-[#F3ECE1]/80 mt-0.5">
-              تفريغ ذري لكافة الحركات الدفترية والورديات التجريبية قبل انطلاق فرع بني مزار، مع الحماية الكاملة للمخزون والأسعار وحسابات الموظفين.
+            <p className="text-xs text-[#6B5644] mt-0.5">
+              تفريغ ذري لكافة الحركات الدفترية والورديات التجريبية قبل الافتتاح الرسمي، مع الحماية الكاملة للمخزون والأسعار وحسابات الموظفين.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="p-4 sm:p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-5">
         {/* Protected Entities Notice */}
-        <div className="bg-[#FAF6F0] border border-[#E6DFD3] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-1">
-            <h4 className="text-xs font-black text-[#231710] flex items-center gap-1.5">
+            <h4 className="text-xs font-bold text-[#231710] flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>البيانات المحمية 100% التي لن تتأثر إطلاقاً بالتصفير:</span>
+              <span>البيانات المحمية بالكامل التي لن تتأثر بالتصفير:</span>
             </h4>
-            <p className="text-[11px] text-[#6E5D4F] leading-relaxed">
-              كتالوج الأصناف والأسعار وتكلفة الجملة، حسابات الموظفين الـ 5 المشفرة، إعدادات المتجر وهوية الفرع، إعدادات بوت تلجرام، وخصومات الكوبونات.
+            <p className="text-[11px] text-[#6B5644] leading-relaxed">
+              كتالوج الأصناف والأسعار وتكلفة الجملة، حسابات الموظفين المشفرة، إعدادات المتجر وهوية الفرع، إعدادات بوت تلجرام، وخصومات الكوبونات.
             </p>
           </div>
-          <div className="flex items-center gap-2 text-xs font-black text-[#231710] tabular-nums shrink-0">
-            <span className="px-2.5 py-1 bg-[#F3ECE1] rounded-lg border border-[#E6DFD3] flex items-center gap-1">
-              <Package className="w-3.5 h-3.5 text-[#C88A4B]" /> {productsCount} منتج
+          <div className="flex items-center gap-2 text-xs font-bold text-[#231710] tabular-nums shrink-0">
+            <span className="px-2.5 py-1 bg-white rounded-lg border border-[#E8E0D5] flex items-center gap-1">
+              <Package className="w-3.5 h-3.5 text-[#9A6836]" /> {productsCount} منتج
             </span>
-            <span className="px-2.5 py-1 bg-[#F3ECE1] rounded-lg border border-[#E6DFD3] flex items-center gap-1">
-              <Layers className="w-3.5 h-3.5 text-[#C88A4B]" /> {categoriesCount} قسم
+            <span className="px-2.5 py-1 bg-white rounded-lg border border-[#E8E0D5] flex items-center gap-1">
+              <Layers className="w-3.5 h-3.5 text-[#9A6836]" /> {categoriesCount} قسم
             </span>
-            <span className="px-2.5 py-1 bg-[#F3ECE1] rounded-lg border border-[#E6DFD3] flex items-center gap-1">
-              <Users className="w-3.5 h-3.5 text-[#C88A4B]" /> {staffCount} موظف
+            <span className="px-2.5 py-1 bg-white rounded-lg border border-[#E8E0D5] flex items-center gap-1">
+              <Users className="w-3.5 h-3.5 text-[#9A6836]" /> {staffCount} موظف
             </span>
           </div>
         </div>

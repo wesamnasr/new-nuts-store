@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  Sparkles,
   Check,
   Trash2,
   ShoppingBag,
@@ -25,20 +24,20 @@ const BOX_CAPACITIES = [
   {
     grams: 500 as const,
     label: '500 جم (نصف كيلو)',
-    badge: 'حجم شخصي / ضيافة',
+    badge: 'حجم شخصي',
     desc: 'علبة متوازنة تكفي ٢-٤ أفراد',
   },
   {
     grams: 1000 as const,
     label: '1 كجم (كيلو كامل)',
-    badge: 'الأكثر طلباً ⭐',
+    badge: 'الأكثر طلباً',
     desc: 'الحجم العائلي المثالي والأوفر',
   },
   {
     grams: 2000 as const,
-    label: '2 كجم (حجم عائلي ضخم)',
-    badge: 'توفير المناسبات والولائم',
-    desc: 'أقصى تنوع وتوفير للعائلات والضيافة',
+    label: '2 كجم (حجم عائلي كبير)',
+    badge: 'حجم الضيافة',
+    desc: 'تنوع وتوفير للعائلات والمناسبات',
   },
 ];
 
@@ -129,12 +128,18 @@ export default function CustomMixBoxStudio({
       }
       if (
         categoryFilter === 'seeds' &&
+        nut.categoryId !== 'cat-snacks' &&
         nut.categoryId !== 'cat-seeds' &&
         nut.categoryId !== 'cat-peanuts-crackers'
       ) {
         return false;
       }
-      if (categoryFilter === 'sweets' && nut.categoryId !== 'cat-sweets-dates') {
+      if (
+        categoryFilter === 'sweets' &&
+        nut.categoryId !== 'cat-choco-candy' &&
+        nut.categoryId !== 'cat-honey-spices' &&
+        nut.categoryId !== 'cat-sweets-dates'
+      ) {
         return false;
       }
 
@@ -271,14 +276,14 @@ export default function CustomMixBoxStudio({
       {/* Step 1: Select Box Capacity                                  */}
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="space-y-3">
-        <h2 className="font-cairo text-base sm:text-lg font-black text-[#231710] flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[#231710] text-[#D4AF37] text-xs flex items-center justify-center font-black">
+        <h2 className="font-cairo text-base sm:text-lg font-bold text-[#231710] flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#231710] text-white text-xs flex items-center justify-center font-bold">
             1
           </span>
           <span>الخطوة الأولى: اختر سعة العلبة المشكلة</span>
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {BOX_CAPACITIES.map((cap) => {
             const isSelected = boxSizeGrams === cap.grams;
             return (
@@ -289,23 +294,23 @@ export default function CustomMixBoxStudio({
                   setBoxSizeGrams(cap.grams);
                   updateUrlQueryParams({ size: String(cap.grams) });
                 }}
-                className={`text-right p-4 rounded-2xl border-2 transition cursor-pointer flex items-center justify-between gap-3 ${
+                className={`text-right p-5 rounded-2xl border transition cursor-pointer flex items-center justify-between gap-3 ${
                   isSelected
-                    ? 'bg-[#231710] text-[#FAF6F0] border-[#D4AF37] shadow-lg'
-                    : 'bg-white text-[#231710] border-[#E6DFD3] hover:border-[#C88A4B]'
+                    ? 'bg-[#231710] text-[#FAF6F0] border-[#231710]'
+                    : 'bg-white text-[#231710] border-[#E8E0D5] hover:border-[#231710]/30'
                 }`}
               >
                 <div className="space-y-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-cairo text-sm sm:text-base font-black">
+                  <div className="flex items-center gap-2">
+                    <span className="font-cairo text-sm sm:text-base font-bold">
                       {cap.label}
                     </span>
                     {cap.badge && (
                       <span
-                        className={`text-[9.5px] font-black px-2 py-0.5 rounded-full ${
+                        className={`text-xs font-bold px-2 py-0.5 rounded-lg ${
                           isSelected
-                            ? 'bg-[#D4AF37] text-[#231710]'
-                            : 'bg-[#B83B2B] text-white'
+                            ? 'bg-white/15 text-white'
+                            : 'bg-[#FAF6F0] text-[#6E5D4F] border border-[#E8E0D5]'
                         }`}
                       >
                         {cap.badge}
@@ -313,8 +318,8 @@ export default function CustomMixBoxStudio({
                     )}
                   </div>
                   <p
-                    className={`text-[11px] ${
-                      isSelected ? 'text-[#F3ECE1]/80' : 'text-[#6E5D4F]'
+                    className={`text-xs ${
+                      isSelected ? 'text-[#E8E0D5]/80' : 'text-[#6E5D4F]'
                     }`}
                   >
                     {cap.desc}
@@ -322,8 +327,8 @@ export default function CustomMixBoxStudio({
                 </div>
                 <div className="text-left shrink-0 tabular-nums">
                   <span
-                    className={`font-cairo text-lg font-black block ${
-                      isSelected ? 'text-[#D4AF37]' : 'text-[#231710]'
+                    className={`font-cairo text-lg font-bold block ${
+                      isSelected ? 'text-white' : 'text-[#231710]'
                     }`}
                   >
                     {cap.grams >= 1000 ? `${cap.grams / 1000} كجم` : `${cap.grams} جم`}
@@ -335,72 +340,67 @@ export default function CustomMixBoxStudio({
         </div>
       </div>
 
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* Live Capacity Progress Bar & Status                           */}
-      {/* ───────────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border-2 border-[#E6DFD3] p-4 shadow-xs space-y-2.5">
+      {/* Live Capacity Progress Bar & Status */}
+      <div className="bg-white rounded-2xl border border-[#E8E0D5] p-5 space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="font-cairo font-black text-sm text-[#231710]">
+            <span className="font-cairo font-bold text-sm text-[#231710]">
               سعة العلبة الإجمالية:
             </span>
             <span
-              className={`font-black text-sm px-2.5 py-0.5 rounded-lg tabular-nums ${
+              className={`font-bold text-xs px-2.5 py-0.5 rounded-lg tabular-nums ${
                 totalPercentage === 100
-                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                  ? 'bg-[#EEF5F0] text-[#2F5A3D] border border-[#D4E8DA]'
                   : totalPercentage > 100
-                    ? 'bg-red-100 text-red-800 border border-red-300'
-                    : 'bg-amber-100 text-amber-800 border border-amber-300'
+                    ? 'bg-red-50 text-[#B83B2B] border border-red-200'
+                    : 'bg-[#FAF6F0] text-[#9A6836] border border-[#E8E0D5]'
               }`}
             >
               {totalPercentage}% / 100%
             </span>
           </div>
 
-          <div className="text-xs font-bold text-[#6E5D4F]">
+          <div className="text-xs font-medium text-[#6E5D4F]">
             {totalPercentage === 100 ? (
-              <span className="text-emerald-700 flex items-center gap-1 font-black">
+              <span className="text-[#3B6E4C] flex items-center gap-1 font-bold">
                 <CheckCircle2 className="w-4 h-4" />
-                <span>السعة مكتملة 100% جاهزة للتحميص والتعبئة 🎉</span>
+                <span>السعة مكتملة وجاهزة للتعبئة</span>
               </span>
             ) : totalPercentage > 100 ? (
-              <span className="text-red-700 flex items-center gap-1 font-black">
+              <span className="text-[#B83B2B] flex items-center gap-1 font-bold">
                 <AlertTriangle className="w-4 h-4" />
-                <span>تجاوزت السعة 100% بمقدار {totalPercentage - 100}%!</span>
+                <span>تجاوزت السعة 100% بمقدار {totalPercentage - 100}%</span>
               </span>
             ) : (
               <span>
                 المتبقي لإكمال العلبة:{' '}
-                <strong className="text-amber-700 tabular-nums">{remainingPercentage}%</strong> (
+                <strong className="text-[#231710] tabular-nums">{remainingPercentage}%</strong> (
                 {Math.round((boxSizeGrams * remainingPercentage) / 100)} جم)
               </span>
             )}
           </div>
         </div>
 
-        {/* Visual Progress Bar Track */}
-        <div className="w-full bg-[#FAF6F0] rounded-full h-4 overflow-hidden border border-[#E6DFD3] p-0.5 relative">
+        <div className="w-full bg-[#FAF6F0] rounded-full h-2.5 overflow-hidden border border-[#E8E0D5]">
           <div
             className={`h-full rounded-full transition-all duration-300 ${
               totalPercentage === 100
-                ? 'bg-emerald-600'
+                ? 'bg-[#3B6E4C]'
                 : totalPercentage > 100
-                  ? 'bg-red-600'
-                  : 'bg-[#D4AF37]'
+                  ? 'bg-[#B83B2B]'
+                  : 'bg-[#231710]'
             }`}
             style={{ width: `${Math.min(100, totalPercentage)}%` }}
           />
         </div>
 
-        {/* Helper Action Buttons */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#FAF6F0] text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-[#F0EAE0] text-xs">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleEqualDistribution}
               disabled={portions.length === 0}
-              className="px-2.5 py-1 rounded-lg bg-[#FAF6F0] hover:bg-[#F3ECE1] text-[#231710] font-bold flex items-center gap-1 border border-[#E6DFD3] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition"
-              title="توزيع النسبة 100% بالتساوي على الأصناف المختارة"
+              className="px-3 py-1.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F4EFE6] text-[#231710] font-bold flex items-center gap-1.5 border border-[#E8E0D5] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
               <Equal className="w-3.5 h-3.5" />
               <span>توزيع متساوي</span>
@@ -408,11 +408,10 @@ export default function CustomMixBoxStudio({
             <button
               type="button"
               onClick={handleChefRecommendedMix}
-              className="px-2.5 py-1 rounded-lg bg-[#FAF6F0] hover:bg-[#F3ECE1] text-[#C88A4B] font-bold flex items-center gap-1 border border-[#E6DFD3] cursor-pointer transition"
-              title="تعبئة تشكيلة موصى بها من شيف المحمصة"
+              className="px-3 py-1.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F4EFE6] text-[#231710] font-bold flex items-center gap-1.5 border border-[#E8E0D5] cursor-pointer transition"
             >
-              <Wand2 className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span>تشكيلة الشيف ✨</span>
+              <Wand2 className="w-3.5 h-3.5 text-[#9A6836]" />
+              <span>تشكيلة مقترحة</span>
             </button>
           </div>
 
@@ -420,7 +419,7 @@ export default function CustomMixBoxStudio({
             <button
               type="button"
               onClick={handleClearAll}
-              className="text-xs text-red-600 hover:text-red-800 font-bold flex items-center gap-1 cursor-pointer transition"
+              className="text-xs text-[#B83B2B] hover:underline font-bold flex items-center gap-1 cursor-pointer transition"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>مسح الأصناف</span>
@@ -429,37 +428,34 @@ export default function CustomMixBoxStudio({
         </div>
       </div>
 
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* Studio Work Area: Selected Portions (Left) & Nut Catalog (Right)*/}
-      {/* ───────────────────────────────────────────────────────────── */}
+      {/* Studio Work Area */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Selected Nuts inside the Box (5 Cols) */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="bg-white rounded-2xl border-2 border-[#E6DFD3] p-4 shadow-xs space-y-3">
-            <div className="flex items-center justify-between border-b border-[#E6DFD3] pb-2.5">
-              <h3 className="font-cairo font-black text-sm text-[#231710] flex items-center gap-1.5">
+          <div className="bg-white rounded-2xl border border-[#E8E0D5] p-5 space-y-3.5">
+            <div className="flex items-center justify-between border-b border-[#E8E0D5] pb-2.5">
+              <h3 className="font-cairo font-bold text-sm text-[#231710] flex items-center gap-1.5">
                 <span>محتويات العلبة</span>
-                <span className="text-xs text-[#6E5D4F] font-bold">
+                <span className="text-xs text-[#6E5D4F] font-medium">
                   ({portions.length} أصناف مختارة)
                 </span>
               </h3>
-              <span className="font-cairo font-black text-base text-[#3B6E4C] tabular-nums">
+              <span className="font-cairo font-bold text-base text-[#231710] tabular-nums">
                 {pricingCalc.totalPrice} ج.م
               </span>
             </div>
 
             {portions.length === 0 ? (
-              <div className="text-center py-10 px-4 bg-[#FAF6F0] rounded-xl border border-dashed border-[#D4AF37]/50 space-y-2">
-                <p className="text-xs font-bold text-[#6E5D4F]">
+              <div className="text-center py-10 px-4 bg-[#FAF6F0] rounded-xl border border-dashed border-[#E8E0D5] space-y-2.5">
+                <p className="text-xs font-medium text-[#6E5D4F]">
                   العلبة فارغة حالياً. اختر من قائمة المكسرات المتاحة على اليسار لإضافتها للعلبة.
                 </p>
                 <button
                   type="button"
                   onClick={handleChefRecommendedMix}
-                  className="inline-flex items-center gap-1.5 text-xs font-black text-[#D4AF37] bg-[#231710] px-3.5 py-1.5 rounded-xl cursor-pointer hover:bg-[#3a261a] transition"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-[#231710] px-4 py-2 rounded-xl cursor-pointer hover:bg-[#3a261a] transition"
                 >
                   <Wand2 className="w-3.5 h-3.5" />
-                  <span>ابدأ بتشكيلة الشيف الجاهزة</span>
+                  <span>ابدأ بتشكيلة مقترحة</span>
                 </button>
               </div>
             ) : (
@@ -473,7 +469,7 @@ export default function CustomMixBoxStudio({
                   return (
                     <div
                       key={portion.product.id}
-                      className="bg-[#FAF6F0] rounded-xl border border-[#E6DFD3] p-3 space-y-2.5 transition hover:border-[#D4AF37]"
+                      className="bg-[#FAF6F0] rounded-xl border border-[#E8E0D5] p-3 space-y-2.5 transition hover:border-[#231710]/30"
                     >
                       {/* Top Row: Image, Name, Weight & Trash */}
                       <div className="flex items-center justify-between gap-2">
@@ -481,15 +477,15 @@ export default function CustomMixBoxStudio({
                           <img
                             src={getSafeImageUrl(portion.product.image)}
                             alt={portion.product.name}
-                            className="w-10 h-10 rounded-lg object-cover border border-[#E6DFD3] shrink-0"
+                            className="w-10 h-10 rounded-lg object-cover border border-[#E8E0D5] shrink-0"
                           />
                           <div className="min-w-0">
-                            <h4 className="font-cairo font-black text-xs text-[#231710] truncate">
+                            <h4 className="font-cairo font-bold text-xs text-[#231710] truncate">
                               {portion.product.name}
                             </h4>
-                            <div className="text-[10.5px] text-[#6E5D4F] font-bold tabular-nums">
+                            <div className="text-xs text-[#6E5D4F] font-medium tabular-nums">
                               {nutGrams} جم ({portion.percentage}%) •{' '}
-                              <span className="text-[#3B6E4C] font-black">
+                              <span className="text-[#231710] font-bold">
                                 {nutPriceContrib} ج.م
                               </span>
                             </div>
@@ -499,7 +495,7 @@ export default function CustomMixBoxStudio({
                         <button
                           type="button"
                           onClick={() => handleRemoveNut(portion.product.id)}
-                          className="w-8 h-8 rounded-lg bg-white hover:bg-red-50 text-[#6E5D4F] hover:text-red-600 flex items-center justify-center border border-[#E6DFD3] cursor-pointer transition shrink-0"
+                          className="w-8 h-8 rounded-lg bg-white hover:bg-red-50 text-[#6E5D4F] hover:text-red-600 flex items-center justify-center border border-[#E8E0D5] cursor-pointer transition shrink-0"
                           title="إزالة من العلبة"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -508,7 +504,7 @@ export default function CustomMixBoxStudio({
 
                       {/* Middle Row: Roast Selector */}
                       <div className="flex items-center gap-1.5 text-xs">
-                        <span className="text-[10px] font-bold text-[#6E5D4F] shrink-0">
+                        <span className="text-xs font-medium text-[#6E5D4F] shrink-0">
                           التحميص:
                         </span>
                         <select
@@ -516,7 +512,7 @@ export default function CustomMixBoxStudio({
                           onChange={(e) =>
                             handleUpdateRoast(portion.product.id, e.target.value as RoastOption)
                           }
-                          className="flex-1 bg-white border border-[#E6DFD3] rounded-lg px-2 py-1 text-[11px] font-bold text-[#231710] outline-none"
+                          className="flex-1 bg-white border border-[#E8E0D5] rounded-lg px-2 py-1 text-xs font-bold text-[#231710] outline-none"
                         >
                           {(portion.product.roastOptions && portion.product.roastOptions.length > 0
                             ? portion.product.roastOptions
@@ -530,7 +526,7 @@ export default function CustomMixBoxStudio({
                       </div>
 
                       {/* Bottom Row: Percentage Stepper Controls */}
-                      <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-[#E6DFD3]/60">
+                      <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-[#E8E0D5]">
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
@@ -540,7 +536,7 @@ export default function CustomMixBoxStudio({
                                 portion.percentage - 10
                               )
                             }
-                            className="px-2 py-0.5 rounded bg-white hover:bg-[#231710] text-[#231710] hover:text-[#D4AF37] border border-[#E6DFD3] text-[10px] font-black cursor-pointer transition"
+                            className="px-2 py-1 rounded bg-white hover:bg-[#231710] text-[#231710] hover:text-white border border-[#E8E0D5] text-xs font-bold cursor-pointer transition"
                             title="إنقاص 10%"
                           >
                             -10%
@@ -550,14 +546,14 @@ export default function CustomMixBoxStudio({
                             onClick={() =>
                               handleUpdatePercentage(portion.product.id, portion.percentage - 5)
                             }
-                            className="px-2 py-0.5 rounded bg-white hover:bg-[#231710] text-[#231710] hover:text-[#D4AF37] border border-[#E6DFD3] text-[10px] font-black cursor-pointer transition"
+                            className="px-2 py-1 rounded bg-white hover:bg-[#231710] text-[#231710] hover:text-white border border-[#E8E0D5] text-xs font-bold cursor-pointer transition"
                             title="إنقاص 5%"
                           >
                             -5%
                           </button>
                         </div>
 
-                        <span className="font-cairo font-black text-xs text-[#231710] tabular-nums px-2">
+                        <span className="font-cairo font-bold text-xs text-[#231710] tabular-nums px-2">
                           {portion.percentage}%
                         </span>
 
@@ -567,7 +563,7 @@ export default function CustomMixBoxStudio({
                             onClick={() =>
                               handleUpdatePercentage(portion.product.id, portion.percentage + 5)
                             }
-                            className="px-2 py-0.5 rounded bg-white hover:bg-[#231710] text-[#231710] hover:text-[#D4AF37] border border-[#E6DFD3] text-[10px] font-black cursor-pointer transition"
+                            className="px-2 py-1 rounded bg-white hover:bg-[#231710] text-[#231710] hover:text-white border border-[#E8E0D5] text-xs font-bold cursor-pointer transition"
                             title="زيادة 5%"
                           >
                             +5%
@@ -580,7 +576,7 @@ export default function CustomMixBoxStudio({
                                 portion.percentage + 10
                               )
                             }
-                            className="px-2 py-0.5 rounded bg-white hover:bg-[#231710] text-[#231710] hover:text-[#D4AF37] border border-[#E6DFD3] text-[10px] font-black cursor-pointer transition"
+                            className="px-2 py-1 rounded bg-white hover:bg-[#231710] text-[#231710] hover:text-white border border-[#E8E0D5] text-xs font-bold cursor-pointer transition"
                             title="زيادة 10%"
                           >
                             +10%
@@ -594,7 +590,7 @@ export default function CustomMixBoxStudio({
                                   portion.percentage + remainingPercentage
                                 )
                               }
-                              className="px-2 py-0.5 rounded bg-[#D4AF37] hover:bg-[#C88A4B] text-[#231710] text-[10px] font-black cursor-pointer transition"
+                              className="px-2 py-1 rounded bg-[#231710] hover:bg-[#3a261a] text-white text-xs font-bold cursor-pointer transition"
                               title="إكمال كل السعة المتبقية لهذا الصنف"
                             >
                               إكمال الباقي
@@ -609,23 +605,23 @@ export default function CustomMixBoxStudio({
             )}
 
             {/* Summary Box & Add to Cart Action */}
-            <div className="pt-3 border-t border-[#E6DFD3] space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold text-[#6E5D4F]">
+            <div className="pt-3 border-t border-[#E8E0D5] space-y-3">
+              <div className="flex items-center justify-between text-xs font-medium text-[#6E5D4F]">
                 <span>إجمالي وزن العلبة:</span>
-                <span className="font-black text-[#231710] tabular-nums">
+                <span className="font-bold text-[#231710] tabular-nums">
                   {boxSizeGrams >= 1000 ? `${boxSizeGrams / 1000} كجم` : `${boxSizeGrams} جم`}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs font-bold text-[#6E5D4F]">
+              <div className="flex items-center justify-between text-xs font-medium text-[#6E5D4F]">
                 <span>سعر العلبة المحسوب:</span>
-                <span className="font-cairo font-black text-base text-[#3B6E4C] tabular-nums">
+                <span className="font-cairo font-bold text-base text-[#231710] tabular-nums">
                   {pricingCalc.totalPrice} ج.م
                 </span>
               </div>
 
               {/* Error Message if not 100% */}
               {totalPercentage !== 100 && (
-                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-800 flex items-start gap-1.5 leading-relaxed">
+                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-start gap-1.5 leading-relaxed">
                   <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <span>
                     {totalPercentage < 100
@@ -640,12 +636,12 @@ export default function CustomMixBoxStudio({
                 type="button"
                 disabled={!pricingCalc.isValid || totalPercentage !== 100}
                 onClick={handleAddToCart}
-                className={`w-full py-3 px-4 rounded-xl font-cairo font-black text-sm flex items-center justify-center gap-2 shadow-lg transition cursor-pointer ${
+                className={`w-full py-3 px-4 rounded-xl font-cairo font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer ${
                   pricingCalc.isValid && totalPercentage === 100
                     ? justAdded
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-[#231710] hover:bg-[#3a261a] text-[#D4AF37] border border-[#D4AF37]'
-                    : 'bg-gray-200 text-gray-400 border border-gray-300 cursor-not-allowed opacity-60'
+                      ? 'bg-[#3B6E4C] text-white'
+                      : 'bg-[#231710] hover:bg-[#3a261a] text-white'
+                    : 'bg-gray-200 text-gray-500 border border-gray-300 cursor-not-allowed opacity-70'
                 }`}
               >
                 {justAdded ? (
@@ -670,14 +666,14 @@ export default function CustomMixBoxStudio({
 
         {/* Right Column: Available Nuts Catalog (7 Cols) */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="bg-white rounded-2xl border-2 border-[#E6DFD3] p-4 shadow-xs space-y-3.5">
+          <div className="bg-white rounded-2xl border border-[#E8E0D5] p-4 space-y-3.5">
             {/* Catalog Header & Filters */}
             <div className="space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <h3 className="font-cairo font-black text-sm text-[#231710]">
+                <h3 className="font-cairo font-bold text-sm text-[#231710]">
                   قائمة المكسرات والبذور المتاحة للعلبة
                 </h3>
-                <span className="text-xs text-[#6E5D4F] font-bold">
+                <span className="text-xs text-[#6E5D4F] font-medium">
                   ({filteredNuts.length} صنف متاح)
                 </span>
               </div>
@@ -689,7 +685,7 @@ export default function CustomMixBoxStudio({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="ابحث عن مكسرات (فستق، كاجو، بندق، لب، سوداني...)"
-                  className="w-full bg-[#FAF6F0] border border-[#E6DFD3] rounded-xl px-3.5 py-2 text-xs font-bold text-[#231710] placeholder:text-[#6E5D4F]/60 outline-none focus:border-[#D4AF37]"
+                  className="w-full bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-3.5 py-2 text-xs font-medium text-[#231710] placeholder:text-[#6E5D4F]/60 outline-none focus:border-[#9A6836]"
                 />
               </div>
 
@@ -705,10 +701,10 @@ export default function CustomMixBoxStudio({
                     key={c.id}
                     type="button"
                     onClick={() => setCategoryFilter(c.id)}
-                    className={`px-3 py-1.5 rounded-xl font-bold transition shrink-0 cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-lg font-bold transition shrink-0 cursor-pointer ${
                       categoryFilter === c.id
-                        ? 'bg-[#231710] text-[#D4AF37] shadow-xs'
-                        : 'bg-[#FAF6F0] text-[#231710] hover:bg-[#F3ECE1]'
+                        ? 'bg-[#231710] text-white'
+                        : 'bg-[#FAF6F0] text-[#6E5D4F] hover:text-[#231710]'
                     }`}
                   >
                     {c.label}
@@ -726,45 +722,42 @@ export default function CustomMixBoxStudio({
                 return (
                   <div
                     key={nut.id}
-                    className={`rounded-2xl border p-2.5 flex flex-col justify-between transition hover:shadow-sm ${
+                    className={`rounded-2xl border p-3 flex flex-col justify-between transition ${
                       isSelected
-                        ? 'bg-amber-50/40 border-[#D4AF37]'
-                        : 'bg-white border-[#E6DFD3] hover:border-[#D4AF37]'
+                        ? 'bg-[#FAF6F0] border-[#231710]'
+                        : 'bg-white border-[#E8E0D5] hover:border-[#9A6836]'
                     }`}
                   >
                     <div>
-                      <div className="relative h-24 rounded-xl overflow-hidden bg-[#FAF6F0] mb-2">
+                      <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-[#FAF6F0] mb-2">
                         <img
                           src={getSafeImageUrl(nut.image)}
                           alt={nut.name}
                           className="w-full h-full object-cover"
                         />
-                        <span className="absolute top-1.5 right-1.5 bg-[#231710]/85 text-[#D4AF37] text-[10px] font-black px-2 py-0.5 rounded-md tabular-nums">
+                        <span className="absolute top-2 right-2 bg-white/95 text-[#231710] border border-[#E8E0D5] text-[10px] font-bold px-2 py-0.5 rounded-md tabular-nums">
                           {nut.pricePerKg || 400} ج/كجم
                         </span>
                         {isSelected && (
-                          <span className="absolute top-1.5 left-1.5 bg-emerald-600 text-white text-[9.5px] font-black px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                          <span className="absolute top-2 left-2 bg-[#3B6E4C] text-white text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-0.5">
                             <Check className="w-3 h-3" />
                             <span>{existingPortion!.percentage}%</span>
                           </span>
                         )}
                       </div>
 
-                      <h4 className="font-cairo font-black text-xs text-[#231710] line-clamp-1 mb-1">
+                      <h4 className="font-cairo font-bold text-xs sm:text-sm text-[#231710] line-clamp-1 mb-1">
                         {nut.name}
                       </h4>
-                      <p className="text-[10px] text-[#6E5D4F] line-clamp-1 mb-2">
-                        {nut.subCategoryName || nut.description || 'محمصة حفصة طازجة'}
-                      </p>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => handleAddNut(nut)}
-                      className={`w-full py-1.5 rounded-xl font-cairo font-extrabold text-[11px] transition cursor-pointer flex items-center justify-center gap-1 ${
+                      className={`w-full py-2 rounded-lg font-cairo font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1 ${
                         isSelected
-                          ? 'bg-[#231710] text-[#D4AF37] hover:bg-[#3a261a]'
-                          : 'bg-[#F3ECE1] hover:bg-[#231710] text-[#231710] hover:text-[#D4AF37]'
+                          ? 'bg-[#231710] text-white hover:bg-[#3A2519]'
+                          : 'bg-[#FAF6F0] hover:bg-[#231710] text-[#231710] hover:text-white border border-[#E8E0D5] hover:border-[#231710]'
                       }`}
                     >
                       <Plus className="w-3.5 h-3.5" />

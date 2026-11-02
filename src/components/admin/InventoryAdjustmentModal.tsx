@@ -155,17 +155,19 @@ export default function InventoryAdjustmentModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 overflow-y-auto">
-      <div className="bg-[#FAF6F0] w-full max-w-2xl rounded-2xl shadow-2xl border border-[#D4AF37]/40 flex flex-col overflow-hidden max-h-[92vh]">
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 overflow-y-auto">
+      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl border border-[#E8E0D5] flex flex-col overflow-hidden max-h-[92vh]">
         {/* Header */}
-        <div className="bg-[#231710] text-white px-5 py-3.5 flex items-center justify-between border-b border-[#D4AF37]/30">
-          <div className="flex items-center gap-2.5">
-            <Scale className="w-5 h-5 text-[#D4AF37]" />
+        <div className="bg-white text-[#231710] px-5 py-4 flex items-center justify-between border-b border-[#E8E0D5]">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#FAF6F0] border border-[#E8E0D5] flex items-center justify-center text-[#9A6836]">
+              <Scale className="w-4 h-4" />
+            </div>
             <div>
-              <h3 className="font-cairo font-bold text-base text-[#D4AF37]">
+              <h3 className="font-cairo font-bold text-base text-[#231710]">
                 تسوية ومطابقة الجرد الفعلي للمخزون
               </h3>
-              <p className="text-[11px] text-white/70">
+              <p className="text-[11px] text-[#6B5644]">
                 محمصة حفصة للبن والمكسرات — فرع بني مزار
               </p>
             </div>
@@ -173,22 +175,22 @@ export default function InventoryAdjustmentModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+            className="text-[#6B5644] hover:text-[#231710] p-1.5 rounded-lg hover:bg-[#FAF6F0] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex border-b border-gray-200 bg-[#F3ECE1]/60 px-5 pt-2">
+        <div className="flex border-b border-[#E8E0D5] bg-[#FAF6F0] px-5 pt-2">
           {!isReadOnly && (
             <button
               type="button"
               onClick={() => setActiveTab('adjust')}
               className={`pb-2.5 px-4 font-cairo font-bold text-xs flex items-center gap-1.5 border-b-2 transition-colors ${
                 activeTab === 'adjust'
-                  ? 'border-[#C88A4B] text-[#231710]'
-                  : 'border-transparent text-gray-500 hover:text-[#231710]'
+                  ? 'border-[#231710] text-[#231710]'
+                  : 'border-transparent text-[#6B5644] hover:text-[#231710]'
               }`}
             >
               <Scale className="w-4 h-4" />
@@ -200,8 +202,8 @@ export default function InventoryAdjustmentModal({
             onClick={() => setActiveTab('history')}
             className={`pb-2.5 px-4 font-cairo font-bold text-xs flex items-center gap-1.5 border-b-2 transition-colors ${
               activeTab === 'history' || isReadOnly
-                ? 'border-[#C88A4B] text-[#231710]'
-                : 'border-transparent text-gray-500 hover:text-[#231710]'
+                ? 'border-[#231710] text-[#231710]'
+                : 'border-transparent text-[#6B5644] hover:text-[#231710]'
             }`}
           >
             <History className="w-4 h-4" />
@@ -362,7 +364,7 @@ export default function InventoryAdjustmentModal({
                 <button
                   type="submit"
                   disabled={loading || !isValidNumber || differenceKg === 0}
-                  className="w-full bg-[#C88A4B] hover:bg-[#b0753a] disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow cursor-pointer"
+                  className="w-full bg-[#231710] hover:bg-[#3A271C] disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
                   {loading ? (
                     <span>جاري حفظ التسوية...</span>
@@ -378,8 +380,8 @@ export default function InventoryAdjustmentModal({
           ) : (
             /* History / Audit Log View */
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-gray-600 bg-[#F3ECE1] p-2.5 rounded-xl">
-                <span>إجمالي الحركات المسجلة: <b>{adjustments.length}</b></span>
+              <div className="flex items-center justify-between text-xs text-[#6B5644] bg-[#FAF6F0] border border-[#E8E0D5] p-2.5 rounded-xl">
+                <span>إجمالي الحركات المسجلة: <b className="text-[#231710]">{adjustments.length}</b></span>
                 <span>
                   صافي الأثر المالي للتسويات:{' '}
                   <b className="text-[#231710]">
@@ -392,25 +394,25 @@ export default function InventoryAdjustmentModal({
               </div>
 
               {loadingHistory ? (
-                <div className="text-center py-8 text-xs text-gray-500">جاري تحميل سجل التسويات...</div>
+                <div className="text-center py-8 text-xs text-[#6B5644]">جاري تحميل سجل التسويات...</div>
               ) : adjustments.length === 0 ? (
-                <div className="text-center py-10 bg-white rounded-xl border border-dashed border-gray-300 text-xs text-gray-500">
+                <div className="text-center py-10 bg-white rounded-xl border border-dashed border-[#E8E0D5] text-xs text-[#6B5644]">
                   لا توجد حركات تسوية جرد مسجلة حتى الآن
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                <div className="overflow-x-auto rounded-xl border border-[#E8E0D5] bg-white">
                   <table className="w-full text-right text-xs">
-                    <thead className="bg-[#231710] text-[#D4AF37] font-bold">
+                    <thead className="bg-[#FAF6F0] text-[#231710] border-b border-[#E8E0D5] font-bold">
                       <tr>
-                        <th className="py-2 px-3">رقم الحركة</th>
-                        <th className="py-2 px-3">الصنف</th>
-                        <th className="py-2 px-3">السابق</th>
-                        <th className="py-2 px-3">الجديد</th>
-                        <th className="py-2 px-3">الفارق</th>
-                        <th className="py-2 px-3">الأثر المالي</th>
-                        <th className="py-2 px-3">السبب</th>
-                        <th className="py-2 px-3">المنفذ</th>
-                        <th className="py-2 px-3">التاريخ</th>
+                        <th className="py-2.5 px-3">رقم الحركة</th>
+                        <th className="py-2.5 px-3">الصنف</th>
+                        <th className="py-2.5 px-3">السابق</th>
+                        <th className="py-2.5 px-3">الجديد</th>
+                        <th className="py-2.5 px-3">الفارق</th>
+                        <th className="py-2.5 px-3">الأثر المالي</th>
+                        <th className="py-2.5 px-3">السبب</th>
+                        <th className="py-2.5 px-3">المنفذ</th>
+                        <th className="py-2.5 px-3">التاريخ</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">

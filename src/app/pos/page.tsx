@@ -36,6 +36,7 @@ import {
   VipMember,
 } from '@/types/store';
 import { calculateVipCashback } from '@/lib/pricing';
+import { formatCategoryName } from '@/lib/defaults';
 import { validateEgyptianPhone } from '@/lib/validation';
 import SupermarketReceiptModal, {
   StickerPreviewData,
@@ -352,7 +353,7 @@ export default function HafsaPosCashierPage() {
             if (newlyArrived.length > 0) {
               playOrderAlertChime();
               showToast(
-                `🔔 طلب أونلاين جديد بالفرع (${newlyArrived[0].orderNumber})!`,
+                `طلب أونلاين جديد بالفرع (${newlyArrived[0].orderNumber})`,
                 `العميل: ${newlyArrived[0].customerName} — الإجمالي: ${newlyArrived[0].total} ج.م`
               );
             }
@@ -384,14 +385,14 @@ export default function HafsaPosCashierPage() {
         await fetchPosData();
         await refreshStore();
         showToast(
-          `✅ تمت مزامنة ${res.syncedCount} فاتورة طوارئ بنجاح مع الخادم!`,
+          `تمت مزامنة ${res.syncedCount} فاتورة طوارئ بنجاح مع الخادم`,
           res.remainingCount > 0 ? `المتبقي: ${res.remainingCount}` : 'تم إفراغ طابور الطوارئ بالكامل'
         );
       } else {
-        showToast('⚠️ تعذر إتمام مزامنة بعض فواتير الطوارئ', res.error);
+        showToast('تعذر إتمام مزامنة بعض فواتير الطوارئ', res.error);
       }
     } catch (e: any) {
-      showToast('❌ خطأ في الاتصال أثناء المزامنة', e?.message);
+      showToast('خطأ في الاتصال أثناء المزامنة', e?.message);
     } finally {
       setIsSyncingOffline(false);
     }
@@ -580,7 +581,7 @@ export default function HafsaPosCashierPage() {
       setPosAuthenticated(true);
       setPosLoginPassword('');
       await fetchPosData(data.token);
-      showToast(`⚖️ تم فتح نقطة بيع الكاشير بنجاح (${data.username || role})`);
+      showToast(`تم فتح نقطة بيع الكاشير بنجاح (${data.username || role})`);
     } catch {
       setPosLoginError('تعذر الاتصال بالخادم');
     }
@@ -682,7 +683,7 @@ export default function HafsaPosCashierPage() {
     setCashierDiscount(0);
     setUseVipWallet(false);
     setCashTenderedInput('');
-    showToast(`⏸️ تم تعليق "${label}" مؤقتاً`, 'يمكنك استرجاعها في أي وقت بضغطة واحدة');
+    showToast(`تم تعليق "${label}" مؤقتاً`, 'يمكنك استرجاعها في أي وقت بضغطة واحدة');
   };
 
   const handleRestoreHeldInvoice = (id: string) => {
@@ -697,7 +698,7 @@ export default function HafsaPosCashierPage() {
     setInvoiceNotes(target.invoiceNotes);
     setCashierDiscount(target.cashierDiscount);
     saveHeldInvoices(heldInvoices.filter((h) => h.id !== id));
-    showToast(`▶️ تم استرجاع "${target.label}" إلى الفاتورة النشطة`);
+    showToast(`تم استرجاع "${target.label}" إلى الفاتورة النشطة`);
   };
 
   const handleDeleteHeldInvoice = (id: string) => {
@@ -759,7 +760,7 @@ export default function HafsaPosCashierPage() {
   // Issue & Print POS Invoice
   const handleCompletePosInvoice = async () => {
     if (posItems.length === 0) {
-      showToast('⚠️ الفاتورة فارغة، أضف صنفاً واحداً على الأقل');
+      showToast('الفاتورة فارغة، أضف صنفاً واحداً على الأقل');
       return;
     }
     const currentlyOffline = typeof navigator !== 'undefined' && !navigator.onLine;
@@ -772,7 +773,7 @@ export default function HafsaPosCashierPage() {
         orderSource: 'pos',
         posOrderType,
         chairNumber: posOrderType === 'glass_bar_dine_in' ? chairNumber : undefined,
-        cashierId: posStaffDisplayName || 'cashier_pos',
+        cashierId: posStaffDisplayName || 'pos-cashier',
         cashierName: posStaffDisplayName || 'كاشير فرع بني مزار',
         customerName: customerName.trim() || 'عميل فرع بني مزار المباشر',
         customerPhone: customerPhone.trim() || '01000000000',
@@ -809,7 +810,7 @@ export default function HafsaPosCashierPage() {
       setInvoiceNotes('');
       setUseVipWallet(false);
       showToast(
-        `⚠️ وضع الطوارئ (أوفلاين): تم حفظ الفاتورة ${offlineOrderNumber} محلياً وجاهزة للطباعة!`,
+        `وضع الطوارئ (أوفلاين): تم حفظ الفاتورة ${offlineOrderNumber} محلياً وجاهزة للطباعة`,
         `سيتم ترحيل الفاتورة تلقائياً عند عودة الاتصال بالإنترنت`
       );
     };
@@ -844,7 +845,7 @@ export default function HafsaPosCashierPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        showToast('❌ تعذر إصدار الفاتورة', data.error);
+        showToast('تعذر إصدار الفاتورة', data.error);
       } else {
         playCashierBeep(1046.5, 0.25);
         setPrintedOrder(data.order);
@@ -859,7 +860,7 @@ export default function HafsaPosCashierPage() {
         await fetchPosData();
         await refreshStore();
         showToast(
-          `✅ تم إصدار الفاتورة ${data.order.orderNumber} بنجاح!`,
+          `تم إصدار الفاتورة ${data.order.orderNumber} بنجاح`,
           `الإجمالي: ${data.order.total} ج.م • الباقي للعميل: ${data.order.changeDue || 0} ج.م`
         );
       }
@@ -891,7 +892,7 @@ export default function HafsaPosCashierPage() {
       });
       if (res.ok) {
         await fetchPosData();
-        showToast('✅ تم فتح وردية الكاشير الجديدة بنجاح');
+        showToast('تم فتح وردية الكاشير الجديدة بنجاح');
       }
     } finally {
       setPosLoading(false);
@@ -917,7 +918,7 @@ export default function HafsaPosCashierPage() {
         setPrintedOrder(null);
         setStickerPreviewItem(null);
         setPrintMode('zreport');
-        showToast('📊 تم تقفيل الوردية وإصدار تقرير Z-Report بنجاح');
+        showToast('تم تقفيل الوردية وإصدار تقرير Z-Report بنجاح');
       }
     } finally {
       setPosLoading(false);
@@ -943,7 +944,7 @@ export default function HafsaPosCashierPage() {
       });
       if (res.ok) {
         await fetchPosData();
-        showToast('💸 تم تسجيل المصروف وخصمه من النقدية المتوقعة بالدرج');
+        showToast('تم تسجيل المصروف وخصمه من النقدية المتوقعة بالدرج');
       }
     } finally {
       setPosLoading(false);
@@ -964,7 +965,7 @@ export default function HafsaPosCashierPage() {
       if (res.ok) {
         await fetchPosData();
         await refreshStore();
-        showToast(`✅ تم تحديث حالة الطلب ${orderId} إلى ${status}`);
+        showToast(`تم تحديث حالة الطلب ${orderId} إلى ${status}`);
       }
     } catch {}
   };
@@ -990,7 +991,7 @@ export default function HafsaPosCashierPage() {
         await refreshStore();
         showToast(
           riderId
-            ? `🛵 تم إسناد الطلب للمندوب (${riderName})`
+            ? `تم إسناد الطلب للمندوب (${riderName})`
             : 'تم إلغاء إسناد المندوب من الطلب'
         );
       }
@@ -1012,18 +1013,18 @@ export default function HafsaPosCashierPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        showToast('⚠️ تعذر توريد عهدة المندوب بالدرج', data?.error || 'تأكد من وجود وردية مفتوحة');
+        showToast('تعذر توريد عهدة المندوب بالدرج', data?.error || 'تأكد من وجود وردية مفتوحة');
         return;
       }
       playCashierBeep(1040, 0.2);
       await fetchPosData();
       await refreshStore();
       showToast(
-        `💰 تم استلام وتوريد ${data.settledAmount} ج.م (${data.settledCount} طلب) في درج الكاشير!`,
+        `تم استلام وتوريد ${data.settledAmount} ج.م (${data.settledCount} طلب) في درج الكاشير`,
         'تم تحديث النقدية المتوقعة بالدرج وتصفية عهدة المندوب'
       );
     } catch {
-      showToast('❌ خطأ في الاتصال أثناء توريد عهدة المندوب');
+      showToast('خطأ في الاتصال أثناء توريد عهدة المندوب');
     }
   };
 
@@ -1067,12 +1068,12 @@ export default function HafsaPosCashierPage() {
 
   if (posAuthChecking) {
     return (
-      <div className="min-h-screen bg-[#231710] text-[#FAF6F0] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#FAF6F0] text-[#231710] flex items-center justify-center p-6">
         <div className="text-center space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-[#D4AF37] text-[#231710] flex items-center justify-center font-black text-2xl mx-auto animate-pulse">
-            ⚖️
+          <div className="w-11 h-11 rounded-2xl bg-white border border-[#E8E0D5] text-[#9A6836] flex items-center justify-center mx-auto">
+            <Scale className="w-5 h-5" />
           </div>
-          <p className="font-cairo font-black text-sm text-[#D4AF37]">
+          <p className="font-cairo font-medium text-sm text-[#6B5A4E]">
             جاري التحقق من صلاحية الكاشير وعزل الأدوار...
           </p>
         </div>
@@ -1082,27 +1083,24 @@ export default function HafsaPosCashierPage() {
 
   if (!posAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#231710] via-[#1B110B] to-[#231710] text-[#FAF6F0] flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-[#FAF6F0] text-[#231710] rounded-3xl border-2 border-[#D4AF37] p-6 sm:p-8 shadow-2xl space-y-5">
+      <div className="min-h-screen bg-[#FAF6F0] text-[#231710] flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white text-[#231710] rounded-2xl border border-[#E8E0D5] p-6 sm:p-8 shadow-xs space-y-6">
           <div className="text-center space-y-2">
-            <div className="w-14 h-14 rounded-2xl bg-[#231710] text-[#D4AF37] border-2 border-[#D4AF37] flex items-center justify-center text-2xl mx-auto shadow-md">
-              ⚖️
+            <div className="w-12 h-12 rounded-2xl bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] flex items-center justify-center mx-auto">
+              <Scale className="w-5 h-5" />
             </div>
-            <span className="inline-block bg-[#3B6E4C]/15 text-[#3B6E4C] border border-[#3B6E4C]/30 px-3 py-0.5 rounded-full text-[11px] font-black">
-              نظام عزل الأدوار • بوابة الكاشير المستقلة
-            </span>
-            <h1 className="font-cairo font-black text-xl text-[#231710]">
+            <h1 className="font-cairo font-bold text-xl text-[#231710]">
               نقطة بيع وميزان محمصة حفصة (POS)
             </h1>
-            <p className="text-xs text-[#6E5D4F] leading-relaxed">
-              هذه البوابة مخصصة ومحمية لدور <strong>الكاشير</strong> فقط (معزولة تماماً عن المتجر الخارجي وعن تكاليف المورد والأرباح الصافية وإعدادات المدير).
+            <p className="text-xs text-[#6B5A4E] leading-relaxed">
+              تسجيل دخول الكاشير ونقطة البيع المباشرة
             </p>
           </div>
 
-          <form onSubmit={handlePosLogin} className="space-y-3.5">
+          <form onSubmit={handlePosLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-black text-[#231710] mb-1">
-                اسم المستخدم:
+              <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                اسم المستخدم
               </label>
               <input
                 type="text"
@@ -1110,45 +1108,45 @@ export default function HafsaPosCashierPage() {
                 value={posLoginUsername}
                 onChange={(e) => setPosLoginUsername(e.target.value)}
                 placeholder="أدخل اسم المستخدم"
-                className="w-full bg-white border-2 border-[#E6DFD3] focus:border-[#D4AF37] rounded-xl px-3.5 py-2 text-xs font-mono font-bold outline-none"
+                className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] focus:bg-white rounded-xl px-3.5 py-2.5 text-sm font-medium outline-none transition"
                 autoFocus
               />
             </div>
 
             <div>
-              <label className="block text-xs font-black text-[#231710] mb-1">
-                كلمة المرور:
+              <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                كلمة المرور
               </label>
               <input
                 type="password"
                 required
                 value={posLoginPassword}
                 onChange={(e) => setPosLoginPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-white border-2 border-[#E6DFD3] focus:border-[#D4AF37] rounded-xl px-3.5 py-2 text-xs font-mono font-bold outline-none"
+                placeholder="أدخل كلمة المرور"
+                className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] focus:bg-white rounded-xl px-3.5 py-2.5 text-sm font-medium outline-none transition"
               />
             </div>
 
             {posLoginError && (
-              <div className="bg-[#B83B2B]/10 border border-[#B83B2B]/40 text-[#B83B2B] text-xs font-bold p-3 rounded-xl">
-                ⚠️ {posLoginError}
+              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium p-3 rounded-xl">
+                {posLoginError}
               </div>
             )}
 
             <button
               type="submit"
-              className="w-full bg-[#231710] hover:bg-[#3a261a] text-[#D4AF37] font-cairo font-black text-sm py-3 rounded-xl shadow-md transition cursor-pointer"
+              className="w-full bg-[#231710] hover:bg-[#3A271C] text-white font-cairo font-bold text-sm py-3 rounded-xl transition cursor-pointer"
             >
               تسجيل الدخول
             </button>
           </form>
 
-          <div className="pt-3 border-t border-[#E6DFD3] flex items-center justify-between text-xs font-bold">
-            <Link href="/" className="text-[#6E5D4F] hover:text-[#231710]">
-              ← واجهة المشتري (المتجر العام)
+          <div className="pt-4 border-t border-[#E8E0D5] flex items-center justify-between text-xs font-medium text-[#6B5A4E]">
+            <Link href="/" className="hover:text-[#231710] transition">
+              العودة للمتجر
             </Link>
-            <Link href="/admin" className="text-[#C88A4B] hover:underline">
-              بوابة الأدوار الأخرى (الأدمن / المورد / المحاسب)
+            <Link href="/admin" className="hover:text-[#231710] transition">
+              لوحة الإدارة
             </Link>
           </div>
         </div>
@@ -1186,7 +1184,6 @@ export default function HafsaPosCashierPage() {
       shortcut: 'F4',
       label: 'الفواتير',
       icon: <Receipt className="w-4 h-4" />,
-      badge: recentPosOrders.length,
     },
     {
       id: 'shift_summary',
@@ -1199,7 +1196,7 @@ export default function HafsaPosCashierPage() {
       shortcut: 'F6',
       label: 'طلبات الأونلاين',
       icon: <Truck className="w-4 h-4" />,
-      badge: pendingOnlineCount > 0 ? pendingOnlineCount : onlineQueueOrders.length,
+      badge: pendingOnlineCount > 0 ? pendingOnlineCount : undefined,
     },
   ];
 
@@ -1216,7 +1213,7 @@ export default function HafsaPosCashierPage() {
         >
           <aside
             style={{ width: `${effectiveNavWidth}px`, maxWidth: '100%' }}
-            className="w-full lg:fixed lg:right-0 lg:top-0 lg:bottom-0 lg:z-40 bg-[#231710] text-[#FAF6F0] border-b-2 lg:border-b-0 lg:border-l-2 border-[#D4AF37] p-2.5 flex flex-col justify-between shadow-xl select-none"
+            className="w-full lg:fixed lg:right-0 lg:top-0 lg:bottom-0 lg:z-40 bg-white text-[#231710] border-b lg:border-b-0 lg:border-l border-[#E8E0D5] p-2.5 flex flex-col justify-between select-none"
           >
             {/* Drag Handle on Left Edge of Right Nav Sidebar (Desktop) */}
             <div
@@ -1225,17 +1222,17 @@ export default function HafsaPosCashierPage() {
                 setIsDraggingNav(true);
               }}
               title="اسحب لتكبير أو تصغير عمود التنقل"
-              className={`hidden lg:flex items-center justify-center absolute -left-2.5 top-1/2 -translate-y-1/2 w-4 h-16 rounded-full border cursor-ew-resize z-50 transition ${
+              className={`hidden lg:flex items-center justify-center absolute -left-2 top-1/2 -translate-y-1/2 w-4 h-14 rounded-full border cursor-ew-resize z-50 transition ${
                 isDraggingNav
-                  ? 'bg-[#D4AF37] text-[#231710] border-[#231710] scale-110'
-                  : 'bg-[#231710] text-[#D4AF37] border-[#D4AF37] hover:scale-105'
+                  ? 'bg-[#231710] text-white border-[#231710]'
+                  : 'bg-white text-[#6B5A4E] border-[#E8E0D5] hover:border-[#231710]'
               }`}
             >
               <GripVertical className="w-3 h-3" />
             </div>
 
             {/* Top Section: Brand + Collapse/Expand */}
-            <div className="border-b border-white/15 pb-2.5">
+            <div className="border-b border-[#E8E0D5] pb-2.5">
               <div
                 className={`flex items-center ${
                   navCollapsed ? 'justify-center' : 'justify-between'
@@ -1243,10 +1240,10 @@ export default function HafsaPosCashierPage() {
               >
                 {!navCollapsed && (
                   <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-7 h-7 rounded-lg bg-[#D4AF37] text-[#231710] flex items-center justify-center font-black text-xs shrink-0">
-                      ⚖️
+                    <div className="w-7 h-7 rounded-lg bg-[#FAF6F0] border border-[#E8E0D5] text-[#9A6836] flex items-center justify-center shrink-0">
+                      <Scale className="w-3.5 h-3.5" />
                     </div>
-                    <span className="font-cairo font-black text-xs text-[#D4AF37] truncate">
+                    <span className="font-cairo font-bold text-xs text-[#231710] truncate">
                       كاشير محمصة حفصة
                     </span>
                   </div>
@@ -1257,7 +1254,7 @@ export default function HafsaPosCashierPage() {
                   type="button"
                   onClick={toggleNavCollapsed}
                   title={navCollapsed ? 'تكبير عمود التنقل' : 'تصغير عمود التنقل'}
-                  className="w-8 h-8 rounded-lg bg-white/10 hover:bg-[#D4AF37] text-[#D4AF37] hover:text-[#231710] flex items-center justify-center cursor-pointer transition shrink-0"
+                  className="w-8 h-8 rounded-lg bg-[#FAF6F0] hover:bg-[#F2EAE0] text-[#231710] border border-[#E8E0D5] flex items-center justify-center cursor-pointer transition shrink-0"
                 >
                   {navCollapsed ? (
                     <ChevronLeft className="w-4 h-4" />
@@ -1284,12 +1281,12 @@ export default function HafsaPosCashierPage() {
                         });
                       }}
                       title={`${pg.label} (${pg.shortcut})`}
-                      className={`relative w-full py-2 px-2.5 rounded-xl text-xs font-cairo font-black flex items-center ${
+                      className={`relative w-full py-2 px-2.5 rounded-xl text-xs font-cairo font-bold flex items-center ${
                         navCollapsed ? 'justify-center' : 'justify-between'
                       } gap-2 transition cursor-pointer ${
                         isActive
-                          ? 'bg-[#D4AF37] text-[#231710] shadow-md'
-                          : 'bg-white/10 text-[#FAF6F0] hover:bg-white/20'
+                          ? 'bg-[#231710] text-white'
+                          : 'text-[#6B5A4E] hover:bg-[#FAF6F0] hover:text-[#231710]'
                       }`}
                     >
                       <div className="flex items-center gap-2 min-w-0">
@@ -1302,22 +1299,14 @@ export default function HafsaPosCashierPage() {
                       {!navCollapsed ? (
                         <div className="flex items-center gap-1 shrink-0 tabular-nums">
                           {pg.badge !== undefined && (
-                            <span
-                              className={`text-[10px] px-1.5 rounded-full font-black ${
-                                pg.id === 'online_orders' && pendingOnlineCount > 0
-                                  ? 'bg-[#B83B2B] text-white'
-                                  : isActive
-                                    ? 'bg-[#231710] text-[#D4AF37]'
-                                    : 'bg-white/15 text-white'
-                              }`}
-                            >
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-rose-600 text-white">
                               {pg.badge}
                             </span>
                           )}
                         </div>
                       ) : (
                         pg.badge !== undefined && (
-                          <span className="absolute -top-1 -left-1 bg-[#B83B2B] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center tabular-nums">
+                          <span className="absolute -top-1 -left-1 bg-rose-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center tabular-nums">
                             {pg.badge}
                           </span>
                         )
@@ -1326,7 +1315,7 @@ export default function HafsaPosCashierPage() {
 
                     {/* Smaller Internal Sub-Sections / Categories inside Right Sidebar */}
                     {!navCollapsed && pg.id === 'direct_sales' && (
-                      <div className="mr-3 pr-2 border-r border-[#D4AF37]/35 space-y-0.5">
+                      <div className="mr-3 pr-2 border-r border-[#E8E0D5] space-y-0.5">
                         <button
                           type="button"
                           onClick={() => {
@@ -1334,13 +1323,13 @@ export default function HafsaPosCashierPage() {
                             setSelectedCategoryId('all');
                             updateUrlQueryParams({ posPage: null, posSub: null });
                           }}
-                          className={`w-full text-right py-1 px-2 rounded-lg text-[10px] font-cairo font-bold flex items-center justify-between transition cursor-pointer ${
+                          className={`w-full text-right py-1 px-2 rounded-lg text-[10.5px] font-cairo flex items-center justify-between transition cursor-pointer ${
                             activePage === 'direct_sales' && selectedCategoryId === 'all'
-                              ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black'
-                              : 'text-white/70 hover:bg-white/10 hover:text-white'
+                              ? 'bg-[#FAF6F0] text-[#231710] font-bold'
+                              : 'text-[#6B5A4E] hover:bg-[#FAF6F0] hover:text-[#231710]'
                           }`}
                         >
-                          <span className="truncate">📦 كل الأصناف</span>
+                          <span className="truncate">كل الأصناف</span>
                         </button>
                         {categories.map((cat) => {
                           const isCatSelected =
@@ -1354,14 +1343,13 @@ export default function HafsaPosCashierPage() {
                                 setSelectedCategoryId(cat.id);
                                 updateUrlQueryParams({ posPage: null, posSub: cat.id });
                               }}
-                              className={`w-full text-right py-1 px-2 rounded-lg text-[10px] font-cairo font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                              className={`w-full text-right py-1 px-2 rounded-lg text-[10.5px] font-cairo flex items-center gap-1.5 transition cursor-pointer ${
                                 isCatSelected
-                                  ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black'
-                                  : 'text-white/70 hover:bg-white/10 hover:text-white'
+                                  ? 'bg-[#FAF6F0] text-[#231710] font-bold'
+                                  : 'text-[#6B5A4E] hover:bg-[#FAF6F0] hover:text-[#231710]'
                               }`}
                             >
-                              <span className="shrink-0 text-[10px]">{cat.icon}</span>
-                              <span className="truncate">{cat.name}</span>
+                              <span className="truncate">{formatCategoryName(cat.name)}</span>
                             </button>
                           );
                         })}
@@ -1369,7 +1357,7 @@ export default function HafsaPosCashierPage() {
                     )}
 
                     {!navCollapsed && pg.id === 'boxes' && (
-                      <div className="mr-3 pr-2 border-r border-[#D4AF37]/35 space-y-0.5">
+                      <div className="mr-3 pr-2 border-r border-[#E8E0D5] space-y-0.5">
                         <button
                           type="button"
                           onClick={() => {
@@ -1377,13 +1365,13 @@ export default function HafsaPosCashierPage() {
                             setBoxTab('ready');
                             updateUrlQueryParams({ posPage: 'boxes', posSub: 'ready' });
                           }}
-                          className={`w-full text-right py-1 px-2 rounded-lg text-[10px] font-cairo font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                          className={`w-full text-right py-1 px-2 rounded-lg text-[10.5px] font-cairo flex items-center gap-1.5 transition cursor-pointer ${
                             activePage === 'boxes' && boxTab === 'ready'
-                              ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black'
-                              : 'text-white/70 hover:bg-white/10 hover:text-white'
+                              ? 'bg-[#FAF6F0] text-[#231710] font-bold'
+                              : 'text-[#6B5A4E] hover:bg-[#FAF6F0] hover:text-[#231710]'
                           }`}
                         >
-                          <span className="truncate">🎁 البوكسات الجاهزة</span>
+                          <span className="truncate">البوكسات الجاهزة</span>
                         </button>
                         <button
                           type="button"
@@ -1392,19 +1380,19 @@ export default function HafsaPosCashierPage() {
                             setBoxTab('touch_builder');
                             updateUrlQueryParams({ posPage: 'boxes', posSub: 'touch_builder' });
                           }}
-                          className={`w-full text-right py-1 px-2 rounded-lg text-[10px] font-cairo font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                          className={`w-full text-right py-1 px-2 rounded-lg text-[10.5px] font-cairo flex items-center gap-1.5 transition cursor-pointer ${
                             activePage === 'boxes' && boxTab === 'touch_builder'
-                              ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black'
-                              : 'text-white/70 hover:bg-white/10 hover:text-white'
+                              ? 'bg-[#FAF6F0] text-[#231710] font-bold'
+                              : 'text-[#6B5A4E] hover:bg-[#FAF6F0] hover:text-[#231710]'
                           }`}
                         >
-                          <span className="truncate">✨ تكوين بوكس باللمس</span>
+                          <span className="truncate">تكوين بوكس باللمس</span>
                         </button>
                       </div>
                     )}
 
                     {!navCollapsed && pg.id === 'coffee_blend' && (
-                      <div className="mr-3 pr-2 border-r border-[#D4AF37]/35 space-y-0.5">
+                      <div className="mr-3 pr-2 border-r border-[#E8E0D5] space-y-0.5">
                         <button
                           type="button"
                           onClick={() => {
@@ -1412,13 +1400,13 @@ export default function HafsaPosCashierPage() {
                             setCoffeeTab('ready');
                             updateUrlQueryParams({ posPage: 'coffee_blend', posSub: 'ready' });
                           }}
-                          className={`w-full text-right py-1 px-2 rounded-lg text-[10px] font-cairo font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                          className={`w-full text-right py-1 px-2 rounded-lg text-[10.5px] font-cairo flex items-center gap-1.5 transition cursor-pointer ${
                             activePage === 'coffee_blend' && coffeeTab === 'ready'
-                              ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black'
-                              : 'text-white/70 hover:bg-white/10 hover:text-white'
+                              ? 'bg-[#FAF6F0] text-[#231710] font-bold'
+                              : 'text-[#6B5A4E] hover:bg-[#FAF6F0] hover:text-[#231710]'
                           }`}
                         >
-                          <span className="truncate">☕ توليفات وبن جاهز</span>
+                          <span className="truncate">توليفات وبن جاهز</span>
                         </button>
                         <button
                           type="button"
@@ -1427,25 +1415,25 @@ export default function HafsaPosCashierPage() {
                             setCoffeeTab('custom_bag');
                             updateUrlQueryParams({ posPage: 'coffee_blend', posSub: 'custom_bag' });
                           }}
-                          className={`w-full text-right py-1 px-2 rounded-lg text-[10px] font-cairo font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                          className={`w-full text-right py-1 px-2 rounded-lg text-[10.5px] font-cairo flex items-center gap-1.5 transition cursor-pointer ${
                             activePage === 'coffee_blend' && coffeeTab === 'custom_bag'
-                              ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black'
-                              : 'text-white/70 hover:bg-white/10 hover:text-white'
+                              ? 'bg-[#FAF6F0] text-[#231710] font-bold'
+                              : 'text-[#6B5A4E] hover:bg-[#FAF6F0] hover:text-[#231710]'
                           }`}
                         >
-                          <span className="truncate">🥣 خلط توليفة مخصوصة</span>
+                          <span className="truncate">خلط توليفة مخصوصة</span>
                         </button>
                       </div>
                     )}
 
                     {!navCollapsed && pg.id === 'invoices_table' && isActive && (
-                      <div className="mr-3 pr-2 border-r border-[#D4AF37]/35 space-y-0.5">
+                      <div className="mr-3 pr-2 border-r border-[#E8E0D5] space-y-0.5">
                         {[
-                          { id: 'all_pos' as const, label: '🧾 كل فواتير الكاشير' },
-                          { id: 'counter_takeaway' as const, label: '🛍️ مبيعات الكاونتر' },
-                          { id: 'glass_bar_dine_in' as const, label: '☕ البار الزجاجي' },
-                          { id: 'phone_delivery' as const, label: '🛵 دليفري التليفون' },
-                          { id: 'online' as const, label: '🌐 فواتير الأونلاين' },
+                          { id: 'all_pos' as const, label: 'كل فواتير الكاشير' },
+                          { id: 'counter_takeaway' as const, label: 'مبيعات الكاونتر' },
+                          { id: 'glass_bar_dine_in' as const, label: 'البار الزجاجي' },
+                          { id: 'phone_delivery' as const, label: 'دليفري التليفون' },
+                          { id: 'online' as const, label: 'فواتير الأونلاين' },
                         ].map((sub) => (
                           <button
                             key={sub.id}
@@ -1455,10 +1443,10 @@ export default function HafsaPosCashierPage() {
                               setInvoiceSourceFilter(sub.id);
                               updateUrlQueryParams({ posPage: 'invoices_table', posSub: sub.id });
                             }}
-                            className={`w-full text-right py-1 px-2 rounded-lg text-[10px] font-cairo font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                            className={`w-full text-right py-1 px-2 rounded-lg text-[10.5px] font-cairo flex items-center gap-1.5 transition cursor-pointer ${
                               invoiceSourceFilter === sub.id
-                                ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black'
-                                : 'text-white/70 hover:bg-white/10 hover:text-white'
+                                ? 'bg-[#FAF6F0] text-[#231710] font-bold'
+                                : 'text-[#6B5A4E] hover:bg-[#FAF6F0] hover:text-[#231710]'
                             }`}
                           >
                             <span className="truncate">{sub.label}</span>
@@ -1468,12 +1456,12 @@ export default function HafsaPosCashierPage() {
                     )}
 
                     {!navCollapsed && pg.id === 'online_orders' && isActive && (
-                      <div className="mr-3 pr-2 border-r border-[#D4AF37]/35 space-y-0.5">
+                      <div className="mr-3 pr-2 border-r border-[#E8E0D5] space-y-0.5">
                         {[
-                          { id: 'all' as const, label: '📋 كل الطلبات' },
-                          { id: 'bandar_fast' as const, label: '🛵 دليفري البندر' },
-                          { id: 'villages_scheduled' as const, label: '🚐 قرى المركز' },
-                          { id: 'store_pickup' as const, label: '🏪 استلام الفرع' },
+                          { id: 'all' as const, label: 'كل الطلبات' },
+                          { id: 'bandar_fast' as const, label: 'دليفري البندر' },
+                          { id: 'villages_scheduled' as const, label: 'قرى المركز' },
+                          { id: 'store_pickup' as const, label: 'استلام الفرع' },
                         ].map((sub) => (
                           <button
                             key={sub.id}
@@ -1483,10 +1471,10 @@ export default function HafsaPosCashierPage() {
                               setOnlineDeliveryFilter(sub.id);
                               updateUrlQueryParams({ posPage: 'online_orders', posSub: sub.id });
                             }}
-                            className={`w-full text-right py-1 px-2 rounded-lg text-[10px] font-cairo font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                            className={`w-full text-right py-1 px-2 rounded-lg text-[10.5px] font-cairo flex items-center gap-1.5 transition cursor-pointer ${
                               onlineDeliveryFilter === sub.id
-                                ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black'
-                                : 'text-white/70 hover:bg-white/10 hover:text-white'
+                                ? 'bg-[#FAF6F0] text-[#231710] font-bold'
+                                : 'text-[#6B5A4E] hover:bg-[#FAF6F0] hover:text-[#231710]'
                             }`}
                           >
                             <span className="truncate">{sub.label}</span>
@@ -1500,19 +1488,19 @@ export default function HafsaPosCashierPage() {
             </nav>
 
             {/* Bottom Section: Shift Drawer Summary + Active Cart Jump + Admin Link + Logout */}
-            <div className="pt-2 border-t border-white/15 space-y-1.5">
+            <div className="pt-2 border-t border-[#E8E0D5] space-y-1.5">
               {/* Shift Drawer Summary Pill at the Bottom */}
               {activeShift ? (
                 <button
                   type="button"
                   onClick={() => setActivePage('shift_summary')}
                   title={`درج الوردية: ${activeShift.expectedCashInDrawer} ج.م`}
-                  className={`w-full bg-[#3B6E4C] hover:bg-[#2F5A3D] text-white rounded-xl py-2 px-2.5 text-[10.5px] font-cairo font-black flex items-center ${
+                  className={`w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl py-2 px-2.5 text-[10.5px] font-cairo font-bold flex items-center ${
                     navCollapsed ? 'justify-center' : 'justify-between'
                   } cursor-pointer transition tabular-nums`}
                 >
                   {navCollapsed ? (
-                    <span>💵</span>
+                    <Wallet className="w-3.5 h-3.5" />
                   ) : (
                     <>
                       <span>درج الوردية:</span>
@@ -1525,9 +1513,10 @@ export default function HafsaPosCashierPage() {
                   type="button"
                   onClick={() => setActivePage('shift_summary')}
                   title="افتح وردية"
-                  className="w-full bg-[#B83B2B] text-white text-[10.5px] font-bold py-2 px-2.5 rounded-xl text-center cursor-pointer"
+                  className="w-full bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[10.5px] font-bold py-2 px-2.5 rounded-xl flex items-center justify-center gap-1 cursor-pointer"
                 >
-                  {navCollapsed ? '⚠️' : '⚠️ افتح وردية'}
+                  <Wallet className="w-3.5 h-3.5 shrink-0" />
+                  {!navCollapsed && <span>افتح وردية</span>}
                 </button>
               )}
 
@@ -1536,7 +1525,7 @@ export default function HafsaPosCashierPage() {
                   type="button"
                   onClick={() => setActivePage('direct_sales')}
                   title={`الفاتورة (${posNetTotal} ج)`}
-                  className="w-full bg-[#3B6E4C] text-white py-2 px-2 rounded-xl text-[11px] font-cairo font-black flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full bg-[#231710] text-white py-2 px-2 rounded-xl text-[11px] font-cairo font-bold flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
                   {!navCollapsed && (
@@ -1549,7 +1538,7 @@ export default function HafsaPosCashierPage() {
                 <Link
                   href="/admin"
                   title="لوحة الإدارة"
-                  className={`w-full py-2 px-2.5 rounded-xl text-[11px] font-bold bg-white/10 hover:bg-white/20 text-[#D4AF37] flex items-center ${
+                  className={`w-full py-2 px-2.5 rounded-xl text-[11px] font-bold bg-[#FAF6F0] hover:bg-[#F2EAE0] text-[#231710] border border-[#E8E0D5] flex items-center ${
                     navCollapsed ? 'justify-center' : 'justify-between'
                   }`}
                 >
@@ -1562,9 +1551,9 @@ export default function HafsaPosCashierPage() {
                 type="button"
                 onClick={handlePosLogout}
                 title="خروج الكاشير"
-                className={`w-full py-2 px-2.5 rounded-xl text-[11px] font-bold bg-[#B83B2B]/30 hover:bg-[#B83B2B]/50 text-red-100 flex items-center ${
+                className={`w-full py-2 px-2.5 rounded-xl text-[11px] font-bold bg-[#FAF6F0] hover:bg-rose-50 text-[#6B5A4E] hover:text-rose-700 border border-[#E8E0D5] flex items-center ${
                   navCollapsed ? 'justify-center' : 'justify-between'
-                } cursor-pointer`}
+                } cursor-pointer transition`}
               >
                 {!navCollapsed && <span>خروج</span>}
                 <LogOut className="w-3.5 h-3.5 shrink-0" />
@@ -1580,16 +1569,16 @@ export default function HafsaPosCashierPage() {
         <main className="flex-1 min-w-0 w-full px-3 sm:px-4 pt-3 space-y-3">
           {/* POS EMERGENCY OFFLINE QUEUE STATUS BANNER */}
           {(!isOnline || offlineQueueCount > 0) && (
-            <div className="bg-gradient-to-r from-amber-600 to-orange-700 text-white rounded-2xl p-3 shadow-lg flex flex-wrap items-center justify-between gap-2.5 border-2 border-amber-300">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">⚠️</span>
+            <div className="bg-amber-50 text-amber-950 rounded-2xl p-3.5 border border-amber-200 flex flex-wrap items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2.5">
+                <WifiOff className="w-4 h-4 text-amber-700 shrink-0" />
                 <div>
-                  <h4 className="font-cairo font-black text-xs sm:text-sm text-white">
+                  <h4 className="font-cairo font-bold text-xs sm:text-sm text-amber-950">
                     {!isOnline
                       ? 'وضع الطوارئ (انقطاع اتصال الإنترنت) — البيع والطباعة مستمران محلياً'
                       : `طابور الطوارئ: يوجد ${offlineQueueCount} فواتير مسجلة محلياً في انتظار المزامنة`}
                   </h4>
-                  <p className="text-[11px] text-amber-100">
+                  <p className="text-[11px] text-amber-800">
                     يمكنك إتمام البيع وطباعة بونات الكاشير كالمعتاد، وسيتم ترحيل الفواتير فور عودة الشبكة.
                   </p>
                 </div>
@@ -1600,7 +1589,7 @@ export default function HafsaPosCashierPage() {
                   type="button"
                   disabled={isSyncingOffline}
                   onClick={handleSyncOfflineQueue}
-                  className="bg-white text-orange-900 hover:bg-amber-100 font-cairo font-black text-xs px-3.5 py-1.5 rounded-xl shadow transition cursor-pointer flex items-center gap-1.5 shrink-0"
+                  className="bg-[#231710] text-white hover:bg-[#3A271C] font-cairo font-bold text-xs px-3.5 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5 shrink-0"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isSyncingOffline ? 'animate-spin' : ''}`} />
                   <span>{isSyncingOffline ? 'جارٍ المزامنة...' : `مزامنة الآن (${offlineQueueCount})`}</span>
@@ -1610,7 +1599,7 @@ export default function HafsaPosCashierPage() {
           )}
           {/* Contained Horizontal POS Navigation Bar when embedded inside /admin */}
           {isEmbeddedInAdmin && (
-            <div className="bg-[#231710] text-[#FAF6F0] rounded-2xl border-2 border-[#D4AF37] p-3 shadow-md space-y-2.5">
+            <div className="bg-white text-[#231710] rounded-2xl border border-[#E8E0D5] p-3 space-y-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-1.5">
                   {navPages.map((pg) => {
@@ -1626,24 +1615,16 @@ export default function HafsaPosCashierPage() {
                             posSub: null,
                           });
                         }}
-                        className={`px-3 py-2 rounded-xl text-xs font-cairo font-black flex items-center gap-1.5 transition cursor-pointer ${
+                        className={`px-3 py-2 rounded-xl text-xs font-cairo font-bold flex items-center gap-1.5 transition cursor-pointer ${
                           isActive
-                            ? 'bg-[#D4AF37] text-[#231710] shadow-sm'
-                            : 'bg-white/10 text-[#FAF6F0] hover:bg-white/20'
+                            ? 'bg-[#231710] text-white'
+                            : 'bg-[#FAF6F0] text-[#6B5A4E] hover:text-[#231710] border border-[#E8E0D5]'
                         }`}
                       >
                         <span className="shrink-0">{pg.icon}</span>
                         <span>{pg.label}</span>
                         {pg.badge !== undefined && (
-                          <span
-                            className={`text-[10px] px-1.5 rounded-full font-black tabular-nums ${
-                              pg.id === 'online_orders' && pendingOnlineCount > 0
-                                ? 'bg-[#B83B2B] text-white'
-                                : isActive
-                                  ? 'bg-[#231710] text-[#D4AF37]'
-                                  : 'bg-white/15 text-white'
-                            }`}
-                          >
+                          <span className="text-[10px] px-1.5 rounded-full font-bold tabular-nums bg-rose-600 text-white">
                             {pg.badge}
                           </span>
                         )}
@@ -1660,9 +1641,9 @@ export default function HafsaPosCashierPage() {
                       setIsPosAudioMuted(next);
                     }}
                     title={isPosAudioMuted ? 'تفعيل جرس تنبيهات الطلبات' : 'كتم جرس تنبيهات الطلبات'}
-                    className={`py-2 px-2.5 rounded-xl text-xs font-cairo font-bold transition flex items-center gap-1.5 cursor-pointer ${isPosAudioMuted ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'bg-white/10 hover:bg-white/20 text-[#D4AF37] border border-white/15'}`}
+                    className={`py-2 px-2.5 rounded-xl text-xs font-cairo font-bold transition flex items-center gap-1.5 cursor-pointer ${isPosAudioMuted ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-[#FAF6F0] hover:bg-[#F2EAE0] text-[#231710] border border-[#E8E0D5]'}`}
                   >
-                    {isPosAudioMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-[#D4AF37]" />}
+                    {isPosAudioMuted ? <VolumeX className="w-4 h-4 text-rose-600" /> : <Volume2 className="w-4 h-4 text-[#9A6836]" />}
                     <span className="hidden sm:inline">{isPosAudioMuted ? 'الصوت مكتوم' : 'الجرس نشط'}</span>
                   </button>
                   {activeShift ? (
@@ -1672,9 +1653,10 @@ export default function HafsaPosCashierPage() {
                         setActivePage('shift_summary');
                         updateUrlQueryParams({ posPage: 'shift_summary', posSub: null });
                       }}
-                      className="bg-[#3B6E4C] hover:bg-[#2F5A3D] text-white rounded-xl py-2 px-3 text-xs font-cairo font-black flex items-center gap-1.5 cursor-pointer transition tabular-nums"
+                      className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl py-2 px-3 text-xs font-cairo font-bold flex items-center gap-1.5 cursor-pointer transition tabular-nums"
                     >
-                      <span>💵 درج الوردية:</span>
+                      <Wallet className="w-3.5 h-3.5" />
+                      <span>درج الوردية:</span>
                       <span>{activeShift.expectedCashInDrawer} ج.م</span>
                     </button>
                   ) : (
@@ -1684,9 +1666,9 @@ export default function HafsaPosCashierPage() {
                         setActivePage('shift_summary');
                         updateUrlQueryParams({ posPage: 'shift_summary', posSub: null });
                       }}
-                      className="bg-[#B83B2B] text-white text-xs font-bold py-2 px-3 rounded-xl cursor-pointer"
+                      className="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold py-2 px-3 rounded-xl cursor-pointer"
                     >
-                      ⚠️ افتح وردية
+                      افتح وردية
                     </button>
                   )}
 
@@ -1697,7 +1679,7 @@ export default function HafsaPosCashierPage() {
                         setActivePage('direct_sales');
                         updateUrlQueryParams({ posPage: null, posSub: null });
                       }}
-                      className="bg-[#3B6E4C] text-white py-2 px-3 rounded-xl text-xs font-cairo font-black flex items-center gap-1.5 cursor-pointer"
+                      className="bg-[#231710] text-white py-2 px-3 rounded-xl text-xs font-cairo font-bold flex items-center gap-1.5 cursor-pointer"
                     >
                       <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
                       <span>الفاتورة ({posNetTotal} ج)</span>
@@ -1708,20 +1690,20 @@ export default function HafsaPosCashierPage() {
 
               {/* Contextual Sub-Sections Filter Row inside Admin POS View */}
               {activePage === 'direct_sales' && (
-                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-white/10">
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[#E8E0D5]">
                   <button
                     type="button"
                     onClick={() => {
                       setSelectedCategoryId('all');
                       updateUrlQueryParams({ posPage: null, posSub: null });
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo font-bold transition cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo transition cursor-pointer ${
                       selectedCategoryId === 'all'
-                        ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black border border-[#D4AF37]/50'
-                        : 'bg-white/5 text-white/80 hover:bg-white/15'
+                        ? 'bg-[#231710] text-white font-bold'
+                        : 'bg-[#FAF6F0] text-[#6B5A4E] hover:text-[#231710]'
                     }`}
                   >
-                    📦 كل الأصناف
+                    كل الأصناف
                   </button>
                   {categories.map((cat) => (
                     <button
@@ -1731,34 +1713,33 @@ export default function HafsaPosCashierPage() {
                         setSelectedCategoryId(cat.id);
                         updateUrlQueryParams({ posPage: null, posSub: cat.id });
                       }}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo font-bold flex items-center gap-1 transition cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo flex items-center gap-1 transition cursor-pointer ${
                         selectedCategoryId === cat.id
-                          ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black border border-[#D4AF37]/50'
-                          : 'bg-white/5 text-white/80 hover:bg-white/15'
+                          ? 'bg-[#231710] text-white font-bold'
+                          : 'bg-[#FAF6F0] text-[#6B5A4E] hover:text-[#231710]'
                       }`}
                     >
-                      <span>{cat.icon}</span>
-                      <span>{cat.name}</span>
+                      <span>{formatCategoryName(cat.name)}</span>
                     </button>
                   ))}
                 </div>
               )}
 
               {activePage === 'boxes' && (
-                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-white/10">
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[#E8E0D5]">
                   <button
                     type="button"
                     onClick={() => {
                       setBoxTab('ready');
                       updateUrlQueryParams({ posPage: 'boxes', posSub: 'ready' });
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo font-bold transition cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo transition cursor-pointer ${
                       boxTab === 'ready'
-                        ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black border border-[#D4AF37]/50'
-                        : 'bg-white/5 text-white/80 hover:bg-white/15'
+                        ? 'bg-[#231710] text-white font-bold'
+                        : 'bg-[#FAF6F0] text-[#6B5A4E] hover:text-[#231710]'
                     }`}
                   >
-                    🎁 البوكسات الجاهزة
+                    البوكسات الجاهزة
                   </button>
                   <button
                     type="button"
@@ -1766,32 +1747,32 @@ export default function HafsaPosCashierPage() {
                       setBoxTab('touch_builder');
                       updateUrlQueryParams({ posPage: 'boxes', posSub: 'touch_builder' });
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo font-bold transition cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo transition cursor-pointer ${
                       boxTab === 'touch_builder'
-                        ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black border border-[#D4AF37]/50'
-                        : 'bg-white/5 text-white/80 hover:bg-white/15'
+                        ? 'bg-[#231710] text-white font-bold'
+                        : 'bg-[#FAF6F0] text-[#6B5A4E] hover:text-[#231710]'
                     }`}
                   >
-                    ✨ تكوين بوكس باللمس
+                    تكوين بوكس باللمس
                   </button>
                 </div>
               )}
 
               {activePage === 'coffee_blend' && (
-                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-white/10">
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[#E8E0D5]">
                   <button
                     type="button"
                     onClick={() => {
                       setCoffeeTab('ready');
                       updateUrlQueryParams({ posPage: 'coffee_blend', posSub: 'ready' });
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo font-bold transition cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo transition cursor-pointer ${
                       coffeeTab === 'ready'
-                        ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black border border-[#D4AF37]/50'
-                        : 'bg-white/5 text-white/80 hover:bg-white/15'
+                        ? 'bg-[#231710] text-white font-bold'
+                        : 'bg-[#FAF6F0] text-[#6B5A4E] hover:text-[#231710]'
                     }`}
                   >
-                    ☕ توليفات وبن جاهز
+                    توليفات وبن جاهز
                   </button>
                   <button
                     type="button"
@@ -1799,25 +1780,25 @@ export default function HafsaPosCashierPage() {
                       setCoffeeTab('custom_bag');
                       updateUrlQueryParams({ posPage: 'coffee_blend', posSub: 'custom_bag' });
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo font-bold transition cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo transition cursor-pointer ${
                       coffeeTab === 'custom_bag'
-                        ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black border border-[#D4AF37]/50'
-                        : 'bg-white/5 text-white/80 hover:bg-white/15'
+                        ? 'bg-[#231710] text-white font-bold'
+                        : 'bg-[#FAF6F0] text-[#6B5A4E] hover:text-[#231710]'
                     }`}
                   >
-                    🥣 خلط توليفة مخصوصة
+                    خلط توليفة مخصوصة
                   </button>
                 </div>
               )}
 
               {activePage === 'invoices_table' && (
-                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-white/10">
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[#E8E0D5]">
                   {[
-                    { id: 'all_pos' as const, label: '🧾 كل فواتير الكاشير' },
-                    { id: 'counter_takeaway' as const, label: '🛍️ مبيعات الكاونتر' },
-                    { id: 'glass_bar_dine_in' as const, label: '☕ البار الزجاجي' },
-                    { id: 'phone_delivery' as const, label: '🛵 دليفري التليفون' },
-                    { id: 'online' as const, label: '🌐 فواتير الأونلاين' },
+                    { id: 'all_pos' as const, label: 'كل فواتير الكاشير' },
+                    { id: 'counter_takeaway' as const, label: 'مبيعات الكاونتر' },
+                    { id: 'glass_bar_dine_in' as const, label: 'البار الزجاجي' },
+                    { id: 'phone_delivery' as const, label: 'دليفري التليفون' },
+                    { id: 'online' as const, label: 'فواتير الأونلاين' },
                   ].map((sub) => (
                     <button
                       key={sub.id}
@@ -1826,10 +1807,10 @@ export default function HafsaPosCashierPage() {
                         setInvoiceSourceFilter(sub.id);
                         updateUrlQueryParams({ posPage: 'invoices_table', posSub: sub.id });
                       }}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo font-bold transition cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo transition cursor-pointer ${
                         invoiceSourceFilter === sub.id
-                          ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black border border-[#D4AF37]/50'
-                          : 'bg-white/5 text-white/80 hover:bg-white/15'
+                          ? 'bg-[#231710] text-white font-bold'
+                          : 'bg-[#FAF6F0] text-[#6B5A4E] hover:text-[#231710]'
                       }`}
                     >
                       {sub.label}
@@ -1839,12 +1820,12 @@ export default function HafsaPosCashierPage() {
               )}
 
               {activePage === 'online_orders' && (
-                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-white/10">
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[#E8E0D5]">
                   {[
-                    { id: 'all' as const, label: '📋 كل الطلبات' },
-                    { id: 'bandar_fast' as const, label: '🛵 دليفري البندر' },
-                    { id: 'villages_scheduled' as const, label: '🚐 قرى المركز' },
-                    { id: 'store_pickup' as const, label: '🏪 استلام الفرع' },
+                    { id: 'all' as const, label: 'كل الطلبات' },
+                    { id: 'bandar_fast' as const, label: 'دليفري البندر' },
+                    { id: 'villages_scheduled' as const, label: 'قرى المركز' },
+                    { id: 'store_pickup' as const, label: 'استلام الفرع' },
                   ].map((sub) => (
                     <button
                       key={sub.id}
@@ -1853,10 +1834,10 @@ export default function HafsaPosCashierPage() {
                         setOnlineDeliveryFilter(sub.id);
                         updateUrlQueryParams({ posPage: 'online_orders', posSub: sub.id });
                       }}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo font-bold transition cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-cairo transition cursor-pointer ${
                         onlineDeliveryFilter === sub.id
-                          ? 'bg-[#D4AF37]/25 text-[#D4AF37] font-black border border-[#D4AF37]/50'
-                          : 'bg-white/5 text-white/80 hover:bg-white/15'
+                          ? 'bg-[#231710] text-white font-bold'
+                          : 'bg-[#FAF6F0] text-[#6B5A4E] hover:text-[#231710]'
                       }`}
                     >
                       {sub.label}

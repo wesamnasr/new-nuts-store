@@ -35,13 +35,13 @@
   --cherry-500: 184 59 43;   /* #B83B2B Coffee Cherry Red (Promo / Urgency) */
 
   --surface-bg: #FAF6F0;
-  --surface-card: #F3ECE1;
-  --surface-card-alpha: rgba(250, 246, 240, 0.92);
+  --surface-card: #FFFFFF;
+  --surface-card-alpha: rgba(255, 255, 255, 0.95);
   --surface-input: #FFFFFF;
   --text-strong: #231710;
-  --text-body: #4E3829;
-  --text-accent: #C88A4B;
-  --border-main: #E4D7C5;
+  --text-body: #5C4A3D;
+  --text-accent: #9A6836;
+  --border-main: #E8E0D5;
 }
 
 /* 2. أزرق سماوي ملكي (فاتح • خط كحلي غامق) */
@@ -185,7 +185,7 @@
 }
 
 html {
-  font-size: 12.5px;
+  font-size: 14px;
   scroll-behavior: smooth;
   overflow-x: clip;
   -webkit-tap-highlight-color: transparent;
@@ -193,13 +193,13 @@ html {
 
 @media (min-width: 640px) {
   html {
-    font-size: 13px;
+    font-size: 14.5px;
   }
 }
 
 @media (min-width: 1280px) {
   html {
-    font-size: 13.5px;
+    font-size: 15px;
   }
 }
 
@@ -209,13 +209,13 @@ body {
   min-height: 100vh;
   max-width: 100vw;
   overflow-x: clip;
-  line-height: 1.55;
+  line-height: 1.6;
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* ==========================================================================
    LIGHT THEMES ENFORCEMENT ([data-mode="light"])
-   Ensures all 3 Light Themes have tinted light cards and crisp dark fonts
+   Ensures all 3 Light Themes have clean white cards and crisp dark fonts
    ========================================================================== */
 [data-mode="light"] body {
   background-color: var(--surface-bg) !important;
@@ -237,7 +237,7 @@ body {
   color: var(--text-body);
 }
 
-/* Hafsa Roastery Brand Identity Rules (Warm Calacatta Ivory #FAF6F0, Almond Cream #F3ECE1, Espresso #231710) */
+/* Hafsa Roastery Brand Identity Rules (Warm Calacatta Ivory #FAF6F0, White #FFFFFF cards, Espresso #231710) */
 body,
 [data-theme="royal_roastery"],
 [data-theme="levant_heritage"] {
@@ -245,15 +245,15 @@ body,
 }
 
 .theme-product-card {
-  background-color: #F3ECE1;
-  border: 1px solid #E4D7C5;
-  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  background-color: #FFFFFF;
+  border: 1px solid #E8E0D5;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .theme-product-card:hover {
-  transform: translateY(-3px);
-  border-color: #D4AF37;
-  box-shadow: 0 12px 28px -6px rgba(35, 23, 16, 0.12), 0 6px 12px -4px rgba(212, 175, 55, 0.18);
+  transform: translateY(-2px);
+  border-color: #D4C5B3;
+  box-shadow: 0 8px 24px -6px rgba(35, 23, 16, 0.08);
 }
 
 @keyframes marquee-rtl {

@@ -22,7 +22,7 @@ import {
   getProductBarcode,
   parseScaleBarcode,
 } from '@/lib/pricing';
-import { getSafeImageUrl } from '@/lib/defaults';
+import { formatCategoryName, getSafeImageUrl } from '@/lib/defaults';
 import { StickerPreviewData } from '@/components/SupermarketReceiptModal';
 
 interface PosDirectSalesPageProps {
@@ -69,7 +69,7 @@ export default function PosDirectSalesPage({
   // Per-card quick roast selection state
   const [cardRoasts, setCardRoasts] = useState<Record<string, string>>({});
 
-  // On-Demand Custom Scale / Sell-by-Amount Modal State (Hidden by default!)
+  // On-Demand Custom Scale / Sell-by-Amount Modal State (Hidden by default)
   const [scaleModalProduct, setScaleModalProduct] = useState<Product | null>(null);
   const [scaleMode, setScaleMode] = useState<'by_amount_egp' | 'by_grams'>('by_amount_egp');
   const [scaleGrams, setScaleGrams] = useState<number>(250);
@@ -216,30 +216,30 @@ export default function PosDirectSalesPage({
       {/* =================================================================== */}
       {/* SIMPLE, CLEAN TOP FILTER & SEARCH BAR                               */}
       {/* =================================================================== */}
-      <div className="bg-white rounded-2xl p-3.5 border border-[#E6DFD3] shadow-xs space-y-3">
+      <div className="bg-white rounded-2xl p-3.5 border border-[#E8E0D5] space-y-3">
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Instant Search */}
           <div className="relative flex-1 min-w-[220px]">
-            <Search className="w-4 h-4 text-[#6E5D4F] absolute right-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[#6B5B4E] absolute right-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="ابحث باسم الصنف..."
-              className="w-full bg-[#FAF6F0] border border-[#E6DFD3] focus:border-[#D4AF37] rounded-xl pr-10 pl-3 py-2.5 text-sm font-bold outline-none"
+              className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl pr-10 pl-3 py-2.5 text-sm font-medium outline-none"
             />
           </div>
 
           {/* Compact Barcode Input */}
           <form onSubmit={handleBarcodeScanSubmit} className="flex items-center gap-1.5">
             <div className="relative w-48 sm:w-56">
-              <Barcode className="w-4 h-4 text-[#C88A4B] absolute right-3 top-1/2 -translate-y-1/2" />
+              <Barcode className="w-4 h-4 text-[#9A6836] absolute right-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={barcodeInput}
                 onChange={(e) => setBarcodeInput(e.target.value)}
                 placeholder="باركود الميزان..."
-                className="w-full bg-[#FAF6F0] border border-[#E6DFD3] focus:border-[#D4AF37] rounded-xl pr-9 pl-2.5 py-2.5 text-xs font-bold outline-none tabular-nums"
+                className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl pr-9 pl-2.5 py-2.5 text-xs font-medium outline-none tabular-nums"
               />
             </div>
           </form>
@@ -249,7 +249,7 @@ export default function PosDirectSalesPage({
             <button
               type="button"
               onClick={() => openProductScaleModal(products[0], 'by_amount_egp')}
-              className="bg-[#231710] hover:bg-[#3a261a] text-[#D4AF37] px-4 py-2.5 rounded-xl text-xs font-cairo font-black flex items-center gap-1.5 cursor-pointer shrink-0 shadow-xs"
+              className="bg-[#231710] hover:bg-[#3A271C] text-white px-4 py-2.5 rounded-xl text-xs font-cairo font-bold flex items-center gap-1.5 cursor-pointer shrink-0 transition"
             >
               <Scale className="w-4 h-4" />
               <span>ميزان مخصص / بيع بمبلغ</span>
@@ -265,10 +265,10 @@ export default function PosDirectSalesPage({
               setSelectedCategoryId('all');
               setStockFilter('all');
             }}
-            className={`px-4 py-2 rounded-xl text-xs font-cairo font-black cursor-pointer shrink-0 transition ${
+            className={`px-4 py-2 rounded-xl text-xs font-cairo font-bold cursor-pointer shrink-0 transition ${
               selectedCategoryId === 'all' && stockFilter === 'all'
-                ? 'bg-[#231710] text-[#D4AF37] shadow-xs'
-                : 'bg-[#FAF6F0] text-[#231710] hover:bg-[#F3ECE1]'
+                ? 'bg-[#231710] text-white'
+                : 'bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] hover:bg-[#F3ECE1]'
             }`}
           >
             الكل ({products.length})
@@ -277,10 +277,10 @@ export default function PosDirectSalesPage({
             <button
               type="button"
               onClick={() => setStockFilter((prev) => (prev === 'low_stock' ? 'all' : 'low_stock'))}
-              className={`px-3 py-2 rounded-xl text-xs font-cairo font-black cursor-pointer flex items-center gap-1.5 shrink-0 transition ${
+              className={`px-3 py-2 rounded-xl text-xs font-cairo font-bold cursor-pointer flex items-center gap-1.5 shrink-0 transition ${
                 stockFilter === 'low_stock'
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100'
+                  ? 'bg-amber-700 text-white'
+                  : 'bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100'
               }`}
             >
               <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
@@ -295,21 +295,20 @@ export default function PosDirectSalesPage({
                 setSelectedCategoryId(cat.id);
                 setStockFilter('all');
               }}
-              className={`px-4 py-2 rounded-xl text-xs font-cairo font-black cursor-pointer flex items-center gap-1.5 shrink-0 transition ${
+              className={`px-4 py-2 rounded-xl text-xs font-cairo font-bold cursor-pointer flex items-center gap-1.5 shrink-0 transition ${
                 selectedCategoryId === cat.id
-                  ? 'bg-[#231710] text-[#D4AF37] shadow-xs'
-                  : 'bg-[#FAF6F0] text-[#231710] hover:bg-[#F3ECE1]'
+                  ? 'bg-[#231710] text-white'
+                  : 'bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] hover:bg-[#F3ECE1]'
               }`}
             >
-              <span>{cat.icon}</span>
-              <span>{cat.name}</span>
+              <span>{formatCategoryName(cat.name)}</span>
             </button>
           ))}
         </div>
       </div>
 
       {/* =================================================================== */}
-      {/* LARGE, SIMPLIFIED PRODUCT CARDS (IMAGE + NAME + WEIGHT BUTTONS ONLY)*/}
+      {/* LARGE, SIMPLIFIED PRODUCT CARDS                                     */}
       {/* =================================================================== */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3.5">
         {filteredProducts.map((prod) => {
@@ -324,12 +323,12 @@ export default function PosDirectSalesPage({
           return (
             <div
               key={prod.id}
-              className={`rounded-2xl border-2 p-3 flex flex-col justify-between transition shadow-xs hover:shadow-md ${
+              className={`rounded-2xl border p-3 flex flex-col justify-between transition ${
                 isOutOfStock
-                  ? 'bg-red-50/20 border-red-300 opacity-80'
+                  ? 'bg-red-50/20 border-red-200 opacity-80'
                   : isLowStock
-                    ? 'bg-amber-50/20 border-amber-300 hover:border-amber-500 shadow-amber-500/5'
-                    : 'bg-white border-[#E6DFD3] hover:border-[#D4AF37]'
+                    ? 'bg-amber-50/20 border-amber-200 hover:border-amber-400'
+                    : 'bg-white border-[#E8E0D5] hover:border-[#C5B8A8]'
               }`}
             >
               {/* Top: Image + Name */}
@@ -341,18 +340,18 @@ export default function PosDirectSalesPage({
                     className={`w-full h-full object-cover ${isOutOfStock ? 'grayscale-40' : ''}`}
                   />
                   {/* Price per Kg Badge */}
-                  <span className="absolute top-2 right-2 bg-[#231710]/90 text-[#D4AF37] text-[11px] font-black px-2.5 py-0.5 rounded-lg tabular-nums">
+                  <span className="absolute top-2 right-2 bg-white/95 text-[#231710] border border-[#E8E0D5] text-[11px] font-bold px-2 py-0.5 rounded-lg tabular-nums">
                     {prod.pricePerKg || 400} ج/كجم
                   </span>
 
                   {/* Low-Stock / Out-of-Stock Indicator Badge */}
                   {isOutOfStock ? (
-                    <span className="absolute top-2 left-2 bg-red-600/95 text-white text-[10px] font-cairo font-black px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-sm backdrop-blur-xs">
+                    <span className="absolute top-2 left-2 bg-red-600/95 text-white text-[10px] font-cairo font-bold px-2 py-0.5 rounded-lg flex items-center gap-1">
                       <AlertCircle className="w-3 h-3 text-white shrink-0" />
                       <span>نفد المخزون</span>
                     </span>
                   ) : isLowStock ? (
-                    <span className="absolute top-2 left-2 bg-amber-500/95 text-white text-[10px] font-cairo font-black px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-sm backdrop-blur-xs tabular-nums">
+                    <span className="absolute top-2 left-2 bg-amber-600/95 text-white text-[10px] font-cairo font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 tabular-nums">
                       <AlertTriangle className="w-3 h-3 text-white shrink-0" />
                       <span>
                         {stockKg >= 1 ? `متبقي ${stockKg} كجم` : `متبقي ${Math.round(stockKg * 1000)} جم`}
@@ -366,10 +365,10 @@ export default function PosDirectSalesPage({
                     disabled={isOutOfStock}
                     onClick={() => openProductScaleModal(prod, 'by_amount_egp')}
                     title="وزن حر أو بيع بمبلغ بالجنيه"
-                    className={`absolute bottom-2 left-2 px-2.5 py-1 rounded-lg text-[11px] font-cairo font-black flex items-center gap-1 shadow transition ${
+                    className={`absolute bottom-2 left-2 px-2.5 py-1 rounded-lg text-[11px] font-cairo font-bold flex items-center gap-1 transition ${
                       isOutOfStock
                         ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                        : 'bg-white/95 hover:bg-[#D4AF37] text-[#231710] cursor-pointer'
+                        : 'bg-white/95 hover:bg-[#231710] text-[#231710] hover:text-white border border-[#E8E0D5] cursor-pointer'
                     }`}
                   >
                     <Scale className="w-3.5 h-3.5" />
@@ -378,19 +377,19 @@ export default function PosDirectSalesPage({
                 </div>
 
                 <div className="flex items-start justify-between gap-1 mb-2">
-                  <h3 className="font-cairo font-black text-sm text-[#231710] line-clamp-1 flex-1">
-                  {prod.name}
+                  <h3 className="font-cairo font-bold text-sm text-[#231710] line-clamp-1 flex-1">
+                    {prod.name}
                   </h3>
                   {isLowStock ? (
-                    <span className="text-[10px] font-black text-amber-700 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md shrink-0 tabular-nums">
+                    <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md shrink-0 tabular-nums">
                       {stockKg} كجم
                     </span>
                   ) : isOutOfStock ? (
-                    <span className="text-[10px] font-black text-red-700 bg-red-100 border border-red-300 px-1.5 py-0.5 rounded-md shrink-0">
+                    <span className="text-[10px] font-bold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-md shrink-0">
                       0 كجم
                     </span>
                   ) : (
-                    <span className="text-[10px] font-bold text-[#6E5D4F] bg-[#FAF6F0] border border-[#E6DFD3] px-1.5 py-0.5 rounded-md shrink-0 tabular-nums">
+                    <span className="text-[10px] font-medium text-[#6B5B4E] bg-[#FAF6F0] border border-[#E8E0D5] px-1.5 py-0.5 rounded-md shrink-0 tabular-nums">
                       {stockKg} كجم
                     </span>
                   )}
@@ -398,7 +397,7 @@ export default function PosDirectSalesPage({
 
                 {/* Simple Roast Toggle (Only if product has multiple roasts) */}
                 {hasMultipleRoasts && (
-                  <div className="flex items-center gap-1 mb-2.5 bg-[#FAF6F0] p-1 rounded-xl">
+                  <div className="flex items-center gap-1 mb-2.5 bg-[#FAF6F0] p-1 rounded-xl border border-[#E8E0D5]">
                     {prod.roastOptions!.slice(0, 2).map((roastOpt) => (
                       <button
                         key={roastOpt}
@@ -408,8 +407,8 @@ export default function PosDirectSalesPage({
                         }
                         className={`flex-1 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer truncate px-1 ${
                           activeRoast === roastOpt
-                            ? 'bg-[#231710] text-[#D4AF37]'
-                            : 'text-[#6E5D4F] hover:text-[#231710]'
+                            ? 'bg-[#231710] text-white'
+                            : 'text-[#6B5B4E] hover:text-[#231710]'
                         }`}
                       >
                         {roastOpt}
@@ -439,16 +438,14 @@ export default function PosDirectSalesPage({
                       className={`rounded-xl py-2 px-2 flex items-center justify-between transition group ${
                         isOutOfStock
                           ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
-                          : isLowStock
-                            ? 'bg-[#FAF6F0] hover:bg-[#231710] text-[#231710] hover:text-[#D4AF37] border border-amber-200 hover:border-[#231710] cursor-pointer'
-                            : 'bg-[#FAF6F0] hover:bg-[#231710] text-[#231710] hover:text-[#D4AF37] border border-[#E6DFD3] hover:border-[#231710] cursor-pointer'
+                          : 'bg-[#FAF6F0] hover:bg-[#231710] text-[#231710] hover:text-white border border-[#E8E0D5] hover:border-[#231710] cursor-pointer'
                       }`}
                     >
-                      <span className="font-cairo font-black text-xs">{w.label}</span>
-                      <span className={`font-black text-xs tabular-nums ${
+                      <span className="font-cairo font-bold text-xs">{w.label}</span>
+                      <span className={`font-bold text-xs tabular-nums ${
                         isOutOfStock
                           ? 'text-gray-400'
-                          : 'text-[#3B6E4C] group-hover:text-[#D4AF37]'
+                          : 'text-[#6B5B4E] group-hover:text-white'
                       }`}>
                         {calc.unitPrice} ج
                       </span>
@@ -462,33 +459,33 @@ export default function PosDirectSalesPage({
       </div>
 
       {/* =================================================================== */}
-      {/* ON-DEMAND SCALE / SELL-BY-AMOUNT MODAL (HIDDEN UNTIL REQUESTED)     */}
+      {/* ON-DEMAND SCALE / SELL-BY-AMOUNT MODAL                              */}
       {/* =================================================================== */}
       {scaleModalProduct && scaleCalculation && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-5 border-2 border-[#D4AF37] shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 border border-[#E8E0D5] shadow-xl space-y-4">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-[#E6DFD3] pb-3">
+            <div className="flex items-center justify-between border-b border-[#E8E0D5] pb-3">
               <div className="flex items-center gap-2.5">
                 <img
                   src={getSafeImageUrl(scaleModalProduct.image)}
                   alt={scaleModalProduct.name}
-                  className="w-12 h-12 rounded-xl object-cover border border-[#E6DFD3]"
+                  className="w-12 h-12 rounded-xl object-cover border border-[#E8E0D5]"
                 />
                 <div>
-                  <h3 className="font-cairo font-black text-base text-[#231710]">
+                  <h3 className="font-cairo font-bold text-base text-[#231710]">
                     {scaleModalProduct.name}
                   </h3>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs font-bold text-[#C88A4B] tabular-nums">
+                    <span className="text-xs font-medium text-[#9A6836] tabular-nums">
                       سعر الكيلو: {scaleModalProduct.pricePerKg || 400} ج.م
                     </span>
-                    <span className="text-xs text-[#E6DFD3]">•</span>
+                    <span className="text-xs text-[#E8E0D5]">•</span>
                     <span
-                      className={`text-xs font-bold tabular-nums ${
+                      className={`text-xs font-medium tabular-nums ${
                         (scaleModalProduct.stockKg ?? 50) <= LOW_STOCK_THRESHOLD_KG
-                          ? 'text-amber-600 font-black'
-                          : 'text-[#6E5D4F]'
+                          ? 'text-amber-700 font-bold'
+                          : 'text-[#6B5B4E]'
                       }`}
                     >
                       المخزون المتاح: {scaleModalProduct.stockKg ?? 50} كجم
@@ -499,13 +496,13 @@ export default function PosDirectSalesPage({
               <button
                 type="button"
                 onClick={() => setScaleModalProduct(null)}
-                className="w-9 h-9 rounded-xl bg-[#FAF6F0] hover:bg-red-100 text-[#231710] flex items-center justify-center cursor-pointer"
+                className="w-9 h-9 rounded-xl bg-[#FAF6F0] hover:bg-red-50 text-[#231710] flex items-center justify-center cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Product Switcher inside Modal (if cashier wants to change product) */}
+            {/* Product Switcher inside Modal */}
             <div>
               <select
                 value={scaleModalProduct.id}
@@ -516,7 +513,7 @@ export default function PosDirectSalesPage({
                     setScaleRoast(found.roastOptions?.[0] || 'سادة');
                   }
                 }}
-                className="w-full bg-[#FAF6F0] border border-[#E6DFD3] rounded-xl px-3 py-2 text-xs font-bold text-[#231710] outline-none"
+                className="w-full bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs font-bold text-[#231710] outline-none"
               >
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -527,28 +524,28 @@ export default function PosDirectSalesPage({
             </div>
 
             {/* Mode Switcher: By EGP Amount vs By Weight Grams */}
-            <div className="grid grid-cols-2 gap-2 bg-[#FAF6F0] p-1.5 rounded-2xl border border-[#E6DFD3]">
+            <div className="grid grid-cols-2 gap-2 bg-[#FAF6F0] p-1.5 rounded-2xl border border-[#E8E0D5]">
               <button
                 type="button"
                 onClick={() => setScaleMode('by_amount_egp')}
-                className={`py-2.5 rounded-xl font-cairo font-black text-xs cursor-pointer transition ${
+                className={`py-2.5 rounded-xl font-cairo font-bold text-xs cursor-pointer transition ${
                   scaleMode === 'by_amount_egp'
-                    ? 'bg-[#3B6E4C] text-white shadow-xs'
+                    ? 'bg-[#231710] text-white'
                     : 'text-[#231710]'
                 }`}
               >
-                💵 بيع بمبلغ (عايز بـ ... جنيه)
+                بيع بمبلغ (عايز بـ ... جنيه)
               </button>
               <button
                 type="button"
                 onClick={() => setScaleMode('by_grams')}
-                className={`py-2.5 rounded-xl font-cairo font-black text-xs cursor-pointer transition ${
+                className={`py-2.5 rounded-xl font-cairo font-bold text-xs cursor-pointer transition ${
                   scaleMode === 'by_grams'
-                    ? 'bg-[#231710] text-[#D4AF37] shadow-xs'
+                    ? 'bg-[#231710] text-white'
                     : 'text-[#231710]'
                 }`}
               >
-                ⚖️ وزن بالجرام (جم)
+                وزن بالجرام (جم)
               </button>
             </div>
 
@@ -564,9 +561,9 @@ export default function PosDirectSalesPage({
                     onChange={(e) =>
                       setScaleTargetEgp(Math.max(5, Number(e.target.value) || 0))
                     }
-                    className="w-full bg-[#FAF6F0] border-2 border-[#3B6E4C] rounded-2xl px-4 py-3 text-xl font-black text-center text-[#231710] tabular-nums outline-none"
+                    className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-2xl px-4 py-3 text-xl font-bold text-center text-[#231710] tabular-nums outline-none"
                   />
-                  <span className="font-cairo font-black text-sm text-[#231710] shrink-0">
+                  <span className="font-cairo font-bold text-sm text-[#231710] shrink-0">
                     ج.م
                   </span>
                 </div>
@@ -576,10 +573,10 @@ export default function PosDirectSalesPage({
                       key={amt}
                       type="button"
                       onClick={() => setScaleTargetEgp(amt)}
-                      className={`py-2 rounded-xl text-xs font-black tabular-nums cursor-pointer border ${
+                      className={`py-2 rounded-xl text-xs font-bold tabular-nums cursor-pointer border transition ${
                         scaleTargetEgp === amt
-                          ? 'bg-[#3B6E4C] text-white border-[#3B6E4C]'
-                          : 'bg-[#FAF6F0] text-[#231710] border-[#E6DFD3]'
+                          ? 'bg-[#231710] text-white border-[#231710]'
+                          : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]'
                       }`}
                     >
                       {amt} ج
@@ -598,9 +595,9 @@ export default function PosDirectSalesPage({
                     onChange={(e) =>
                       setScaleGrams(Math.max(10, Number(e.target.value) || 0))
                     }
-                    className="w-full bg-[#FAF6F0] border-2 border-[#D4AF37] rounded-2xl px-4 py-3 text-xl font-black text-center text-[#231710] tabular-nums outline-none"
+                    className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-2xl px-4 py-3 text-xl font-bold text-center text-[#231710] tabular-nums outline-none"
                   />
-                  <span className="font-cairo font-black text-sm text-[#231710] shrink-0">
+                  <span className="font-cairo font-bold text-sm text-[#231710] shrink-0">
                     جرام
                   </span>
                 </div>
@@ -610,10 +607,10 @@ export default function PosDirectSalesPage({
                       key={g}
                       type="button"
                       onClick={() => setScaleGrams(g)}
-                      className={`py-2 rounded-xl text-xs font-black tabular-nums cursor-pointer border ${
+                      className={`py-2 rounded-xl text-xs font-bold tabular-nums cursor-pointer border transition ${
                         scaleGrams === g
-                          ? 'bg-[#231710] text-[#D4AF37] border-[#231710]'
-                          : 'bg-[#FAF6F0] text-[#231710] border-[#E6DFD3]'
+                          ? 'bg-[#231710] text-white border-[#231710]'
+                          : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]'
                       }`}
                     >
                       {g} جم
@@ -624,16 +621,16 @@ export default function PosDirectSalesPage({
             )}
 
             {/* Digital Result Display */}
-            <div className="bg-[#231710] text-[#FAF6F0] rounded-2xl p-4 flex items-center justify-between">
+            <div className="bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] rounded-2xl p-4 flex items-center justify-between">
               <div>
-                <span className="text-[11px] text-[#FAF6F0]/70 block">الوزن الصافي</span>
-                <span className="font-cairo font-black text-xl text-[#D4AF37] tabular-nums">
+                <span className="text-[11px] text-[#6B5B4E] block">الوزن الصافي</span>
+                <span className="font-cairo font-bold text-xl text-[#9A6836] tabular-nums">
                   {scaleCalculation.weightGrams} جم
                 </span>
               </div>
               <div className="text-left">
-                <span className="text-[11px] text-[#FAF6F0]/70 block">السعر النهائي</span>
-                <span className="font-cairo font-black text-2xl text-white tabular-nums">
+                <span className="text-[11px] text-[#6B5B4E] block">السعر النهائي</span>
+                <span className="font-cairo font-bold text-2xl text-[#231710] tabular-nums">
                   {scaleCalculation.unitPrice} ج.م
                 </span>
               </div>
@@ -644,7 +641,7 @@ export default function PosDirectSalesPage({
               <button
                 type="button"
                 onClick={handleConfirmScaleModal}
-                className="flex-1 bg-[#3B6E4C] hover:bg-[#2F5A3D] text-white font-cairo font-black text-sm py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                className="flex-1 bg-[#231710] hover:bg-[#3A271C] text-white font-cairo font-bold text-sm py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition"
               >
                 <Plus className="w-5 h-5" />
                 <span>إضافة للفاتورة ({scaleCalculation.unitPrice} ج.م)</span>
@@ -663,9 +660,9 @@ export default function PosDirectSalesPage({
                     date: new Date().toLocaleDateString('ar-EG'),
                   });
                 }}
-                className="bg-[#FAF6F0] hover:bg-[#F3ECE1] text-[#231710] border border-[#E6DFD3] px-4 py-3.5 rounded-2xl font-cairo font-black text-xs flex items-center gap-1.5 cursor-pointer"
+                className="bg-[#FAF6F0] hover:bg-[#F3ECE1] text-[#231710] border border-[#E8E0D5] px-4 py-3.5 rounded-2xl font-cairo font-bold text-xs flex items-center gap-1.5 cursor-pointer"
               >
-                <Tag className="w-4 h-4 text-[#C88A4B]" />
+                <Tag className="w-4 h-4 text-[#9A6836]" />
                 <span>استيكر</span>
               </button>
             </div>

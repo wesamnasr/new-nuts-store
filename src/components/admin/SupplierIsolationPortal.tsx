@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react';
 import { Category, Product, SupplyInvoice } from '@/types/store';
+import { formatCategoryName } from '@/lib/defaults';
 import {
   updateUrlQueryParams,
   useBrowserUrlSync,
@@ -272,42 +273,37 @@ export function SupplierIsolationPortal({
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Supplier Header Banner */}
-      <div className="bg-gradient-to-l from-amber-900 via-brand-900 to-brand-950 rounded-3xl p-6 md:p-8 text-white shadow-xl border border-amber-500/30 relative overflow-hidden">
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-black mb-3">
-              <Truck className="w-4 h-4" />
-              <span>بوابة المورد والتوريدات</span>
-            </div>
-            <h2 className="text-2xl md:text-3xl font-black font-serif mb-2">
-              أسعار الجملة والنواقص والتوريدات
-            </h2>
-            <p className="hidden">
-              تحديث تكلفة الكيلو بالجملة، تكلفة التغليف، بلد المنشأ، متابعة نواقص المخزون، وإرسال فواتير التوريد الجديدة لاعتماد الإدارة وإضافتها للمخزون الفعلي.
-            </p>
-          </div>
+    <div className="space-y-5">
+      {/* Supplier Header Card */}
+      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-[#E8E0D5] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg sm:text-xl font-bold text-[#231710] flex items-center gap-2">
+            <Truck className="w-5 h-5 text-[#9A6836]" />
+            <span>أسعار الجملة والنواقص والتوريدات</span>
+          </h2>
+          <p className="text-xs text-[#6B5644] mt-1">
+            تحديث تكلفة الكيلو بالجملة، متابعة نواقص المخزون، وإرسال فواتير التوريد لاعتماد الإدارة.
+          </p>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => openQuickRestockModal()}
-              className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black text-sm shadow-lg transition-all cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>إنشاء فاتورة توريد جديدة</span>
-            </button>
-            <button
-              type="button"
-              disabled={effectiveSaving}
-              onClick={() => handleSaveProducts(localProducts)}
-              className="flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-black text-sm shadow-lg shadow-amber-500/25 transition-all cursor-pointer disabled:opacity-50"
-            >
-              <Save className="w-4 h-4" />
-              <span>{effectiveSaving ? 'جاري حفظ بيانات التوريد...' : 'حفظ تعديلات التوريد والمخزون'}</span>
-            </button>
-          </div>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => openQuickRestockModal()}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F2ECE2] text-[#231710] border border-[#E8E0D5] font-bold text-xs transition cursor-pointer"
+          >
+            <Plus className="w-4 h-4 text-[#9A6836]" />
+            <span>إنشاء فاتورة توريد جديدة</span>
+          </button>
+          <button
+            type="button"
+            disabled={effectiveSaving}
+            onClick={() => handleSaveProducts(localProducts)}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#231710] hover:bg-[#3A271C] text-white font-bold text-xs transition cursor-pointer disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            <span>{effectiveSaving ? 'جاري حفظ بيانات التوريد...' : 'حفظ تعديلات التوريد والمخزون'}</span>
+          </button>
         </div>
       </div>
 
@@ -421,7 +417,7 @@ export function SupplierIsolationPortal({
             <option value="all">كل الأقسام ({categories.length})</option>
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id}>
-                {cat.name}
+                {formatCategoryName(cat.name)}
               </option>
             ))}
           </select>
@@ -461,8 +457,8 @@ export function SupplierIsolationPortal({
             </thead>
             <tbody className="divide-y divide-brand-100">
               {filteredProducts.map((product) => {
-                const catName =
-                  categories.find((c) => c.id === product.categoryId)?.name || product.categoryId;
+                const rawCatName = categories.find((c) => c.id === product.categoryId)?.name;
+                const catName = rawCatName ? formatCategoryName(rawCatName) : product.categoryId;
                 return (
                   <tr key={product.id} className="hover:bg-brand-50/50 transition-colors">
                     <td className="px-4 py-3.5 font-bold text-brand-900">{product.name}</td>

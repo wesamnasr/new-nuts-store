@@ -148,7 +148,6 @@ export default function PosActiveInvoiceSidebar({
     if (!isDraggingResize || !onChangeCartWidth) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      // Since cart is anchored at left: 12px, new width is e.clientX - 12
       const nextWidth = clampWidth(e.clientX - 12);
       onChangeCartWidth(nextWidth);
     };
@@ -183,7 +182,7 @@ export default function PosActiveInvoiceSidebar({
       {/* ================================================================= */}
       <aside
         style={{ width: `${cartWidth}px`, maxWidth: '100%' }}
-        className={`w-full ${embeddedInAdmin ? 'relative lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)] lg:z-10' : 'lg:fixed lg:left-3 lg:top-3 lg:bottom-3 lg:z-30'} bg-white rounded-2xl p-3 border-2 border-[#D4AF37] shadow-xl flex flex-col justify-between select-none transition-[box-shadow]`}
+        className={`w-full ${embeddedInAdmin ? 'relative lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)] lg:z-10' : 'lg:fixed lg:left-3 lg:top-3 lg:bottom-3 lg:z-30'} bg-white rounded-2xl p-3 border border-[#E8E0D5] shadow-sm flex flex-col justify-between select-none transition-[box-shadow]`}
       >
         {/* Drag-to-Resize Handle on Right Edge (Desktop) */}
         {onChangeCartWidth && (
@@ -195,26 +194,26 @@ export default function PosActiveInvoiceSidebar({
             title="اسحب بالماوس لتغيير عرض السلة"
             className={`hidden lg:flex items-center justify-center absolute -right-2.5 top-1/2 -translate-y-1/2 w-4 h-16 rounded-full border cursor-ew-resize z-40 transition ${
               isDraggingResize
-                ? 'bg-[#D4AF37] text-[#231710] border-[#231710] scale-110'
-                : 'bg-[#231710] text-[#D4AF37] border-[#D4AF37] hover:scale-105'
+                ? 'bg-[#231710] text-white border-[#231710] scale-110'
+                : 'bg-white text-[#6B5B4E] border-[#E8E0D5] hover:border-[#C5B8A8] hover:scale-105'
             }`}
           >
             <GripVertical className="w-3 h-3" />
           </div>
         )}
 
-        {/* Top Header (Compact Font) */}
-        <div className="border-b border-[#E6DFD3] pb-2 shrink-0">
+        {/* Top Header */}
+        <div className="border-b border-[#E8E0D5] pb-2 shrink-0">
           <div className="flex items-center justify-between gap-1">
             <div className="flex items-center gap-1.5 min-w-0">
-              <div className="w-7 h-7 rounded-lg bg-[#231710] text-[#D4AF37] flex items-center justify-center font-black text-xs shrink-0">
-                🧾
+              <div className="w-7 h-7 rounded-lg bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] flex items-center justify-center shrink-0">
+                <ShoppingBag className="w-3.5 h-3.5 text-[#9A6836]" />
               </div>
               <div className="min-w-0">
-                <h2 className="font-cairo font-black text-xs text-[#231710] truncate">
+                <h2 className="font-cairo font-bold text-xs text-[#231710] truncate">
                   السلة ({posItems.length})
                 </h2>
-                <span className="text-[10px] font-bold text-[#6E5D4F] tabular-nums block">
+                <span className="text-[10px] font-medium text-[#6B5B4E] tabular-nums block">
                   {totalItemsQty} وحدة
                 </span>
               </div>
@@ -227,9 +226,9 @@ export default function PosActiveInvoiceSidebar({
                     type="button"
                     onClick={onHoldCurrentInvoice}
                     title="تعليق الفاتورة مؤقتاً"
-                    className="bg-[#FAF6F0] hover:bg-[#D4AF37]/25 text-[#231710] border border-[#E6DFD3] px-2 py-1 rounded-lg text-[10px] font-cairo font-black flex items-center gap-1 cursor-pointer"
+                    className="bg-[#FAF6F0] hover:bg-[#F3ECE1] text-[#231710] border border-[#E8E0D5] px-2 py-1 rounded-lg text-[10px] font-cairo font-bold flex items-center gap-1 cursor-pointer"
                   >
-                    <PauseCircle className="w-3 h-3 text-[#C88A4B]" />
+                    <PauseCircle className="w-3 h-3 text-[#9A6836]" />
                     <span>تعليق</span>
                   </button>
                   <button
@@ -247,7 +246,7 @@ export default function PosActiveInvoiceSidebar({
                 <button
                   type="button"
                   onClick={() => setShowHeldList(!showHeldList)}
-                  className="bg-[#231710] text-[#D4AF37] px-2 py-1 rounded-lg text-[10px] font-cairo font-black flex items-center gap-0.5 cursor-pointer"
+                  className="bg-[#231710] text-white px-2 py-1 rounded-lg text-[10px] font-cairo font-bold flex items-center gap-0.5 cursor-pointer"
                 >
                   <PlayCircle className="w-3 h-3" />
                   <span>{heldInvoices.length}</span>
@@ -259,17 +258,17 @@ export default function PosActiveInvoiceSidebar({
 
         {/* Held Invoices List (if opened) */}
         {showHeldList && heldInvoices.length > 0 && (
-          <div className="bg-[#231710] text-white rounded-xl p-2.5 my-1.5 space-y-1.5 shrink-0">
+          <div className="bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] rounded-xl p-2.5 my-1.5 space-y-1.5 shrink-0">
             <div className="flex items-center justify-between text-[11px]">
-              <span className="font-cairo font-black text-[#D4AF37]">
+              <span className="font-cairo font-bold text-[#231710]">
                 فواتير معلقة ({heldInvoices.length})
               </span>
               <button
                 type="button"
                 onClick={() => setShowHeldList(false)}
-                className="text-[10px] text-white/70 cursor-pointer"
+                className="text-[10px] text-[#6B5B4E] hover:text-[#231710] cursor-pointer"
               >
-                ✕
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
             <div className="space-y-1 max-h-32 overflow-y-auto">
@@ -281,11 +280,11 @@ export default function PosActiveInvoiceSidebar({
                 return (
                   <div
                     key={held.id}
-                    className="bg-white/10 rounded-lg p-1.5 flex items-center justify-between text-[10.5px]"
+                    className="bg-white border border-[#E8E0D5] rounded-lg p-1.5 flex items-center justify-between text-[10.5px]"
                   >
                     <div className="truncate">
-                      <span className="font-bold block truncate">{held.label}</span>
-                      <span className="text-[9.5px] text-[#D4AF37] tabular-nums">
+                      <span className="font-bold block truncate text-[#231710]">{held.label}</span>
+                      <span className="text-[9.5px] text-[#6B5B4E] tabular-nums">
                         {held.items.length} أصناف • {heldTotal} ج.م
                       </span>
                     </div>
@@ -296,14 +295,14 @@ export default function PosActiveInvoiceSidebar({
                           onRestoreHeldInvoice(held.id);
                           setShowHeldList(false);
                         }}
-                        className="bg-[#D4AF37] text-[#231710] px-2 py-0.5 rounded text-[10px] font-black cursor-pointer"
+                        className="bg-[#231710] text-white px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer"
                       >
                         استرجاع
                       </button>
                       <button
                         type="button"
                         onClick={() => onDeleteHeldInvoice(held.id)}
-                        className="text-red-300 p-0.5 cursor-pointer"
+                        className="text-[#B83B2B] hover:bg-red-50 rounded p-0.5 cursor-pointer"
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
@@ -315,15 +314,15 @@ export default function PosActiveInvoiceSidebar({
           </div>
         )}
 
-        {/* Middle: Scrollable Cart Items List (Compact Font) */}
+        {/* Middle: Scrollable Cart Items List */}
         <div className="flex-1 overflow-y-auto my-2 space-y-1.5 pr-0.5">
           {posItems.length === 0 ? (
-            <div className="h-full min-h-[200px] flex flex-col items-center justify-center text-center p-4 bg-[#FAF6F0]/60 rounded-xl border border-dashed border-[#E6DFD3]">
-              <ShoppingBag className="w-7 h-7 text-[#C88A4B]/50 mb-1.5" />
-              <p className="font-cairo font-black text-xs text-[#231710]">
+            <div className="h-full min-h-[200px] flex flex-col items-center justify-center text-center p-4 bg-[#FAF6F0]/60 rounded-xl border border-dashed border-[#E8E0D5]">
+              <ShoppingBag className="w-6 h-6 text-[#9A6836]/60 mb-1.5" />
+              <p className="font-cairo font-bold text-xs text-[#231710]">
                 السلة فارغة
               </p>
-              <p className="text-[10.5px] font-bold text-[#6E5D4F] mt-0.5">
+              <p className="text-[10.5px] font-medium text-[#6B5B4E] mt-0.5">
                 اضغط على أي صنف لإضافته
               </p>
             </div>
@@ -331,15 +330,15 @@ export default function PosActiveInvoiceSidebar({
             posItems.map((item, idx) => (
               <div
                 key={item.cartItemId || `pos-item-${idx}-${item.productId || 'p'}`}
-                className="bg-[#FAF6F0] rounded-xl p-2 border border-[#E6DFD3] space-y-1"
+                className="bg-[#FAF6F0] rounded-xl p-2 border border-[#E8E0D5] space-y-1"
               >
                 {/* Row 1: Item Name + Delete */}
                 <div className="flex items-start justify-between gap-1">
                   <div className="min-w-0 flex-1">
-                    <div className="font-cairo font-black text-[11px] text-[#231710] leading-tight truncate">
+                    <div className="font-cairo font-bold text-[11px] text-[#231710] leading-tight truncate">
                       {item.productName}
                     </div>
-                    <div className="text-[9.5px] font-bold text-[#6E5D4F] truncate">
+                    <div className="text-[9.5px] font-medium text-[#6B5B4E] truncate">
                       {item.weightLabel}
                       {item.roastOption ? ` • ${item.roastOption}` : ''}
                     </div>
@@ -360,7 +359,7 @@ export default function PosActiveInvoiceSidebar({
                 {/* Row 2: Qty Controls + Sticker + Total Price */}
                 <div className="flex items-center justify-between pt-0.5">
                   <div className="flex items-center gap-1">
-                    <div className="flex items-center gap-0.5 bg-white rounded-lg border border-[#E6DFD3] px-1 py-0.5">
+                    <div className="flex items-center gap-0.5 bg-white rounded-lg border border-[#E8E0D5] px-1 py-0.5">
                       <button
                         type="button"
                         onClick={() =>
@@ -378,7 +377,7 @@ export default function PosActiveInvoiceSidebar({
                       >
                         <Minus className="w-2.5 h-2.5" />
                       </button>
-                      <span className="font-black text-[10.5px] px-1 tabular-nums">
+                      <span className="font-bold text-[10.5px] px-1 tabular-nums">
                         {item.quantity}
                       </span>
                       <button
@@ -402,13 +401,13 @@ export default function PosActiveInvoiceSidebar({
                       type="button"
                       onClick={() => handlePrintCartItemSticker(item)}
                       title="طباعة استيكر"
-                      className="p-1 rounded-lg bg-white hover:bg-[#D4AF37]/20 text-[#C88A4B] border border-[#E6DFD3] cursor-pointer"
+                      className="p-1 rounded-lg bg-white hover:bg-[#FAF6F0] text-[#9A6836] border border-[#E8E0D5] cursor-pointer"
                     >
                       <Tag className="w-3 h-3" />
                     </button>
                   </div>
 
-                  <span className="font-cairo font-black text-xs text-[#3B6E4C] tabular-nums">
+                  <span className="font-cairo font-bold text-xs text-[#231710] tabular-nums">
                     {item.unitPrice * item.quantity} ج.م
                   </span>
                 </div>
@@ -418,13 +417,13 @@ export default function PosActiveInvoiceSidebar({
         </div>
 
         {/* Bottom Footer: Compact Total & Checkout Buttons */}
-        <div className="pt-2 border-t border-[#E6DFD3] space-y-1.5 shrink-0">
-          <div className="bg-[#231710] text-white rounded-xl px-3 py-2 flex items-center justify-between">
-            <span className="font-cairo font-bold text-[11px] text-[#D4AF37]">
+        <div className="pt-2 border-t border-[#E8E0D5] space-y-1.5 shrink-0">
+          <div className="bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] rounded-xl px-3 py-2 flex items-center justify-between">
+            <span className="font-cairo font-bold text-[11px] text-[#6B5B4E]">
               الإجمالي:
             </span>
-            <span className="font-cairo font-black text-lg text-white tabular-nums">
-              {posNetTotal} <span className="text-[10px] text-[#D4AF37]">ج.م</span>
+            <span className="font-cairo font-bold text-lg text-[#231710] tabular-nums">
+              {posNetTotal} <span className="text-[10px] text-[#6B5B4E]">ج.م</span>
             </span>
           </div>
 
@@ -432,7 +431,7 @@ export default function PosActiveInvoiceSidebar({
             type="button"
             disabled={posItems.length === 0 || posLoading}
             onClick={() => setShowCheckoutModal(true)}
-            className="w-full bg-[#3B6E4C] hover:bg-[#2F5A3D] disabled:opacity-40 text-white font-cairo font-black text-xs py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition cursor-pointer"
+            className="w-full bg-[#231710] hover:bg-[#3A271C] disabled:opacity-40 text-white font-cairo font-bold text-xs py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
           >
             <CreditCard className="w-3.5 h-3.5" />
             <span>إتمام البيع والدفع ({posNetTotal} ج)</span>
@@ -447,9 +446,9 @@ export default function PosActiveInvoiceSidebar({
                 setPaymentMethod('cod');
                 onCompleteInvoice();
               }}
-              className="w-full bg-[#FAF6F0] hover:bg-[#D4AF37] text-[#231710] border border-[#D4AF37] font-cairo font-black text-[11px] py-1.5 rounded-xl flex items-center justify-center gap-1 transition cursor-pointer"
+              className="w-full bg-[#FAF6F0] hover:bg-[#F3ECE1] text-[#231710] border border-[#E8E0D5] font-cairo font-bold text-[11px] py-1.5 rounded-xl flex items-center justify-center gap-1 transition cursor-pointer"
             >
-              <Zap className="w-3 h-3 text-[#C88A4B]" />
+              <Zap className="w-3 h-3 text-[#9A6836]" />
               <span>تحصيل كاش سريع وطباعة</span>
             </button>
           )}
@@ -460,22 +459,22 @@ export default function PosActiveInvoiceSidebar({
       {/* ON-DEMAND CHECKOUT MODAL (PAYMENT, DELIVERY, VIP, CHANGE)         */}
       {/* ================================================================= */}
       {showCheckoutModal && (
-        <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-5 border-2 border-[#D4AF37] shadow-2xl space-y-3.5 max-h-[92vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-5 border border-[#E8E0D5] shadow-xl space-y-3.5 max-h-[92vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-[#E6DFD3] pb-2.5">
+            <div className="flex items-center justify-between border-b border-[#E8E0D5] pb-2.5">
               <div>
-                <h3 className="font-cairo font-black text-base text-[#231710]">
+                <h3 className="font-cairo font-bold text-base text-[#231710]">
                   إتمام البيع وتحصيل الفاتورة
                 </h3>
-                <p className="text-xs font-bold text-[#6E5D4F] tabular-nums">
+                <p className="text-xs font-medium text-[#6B5B4E] tabular-nums">
                   {posItems.length} أصناف • الصافي المطلوب: {posNetTotal} ج.م
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowCheckoutModal(false)}
-                className="w-8 h-8 rounded-xl bg-[#FAF6F0] hover:bg-red-100 flex items-center justify-center cursor-pointer"
+                className="w-8 h-8 rounded-xl bg-[#FAF6F0] hover:bg-red-50 text-[#231710] flex items-center justify-center cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -483,23 +482,23 @@ export default function PosActiveInvoiceSidebar({
 
             {/* 1. Order Type (Counter / Glass Bar / Delivery) */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-cairo font-black text-[#231710]">
+              <label className="block text-xs font-cairo font-bold text-[#231710]">
                 نوع الطلب:
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { id: 'counter_takeaway' as PosOrderType, label: '🛍️ كاونتر مباشر' },
-                  { id: 'glass_bar_dine_in' as PosOrderType, label: '☕ البار (4 كراسي)' },
-                  { id: 'phone_delivery' as PosOrderType, label: '🛵 دليفري (+20ج)' },
+                  { id: 'counter_takeaway' as PosOrderType, label: 'كاونتر مباشر' },
+                  { id: 'glass_bar_dine_in' as PosOrderType, label: 'البار (4 كراسي)' },
+                  { id: 'phone_delivery' as PosOrderType, label: 'دليفري (+20ج)' },
                 ].map((t) => (
                   <button
                     key={t.id}
                     type="button"
                     onClick={() => setPosOrderType(t.id)}
-                    className={`py-2 px-2 rounded-xl text-xs font-cairo font-black border transition cursor-pointer ${
+                    className={`py-2 px-2 rounded-xl text-xs font-cairo font-bold border transition cursor-pointer ${
                       posOrderType === t.id
-                        ? 'bg-[#231710] text-[#D4AF37] border-[#231710]'
-                        : 'bg-[#FAF6F0] text-[#231710] border-[#E6DFD3]'
+                        ? 'bg-[#231710] text-white border-[#231710]'
+                        : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]'
                     }`}
                   >
                     {t.label}
@@ -508,18 +507,18 @@ export default function PosActiveInvoiceSidebar({
               </div>
 
               {posOrderType === 'glass_bar_dine_in' && (
-                <div className="flex items-center justify-between bg-[#FAF6F0] px-3 py-2 rounded-xl border border-[#E6DFD3]">
-                  <span className="text-xs font-black text-[#231710]">رقم الكرسي:</span>
+                <div className="flex items-center justify-between bg-[#FAF6F0] px-3 py-2 rounded-xl border border-[#E8E0D5]">
+                  <span className="text-xs font-bold text-[#231710]">رقم الكرسي:</span>
                   <div className="flex items-center gap-1.5">
                     {([1, 2, 3, 4] as const).map((cNum) => (
                       <button
                         key={cNum}
                         type="button"
                         onClick={() => setChairNumber(cNum)}
-                        className={`w-7 h-7 rounded-lg text-xs font-black cursor-pointer ${
+                        className={`w-7 h-7 rounded-lg text-xs font-bold cursor-pointer ${
                           chairNumber === cNum
-                            ? 'bg-[#231710] text-[#D4AF37]'
-                            : 'bg-white text-[#231710] border border-[#E6DFD3]'
+                            ? 'bg-[#231710] text-white'
+                            : 'bg-white text-[#231710] border border-[#E8E0D5]'
                         }`}
                       >
                         {cNum}
@@ -535,31 +534,31 @@ export default function PosActiveInvoiceSidebar({
                   value={deliveryAddress}
                   onChange={(e) => setDeliveryAddress(e.target.value)}
                   placeholder="أدخل عنوان التوصيل بالتفصيل..."
-                  className="w-full bg-[#FAF6F0] border border-[#E6DFD3] rounded-xl px-3 py-2 text-xs font-bold outline-none"
+                  className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs font-medium outline-none"
                 />
               )}
             </div>
 
             {/* 2. Payment Method */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-cairo font-black text-[#231710]">
+              <label className="block text-xs font-cairo font-bold text-[#231710]">
                 وسيلة الدفع:
               </label>
               <div className="grid grid-cols-4 gap-1.5">
                 {[
-                  { id: 'cod' as PaymentMethod, label: '💵 كاش' },
-                  { id: 'instapay' as PaymentMethod, label: '⚡ إنستا باي' },
-                  { id: 'vodafone_cash' as PaymentMethod, label: '📱 فودافون كاش' },
-                  { id: 'card' as PaymentMethod, label: '💳 فيزا' },
+                  { id: 'cod' as PaymentMethod, label: 'كاش' },
+                  { id: 'instapay' as PaymentMethod, label: 'إنستا باي' },
+                  { id: 'vodafone_cash' as PaymentMethod, label: 'فودافون كاش' },
+                  { id: 'card' as PaymentMethod, label: 'فيزا' },
                 ].map((pm) => (
                   <button
                     key={pm.id}
                     type="button"
                     onClick={() => setPaymentMethod(pm.id)}
-                    className={`py-2 px-2 rounded-xl text-xs font-cairo font-black border transition cursor-pointer ${
+                    className={`py-2 px-2 rounded-xl text-xs font-cairo font-bold border transition cursor-pointer ${
                       paymentMethod === pm.id
-                        ? 'bg-[#3B6E4C] text-white border-[#3B6E4C]'
-                        : 'bg-[#FAF6F0] text-[#231710] border-[#E6DFD3]'
+                        ? 'bg-[#231710] text-white border-[#231710]'
+                        : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]'
                     }`}
                   >
                     {pm.label}
@@ -568,7 +567,7 @@ export default function PosActiveInvoiceSidebar({
               </div>
 
               {paymentMethod === 'cod' ? (
-                <div className="bg-[#FAF6F0] rounded-2xl p-3 border border-[#E6DFD3] space-y-2">
+                <div className="bg-[#FAF6F0] rounded-2xl p-3 border border-[#E8E0D5] space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-bold text-[#231710]">
                       المدفوع من العميل:
@@ -579,7 +578,7 @@ export default function PosActiveInvoiceSidebar({
                           key={bill}
                           type="button"
                           onClick={() => setCashTenderedInput(bill)}
-                          className="bg-white hover:bg-[#231710] hover:text-[#D4AF37] border border-[#E6DFD3] px-2 py-0.5 rounded-lg text-xs font-black tabular-nums cursor-pointer"
+                          className="bg-white hover:bg-[#231710] hover:text-white border border-[#E8E0D5] px-2 py-0.5 rounded-lg text-xs font-bold tabular-nums cursor-pointer transition"
                         >
                           {bill}
                         </button>
@@ -596,11 +595,11 @@ export default function PosActiveInvoiceSidebar({
                         )
                       }
                       placeholder={`${posNetTotal} ج.م`}
-                      className="bg-white border border-[#E6DFD3] rounded-xl px-3 py-1.5 text-sm font-black tabular-nums outline-none"
+                      className="bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-1.5 text-sm font-bold tabular-nums outline-none"
                     />
-                    <div className="bg-white border border-[#E6DFD3] rounded-xl px-3 py-1.5 flex items-center justify-between">
-                      <span className="text-xs font-bold text-[#6E5D4F]">الباقي:</span>
-                      <span className="font-cairo font-black text-sm text-[#3B6E4C] tabular-nums">
+                    <div className="bg-white border border-[#E8E0D5] rounded-xl px-3 py-1.5 flex items-center justify-between">
+                      <span className="text-xs font-medium text-[#6B5B4E]">الباقي:</span>
+                      <span className="font-cairo font-bold text-sm text-[#3B6E4C] tabular-nums">
                         {changeDue} ج.م
                       </span>
                     </div>
@@ -612,20 +611,20 @@ export default function PosActiveInvoiceSidebar({
                   value={paymentReference}
                   onChange={(e) => setPaymentReference(e.target.value)}
                   placeholder="رقم مرجع التحويل / الإيصال (اختياري)..."
-                  className="w-full bg-[#FAF6F0] border border-[#E6DFD3] rounded-xl px-3 py-2 text-xs font-bold outline-none"
+                  className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs font-medium outline-none"
                 />
               )}
             </div>
 
             {/* 3. Optional Customer / VIP / Discount */}
-            <div className="bg-[#FAF6F0] rounded-2xl p-3 border border-[#E6DFD3] space-y-2">
+            <div className="bg-[#FAF6F0] rounded-2xl p-3 border border-[#E8E0D5] space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-cairo font-black text-[#231710] flex items-center gap-1">
-                  <Crown className="w-3.5 h-3.5 text-[#C88A4B]" />
+                <span className="text-xs font-cairo font-bold text-[#231710] flex items-center gap-1">
+                  <Crown className="w-3.5 h-3.5 text-[#9A6836]" />
                   <span>بيانات العميل ومحفظة VIP (اختياري)</span>
                 </span>
                 {posVipCashbackEarned > 0 && (
-                  <span className="text-[10.5px] font-black text-[#3B6E4C]">
+                  <span className="text-[10.5px] font-bold text-[#3B6E4C]">
                     +{posVipCashbackEarned} ج.م كاش باك
                   </span>
                 )}
@@ -637,34 +636,35 @@ export default function PosActiveInvoiceSidebar({
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   placeholder="موبايل العميل (01XXXXXXXXX)"
-                  className="bg-white border border-[#E6DFD3] rounded-xl px-2.5 py-1.5 text-xs font-bold tabular-nums outline-none"
+                  className="bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-2.5 py-1.5 text-xs font-medium tabular-nums outline-none"
                 />
                 <input
                   type="text"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="اسم العميل"
-                  className="bg-white border border-[#E6DFD3] rounded-xl px-2.5 py-1.5 text-xs font-bold outline-none"
+                  className="bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-2.5 py-1.5 text-xs font-medium outline-none"
                 />
               </div>
 
               {matchedVipMember && (
-                <div className="bg-white rounded-xl p-2 border border-[#3B6E4C]/40 flex items-center justify-between text-xs">
+                <div className="bg-white rounded-xl p-2 border border-[#E8E0D5] flex items-center justify-between text-xs">
                   <div>
-                    <span className="font-black text-[#231710] block">
-                      👑 {matchedVipMember.name}
+                    <span className="font-bold text-[#231710] flex items-center gap-1">
+                      <Crown className="w-3.5 h-3.5 text-[#9A6836]" />
+                      <span>{matchedVipMember.name}</span>
                     </span>
-                    <span className="text-[#3B6E4C] font-bold tabular-nums">
+                    <span className="text-[#3B6E4C] font-medium tabular-nums">
                       رصيد المحفظة: {matchedVipMember.walletBalanceEgp || 0} ج.م
                     </span>
                   </div>
                   {(matchedVipMember.walletBalanceEgp || 0) > 0 && (
-                    <label className="flex items-center gap-1.5 font-black text-[#3B6E4C] cursor-pointer">
+                    <label className="flex items-center gap-1.5 font-bold text-[#3B6E4C] cursor-pointer">
                       <input
                         type="checkbox"
                         checked={useVipWallet}
                         onChange={(e) => setUseVipWallet(e.target.checked)}
-                        className="accent-[#3B6E4C] w-3.5 h-3.5"
+                        className="accent-[#231710] w-3.5 h-3.5"
                       />
                       <span>خصم من المحفظة</span>
                     </label>
@@ -681,32 +681,32 @@ export default function PosActiveInvoiceSidebar({
                     setCashierDiscount(Math.max(0, Number(e.target.value) || 0))
                   }
                   placeholder="خصم خاص بالجنيه (اختياري)"
-                  className="bg-white border border-[#E6DFD3] rounded-xl px-2.5 py-1.5 text-xs font-bold tabular-nums outline-none"
+                  className="bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-2.5 py-1.5 text-xs font-medium tabular-nums outline-none"
                 />
                 <input
                   type="text"
                   value={invoiceNotes}
                   onChange={(e) => setInvoiceNotes(e.target.value)}
                   placeholder="ملاحظة على الفاتورة..."
-                  className="bg-white border border-[#E6DFD3] rounded-xl px-2.5 py-1.5 text-xs font-bold outline-none"
+                  className="bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-2.5 py-1.5 text-xs font-medium outline-none"
                 />
               </div>
             </div>
 
             {/* Final Summary & Confirm Button */}
-            <div className="bg-[#231710] text-white rounded-2xl p-3.5 flex items-center justify-between">
-              <div className="text-xs space-y-0.5 text-white/80 tabular-nums">
+            <div className="bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] rounded-2xl p-3.5 flex items-center justify-between">
+              <div className="text-xs space-y-0.5 text-[#6B5B4E] tabular-nums">
                 <div>المجموع: {posSubtotal} ج.م</div>
                 {posShipping > 0 && <div>التوصيل: +{posShipping} ج.م</div>}
                 {(cashierDiscount > 0 || vipWalletRedeemable > 0) && (
-                  <div className="text-[#D4AF37]">
+                  <div className="text-[#9A6836] font-bold">
                     الخصم: -{cashierDiscount + vipWalletRedeemable} ج.م
                   </div>
                 )}
               </div>
               <div className="text-left">
-                <span className="text-[11px] text-[#D4AF37] block">الصافي النهائي</span>
-                <span className="font-cairo font-black text-xl text-white tabular-nums">
+                <span className="text-[11px] text-[#6B5B4E] block">الصافي النهائي</span>
+                <span className="font-cairo font-bold text-xl text-[#231710] tabular-nums">
                   {posNetTotal} ج.م
                 </span>
               </div>
@@ -719,7 +719,7 @@ export default function PosActiveInvoiceSidebar({
                 setShowCheckoutModal(false);
                 onCompleteInvoice();
               }}
-              className="w-full bg-[#3B6E4C] hover:bg-[#2F5A3D] text-white font-cairo font-black text-sm py-3.5 rounded-2xl shadow-lg flex items-center justify-center gap-2 cursor-pointer transition"
+              className="w-full bg-[#231710] hover:bg-[#3A271C] text-white font-cairo font-bold text-sm py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition"
             >
               <Printer className="w-4 h-4" />
               <span>تأكيد الدفع وطباعة الفاتورة ({posNetTotal} ج.م)</span>

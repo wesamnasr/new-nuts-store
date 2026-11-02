@@ -1,22 +1,20 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
-  Flame,
-  Clock,
-  Crown,
   ShoppingBag,
   Gift,
   Coffee,
   ArrowLeft,
+  Check,
 } from 'lucide-react';
 import { FlashPromotion, PartitionedBoxSize, Product } from '@/types/store';
 import {
   PARTITIONED_BOX_PRESETS,
   buildDefaultPartitionedBoxSlots,
 } from '@/lib/pricing';
-import { getSafeImageUrl } from '@/lib/defaults';
+import { getSafeImageUrl, stripUiEmojis } from '@/lib/defaults';
 import { useStore } from '@/context/StoreContext';
 
 interface SpecialOffersAndBoxesSectionProps {
@@ -24,176 +22,125 @@ interface SpecialOffersAndBoxesSectionProps {
   products: Product[];
 }
 
+const BOX_CARDS: ReadonlyArray<{
+  size: PartitionedBoxSize;
+  subtitle: string;
+}> = [
+  {
+    size: 'roqan_4',
+    subtitle: 'تشكيلة متوازنة لسهرات الأصدقاء والعائلة الصغيرة',
+  },
+  {
+    size: 'family_6',
+    subtitle: 'تنوع أكبر بـ 6 أصناف مختارة بعناية للضيافة والعائلة',
+  },
+  {
+    size: 'vip_6',
+    subtitle: 'تشكيلة المكسرات الفاخرة والضيافة الخاصة بوزن أوفر',
+  },
+];
+
 export default function SpecialOffersAndBoxesSection({
   promotions,
   products,
 }: SpecialOffersAndBoxesSectionProps) {
   const { addPartitionedBoxToCart, addFlashPromoToCart } = useStore();
   const [addedBoxId, setAddedBoxId] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState({
-    hours: 11,
-    minutes: 42,
-    seconds: 19,
-  });
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
-        if (prev.minutes > 0)
-          return { ...prev, minutes: prev.minutes - 1, seconds: 59 };
-        if (prev.hours > 0)
-          return { hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        return { hours: 12, minutes: 0, seconds: 0 };
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   const handleQuickAddBox = (size: PartitionedBoxSize) => {
     const preset = PARTITIONED_BOX_PRESETS[size];
     const onlineProducts = products.filter((p) => p.showOnline !== false);
-    const slots = buildDefaultPartitionedBoxSlots(size, onlineProducts.length > 0 ? onlineProducts : products);
+    const slots = buildDefaultPartitionedBoxSlots(
+      size,
+      onlineProducts.length > 0 ? onlineProducts : products
+    );
     addPartitionedBoxToCart(size, slots, preset.basePrice, 1);
     setAddedBoxId(size);
     setTimeout(() => setAddedBoxId(null), 1500);
   };
 
   return (
-    <div className="space-y-10 sm:space-y-12">
-      {/* 1. Partitioned Boxes Showcase */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h2 className="font-cairo text-xl sm:text-2xl font-black text-[#231710]">
-            بوكسات السهرة المقسمة
-          </h2>
+    <div className="space-y-14 sm:space-y-16">
+      {/* 1. Calm Partitioned Boxes Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+          <div>
+            <h2 className="font-cairo text-xl sm:text-2xl font-bold text-[#231710]">
+              بوكسات السهرة المقسمة
+            </h2>
+            <p className="text-xs sm:text-sm text-[#6E5D4F] mt-0.5">
+              اطلب التشكيلة الجاهزة مباشرة أو خصّص أصناف كل خانة حسب ذوقك
+            </p>
+          </div>
           <Link
             href="/build-box"
-            className="bg-[#D4AF37] hover:bg-[#C88A4B] text-[#231710] font-cairo font-black text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5 self-start sm:self-auto shadow-sm transition"
+            className="inline-flex items-center gap-1.5 text-sm font-cairo font-bold text-[#231710] hover:text-[#9A6836] self-start sm:self-auto transition"
           >
-            <Gift className="w-4 h-4" />
-            <span>صمّم بوكسك بنفسك</span>
-            <ArrowLeft className="w-3.5 h-3.5" />
+            <Gift className="w-4 h-4 text-[#9A6836]" />
+            <span>تخصيص بوكس حسب الطلب</span>
+            <ArrowLeft className="w-4 h-4" />
           </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {(
-            [
-              {
-                size: 'roqan_4' as PartitionedBoxSize,
-                tag: 'الأكثر مبيعاً 🔥',
-                bgAccent: 'border-[#D4AF37] bg-white',
-              },
-              {
-                size: 'family_6' as PartitionedBoxSize,
-                tag: 'للسهرة العائلية 👨‍👩‍👧‍👦',
-                bgAccent: 'border-[#C88A4B] bg-white',
-              },
-              {
-                size: 'vip_6' as PartitionedBoxSize,
-                tag: 'ضيافة ملكية 👑',
-                bgAccent:
-                  'border-[#231710] bg-gradient-to-b from-[#231710] to-[#332218] text-white',
-              },
-            ] as const
-          ).map((card) => {
+          {BOX_CARDS.map((card) => {
             const preset = PARTITIONED_BOX_PRESETS[card.size];
-            const isVipCard = card.size === 'vip_6';
             const isJustAdded = addedBoxId === card.size;
 
             return (
               <div
                 key={card.size}
-                className={`rounded-3xl border-2 p-5 shadow-md flex flex-col justify-between gap-4 transition hover:shadow-xl ${card.bgAccent}`}
+                className="rounded-2xl bg-white border border-[#E8E0D5] p-6 flex flex-col justify-between gap-6 hover:border-[#231710]/25 transition"
               >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span
-                      className={`text-[10.5px] font-black px-3 py-1 rounded-full ${
-                        isVipCard
-                          ? 'bg-[#D4AF37] text-[#231710]'
-                          : 'bg-[#F3ECE1] text-[#231710] border border-[#D4AF37]'
-                      }`}
-                    >
-                      {card.tag}
-                    </span>
-                    <span
-                      className={`text-xs font-extrabold tabular-nums ${
-                        isVipCard ? 'text-[#D4AF37]' : 'text-[#6E5D4F]'
-                      }`}
-                    >
-                      {preset.slotsCount} خانات ({preset.approximateTotalGrams} جم)
-                    </span>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between gap-2 text-xs text-[#6E5D4F] font-medium tabular-nums">
+                    <span>{preset.slotsCount} أقسام منفصلة</span>
+                    <span>حوالي {preset.approximateTotalGrams} جم</span>
                   </div>
 
-                  <h3
-                    className={`font-cairo text-xl font-black ${
-                      isVipCard ? 'text-white' : 'text-[#231710]'
-                    }`}
-                  >
+                  <h3 className="font-cairo text-lg sm:text-xl font-bold text-[#231710]">
                     {preset.title}
                   </h3>
 
-                  {/* Visual Compartment Grid Preview */}
-                  <div
-                    className={`grid ${
-                      preset.slotsCount === 4 ? 'grid-cols-2' : 'grid-cols-3'
-                    } gap-1.5 p-2.5 rounded-2xl border ${
-                      isVipCard
-                        ? 'bg-white/5 border-[#D4AF37]/30'
-                        : 'bg-[#F3ECE1]/70 border-[#E6DFD3]'
-                    }`}
-                  >
-                    {Array.from({ length: preset.slotsCount }).map((_, idx) => (
-                      <div
-                        key={idx}
-                        className={`rounded-xl p-2 text-center text-[10px] font-bold border ${
-                          isVipCard
-                            ? 'bg-[#231710] border-[#D4AF37]/40 text-[#D4AF37]'
-                            : 'bg-white border-[#E6DFD3] text-[#231710]'
-                        }`}
-                      >
-                        خانة {idx + 1} ({preset.gramsPerSlot}ج)
-                      </div>
-                    ))}
-                  </div>
+                  <p className="text-xs sm:text-sm text-[#5C4A3D] leading-relaxed">
+                    {card.subtitle} ({preset.gramsPerSlot} جم لكل قسم).
+                  </p>
                 </div>
 
-                <div className="pt-3 border-t border-[#E6DFD3]/40 flex items-center justify-between gap-2">
+                <div className="pt-4 border-t border-[#F0EAE0] flex items-center justify-between gap-3">
                   <div className="tabular-nums">
-                    <span
-                      className={`font-cairo text-2xl font-black ${
-                        isVipCard ? 'text-[#D4AF37]' : 'text-[#231710]'
-                      }`}
-                    >
-                      {preset.basePrice} ج.م
+                    <span className="font-cairo text-xl font-bold text-[#231710]">
+                      {preset.basePrice}
+                    </span>
+                    <span className="text-xs text-[#6E5D4F] font-medium mr-1">
+                      ج.م
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <Link
                       href={`/build-box?size=${card.size}`}
-                      className={`px-3 py-2.5 rounded-xl text-xs font-extrabold border transition ${
-                        isVipCard
-                          ? 'border-[#D4AF37] text-[#D4AF37] hover:bg-white/10'
-                          : 'border-[#231710] text-[#231710] hover:bg-[#F3ECE1]'
-                      }`}
+                      className="px-3.5 py-2 rounded-xl text-xs font-bold border border-[#E8E0D5] bg-[#FAF6F0] hover:bg-[#F4EFE6] text-[#231710] transition"
                     >
-                      خصّص
+                      تخصيص
                     </Link>
                     <button
                       type="button"
                       onClick={() => handleQuickAddBox(card.size)}
-                      className={`px-3.5 py-2.5 rounded-xl text-xs font-black transition cursor-pointer ${
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
                         isJustAdded
                           ? 'bg-[#3B6E4C] text-white'
-                          : isVipCard
-                            ? 'bg-[#D4AF37] text-[#231710] hover:opacity-95'
-                            : 'bg-[#231710] text-[#D4AF37] hover:bg-[#3A2519]'
+                          : 'bg-[#231710] hover:bg-[#362419] text-[#FAF6F0]'
                       }`}
                     >
-                      {isJustAdded ? 'تمت الإضافة ✓' : 'أضف للسلة'}
+                      {isJustAdded ? (
+                        <>
+                          <Check className="w-3.5 h-3.5" />
+                          <span>تمت الإضافة</span>
+                        </>
+                      ) : (
+                        <span>أضف للسلة</span>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -203,68 +150,52 @@ export default function SpecialOffersAndBoxesSection({
         </div>
       </section>
 
-      {/* 2. Flash Deals & Coffee Blender Studio Banner */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        {promotions.length > 0 && (
-          <div className="bg-gradient-to-l from-[#231710] via-[#2D1E15] to-[#231710] rounded-3xl p-5 sm:p-7 text-[#FAF6F0] border-2 border-[#D4AF37]/50 shadow-xl">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-white/15">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex items-center gap-1 bg-[#B83B2B] text-white text-xs font-black px-3 py-1 rounded-full">
-                  <Flame className="w-3.5 h-3.5" />
-                  <span>عروض الأسبوع</span>
-                </span>
-                <h2 className="font-cairo text-xl sm:text-2xl font-black text-white">
-                  باقات التوفير
-                </h2>
-              </div>
+      {/* 2. Active Bundle Offers (Calm Light Presentation, Zero Fake Countdown) */}
+      {promotions.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
+          <div>
+            <h2 className="font-cairo text-xl sm:text-2xl font-bold text-[#231710]">
+              باقات التوفير المختارة
+            </h2>
+            <p className="text-xs sm:text-sm text-[#6E5D4F] mt-0.5">
+              عروض حقيقية مجمّعة بأسعار مخفضة من المحمصة مباشرة
+            </p>
+          </div>
 
-              <div className="flex items-center gap-2 bg-black/35 border border-[#D4AF37]/40 px-4 py-2 rounded-2xl shrink-0">
-                <Clock className="w-4 h-4 text-[#D4AF37]" />
-                <div className="flex items-center gap-1 font-cairo font-black text-sm text-[#D4AF37] tabular-nums">
-                  <span className="bg-[#231710] px-2 py-1 rounded-lg border border-[#D4AF37]/30">
-                    {String(countdown.hours).padStart(2, '0')}س
-                  </span>
-                  <span>:</span>
-                  <span className="bg-[#231710] px-2 py-1 rounded-lg border border-[#D4AF37]/30">
-                    {String(countdown.minutes).padStart(2, '0')}د
-                  </span>
-                  <span>:</span>
-                  <span className="bg-[#231710] px-2 py-1 rounded-lg border border-[#D4AF37]/30">
-                    {String(countdown.seconds).padStart(2, '0')}ث
-                  </span>
-                </div>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {promotions.map((promo) => {
+              const cleanBadge = stripUiEmojis(promo.badge || promo.badgeText || 'باقة توفير');
+              const cleanTitle = stripUiEmojis(promo.title);
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-5">
-              {promotions.map((promo) => (
+              return (
                 <div
                   key={promo.id}
-                  className="bg-[#FAF6F0] text-[#231710] rounded-2xl p-4 border border-[#D4AF37] flex flex-col justify-between gap-3 shadow-md"
+                  className="bg-white rounded-2xl p-5 border border-[#E8E0D5] flex flex-col justify-between gap-4"
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="bg-[#B83B2B] text-white text-[10px] font-black px-2.5 py-0.5 rounded-full">
-                        {promo.badge || promo.badgeText || 'عرض خاص 🔥'}
+                      <span className="bg-[#FAF6F0] text-[#9A6836] border border-[#E8E0D5] text-[11px] font-bold px-2.5 py-0.5 rounded-lg">
+                        {cleanBadge || 'عرض خاص'}
                       </span>
                       {promo.isVipOnly && (
-                        <span className="bg-[#D4AF37]/25 text-[#231710] border border-[#D4AF37] text-[9.5px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <Crown className="w-3 h-3 text-[#C88A4B]" />
-                          <span>VIP</span>
+                        <span className="bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] text-[11px] font-bold px-2.5 py-0.5 rounded-lg">
+                          لأعضاء VIP
                         </span>
                       )}
                     </div>
-                    <h3 className="font-cairo text-sm sm:text-base font-black text-[#231710]">
-                      {promo.title}
+                    <h3 className="font-cairo text-base font-bold text-[#231710]">
+                      {cleanTitle}
                     </h3>
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-[#E6DFD3]">
+                  <div className="flex items-center justify-between pt-3.5 border-t border-[#F0EAE0]">
                     <div className="tabular-nums">
-                      <span className="text-[10px] text-[#6E5D4F] line-through block">
-                        {promo.originalRetailPrice || promo.originalPrice} ج.م
-                      </span>
-                      <span className="font-cairo text-lg font-black text-[#3B6E4C]">
+                      {(promo.originalRetailPrice || promo.originalPrice) && (
+                        <span className="text-xs text-[#8A7968] line-through block">
+                          {promo.originalRetailPrice || promo.originalPrice} ج.م
+                        </span>
+                      )}
+                      <span className="font-cairo text-lg font-bold text-[#231710]">
                         {promo.promoPrice} ج.م
                       </span>
                     </div>
@@ -273,41 +204,45 @@ export default function SpecialOffersAndBoxesSection({
                       onClick={() =>
                         addFlashPromoToCart(
                           promo.id,
-                          promo.title,
+                          cleanTitle,
                           promo.promoPrice,
                           getSafeImageUrl(promo.image)
                         )
                       }
-                      className="bg-[#231710] hover:bg-[#3A2519] text-[#D4AF37] font-cairo font-black text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow transition active:scale-95 cursor-pointer"
+                      className="bg-[#231710] hover:bg-[#362419] text-[#FAF6F0] font-cairo font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
                     >
                       <ShoppingBag className="w-3.5 h-3.5" />
                       <span>أضف للسلة</span>
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        )}
+        </section>
+      )}
 
-        {/* Custom Coffee Blender Interactive Studio Callout */}
-        <div className="bg-gradient-to-r from-[#231710] via-[#3A2519] to-[#231710] rounded-3xl p-5 sm:p-6 text-[#FAF6F0] border-2 border-[#D4AF37]/50 shadow-lg flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <span className="inline-flex items-center gap-1.5 bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40 px-3 py-1 rounded-full text-xs font-black">
-              <Coffee className="w-3.5 h-3.5" />
+      {/* 3. Calm Coffee Blender Studio Card */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#E8E0D5] flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#9A6836]">
+              <Coffee className="w-4 h-4" />
               <span>معمل توليفة البن</span>
-            </span>
-            <h2 className="font-cairo text-xl sm:text-2xl font-black text-white">
-              صمّم توليفة قهوتك الخاصة بالجرام والتحويجة المفضلة
+            </div>
+            <h2 className="font-cairo text-xl sm:text-2xl font-bold text-[#231710]">
+              ركّب توليفة قهوتك الخاصة بالجرام ودرجة التحميص والتحويجة
             </h2>
+            <p className="text-xs sm:text-sm text-[#5C4A3D]">
+              امزج البن البرازيلي والكولومبي والحبشي بنسب دقيقة مع اختيار الحبهان وجوزة الطيب والطحن الطازج قبل الشحن مباشرة.
+            </p>
           </div>
           <Link
             href="/coffee-blender"
-            className="bg-gradient-to-l from-[#D4AF37] to-[#C88A4B] hover:opacity-95 text-[#231710] font-cairo font-black text-xs sm:text-sm px-5 py-3 rounded-2xl shadow-lg flex items-center gap-2 shrink-0 transition"
+            className="bg-[#231710] hover:bg-[#362419] text-[#FAF6F0] font-cairo font-bold text-sm px-6 py-3.5 rounded-xl flex items-center gap-2 shrink-0 transition"
           >
-            <Coffee className="w-4 h-4" />
-            <span>افتح معمل البن</span>
-            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>ابدأ تركيب التوليفة</span>
+            <ArrowLeft className="w-4 h-4" />
           </Link>
         </div>
       </section>

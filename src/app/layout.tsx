@@ -164,7 +164,7 @@ export default function RootLayout({
       </head>
       <body
         suppressHydrationWarning
-        className="font-tajawal min-h-screen flex flex-col bg-[#FAF6F0] text-[#231710] pb-16 lg:pb-0"
+        className="font-tajawal min-h-screen flex flex-col bg-[#FAF6F0] text-[#231710] antialiased"
       >
         <StoreProvider>
           <Navbar />

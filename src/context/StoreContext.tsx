@@ -16,7 +16,7 @@ import {
   FlashPromotion,
   PartitionedBoxSize,
 } from '@/types/store';
-import { getResolvedThemeConfig, getSafeImageUrl, STORE_THEMES } from '@/lib/defaults';
+import { getResolvedThemeConfig, getSafeImageUrl, STORE_THEMES, stripUiEmojis } from '@/lib/defaults';
 import { PARTITIONED_BOX_PRESETS } from '@/lib/pricing';
 import { validateEgyptianPhone } from '@/lib/validation';
 import { updateUrlQueryParams, useBrowserUrlSync } from '@/lib/url-sync';
@@ -530,7 +530,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setCart((prev) => [...prev, newCartItem]);
     trackPixelEvent('AddToCart', `${presetName} (${slotsCount} خانات) - ${protectedPrice} ج.م`);
     showToast(
-      `تم اعتماد وإضافة "${presetName}" للسلة! 🎁`,
+      `تمت إضافة "${presetName}" للسلة`,
       `${slotsCount} خانات مختارة على ذوقك • ${protectedPrice} ج.م`,
       true
     );
@@ -563,7 +563,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setCart((prev) => [...prev, newCartItem]);
     trackPixelEvent('AddToCart', `توليفة قهوة (${weightLabel}) - ${unitPrice * quantity} ج.م`);
     showToast(
-      `تم تجهيز ملصق الباريستا وإضافة توليفتك للسلة! ☕`,
+      `تم تجهيز ملصق المطحنة وإضافة توليفتك للسلة`,
       `${spec.roastLevel} • ${spec.spicing} • ${unitPrice} ج.م`,
       true
     );
@@ -579,16 +579,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     let promoTitle = '';
     let finalPrice = 0;
     let promoImg = '/images/products/royal-mix.jpg';
-    let workerNotes = 'عرض الشريك الرابع الترويجي';
+    let workerNotes = 'عرض باقة توفير المحمصة';
 
     if (typeof promoOrId === 'string') {
       promoId = promoOrId;
-      promoTitle = title || 'باقة عرض حفصة الترويجي';
+      promoTitle = stripUiEmojis(title || 'باقة عرض حفصة الترويجي');
       finalPrice = Number(promoPrice) || 199;
       promoImg = getSafeImageUrl(image);
     } else {
       promoId = promoOrId.id;
-      promoTitle = promoOrId.title;
+      promoTitle = stripUiEmojis(promoOrId.title);
       finalPrice = promoOrId.promoPrice;
       promoImg = getSafeImageUrl(promoOrId.image);
       if (promoOrId.items && promoOrId.items.length > 0) {
@@ -617,10 +617,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         {
           cartItemId,
           productId: promoId,
-          productName: `🔥 ${promoTitle}`,
+          productName: promoTitle,
           productImage: promoImg,
           weightId: promoId,
-          weightLabel: 'باقة عرض الشريك الرابع',
+          weightLabel: 'باقة توفير',
           roastOption: 'تشكيلة فاخرة',
           unitPrice: finalPrice,
           quantity: 1,
@@ -628,8 +628,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         },
       ];
     });
-    trackPixelEvent('AddToCart', `عرض خاطف: ${promoTitle} - ${finalPrice} ج.م`);
-    showToast(`تمت إضافة "${promoTitle}" للسلة! 🔥`, `سعر العرض: ${finalPrice} ج.م`, true);
+    trackPixelEvent('AddToCart', `عرض باقة: ${promoTitle} - ${finalPrice} ج.م`);
+    showToast(`تمت إضافة "${promoTitle}" للسلة`, `سعر العرض: ${finalPrice} ج.م`, true);
   };
 
   const updateQuantity = (cartItemId: string, quantity: number) => {
@@ -685,8 +685,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
 
     setAppliedCoupon(coupon);
-    showToast(`تم تفعيل كود الخصم ${coupon.code} بنجاح!`, coupon.description);
-    return { success: true, message: `تم تطبيق الخصم: ${coupon.description}` };
+    showToast(`تم تفعيل كود الخصم ${coupon.code}`, stripUiEmojis(coupon.description));
+    return { success: true, message: `تم تطبيق الخصم: ${stripUiEmojis(coupon.description)}` };
   };
 
   const removeCoupon = () => {
@@ -742,29 +742,31 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
-      {/* Compact Floating Toast Notifications on the Right Side */}
+      {/* Calm Floating Toast Notifications */}
       <div
-        className={`fixed right-3 sm:right-4 z-[100] flex flex-col items-end gap-1.5 max-w-[260px] w-fit pointer-events-none ${
-          cartCount > 0 && !isCartOpen ? 'bottom-28 lg:bottom-16' : 'bottom-16 lg:bottom-4'
+        className={`fixed right-4 z-[100] flex flex-col items-end gap-2 max-w-xs w-fit pointer-events-none ${
+          cartCount > 0 && !isCartOpen ? 'bottom-24' : 'bottom-5'
         }`}
       >
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className="pointer-events-auto bg-[#231710]/95 backdrop-blur-md text-white px-2.5 py-1.5 rounded-xl shadow-xl border border-[#D4AF37]/50 flex items-center justify-between gap-2 w-fit"
+            className="pointer-events-auto bg-white text-[#231710] px-3.5 py-2.5 rounded-2xl shadow-lg border border-[#E8E0D5] flex items-center justify-between gap-3 w-fit"
           >
             <div className="min-w-0">
-              <p className="font-bold text-[11px] text-[#D4AF37] leading-tight">{toast.title}</p>
+              <p className="font-cairo font-bold text-xs text-[#231710] leading-snug">
+                {stripUiEmojis(toast.title)}
+              </p>
               {toast.subtitle && (
-                <p className="text-[9.5px] text-[#FAF6F0]/90 mt-0.5 font-tajawal truncate">
-                  {toast.subtitle}
+                <p className="text-xs text-[#6E5D4F] mt-0.5 truncate">
+                  {stripUiEmojis(toast.subtitle)}
                 </p>
               )}
             </div>
             {toast.showCartButton && (
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="text-[10px] bg-[#D4AF37] hover:bg-[#C88A4B] text-[#231710] font-black px-2 py-1 rounded-lg shrink-0 transition cursor-pointer"
+                className="text-xs bg-[#231710] hover:bg-[#362419] text-[#FAF6F0] font-cairo font-bold px-3 py-1.5 rounded-xl shrink-0 transition cursor-pointer"
               >
                 عرض السلة
               </button>

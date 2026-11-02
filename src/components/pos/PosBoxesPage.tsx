@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import {
   Gift,
   Plus,
-  Sparkles,
+  Layers,
   RotateCcw,
   X,
   Check,
@@ -19,7 +19,7 @@ import {
   PARTITIONED_BOX_TIERS,
   calculatePartitionedBoxValuation,
 } from '@/lib/pricing';
-import { getSafeImageUrl } from '@/lib/defaults';
+import { getSafeImageUrl, stripUiEmojis } from '@/lib/defaults';
 import { StickerPreviewData } from '@/components/SupermarketReceiptModal';
 
 interface PosBoxesPageProps {
@@ -58,7 +58,6 @@ export default function PosBoxesPage({
 
   // Touch-to-Fill Box Builder State
   const [selectedTierId, setSelectedTierId] = useState<PartitionedBoxTierId>('roqan_4');
-  // Array of length = slotsCount, holding Product | null
   const [slotProducts, setSlotProducts] = useState<Array<Product | null>>([
     null,
     null,
@@ -88,7 +87,7 @@ export default function PosBoxesPage({
     setActiveSlotIndex(firstEmpty >= 0 ? firstEmpty : 0);
   };
 
-  // Tap a product card -> immediately fills the active/next empty slot!
+  // Tap a product card -> immediately fills the active/next empty slot
   const handleTapProductForSlot = (prod: Product) => {
     const next = [...slotProducts];
     const targetIdx =
@@ -100,7 +99,6 @@ export default function PosBoxesPage({
     next[idxToFill] = prod;
     setSlotProducts(next);
 
-    // Move cursor to next empty slot, or advance circularly
     const nextEmpty = next.findIndex((s, i) => s === null && i > idxToFill);
     const anyEmpty = next.findIndex((s) => s === null);
     if (nextEmpty >= 0) {
@@ -244,11 +242,11 @@ export default function PosBoxesPage({
     onAddPosItem({
       cartItemId: `pos-promo-${promo.id}`,
       productId: promo.id,
-      productName: promo.title,
+      productName: stripUiEmojis(promo.title),
       productImage: getSafeImageUrl(promo.image),
       weightId: 'promo-box',
-      weightLabel: promo.badgeText || 'بوكس عرض جاهز',
-      roastOption: promo.subtitle,
+      weightLabel: stripUiEmojis(promo.badgeText || 'بوكس عرض جاهز'),
+      roastOption: stripUiEmojis(promo.subtitle),
       unitPrice: effectivePrice,
       quantity: 1,
       rawCostEgp: Math.round(effectivePrice * 0.72),
@@ -260,13 +258,13 @@ export default function PosBoxesPage({
       {/* =================================================================== */}
       {/* 2 SIMPLE MODE TABS: READY BOXES VS TOUCH-TO-FILL BOX BUILDER        */}
       {/* =================================================================== */}
-      <div className="grid grid-cols-2 gap-3 bg-white p-2 rounded-2xl border border-[#E6DFD3] shadow-xs">
+      <div className="grid grid-cols-2 gap-3 bg-white p-2 rounded-2xl border border-[#E8E0D5]">
         <button
           type="button"
           onClick={() => setBoxTab('ready')}
-          className={`py-3 px-4 rounded-xl font-cairo font-black text-sm flex items-center justify-center gap-2 transition cursor-pointer ${
+          className={`py-3 px-4 rounded-xl font-cairo font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer ${
             boxTab === 'ready'
-              ? 'bg-[#231710] text-[#D4AF37] shadow-sm'
+              ? 'bg-[#231710] text-white'
               : 'bg-[#FAF6F0] text-[#231710] hover:bg-[#F3ECE1]'
           }`}
         >
@@ -277,19 +275,19 @@ export default function PosBoxesPage({
         <button
           type="button"
           onClick={() => setBoxTab('touch_builder')}
-          className={`py-3 px-4 rounded-xl font-cairo font-black text-sm flex items-center justify-center gap-2 transition cursor-pointer ${
+          className={`py-3 px-4 rounded-xl font-cairo font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer ${
             boxTab === 'touch_builder'
-              ? 'bg-[#3B6E4C] text-white shadow-sm'
+              ? 'bg-[#231710] text-white'
               : 'bg-[#FAF6F0] text-[#231710] hover:bg-[#F3ECE1]'
           }`}
         >
-          <Sparkles className="w-4 h-4" />
+          <Layers className="w-4 h-4" />
           <span>تكوين بوكس مخصوص باللمس (اختر الأصناف)</span>
         </button>
       </div>
 
       {/* =================================================================== */}
-      {/* TAB 1: READY 1-CLICK BOXES (LARGE SIMPLIFIED CARDS)                 */}
+      {/* TAB 1: READY 1-CLICK BOXES                                          */}
       {/* =================================================================== */}
       {boxTab === 'ready' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -312,19 +310,19 @@ export default function PosBoxesPage({
             return (
               <div
                 key={preset.id}
-                className="bg-white rounded-2xl border-2 border-[#E6DFD3] hover:border-[#D4AF37] p-4 flex flex-col justify-between transition shadow-xs hover:shadow-md space-y-3"
+                className="bg-white rounded-2xl border border-[#E8E0D5] hover:border-[#C5B8A8] p-4 flex flex-col justify-between transition space-y-3"
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="bg-[#FAF6F0] border border-[#E6DFD3] text-[#231710] text-xs font-black px-2.5 py-1 rounded-lg">
-                      🎁 {preset.badge}
+                    <span className="bg-[#FAF6F0] border border-[#E8E0D5] text-[#6B5B4E] text-xs font-bold px-2.5 py-1 rounded-lg">
+                      {preset.badge}
                     </span>
-                    <span className="font-cairo font-black text-xl text-[#3B6E4C] tabular-nums">
+                    <span className="font-cairo font-bold text-xl text-[#231710] tabular-nums">
                       {val.finalBoxPriceEgp} ج.م
                     </span>
                   </div>
 
-                  <h3 className="font-cairo font-black text-base text-[#231710]">
+                  <h3 className="font-cairo font-bold text-base text-[#231710]">
                     {preset.name}
                   </h3>
 
@@ -333,7 +331,7 @@ export default function PosBoxesPage({
                     {val.slots.map((s) => (
                       <span
                         key={s.slotNumber}
-                        className="bg-[#FAF6F0] text-[#6E5D4F] text-[11px] font-bold px-2 py-0.5 rounded-md border border-[#E6DFD3]"
+                        className="bg-[#FAF6F0] text-[#6B5B4E] text-[11px] font-medium px-2 py-0.5 rounded-md border border-[#E8E0D5]"
                       >
                         {s.productName}
                       </span>
@@ -344,7 +342,7 @@ export default function PosBoxesPage({
                 <button
                   type="button"
                   onClick={() => handleAddReadyBox(preset)}
-                  className="w-full bg-[#231710] hover:bg-[#3B6E4C] text-[#D4AF37] hover:text-white font-cairo font-black text-sm py-3 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  className="w-full bg-[#231710] hover:bg-[#3A271C] text-white font-cairo font-bold text-sm py-3 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   <span>إضافة للفاتورة ({val.finalBoxPriceEgp} ج.م)</span>
@@ -358,30 +356,30 @@ export default function PosBoxesPage({
             .map((promo) => (
               <div
                 key={promo.id}
-                className="bg-white rounded-2xl border-2 border-[#E6DFD3] hover:border-[#D4AF37] p-4 flex flex-col justify-between transition shadow-xs hover:shadow-md space-y-3"
+                className="bg-white rounded-2xl border border-[#E8E0D5] hover:border-[#C5B8A8] p-4 flex flex-col justify-between transition space-y-3"
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="bg-[#B83B2B]/10 text-[#B83B2B] text-xs font-black px-2.5 py-1 rounded-lg">
-                      🔥 عرض جاهز
+                    <span className="bg-[#FAF6F0] border border-[#E8E0D5] text-[#9A6836] text-xs font-bold px-2.5 py-1 rounded-lg">
+                      عرض جاهز
                     </span>
-                    <span className="font-cairo font-black text-xl text-[#3B6E4C] tabular-nums">
+                    <span className="font-cairo font-bold text-xl text-[#231710] tabular-nums">
                       {promo.discountedPrice ?? promo.promoPrice} ج.م
                     </span>
                   </div>
 
-                  <h3 className="font-cairo font-black text-base text-[#231710]">
-                    {promo.title}
+                  <h3 className="font-cairo font-bold text-base text-[#231710]">
+                    {stripUiEmojis(promo.title)}
                   </h3>
-                  <p className="text-xs font-bold text-[#6E5D4F] line-clamp-2">
-                    {promo.subtitle}
+                  <p className="text-xs font-medium text-[#6B5B4E] line-clamp-2">
+                    {stripUiEmojis(promo.subtitle)}
                   </p>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => handleAddPromoBox(promo)}
-                  className="w-full bg-[#231710] hover:bg-[#3B6E4C] text-[#D4AF37] hover:text-white font-cairo font-black text-sm py-3 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  className="w-full bg-[#231710] hover:bg-[#3A271C] text-white font-cairo font-bold text-sm py-3 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   <span>إضافة للفاتورة ({promo.discountedPrice ?? promo.promoPrice} ج.م)</span>
@@ -392,7 +390,7 @@ export default function PosBoxesPage({
       )}
 
       {/* =================================================================== */}
-      {/* TAB 2: TOUCH-TO-FILL CUSTOM BOX (ZERO DROPDOWNS, ZERO SLIDERS!)     */}
+      {/* TAB 2: TOUCH-TO-FILL CUSTOM BOX                                     */}
       {/* =================================================================== */}
       {boxTab === 'touch_builder' && (
         <div className="space-y-4">
@@ -405,19 +403,19 @@ export default function PosBoxesPage({
                   key={tier.id}
                   type="button"
                   onClick={() => handleSelectTier(tier.id)}
-                  className={`p-3.5 rounded-2xl border-2 text-right transition cursor-pointer flex items-center justify-between ${
+                  className={`p-3.5 rounded-2xl border text-right transition cursor-pointer flex items-center justify-between ${
                     isSelected
-                      ? 'bg-[#231710] text-[#D4AF37] border-[#D4AF37] shadow-sm'
-                      : 'bg-white text-[#231710] border-[#E6DFD3] hover:border-[#C88A4B]'
+                      ? 'bg-[#231710] text-white border-[#231710]'
+                      : 'bg-white text-[#231710] border-[#E8E0D5] hover:border-[#C5B8A8]'
                   }`}
                 >
                   <div>
-                    <div className="font-cairo font-black text-sm">{tier.name}</div>
+                    <div className="font-cairo font-bold text-sm">{tier.name}</div>
                     <div className="text-xs opacity-80">
                       {tier.slotsCount} خانات × {tier.gramsPerSlot} جم = {tier.totalGrams} جم
                     </div>
                   </div>
-                  <span className="font-cairo font-black text-sm px-2.5 py-1 rounded-xl bg-black/15 tabular-nums">
+                  <span className="font-cairo font-bold text-xs px-2.5 py-1 rounded-xl bg-black/10 tabular-nums">
                     {tier.slotsCount} خانات
                   </span>
                 </button>
@@ -426,13 +424,13 @@ export default function PosBoxesPage({
           </div>
 
           {/* Step 2: Visual Box Slots Tray + Instant Add Button */}
-          <div className="bg-white rounded-2xl p-4 border-2 border-[#D4AF37] shadow-sm space-y-3">
+          <div className="bg-white rounded-2xl p-4 border border-[#E8E0D5] space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="font-cairo font-black text-sm text-[#231710]">
+                <span className="font-cairo font-bold text-sm text-[#231710]">
                   خانات البوكس ({filledCount} من {activeTier.slotsCount}):
                 </span>
-                <span className="text-xs font-bold text-[#6E5D4F]">
+                <span className="text-xs font-medium text-[#6B5B4E]">
                   اضغط على أي صنف بالأسفل لملء الخانة المحددة
                 </span>
               </div>
@@ -463,15 +461,15 @@ export default function PosBoxesPage({
                   <div
                     key={idx}
                     onClick={() => setActiveSlotIndex(idx)}
-                    className={`relative rounded-2xl p-2.5 border-2 transition cursor-pointer flex flex-col items-center justify-center text-center min-h-[96px] ${
+                    className={`relative rounded-2xl p-2.5 border transition cursor-pointer flex flex-col items-center justify-center text-center min-h-[96px] ${
                       slotProd
-                        ? 'bg-[#FAF6F0] border-[#3B6E4C]'
+                        ? 'bg-[#FAF6F0] border-[#231710]'
                         : isTarget
-                          ? 'bg-[#D4AF37]/15 border-[#D4AF37] border-dashed'
-                          : 'bg-[#FAF6F0]/60 border-[#E6DFD3] border-dashed'
+                          ? 'bg-[#FAF6F0] border-[#9A6836] border-dashed'
+                          : 'bg-[#FAF6F0]/50 border-[#E8E0D5] border-dashed'
                     }`}
                   >
-                    <span className="absolute top-1.5 right-2 text-[10px] font-black text-[#6E5D4F]">
+                    <span className="absolute top-1.5 right-2 text-[10px] font-bold text-[#6B5B4E]">
                       #{idx + 1}
                     </span>
 
@@ -480,7 +478,7 @@ export default function PosBoxesPage({
                         <button
                           type="button"
                           onClick={(e) => handleClearSlot(idx, e)}
-                          className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-red-100 hover:bg-red-200 text-[#B83B2B] flex items-center justify-center cursor-pointer"
+                          className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-red-50 hover:bg-red-100 text-[#B83B2B] flex items-center justify-center cursor-pointer"
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -489,16 +487,16 @@ export default function PosBoxesPage({
                           alt={slotProd.name}
                           className="w-10 h-10 rounded-lg object-cover mb-1"
                         />
-                        <span className="font-cairo font-black text-xs text-[#231710] line-clamp-1">
+                        <span className="font-cairo font-bold text-xs text-[#231710] line-clamp-1">
                           {slotProd.name}
                         </span>
-                        <span className="text-[10px] font-bold text-[#3B6E4C] tabular-nums">
+                        <span className="text-[10px] font-medium text-[#6B5B4E] tabular-nums">
                           {activeTier.gramsPerSlot} جم
                         </span>
                       </>
                     ) : (
-                      <div className="text-xs font-bold text-[#6E5D4F] py-2">
-                        {isTarget ? '👈 اختر صنفاً' : 'خانة فارغة'}
+                      <div className="text-xs font-medium text-[#6B5B4E] py-2">
+                        {isTarget ? 'اختر صنفاً' : 'خانة فارغة'}
                       </div>
                     )}
                   </div>
@@ -507,10 +505,10 @@ export default function PosBoxesPage({
             </div>
 
             {/* Bottom Action Bar of Box Tray */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#E6DFD3]">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#E8E0D5]">
               <div className="flex items-center gap-3">
-                <span className="text-xs font-bold text-[#6E5D4F]">سعر البوكس:</span>
-                <span className="font-cairo font-black text-2xl text-[#231710] tabular-nums">
+                <span className="text-xs font-medium text-[#6B5B4E]">سعر البوكس:</span>
+                <span className="font-cairo font-bold text-2xl text-[#231710] tabular-nums">
                   {filledCount > 0 ? touchBoxValuation.finalBoxPriceEgp : activeTier.basePriceEgp}{' '}
                   ج.م
                 </span>
@@ -520,10 +518,10 @@ export default function PosBoxesPage({
                 type="button"
                 onClick={handleAddTouchBoxToInvoice}
                 disabled={!isBoxComplete}
-                className={`px-6 py-3 rounded-xl font-cairo font-black text-sm flex items-center gap-2 transition cursor-pointer ${
+                className={`px-6 py-3 rounded-xl font-cairo font-bold text-sm flex items-center gap-2 transition cursor-pointer ${
                   isBoxComplete
-                    ? 'bg-[#3B6E4C] hover:bg-[#2F5A3D] text-white shadow-md'
-                    : 'bg-[#E6DFD3] text-[#6E5D4F] cursor-not-allowed'
+                    ? 'bg-[#231710] hover:bg-[#3A271C] text-white'
+                    : 'bg-[#FAF6F0] text-[#6B5B4E] border border-[#E8E0D5] cursor-not-allowed'
                 }`}
               >
                 <Check className="w-4 h-4" />
@@ -547,7 +545,7 @@ export default function PosBoxesPage({
                   key={prod.id}
                   type="button"
                   onClick={() => handleTapProductForSlot(prod)}
-                  className="bg-white hover:bg-[#FAF6F0] border-2 border-[#E6DFD3] hover:border-[#3B6E4C] rounded-2xl p-2.5 text-right transition cursor-pointer flex items-center gap-2.5 shadow-2xs"
+                  className="bg-white hover:bg-[#FAF6F0] border border-[#E8E0D5] hover:border-[#C5B8A8] rounded-2xl p-2.5 text-right transition cursor-pointer flex items-center gap-2.5"
                 >
                   <img
                     src={getSafeImageUrl(prod.image)}
@@ -555,10 +553,10 @@ export default function PosBoxesPage({
                     className="w-12 h-12 rounded-xl object-cover shrink-0 bg-[#FAF6F0]"
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="font-cairo font-black text-xs text-[#231710] truncate">
+                    <div className="font-cairo font-bold text-xs text-[#231710] truncate">
                       {prod.name}
                     </div>
-                    <div className="text-[11px] font-black text-[#3B6E4C] tabular-nums mt-0.5">
+                    <div className="text-[11px] font-bold text-[#9A6836] tabular-nums mt-0.5">
                       + خانة ({slotCost} ج)
                     </div>
                   </div>

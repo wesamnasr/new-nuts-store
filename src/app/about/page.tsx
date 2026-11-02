@@ -6,124 +6,142 @@ import {
   MapPin,
   Clock,
   Phone,
-  Sparkles,
+  Award,
+  Coffee,
+  Leaf,
+  Gift,
+  MessageCircle,
+  ExternalLink,
 } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
+import { formatWhatsAppPhone } from '@/lib/validation';
 
 export default function AboutPage() {
   const { storeData } = useStore();
   const settings = storeData?.settings;
+  const storeName = settings?.storeName || 'محمصة حفصة للبن والمكسرات';
+  const whatsappNumber = formatWhatsAppPhone(settings?.whatsappNumber);
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+    `مرحباً ${storeName}، أود الاستفسار عن موقع الفرع والطلبات.`
+  )}`;
 
   const storeZones = [
     {
-      icon: '🥜',
-      title: 'بنك المكسرات والتسالي',
-      desc: '24 عين زجاجية للمكسرات الفاخرة والتسالي الطازجة.',
+      Icon: Award,
+      title: 'ركن المكسرات والتسالي',
+      desc: 'تشكيلة واسعة من المكسرات الفاخرة والتسالي المحمصة يومياً بالهواء الساخن.',
     },
     {
-      icon: '☕',
-      title: 'ركن البن والصوامع النحاسية',
-      desc: 'تحميص وطحن فوري بالدرجة والتحويجة المفضلة.',
+      Icon: Coffee,
+      title: 'ركن تحميص وطحن البن',
+      desc: 'تحميص وطحن فوري لحبوب البن المختارة بالدرجة والتحويجة المفضلة.',
     },
     {
-      icon: '🍯',
-      title: 'خلية العسل الطبيعي',
-      desc: 'عسل نحل طبيعي ومكسرات بالعسل الجبلي.',
+      Icon: Leaf,
+      title: 'ركن العسل والتمور',
+      desc: 'عسل نحل طبيعي وتمور فاخرة ومكسرات بالعسل الجبلي.',
     },
     {
-      icon: '🥤',
-      title: 'استاند السعادة السريع',
-      desc: 'كاسات سناك ومكسرات وشوكولاتة جاهزة.',
+      Icon: Gift,
+      title: 'بوكسات الضيافة والسهرة',
+      desc: 'علب مقسمة وتشكيلات مخصصة للسهرات والهدايا والضيافة.',
     },
   ];
 
   return (
     <div className="min-h-screen bg-[#FAF6F0] text-[#231710] pb-16">
-      {/* Hero Banner */}
-      <div className="bg-[#231710] text-[#FAF6F0] border-b-2 border-[#D4AF37]/50 py-8 sm:py-10 px-4">
+      {/* Calm Light Page Header */}
+      <div className="bg-white border-b border-[#E8E0D5] py-10 px-4">
         <div className="max-w-4xl mx-auto text-center space-y-2">
-          <div className="inline-flex items-center gap-1.5 bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40 px-3.5 py-1 rounded-full text-xs font-black">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>محمصة حفصة • HAFSA ROASTERY</span>
-          </div>
-          <h1 className="font-cairo text-2xl sm:text-3xl font-black text-white">
+          <span className="text-xs font-bold text-[#9A6836]">عن المحمصة والفرع</span>
+          <h1 className="font-cairo text-2xl sm:text-3xl font-bold text-[#231710]">
             تحميص يومي طازج في قلب بني مزار
           </h1>
+          <p className="text-sm text-[#5C4A3D] max-w-xl mx-auto">
+            نعتني بكل تفصيلة من انتقاء الحبوب والمكسرات وحتى التغليف المحكم ليصلك الطعم الأصيل طازجاً في كل مرة.
+          </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
-        {/* 4 Architectural Store Zones */}
-        <div className="space-y-4">
-          <h2 className="font-cairo text-xl sm:text-2xl font-black text-[#231710] text-center">
-            أركان المحمصة
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {storeZones.map((zone, idx) => (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 space-y-10">
+        {/* 4 Store Pillars */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {storeZones.map((zone, idx) => {
+            const IconComp = zone.Icon;
+            return (
               <div
                 key={idx}
-                className="bg-white rounded-3xl p-5 border border-[#E6DFD3] shadow-xs space-y-2"
+                className="bg-white rounded-2xl p-6 border border-[#E8E0D5] space-y-3"
               >
-                <div className="w-10 h-10 rounded-2xl bg-[#F3ECE1] border border-[#D4AF37] flex items-center justify-center text-xl">
-                  {zone.icon}
+                <div className="w-10 h-10 rounded-xl bg-[#FAF6F0] border border-[#E8E0D5] flex items-center justify-center text-[#231710]">
+                  <IconComp className="w-4 h-4 stroke-[1.75]" />
                 </div>
-                <h3 className="font-cairo text-sm font-black text-[#231710]">
+                <h3 className="font-cairo text-base font-bold text-[#231710]">
                   {zone.title}
                 </h3>
-                <p className="text-xs text-[#6E5D4F]">{zone.desc}</p>
+                <p className="text-xs text-[#5C4A3D] leading-relaxed">{zone.desc}</p>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
-        {/* Location & Interactive Map Card */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#D4AF37] shadow-xl grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-          <div className="lg:col-span-6 space-y-4">
-            <span className="bg-[#231710] text-[#D4AF37] text-xs font-black px-3 py-1 rounded-full inline-block">
-              📍 موقع الفرع ومواعيد العمل
-            </span>
-            <h2 className="font-cairo text-xl sm:text-2xl font-black text-[#231710]">
-              فرع بني مزار — أمام مسجد الزراعيين
-            </h2>
-            <div className="space-y-2 text-xs sm:text-sm text-[#231710]">
-              <p className="flex items-center gap-2 font-bold">
-                <MapPin className="w-4 h-4 text-[#C88A4B] shrink-0" />
-                <span>
-                  {settings?.address || 'بني مزار - أمام مسجد الزراعيين'}
-                </span>
+        {/* Location, Contact & Interactive Map Card */}
+        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#E8E0D5] grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className="lg:col-span-6 space-y-5">
+            <div className="space-y-1.5">
+              <span className="text-xs font-bold text-[#9A6836]">
+                موقع الفرع ومواعيد العمل
+              </span>
+              <h2 className="font-cairo text-xl sm:text-2xl font-bold text-[#231710]">
+                {settings?.address || 'بني مزار — أمام مسجد الزراعيين'}
+              </h2>
+            </div>
+
+            <div className="space-y-2.5 text-sm text-[#5C4A3D]">
+              <p className="flex items-center gap-2.5">
+                <MapPin className="w-4 h-4 text-[#9A6836] shrink-0" />
+                <span>{settings?.address || 'بني مزار - أمام مسجد الزراعيين'}</span>
               </p>
-              <p className="flex items-center gap-2 font-bold">
-                <Clock className="w-4 h-4 text-[#C88A4B] shrink-0" />
-                <span>
-                  {settings?.workingHours || 'يومياً من 9 صباحاً حتى 1 صباحاً'}
-                </span>
+              <p className="flex items-center gap-2.5">
+                <Clock className="w-4 h-4 text-[#9A6836] shrink-0" />
+                <span>{settings?.workingHours || 'يومياً من 9 صباحاً حتى 1 بعد منتصف الليل'}</span>
               </p>
-              <p className="flex items-center gap-2 font-bold tabular-nums">
-                <Phone className="w-4 h-4 text-[#C88A4B] shrink-0" />
-                <span>واتساب وخدمة العملاء: {settings?.supportPhone || '01000000000'}</span>
+              <p className="flex items-center gap-2.5 tabular-nums">
+                <Phone className="w-4 h-4 text-[#9A6836] shrink-0" />
+                <span>خدمة العملاء: {settings?.supportPhone || '01100699524'}</span>
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2.5 pt-2">
+            <div className="flex flex-wrap gap-3 pt-2">
               <a
-                href="https://maps.google.com/?q=Bani+Mazar+Minya+Egypt"
+                href={whatsappUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="bg-[#231710] text-[#D4AF37] font-cairo font-black text-xs px-5 py-3 rounded-2xl shadow"
+                className="bg-[#231710] hover:bg-[#362419] text-[#FAF6F0] font-cairo font-bold text-xs sm:text-sm px-5 py-3 rounded-xl inline-flex items-center gap-2 transition"
               >
-                📍 خرائط جوجل
+                <MessageCircle className="w-4 h-4 text-emerald-400" />
+                <span>تواصل عبر واتساب</span>
+              </a>
+              <a
+                href={settings?.googleMapsUrl || 'https://maps.google.com/?q=Bani+Mazar+Minya+Egypt'}
+                target="_blank"
+                rel="noreferrer"
+                className="bg-[#FAF6F0] hover:bg-[#F4EFE6] text-[#231710] border border-[#E8E0D5] font-cairo font-bold text-xs sm:text-sm px-5 py-3 rounded-xl inline-flex items-center gap-2 transition"
+              >
+                <span>خرائط جوجل</span>
+                <ExternalLink className="w-3.5 h-3.5" />
               </a>
               <Link
-                href="/build-box"
-                className="bg-[#D4AF37] text-[#231710] font-cairo font-black text-xs px-5 py-3 rounded-2xl shadow"
+                href="/shop"
+                className="bg-white hover:bg-[#FAF6F0] text-[#5C4A3D] hover:text-[#231710] border border-[#E8E0D5] font-cairo font-bold text-xs sm:text-sm px-4 py-3 rounded-xl transition"
               >
-                🎁 صمّم بوكس السهرة
+                تصفح المتجر
               </Link>
             </div>
           </div>
 
           <div className="lg:col-span-6">
-            <div className="rounded-2xl overflow-hidden border border-[#E6DFD3] h-64 sm:h-72 bg-[#F3ECE1] relative flex items-center justify-center">
+            <div className="rounded-2xl overflow-hidden border border-[#E8E0D5] h-64 sm:h-72 bg-[#FAF6F0]">
               <iframe
                 title="موقع محمصة حفصة - بني مزار"
                 src="https://www.google.com/maps?q=28.5036,30.8004&hl=ar&z=15&output=embed"

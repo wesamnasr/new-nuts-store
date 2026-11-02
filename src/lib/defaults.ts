@@ -75,7 +75,7 @@ export const STORE_THEMES: StoreThemePresetMeta[] = [
     subtitle: 'رخامي دافئ (#FAF6F0) • إسبريسو (#231710) • أوك عسلي (#C88A4B) • ذهبي (#D4AF37)',
     description:
       'الهوية البصرية المعتمدة والموحدة لمحمصة حفصة في بني مزار أمام مسجد الزراعيين: خلفية رخامية دافئة (#FAF6F0)، كروت كريمي اللوز (#F3ECE1)، هيدر وفوتر إسبريسو (#231710)، ولمسات بديل الخشب (#C88A4B) والذهبي الملكي (#D4AF37).',
-    badge: '👑 الهوية الرسمية المعتمدة 100%',
+    badge: 'الهوية الرسمية المعتمدة',
     isDark: false,
     swatches: {
       primary: '#231710',
@@ -110,7 +110,7 @@ export const DEFAULT_PAGE_CONTENT: StorePageContent = {
   // Header & Announcement Bar
   showAnnouncementBar: true,
   headerSubtitle: 'بني مزار — أمام مسجد الزراعيين',
-  logoEmoji: '☕',
+  logoEmoji: '',
 
   // Landing Page: Hero Section
   heroBadge: 'طازج يومياً • بني مزار',
@@ -119,11 +119,11 @@ export const DEFAULT_PAGE_CONTENT: StorePageContent = {
   heroTitleSuffix: 'لحد باب بيتك',
   heroDescription: 'أفخر المكسرات المحمصة والبن المطحون بالطلب في بني مزار.',
   heroImage: '/images/products/royal-mix.jpg',
-  heroPrimaryCtaText: '🎁 صمّم بوكس السهرة',
-  heroSecondaryCtaText: '☕ توليفة البن',
-  heroBoxesCtaText: '🥜 تصفح المتجر',
+  heroPrimaryCtaText: 'صمّم بوكس السهرة',
+  heroSecondaryCtaText: 'توليفة البن',
+  heroBoxesCtaText: 'تصفح المتجر',
   heroFeaturedProductId: 'prod-box-roqan-125',
-  heroFeaturedBadge: 'الأكثر طلباً 🔥',
+  heroFeaturedBadge: 'الأكثر طلباً',
   heroFeaturedTitle: 'بوكس «روقان» المقسم',
   heroFeaturedSubtitle: '4 خانات مختارة بعناية',
   heroStats: [
@@ -135,25 +135,25 @@ export const DEFAULT_PAGE_CONTENT: StorePageContent = {
   // Landing Page: Custom Box Banner
   showCustomBoxBanner: true,
   customBoxBannerBadge: 'حصرياً في محمصة حفصة',
-  customBoxBannerTitle: 'صمّم بوكس السهرة على ذوقك 🎁',
+  customBoxBannerTitle: 'صمّم بوكس السهرة على ذوقك',
   customBoxBannerDesc: 'اختر حجم البوكس واملأ كل خانة بأصنافك المفضلة.',
   customBoxBannerPills: [
-    '🎁 بوكس روقان (125 ج.م)',
-    '👨‍👩‍👧‍👦 بوكس العيلة (250 ج.م)',
-    '👑 بوكس VIP (450 ج.م)',
+    'بوكس روقان (125 ج.م)',
+    'بوكس العيلة (250 ج.م)',
+    'بوكس VIP (450 ج.م)',
   ],
-  customBoxBannerCta: '✨ ابدأ تصميم بوكسك الآن',
+  customBoxBannerCta: 'ابدأ تصميم بوكسك الآن',
 
   // Landing Page: Mixed Boxes Section
   showMixedBoxesSection: true,
   mixedBoxesBadge: 'الأكثر مبيعاً',
   mixedBoxesTitle: 'بوكسات السهرة المقسمة',
   mixedBoxesDesc: '',
-  mixedBoxesGiftNote: '✨ 5% كاش باك فوري في محفظة VIP',
+  mixedBoxesGiftNote: '5% كاش باك فوري في محفظة VIP',
 
   // Landing Page: Coupons Banner
   showCouponsSection: true,
-  couponsBannerBadge: '🔥 عروض الأسبوع',
+  couponsBannerBadge: 'عروض الأسبوع',
   couponsBannerTitle: 'باقات التوفير الأسبوعية',
 
   // Landing Page: Why Choose Us (4 Trust Features)
@@ -163,25 +163,25 @@ export const DEFAULT_PAGE_CONTENT: StorePageContent = {
   trustFeatures: [
     {
       id: 'tf-1',
-      icon: '🔥',
+      icon: 'Flame',
       title: 'تحميص يومي طازج',
       description: 'تعبئة حرارية تحفظ القرمشة والنكهة.',
     },
     {
       id: 'tf-2',
-      icon: '⚡',
+      icon: 'Zap',
       title: 'توصيل سريع 30 دقيقة',
       description: 'تغطية فورية للبندر ودورتان يومياً للقرى.',
     },
     {
       id: 'tf-3',
-      icon: '👑',
+      icon: 'Crown',
       title: 'كاش باك 5% VIP',
       description: 'رصيد نقدي فوري برقم موبايلك.',
     },
     {
       id: 'tf-4',
-      icon: '⚖️',
+      icon: 'Scale',
       title: 'ميزان إلكتروني دقيق',
       description: 'نفس دقة وسعر المحل بالجرام.',
     },
@@ -193,7 +193,7 @@ export const DEFAULT_PAGE_CONTENT: StorePageContent = {
   customBoxPageDesc: '',
 
   // Track Order Page (/track & /track-order)
-  trackOrderPageBadge: '🛵 متابعة الطلب',
+  trackOrderPageBadge: 'متابعة الطلب',
   trackOrderPageTitle: 'تتبع حالة طلبك',
   trackOrderPageDesc: '',
 
@@ -239,6 +239,22 @@ export function getSafeImageUrl(url?: string | null, fallback: string = DEFAULT_
     return url.trim();
   }
   return fallback;
+}
+
+export function stripUiEmojis(value?: string | null): string {
+  if (typeof value !== 'string') return '';
+  return value
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\uFE0F\u200D]/gu, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+export function formatCategoryName(name?: string | null): string {
+  if (typeof name !== 'string') return '';
+  return stripUiEmojis(name)
+    .replace(/\s*\(VIP Nuts\)\s*/gi, '')
+    .replace(/^[^\w\u0600-\u06FF]+\s*/, '')
+    .trim();
 }
 
 export function getResolvedPageContent(settings?: StoreSettings | null): StorePageContent {

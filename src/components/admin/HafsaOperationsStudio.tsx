@@ -22,6 +22,7 @@ import {
   calculatePromoProfitSafety,
 } from '@/lib/pricing';
 import { FlashPromotion, Product, AdminRole } from '@/types/store';
+import { stripUiEmojis } from '@/lib/defaults';
 import PreLaunchResetSafeguard from './PreLaunchResetSafeguard';
 import {
   updateUrlQueryParams,
@@ -90,9 +91,9 @@ export default function HafsaOperationsStudio({
       gain1.connect(ctx.destination);
       osc1.start(now);
       osc1.stop(now + 0.65);
-      showToast('🔔 تم تشغيل جرس تنبيه الطلبات الصوتية بنجاح');
+      showToast('تم تشغيل جرس تنبيه الطلبات الصوتية بنجاح');
     } catch {
-      showToast('🔔 تنبيه طلب جديد في فرع بني مزار!');
+      showToast('تنبيه طلب جديد في فرع بني مزار');
     }
   };
 
@@ -152,7 +153,7 @@ export default function HafsaOperationsStudio({
 
     await onUpdateStorePayload(
       { products: updatedProducts },
-      `⚡ تم تحديث سعر كيلو "${prod.name}" وتوليد الـ 4 أوزان (ثمن/ربع/نصف/كيلو) تلقائياً!`
+      `تم تحديث سعر كيلو "${prod.name}" وتوليد الـ 4 أوزان تلقائياً`
     );
   };
 
@@ -183,7 +184,7 @@ export default function HafsaOperationsStudio({
   const handleCreateSafePromo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profitSafety.isSafe) {
-      showToast('⚠️ لا يمكن نشر العرض لأن هامش الربح أقل من الحد الآمن', profitSafety.warning);
+      showToast('لا يمكن نشر العرض لأن هامش الربح أقل من الحد الآمن', profitSafety.warning);
       return;
     }
 
@@ -191,7 +192,7 @@ export default function HafsaOperationsStudio({
       id: `promo-${Date.now()}`,
       title: promoTitle.trim(),
       subtitle: promoSubtitle.trim(),
-      badgeText: `وفّر ${profitSafety.discountAmount} ج.م 🔥`,
+      badgeText: `وفّر ${profitSafety.discountAmount} ج.م`,
       originalPrice: promoOriginalPrice,
       promoPrice: promoProposedPrice,
       costPrice: promoCostPrice,
@@ -204,7 +205,7 @@ export default function HafsaOperationsStudio({
 
     await onUpdateStorePayload(
       { promotions: [newPromo, ...promotions] },
-      '🎉 تم اعتماد ونشر عرض الشريك الرابع بعد اجتياز فحص هامش الربح الآمن!'
+      'تم اعتماد ونشر عرض الباقة بعد اجتياز فحص هامش الربح الآمن'
     );
   };
 
@@ -246,7 +247,7 @@ export default function HafsaOperationsStudio({
           freeShippingThreshold: Number(freeThreshold) || 300,
         },
       },
-      '✅ تم حفظ إعدادات بيكسل الإعلانات ولوجستيات توصيل بني مزار بنجاح!'
+      'تم حفظ إعدادات التسويق وتوصيل بني مزار بنجاح'
     );
   };
 
@@ -261,63 +262,63 @@ export default function HafsaOperationsStudio({
   }, [products, searchKilo]);
 
   return (
-    <div className="bg-white rounded-2xl border-2 border-[#D4AF37] p-4 sm:p-5 shadow-md space-y-5 mb-6">
+    <div className="bg-white rounded-2xl border border-[#E8E0D5] p-5 sm:p-6 space-y-5 mb-6">
       {/* Studio Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#E6DFD3] pb-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#E8E0D5] pb-4">
         <div>
-          <span className="text-[10.5px] font-black text-[#C88A4B] uppercase tracking-wider block">
-            ★ أدوات التشغيل الذكية • محمصة حفصة ★
-          </span>
-          <h2 className="font-cairo text-lg sm:text-xl font-black text-[#231710]">
-            الأوزان الأربعة • حاسبة العروض • نادي VIP • رموز الـ QR
+          <h2 className="font-cairo text-lg sm:text-xl font-bold text-[#231710]">
+            أدوات التشغيل والعروض ونادي VIP
           </h2>
+          <p className="text-xs text-[#6B5644] mt-0.5">
+            تحديث أسعار الكيلو والـ 4 أوزان، حاسبة هامش ربح العروض، إدارة نقاط VIP، ورموز الـ QR.
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
           <a
             href="/pos"
-            className="bg-[#D4AF37] hover:bg-[#C88A4B] text-[#231710] px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-sm transition"
+            className="bg-[#FAF6F0] hover:bg-[#F2ECE2] text-[#231710] border border-[#E8E0D5] px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
           >
-            <Scale className="w-3.5 h-3.5" />
-            <span>⚖️ شاشة الكاشير (POS)</span>
+            <Scale className="w-3.5 h-3.5 text-[#9A6836]" />
+            <span>نقطة البيع (POS)</span>
           </a>
           <button
             type="button"
             onClick={playOrderChime}
-            className="bg-[#231710] hover:bg-[#3A2519] text-[#D4AF37] border border-[#D4AF37] px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition"
+            className="bg-[#231710] hover:bg-[#3A271C] text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition"
           >
             <Bell className="w-3.5 h-3.5" />
-            <span>🔔 اختبار جرس التنبيه</span>
+            <span>اختبار جرس التنبيه</span>
           </button>
         </div>
       </div>
 
       {/* Sub-Tabs Navigation */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar bg-[#F3ECE1] p-1.5 rounded-xl border border-[#E6DFD3]">
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar bg-[#FAF6F0] p-1.5 rounded-xl border border-[#E8E0D5]">
         {[
           {
             id: 'kilo_updater',
-            label: '⚖️ أسعار الكيلو والـ 4 أوزان',
+            label: 'أسعار الكيلو والـ 4 أوزان',
           },
           {
             id: 'partner4_promos',
-            label: '🔥 حاسبة العروض والأرباح',
+            label: 'حاسبة العروض والأرباح',
           },
           {
             id: 'vip_cashier',
-            label: '👑 أعضاء نادي VIP',
+            label: 'أعضاء نادي VIP',
           },
           {
             id: 'qr_codes',
-            label: '📱 رموز الـ QR',
+            label: 'رموز الـ QR',
           },
           {
             id: 'wesam_marketing',
-            label: '📈 التسويق والتوصيل',
+            label: 'التسويق والتوصيل',
           },
           {
             id: 'pre_launch_reset',
-            label: '🛡️ تصفير العمليات (الافتتاح)',
+            label: 'تصفير العمليات (الافتتاح)',
           },
         ].map((tab) => (
           <a
@@ -331,10 +332,10 @@ export default function HafsaOperationsStudio({
               setSubTab(tab.id as any);
               updateUrlQueryParams({ subtab: tab.id === 'kilo_updater' ? null : tab.id });
             }}
-            className={`px-3 py-2 rounded-lg text-xs font-extrabold whitespace-nowrap transition cursor-pointer ${
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer ${
               subTab === tab.id
-                ? 'bg-[#231710] text-[#D4AF37] shadow-xs font-black'
-                : 'text-[#6E5D4F] hover:text-[#231710]'
+                ? 'bg-[#231710] text-white'
+                : 'text-[#6B5644] hover:text-[#231710]'
             }`}
           >
             {tab.label}
@@ -345,33 +346,29 @@ export default function HafsaOperationsStudio({
       {/* TAB 1: 1-Click Kilo Price & 4-Weights Updater */}
       {subTab === 'kilo_updater' && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[#FAF6F0] p-3 rounded-xl border border-[#E6DFD3]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[#FAF6F0] p-3 rounded-xl border border-[#E8E0D5]">
             <p className="text-xs text-[#231710] font-bold">تحديث سريع لسعر وتكلفة الكيلو</p>
-            <p className="hidden">
-              💡 عدّل <strong>سعر بيع الكيلو</strong> أو <strong>تكلفة الكيلو (شيت أ. عرفات)</strong>{' '}
-              واضغط حفظ ليقوم النظام تلقائياً بتحديث أسعار (ثمن 125ج • ربع 250ج • نصف 500ج • كيلو 1000ج).
-            </p>
             <input
               type="search"
               value={searchKilo}
               onChange={(e) => setSearchKilo(e.target.value)}
               placeholder="ابحث عن صنف لتعديل سعر الكيلو..."
-              className="sm:w-64 bg-white border border-[#E6DFD3] rounded-lg px-3 py-1.5 text-xs"
+              className="sm:w-64 bg-white border border-[#E8E0D5] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#231710]"
             />
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-xl border border-[#E8E0D5]">
             <table className="w-full text-right text-xs border-collapse">
               <thead>
-                <tr className="bg-[#231710] text-[#D4AF37]">
-                  <th className="p-2.5 rounded-r-lg">الصنف</th>
-                  <th className="p-2.5">تكلفة الكيلو (أ. عرفات)</th>
-                  <th className="p-2.5">سعر بيع الكيلو (1000ج)</th>
-                  <th className="p-2.5">الأوزان الأربعة المتولدة تلقائياً</th>
-                  <th className="p-2.5 rounded-l-lg">إجراء فوري</th>
+                <tr className="bg-[#FAF6F0] text-[#231710] border-b border-[#E8E0D5] font-bold">
+                  <th className="p-3">الصنف</th>
+                  <th className="p-3">تكلفة الكيلو</th>
+                  <th className="p-3">سعر بيع الكيلو (1000ج)</th>
+                  <th className="p-3">الأوزان الأربعة المتولدة تلقائياً</th>
+                  <th className="p-3">إجراء فوري</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E6DFD3]">
+              <tbody className="divide-y divide-[#F2ECE2]">
                 {filteredKiloProducts.map((prod) => {
                   const kiloPrice =
                     kiloEdits[prod.id]?.pricePerKg ??
@@ -385,9 +382,9 @@ export default function HafsaOperationsStudio({
                   const previewWeights = generateWeightsFromKiloPrice(kiloPrice);
 
                   return (
-                    <tr key={prod.id} className="hover:bg-[#FAF6F0]">
-                      <td className="p-2.5 font-extrabold text-[#231710]">{prod.name}</td>
-                      <td className="p-2.5">
+                    <tr key={prod.id} className="hover:bg-[#FAF6F0]/60">
+                      <td className="p-3 font-bold text-[#231710]">{prod.name}</td>
+                      <td className="p-3">
                         <input
                           type="number"
                           value={kiloCost}
@@ -398,11 +395,11 @@ export default function HafsaOperationsStudio({
                               Number(e.target.value)
                             )
                           }
-                          className="w-24 bg-[#FAF6F0] border border-[#E6DFD3] rounded-lg px-2 py-1 text-xs font-bold tabular-nums"
+                          className="w-24 bg-[#FAF6F0] border border-[#E8E0D5] rounded-lg px-2.5 py-1 text-xs font-bold tabular-nums"
                         />{' '}
                         ج.م
                       </td>
-                      <td className="p-2.5">
+                      <td className="p-3">
                         <input
                           type="number"
                           value={kiloPrice}
@@ -413,27 +410,27 @@ export default function HafsaOperationsStudio({
                               Number(e.target.value)
                             )
                           }
-                          className="w-24 bg-white border-2 border-[#C88A4B] rounded-lg px-2 py-1 text-xs font-black tabular-nums"
+                          className="w-24 bg-white border border-[#9A6836] rounded-lg px-2.5 py-1 text-xs font-bold tabular-nums"
                         />{' '}
                         ج.م
                       </td>
-                      <td className="p-2.5 text-[11px] text-[#6E5D4F] tabular-nums">
+                      <td className="p-3 text-[11px] text-[#6B5644] tabular-nums">
                         ثمن: <strong>{previewWeights[0].price}ج</strong> • ربع:{' '}
                         <strong>{previewWeights[1].price}ج</strong> • نصف:{' '}
                         <strong>{previewWeights[2].price}ج</strong> • كيلو:{' '}
                         <strong>{previewWeights[3].price}ج</strong>
                       </td>
-                      <td className="p-2.5">
+                      <td className="p-3">
                         {canMutate ? (
                           <button
                             type="button"
                             onClick={() => handleApplySingleKiloUpdate(prod)}
-                            className="bg-[#3B6E4C] hover:opacity-90 text-white px-3 py-1.5 rounded-lg text-[11px] font-black cursor-pointer"
+                            className="bg-[#231710] hover:bg-[#3A271C] text-white px-3 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition"
                           >
-                            ⚡ تحديث الـ 4 أوزان
+                            تحديث الـ 4 أوزان
                           </button>
                         ) : (
-                          <span className="text-[10.5px] font-bold text-[#6E5D4F] bg-[#FAF6F0] px-2.5 py-1 rounded-lg border border-[#E6DFD3]">
+                          <span className="text-[10.5px] font-bold text-[#6B5644] bg-[#FAF6F0] px-2.5 py-1 rounded-lg border border-[#E8E0D5]">
                             عرض محاسبي
                           </span>
                         )}
@@ -447,15 +444,15 @@ export default function HafsaOperationsStudio({
         </div>
       )}
 
-      {/* TAB 2: 4th Partner Promo Studio & Profit Margin Safety Calculator */}
+      {/* TAB 2: Promo Studio & Profit Margin Safety Calculator */}
       {subTab === 'partner4_promos' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           <form
             onSubmit={handleCreateSafePromo}
-            className="lg:col-span-7 bg-[#FAF6F0] rounded-2xl p-4 border border-[#E6DFD3] space-y-3"
+            className="lg:col-span-7 bg-[#FAF6F0] rounded-2xl p-4 border border-[#E8E0D5] space-y-3"
           >
-            <h3 className="font-cairo text-sm font-black text-[#231710]">
-              إضافة عرض ترويجي جديد (بإشراف الشريك الرابع وحماية هامش الربح)
+            <h3 className="font-cairo text-sm font-bold text-[#231710]">
+              إضافة عرض ترويجي جديد (مع حماية هامش الربح)
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -466,7 +463,7 @@ export default function HafsaOperationsStudio({
                   required
                   value={promoTitle}
                   onChange={(e) => setPromoTitle(e.target.value)}
-                  className="w-full bg-white border border-[#E6DFD3] rounded-xl px-3 py-2 text-xs font-bold"
+                  className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs font-bold"
                 />
               </div>
               <div>
@@ -475,7 +472,7 @@ export default function HafsaOperationsStudio({
                   type="text"
                   value={promoBundleSummary}
                   onChange={(e) => setPromoBundleSummary(e.target.value)}
-                  className="w-full bg-white border border-[#E6DFD3] rounded-xl px-3 py-2 text-xs font-bold"
+                  className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs font-bold"
                 />
               </div>
             </div>
@@ -483,13 +480,13 @@ export default function HafsaOperationsStudio({
             <div className="grid grid-cols-3 gap-3 tabular-nums">
               <div>
                 <label className="text-[11px] font-bold block mb-1">
-                  التكلفة الفعلية (شيت أ. عرفات):
+                  التكلفة الفعلية:
                 </label>
                 <input
                   type="number"
                   value={promoCostPrice}
                   onChange={(e) => setPromoCostPrice(Number(e.target.value))}
-                  className="w-full bg-white border border-[#E6DFD3] rounded-xl px-3 py-2 text-xs font-black"
+                  className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs font-bold"
                 />
               </div>
               <div>
@@ -498,7 +495,7 @@ export default function HafsaOperationsStudio({
                   type="number"
                   value={promoOriginalPrice}
                   onChange={(e) => setPromoOriginalPrice(Number(e.target.value))}
-                  className="w-full bg-white border border-[#E6DFD3] rounded-xl px-3 py-2 text-xs font-black"
+                  className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs font-bold"
                 />
               </div>
               <div>
@@ -507,7 +504,7 @@ export default function HafsaOperationsStudio({
                   type="number"
                   value={promoProposedPrice}
                   onChange={(e) => setPromoProposedPrice(Number(e.target.value))}
-                  className="w-full bg-white border-2 border-[#C88A4B] rounded-xl px-3 py-2 text-xs font-black"
+                  className="w-full bg-white border border-[#9A6836] rounded-xl px-3 py-2 text-xs font-bold"
                 />
               </div>
             </div>
@@ -516,25 +513,25 @@ export default function HafsaOperationsStudio({
             <div
               className={`p-3 rounded-xl border text-xs space-y-1 tabular-nums ${
                 profitSafety.isSafe
-                  ? 'bg-[#3B6E4C]/10 border-[#3B6E4C] text-[#231710]'
-                  : 'bg-[#B83B2B]/15 border-[#B83B2B] text-[#B83B2B]'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                  : 'bg-red-50 border-red-200 text-red-800'
               }`}
             >
-              <div className="flex items-center justify-between font-black">
+              <div className="flex items-center justify-between font-bold">
                 <span>
                   {profitSafety.isSafe
-                    ? '✅ فحص الأرباح آمن (مسموح بنشر العرض)'
-                    : '⛔ مرفوض: العرض يسبب خسارة أو يكسر الحد الأدنى للربح (15%)'}
+                    ? 'فحص الأرباح آمن (مسموح بنشر العرض)'
+                    : 'مرفوض: العرض يكسر الحد الأدنى لهامش الربح (15%)'}
                 </span>
                 <span>هامش الربح: {profitSafety.profitMarginPercent}%</span>
               </div>
-              <div className="text-[11px] font-bold">
+              <div className="text-[11px] font-medium">
                 صافي الربح بعد الخصم: <strong>{profitSafety.netProfit} ج.م</strong> • قيمة التوفير
                 للعميل: <strong>{profitSafety.discountAmount} ج.م</strong> (
                 {profitSafety.discountPercentage}%)
               </div>
               {profitSafety.warning && (
-                <div className="text-[11px] font-extrabold">{profitSafety.warning}</div>
+                <div className="text-[11px] font-bold">{stripUiEmojis(profitSafety.warning)}</div>
               )}
             </div>
 
@@ -545,23 +542,23 @@ export default function HafsaOperationsStudio({
                   checked={promoIsVipOnly}
                   onChange={(e) => setPromoIsVipOnly(e.target.checked)}
                 />
-                <span>👑 عرض سري خاص بأعضاء نادي حفصة VIP فقط</span>
+                <span>عرض خاص بأعضاء نادي VIP فقط</span>
               </label>
 
               {canMutate ? (
                 <button
                   type="submit"
                   disabled={!profitSafety.isSafe}
-                  className={`px-4 py-2 rounded-xl text-xs font-black cursor-pointer ${
+                  className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer ${
                     profitSafety.isSafe
-                      ? 'bg-[#231710] text-[#D4AF37]'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      ? 'bg-[#231710] text-white hover:bg-[#3A271C]'
+                      : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                   }`}
                 >
                   + اعتماد ونشر العرض
                 </button>
               ) : (
-                <span className="text-[11px] font-bold text-[#6E5D4F] bg-white px-3 py-1.5 rounded-xl border border-[#E6DFD3]">
+                <span className="text-[11px] font-bold text-[#6B5644] bg-white px-3 py-1.5 rounded-xl border border-[#E8E0D5]">
                   وضع محاكاة الربحية للمحاسب
                 </span>
               )}
@@ -569,18 +566,18 @@ export default function HafsaOperationsStudio({
           </form>
 
           <div className="lg:col-span-5 space-y-2.5">
-            <h3 className="font-cairo text-sm font-black text-[#231710]">
+            <h3 className="font-cairo text-sm font-bold text-[#231710]">
               العروض وحزم التوفير النشطة ({promotions.length})
             </h3>
             <div className="space-y-2 max-h-72 overflow-y-auto">
               {promotions.map((p) => (
                 <div
                   key={p.id}
-                  className="p-3 rounded-xl bg-[#FAF6F0] border border-[#E6DFD3] flex items-center justify-between gap-2 text-xs"
+                  className="p-3 rounded-xl bg-[#FAF6F0] border border-[#E8E0D5] flex items-center justify-between gap-2 text-xs"
                 >
                   <div>
-                    <div className="font-black text-[#231710]">{p.title}</div>
-                    <div className="text-[11px] text-[#3B6E4C] font-bold tabular-nums">
+                    <div className="font-bold text-[#231710]">{stripUiEmojis(p.title)}</div>
+                    <div className="text-[11px] text-emerald-700 font-bold tabular-nums">
                       سعر العرض: {p.promoPrice} ج.م (بدلاً من {p.originalPrice} ج.م • التكلفة:{' '}
                       {p.costPrice} ج.م)
                     </div>
@@ -589,7 +586,7 @@ export default function HafsaOperationsStudio({
                     <button
                       type="button"
                       onClick={() => handleDeletePromo(p.id)}
-                      className="text-[#B83B2B] p-1 hover:bg-red-50 rounded cursor-pointer"
+                      className="text-red-600 p-1 hover:bg-red-50 rounded cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -604,37 +601,36 @@ export default function HafsaOperationsStudio({
       {/* TAB 3: VIP Club Directory & Direct Link to /pos Terminal */}
       {subTab === 'vip_cashier' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <div className="lg:col-span-5 bg-gradient-to-br from-[#231710] to-[#3A2519] text-[#FAF6F0] rounded-2xl p-5 border-2 border-[#D4AF37] flex flex-col justify-between gap-4">
+          <div className="lg:col-span-5 bg-[#FAF6F0] text-[#231710] rounded-2xl p-5 border border-[#E8E0D5] flex flex-col justify-between gap-4">
             <div className="space-y-2">
-              <span className="inline-flex items-center gap-1.5 bg-[#D4AF37] text-[#231710] px-2.5 py-0.5 rounded-full text-[10.5px] font-black">
-                <Scale className="w-3.5 h-3.5" />
+              <span className="inline-flex items-center gap-1.5 bg-white text-[#231710] border border-[#E8E0D5] px-2.5 py-0.5 rounded-full text-[10.5px] font-bold">
+                <Scale className="w-3.5 h-3.5 text-[#9A6836]" />
                 <span>نظام الكاشير والميزان الموحد</span>
               </span>
-              <h3 className="font-cairo text-base sm:text-lg font-black text-white">
-                شاشة الكاشير والميزان الإلكتروني باللمس (POS)
+              <h3 className="font-cairo text-base sm:text-lg font-bold text-[#231710]">
+                شاشة الكاشير والميزان الإلكتروني باللمس
               </h3>
-              <p className="hidden">
-                تم توحيد جميع عمليات البيع المباشر، الوزن بالجرام أو بالجنيه، قراءة باركود الميزان،
-                وخصم وإضافة كاش باك محفظة VIP (5%) وتقفيل الورديات داخل شاشة الكاشير المخصصة.
+              <p className="text-xs text-[#6B5644] leading-relaxed">
+                إدارة عمليات البيع المباشر بالفرع، الوزن بالجرام أو بالجنيه، وإضافة واستبدال رصيد كاش باك محفظة VIP.
               </p>
             </div>
 
             <a
               href="/pos"
-              className="w-full bg-[#D4AF37] hover:bg-[#C88A4B] text-[#231710] font-cairo font-black text-xs py-3 px-4 rounded-xl text-center shadow transition"
+              className="w-full bg-[#231710] hover:bg-[#3A271C] text-white font-cairo font-bold text-xs py-3 px-4 rounded-xl text-center transition"
             >
-              ⚖️ انتقال فوري لشاشة الكاشير والميزان (/pos) ←
+              انتقال فوري لشاشة الكاشير والميزان (/pos)
             </a>
           </div>
 
           <div className="lg:col-span-7 space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="font-cairo text-sm font-black text-[#231710]">
+              <h3 className="font-cairo text-sm font-bold text-[#231710]">
                 أعضاء نادي حفصة VIP المسجلين ({vipMembers.length})
               </h3>
-              <div className="text-xs font-black bg-[#FAF6F0] border border-[#E6DFD3] px-3 py-1 rounded-xl text-[#231710]">
+              <div className="text-xs font-bold bg-[#FAF6F0] border border-[#E8E0D5] px-3 py-1 rounded-xl text-[#231710]">
                 إجمالي رصيد النقاط المستحق للعملاء:{' '}
-                <span className="text-[#3B6E4C]">
+                <span className="text-emerald-700">
                   {vipMembers.reduce((s, m) => s + (m.pointsBalance || 0), 0).toLocaleString('ar-EG')} ج.م
                 </span>
               </div>
@@ -643,17 +639,17 @@ export default function HafsaOperationsStudio({
               {vipMembers.map((m) => (
                 <div
                   key={m.phone}
-                  className="p-3 rounded-xl bg-[#FAF6F0] border border-[#E6DFD3] flex items-center justify-between text-xs tabular-nums"
+                  className="p-3 rounded-xl bg-[#FAF6F0] border border-[#E8E0D5] flex items-center justify-between text-xs tabular-nums"
                 >
                   <div>
-                    <div className="font-black text-[#231710]">
+                    <div className="font-bold text-[#231710]">
                       {m.customerName} ({m.phone})
                     </div>
-                    <div className="text-[10.5px] text-[#6E5D4F]">
+                    <div className="text-[10.5px] text-[#6B5644]">
                       إجمالي المشتريات: {m.totalSpent} ج.م • عدد الطلبات: {m.ordersCount}
                     </div>
                   </div>
-                  <span className="bg-[#3B6E4C] text-white px-3 py-1 rounded-full font-black">
+                  <span className="bg-white text-emerald-700 border border-[#E8E0D5] px-3 py-1 rounded-full font-bold">
                     الرصيد: {m.pointsBalance} ج.م
                   </span>
                 </div>
@@ -666,14 +662,14 @@ export default function HafsaOperationsStudio({
       {/* TAB 4: 3 Physical Store Printable QR Codes */}
       {subTab === 'qr_codes' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-[#6E5D4F] font-bold">
-              لوحات الـ QR الثلاث المعتمدة لوضعها داخل فرع بني مزار (أمام مسجد الزراعيين) وعلى الأكياس:
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <p className="text-xs text-[#6B5644] font-bold">
+              لوحات الـ QR الثلاث المعتمدة لوضعها داخل الفرع وعلى عبوات التغليف:
             </p>
             <button
               type="button"
               onClick={() => window.print()}
-              className="bg-[#231710] text-[#D4AF37] px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer"
+              className="bg-[#231710] hover:bg-[#3A271C] text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>طباعة لوحات الـ QR الثلاث</span>
@@ -684,39 +680,39 @@ export default function HafsaOperationsStudio({
             {[
               {
                 title: '1. ستاند رخامة الكاشير',
-                subtitle: 'امسح الكود وسجّل رقمك في نادي حفصة VIP وابدأ جمع 5% كاش باك فوراً!',
+                subtitle: 'امسح الكود وسجّل رقمك في نادي حفصة VIP وابدأ جمع 5% كاش باك فوراً',
                 route: '/vip',
                 codeLabel: 'HAFSA-QR-VIP-CLUB',
               },
               {
                 title: '2. بجوار صوامع البن الأربعة',
-                subtitle: 'صمّم توليفة قهوتك الخاصة بالجرام والتحويجة على موبايلك واحفظها!',
+                subtitle: 'صمّم توليفة قهوتك الخاصة بالجرام والتحويجة على موبايلك واحفظها',
                 route: '/coffee-blender',
                 codeLabel: 'HAFSA-QR-COFFEE-STUDIO',
               },
               {
                 title: '3. مطبوع على أكياس وبوكسات التغليف',
-                subtitle: 'اطلب بوكس السهرة والـ 125 جنيه القادم بضغطة واحدة ليصلك لباب البيت!',
+                subtitle: 'اطلب بوكس السهرة القادم بضغطة واحدة ليصلك لباب البيت',
                 route: '/build-box',
                 codeLabel: 'HAFSA-QR-BOX-125',
               },
             ].map((qr, i) => (
               <div
                 key={i}
-                className="bg-[#231710] text-[#FAF6F0] rounded-2xl p-5 border-2 border-[#D4AF37] text-center space-y-3"
+                className="bg-[#FAF6F0] text-[#231710] rounded-2xl p-5 border border-[#E8E0D5] text-center space-y-3"
               >
-                <span className="text-[10px] font-black text-[#D4AF37] block">
+                <span className="text-[10px] font-bold text-[#9A6836] block">
                   محمصة حفصة للبن والمكسرات • بني مزار
                 </span>
-                <h4 className="font-cairo text-sm font-black text-white">{qr.title}</h4>
-                <div className="bg-white p-4 rounded-2xl w-28 h-28 mx-auto flex flex-col items-center justify-center">
+                <h4 className="font-cairo text-sm font-bold text-[#231710]">{qr.title}</h4>
+                <div className="bg-white border border-[#E8E0D5] p-4 rounded-2xl w-28 h-28 mx-auto flex flex-col items-center justify-center">
                   <QrCode className="w-16 h-16 text-[#231710]" />
-                  <span className="text-[8px] font-mono font-black text-[#231710] mt-1">
+                  <span className="text-[8px] font-mono font-bold text-[#231710] mt-1">
                     {qr.codeLabel}
                   </span>
                 </div>
-                <p className="text-[11px] text-[#F3ECE1]/85 leading-relaxed">{qr.subtitle}</p>
-                <div className="text-[10px] font-mono text-[#D4AF37]">
+                <p className="text-[11px] text-[#6B5644] leading-relaxed">{qr.subtitle}</p>
+                <div className="text-[10px] font-mono text-[#9A6836]">
                   الرابط: {qr.route}
                 </div>
               </div>
@@ -737,75 +733,74 @@ export default function HafsaOperationsStudio({
                 type="text"
                 value={metaPixel}
                 onChange={(e) => setMetaPixel(e.target.value)}
-                className="w-full bg-[#FAF6F0] border border-[#E6DFD3] rounded-xl px-3 py-2 text-xs font-mono font-bold"
+                className="w-full bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs font-mono font-medium outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-extrabold block mb-1">
-                معرّف TikTok Pixel (إعلانات تيك توك بني مزار):
+              <label className="text-xs font-bold block mb-1 text-[#231710]">
+                معرّف بيكسل تيك توك للإعلانات:
               </label>
               <input
                 type="text"
                 value={tiktokPixel}
                 onChange={(e) => setTiktokPixel(e.target.value)}
-                className="w-full bg-[#FAF6F0] border border-[#E6DFD3] rounded-xl px-3 py-2 text-xs font-mono font-bold"
+                className="w-full bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs font-mono font-medium outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-extrabold block mb-1">
+              <label className="text-xs font-bold block mb-1 text-[#231710]">
                 الحد الأدنى لطلبات قرى مركز بني مزار (ج.م):
               </label>
               <input
                 type="number"
                 value={minOrderVillages}
                 onChange={(e) => setMinOrderVillages(Number(e.target.value))}
-                className="w-full bg-[#FAF6F0] border border-[#E6DFD3] rounded-xl px-3 py-2 text-xs font-black"
+                className="w-full bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs font-bold outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-extrabold block mb-1">
+              <label className="text-xs font-bold block mb-1 text-[#231710]">
                 توصيل بندر بني مزار السريع (ج.م):
               </label>
               <input
                 type="number"
                 value={bandarShipping}
                 onChange={(e) => setBandarShipping(Number(e.target.value))}
-                className="w-full bg-[#FAF6F0] border border-[#E6DFD3] rounded-xl px-3 py-2 text-xs font-black"
+                className="w-full bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs font-bold outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-extrabold block mb-1">
+              <label className="text-xs font-bold block mb-1 text-[#231710]">
                 توصيل قرى مركز بني مزار المجدول (ج.م):
               </label>
               <input
                 type="number"
                 value={villagesShipping}
                 onChange={(e) => setVillagesShipping(Number(e.target.value))}
-                className="w-full bg-[#FAF6F0] border border-[#E6DFD3] rounded-xl px-3 py-2 text-xs font-black"
+                className="w-full bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs font-bold outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-extrabold block mb-1">
+              <label className="text-xs font-bold block mb-1 text-[#231710]">
                 حد التوصيل المجاني داخل بني مزار (ج.م):
               </label>
               <input
                 type="number"
                 value={freeThreshold}
                 onChange={(e) => setFreeThreshold(Number(e.target.value))}
-                className="w-full bg-[#FAF6F0] border border-[#E6DFD3] rounded-xl px-3 py-2 text-xs font-black"
+                className="w-full bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs font-bold outline-none"
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
             <span className="text-xs text-[#3B6E4C] font-bold">
-              📊 أحداث البيكسل المسجلة في الجلسة الحالية: {pixelEvents.length} حدث (AddToCart /
-              CustomizeProduct / Purchase)
+              أحداث التتبع المسجلة في الجلسة الحالية: {pixelEvents.length} حدث
             </span>
             {canMutate && (
               <button
                 type="submit"
-                className="bg-[#231710] text-[#D4AF37] px-5 py-2.5 rounded-xl text-xs font-black cursor-pointer"
+                className="bg-[#231710] hover:bg-[#3a261b] text-white px-5 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition"
               >
                 حفظ إعدادات التسويق والتوصيل
               </button>
@@ -827,8 +822,8 @@ export default function HafsaOperationsStudio({
             <div className="bg-amber-50 border border-amber-300 rounded-2xl p-5 text-amber-950 flex items-center gap-3">
               <ShieldCheck className="w-6 h-6 text-amber-700 shrink-0" />
               <div>
-                <h4 className="text-xs font-black">أداة مقصورة حصرياً على المدير العام (Super Admin)</h4>
-                <p className="text-[11px] text-amber-800 mt-0.5">
+                <h4 className="text-xs font-bold">أداة مقصورة حصرياً على المدير العام فقط</h4>
+                <p className="text-xs text-amber-800 mt-0.5">
                   تصفير العمليات التجريبية والورديات قبل الافتتاح الرسمي يتطلب صلاحية المدير العام لتأمين بيانات الفرع.
                 </p>
               </div>

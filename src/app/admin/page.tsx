@@ -34,7 +34,6 @@ import {
   Eye,
   EyeOff,
   Copy,
-  Sparkles,
   ShieldCheck,
   Clock,
   Check,
@@ -94,6 +93,8 @@ import {
   getSafeImageUrl,
   STORE_THEMES,
   DEFAULT_THEME_CONFIG,
+  formatCategoryName,
+  stripUiEmojis,
 } from '@/lib/defaults';
 import HafsaOperationsStudio from '@/components/admin/HafsaOperationsStudio';
 import PreLaunchResetSafeguard from '@/components/admin/PreLaunchResetSafeguard';
@@ -226,48 +227,6 @@ function getRequestedTabFromUrl(): AdminTab | null {
   return null;
 }
 
-type SelectableLoginRole = 'super_admin' | 'supplier' | 'accountant' | 'cashier';
-
-const ROLE_PORTAL_META: Record<
-  SelectableLoginRole,
-  {
-    title: string;
-    badge: string;
-    defaultUsername: string;
-    description: string;
-    badgeClass: string;
-  }
-> = {
-  super_admin: {
-    title: '👑 الأدمن (المدير العام)',
-    badge: 'صلاحية كاملة',
-    defaultUsername: 'admin_hafsa',
-    description: 'تحكم كامل بالمتجر، الأسعار، الطلبات، التقارير، وبيانات دخول جميع الأدوار',
-    badgeClass: 'bg-gold-500 text-brand-950',
-  },
-  supplier: {
-    title: '📦 المورد (إدارة التوريد)',
-    badge: 'عزل التوريد والمخزون',
-    defaultUsername: 'supplier_arafat',
-    description: 'متابعة المخزون وتقديم فواتير التوريد بانتظار موافقة الإدارة',
-    badgeClass: 'bg-amber-500 text-brand-950',
-  },
-  cashier: {
-    title: '⚖️ الكاشير (نقطة البيع POS)',
-    badge: 'عزل الكاشير والمبيعات',
-    defaultUsername: 'cashier_pos',
-    description: 'شاشة الميزان والبيع المباشر وتجهيز طلبات الأونلاين والورديات',
-    badgeClass: 'bg-sky-400 text-brand-950',
-  },
-  accountant: {
-    title: '📊 المحاسب (المراجعة المالية)',
-    badge: 'عزل مالي ومحاسبي',
-    defaultUsername: 'accountant_fin',
-    description: 'مراجعة الإيرادات، تكلفة البضاعة المباعة، صافي الأرباح، وجرد الورديات Z-Report',
-    badgeClass: 'bg-pistachio-500 text-brand-950',
-  },
-};
-
 const ALL_ROAST_OPTIONS: RoastOption[] = [
   'محمص مملح',
   'محمص بدون ملح',
@@ -288,44 +247,44 @@ const CANONICAL_ORDER_STATUSES: OrderStatus[] = [
 const STATUS_LABELS: Record<string, { label: string; badgeClass: string; dotClass: string }> = {
   pending: {
     label: 'قيد المراجعة',
-    badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
+    badgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
     dotClass: 'bg-amber-500',
   },
   confirmed: {
     label: 'تم التأكيد',
-    badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
+    badgeClass: 'bg-blue-50 text-blue-800 border-blue-200',
     dotClass: 'bg-blue-500',
   },
   roasting_packing: {
-    label: 'جاري التحميص والتغليف 🔥',
-    badgeClass: 'bg-orange-100 text-orange-800 border-orange-200',
+    label: 'جاري التحميص والتغليف',
+    badgeClass: 'bg-orange-50 text-orange-800 border-orange-200',
     dotClass: 'bg-orange-500',
   },
   preparing: {
-    label: 'جاري التحميص والتجهيز 🔥',
-    badgeClass: 'bg-orange-100 text-orange-800 border-orange-200',
+    label: 'جاري التحميص والتجهيز',
+    badgeClass: 'bg-orange-50 text-orange-800 border-orange-200',
     dotClass: 'bg-orange-500',
   },
   shipped: {
-    label: 'خرج مع المندوب 🚚',
-    badgeClass: 'bg-purple-100 text-purple-800 border-purple-200',
+    label: 'خرج مع المندوب',
+    badgeClass: 'bg-purple-50 text-purple-800 border-purple-200',
     dotClass: 'bg-purple-500',
   },
   delivered: {
-    label: 'تم التسليم ✅',
-    badgeClass: 'bg-pistachio-100 text-pistachio-700 border-pistachio-300',
-    dotClass: 'bg-pistachio-600',
+    label: 'تم التسليم',
+    badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    dotClass: 'bg-emerald-600',
   },
   cancelled: {
-    label: 'ملغي ❌',
-    badgeClass: 'bg-red-100 text-red-700 border-red-200',
+    label: 'ملغي',
+    badgeClass: 'bg-red-50 text-red-700 border-red-200',
     dotClass: 'bg-red-500',
   },
 };
 
 const DEFAULT_STATUS_META = {
   label: 'قيد المراجعة',
-  badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
+  badgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
   dotClass: 'bg-amber-500',
 };
 
@@ -337,6 +296,9 @@ const getOrderStatusMeta = (status?: string) => {
 export default function AdminDashboardPage() {
   const { storeData, refreshStore, showToast, setThemeOverride } = useStore();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [settingsSubTab, setSettingsSubTab] = useState<
+    'branch' | 'payment' | 'security' | 'telegram' | 'backup'
+  >('branch');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -345,8 +307,7 @@ export default function AdminDashboardPage() {
   const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [adminToken, setAdminToken] = useState<string>('');
   const [currentRole, setCurrentRole] = useState<AdminRole>('super_admin');
-  const [currentUsername, setCurrentUsername] = useState<string>('admin_hafsa');
-  const [selectedLoginRole, setSelectedLoginRole] = useState<SelectableLoginRole>('super_admin');
+  const [currentUsername, setCurrentUsername] = useState<string>('');
   const [loginUsername, setLoginUsername] = useState<string>('');
   const [loginPassword, setLoginPassword] = useState<string>('');
   const [loginError, setLoginError] = useState<string>('');
@@ -459,27 +420,12 @@ export default function AdminDashboardPage() {
       setCmsDraft(getResolvedPageContent(storeData.settings));
       setThemeDraft(getResolvedThemeConfig(storeData.settings));
       setAnnouncementDraft(storeData.settings.announcementText || '');
-      setNewAdminUsername(storeData.settings.adminUsername || 'admin_hafsa');
-      setNewSupplierUsername(storeData.settings.supplierUsername || 'supplier_arafat');
-      setNewCashierUsername(storeData.settings.cashierUsername || 'cashier_pos');
-      setNewAccountantUsername(storeData.settings.accountantUsername || 'accountant_fin');
+      setNewAdminUsername(storeData.settings.adminUsername || '');
+      setNewSupplierUsername(storeData.settings.supplierUsername || '');
+      setNewCashierUsername(storeData.settings.cashierUsername || '');
+      setNewAccountantUsername(storeData.settings.accountantUsername || '');
     }
   }, [storeData?.settings]);
-
-  // Pre-select login role if visiting /supplier or /accountant or ?role=
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const path = window.location.pathname;
-    const params = new URLSearchParams(window.location.search);
-    const qRole = params.get('role');
-    if (path.startsWith('/supplier') || qRole === 'supplier') {
-      setSelectedLoginRole('supplier');
-    } else if (path.startsWith('/accountant') || qRole === 'accountant') {
-      setSelectedLoginRole('accountant');
-    } else if (qRole === 'cashier') {
-      setSelectedLoginRole('cashier');
-    }
-  }, []);
 
   // Check admin session on mount via lightweight GET /api/admin/login
   useEffect(() => {
@@ -794,8 +740,8 @@ export default function AdminDashboardPage() {
       if (res.ok && data.success) {
         showToast(
           status === 'approved'
-            ? 'تم اعتماد فاتورة التوريد وإضافة الكميات للمخزون وتحديث التكلفة بنجاح ✅'
-            : 'تم رفض فاتورة التوريد دون تعديل المخزون ❌'
+            ? 'تم اعتماد فاتورة التوريد وإضافة الكميات للمخزون وتحديث التكلفة بنجاح'
+            : 'تم رفض فاتورة التوريد دون تعديل المخزون'
         );
         await fetchSupplyInvoices();
         await refreshStore();
@@ -873,7 +819,7 @@ export default function AdminDashboardPage() {
         return;
       }
       await refreshStore();
-      showToast(`💰 تم استلام وتوريد عهدة المندوب (${data.settledAmount} ج.م) في درج الوردية المفتوحة بنجاح ✅`);
+      showToast(`تم استلام وتوريد عهدة المندوب (${data.settledAmount} ج.م) في درج الوردية المفتوحة بنجاح`);
     } catch {
       showToast('حدث خطأ في الاتصال أثناء توريد عهدة المندوب', 'error');
     } finally {
@@ -887,7 +833,7 @@ export default function AdminDashboardPage() {
     const unfulfilled = orders.filter((o) => o.status === 'pending' || o.status === 'confirmed');
     if (!isInitialAdminOrdersRef.current && unfulfilled.length > prevAdminOrdersCountRef.current) {
       playOrderAlertChime();
-      showToast('🔔 طلب أونلاين جديد بالمتجر!', `يوجد ${unfulfilled.length} طلبات قيد الانتظار والتجهيز`);
+      showToast('طلب أونلاين جديد بالمتجر', `يوجد ${unfulfilled.length} طلبات قيد الانتظار والتجهيز`);
     }
     isInitialAdminOrdersRef.current = false;
     prevAdminOrdersCountRef.current = unfulfilled.length;
@@ -917,11 +863,11 @@ export default function AdminDashboardPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setTelegramTestFeedback({ success: true, message: data.message });
+        setTelegramTestFeedback({ success: true, message: stripUiEmojis(data.message || '') });
       } else {
         setTelegramTestFeedback({
           success: false,
-          message: data.error || 'فشل الاتصال بسيرفر تلجرام. تحقق من التوكن وChat ID',
+          message: stripUiEmojis(data.error || 'فشل الاتصال بسيرفر تلجرام. تحقق من رمز البوت ومعرف المحادثة'),
         });
       }
     } catch (err: any) {
@@ -938,6 +884,14 @@ export default function AdminDashboardPage() {
         setActiveSubTab(extraParams.subtab || 'channels');
       } else {
         setActiveSubTab('channels');
+      }
+      if (nextTab === 'settings') {
+        const sSub = extraParams?.subtab;
+        if (sSub && ['branch', 'payment', 'security', 'telegram', 'backup'].includes(sSub)) {
+          setSettingsSubTab(sSub as 'branch' | 'payment' | 'security' | 'telegram' | 'backup');
+        } else {
+          setSettingsSubTab('branch');
+        }
       }
       updateUrlQueryParams({
         tab: nextTab,
@@ -977,6 +931,13 @@ export default function AdminDashboardPage() {
           hasRolePermission(currentRole, resolvedTab as AdminPermissionId, settings)))
     ) {
       setActiveTab(resolvedTab);
+      if (resolvedTab === 'settings') {
+        if (subParam && ['branch', 'payment', 'security', 'telegram', 'backup'].includes(subParam)) {
+          setSettingsSubTab(subParam as 'branch' | 'payment' | 'security' | 'telegram' | 'backup');
+        } else {
+          setSettingsSubTab('branch');
+        }
+      }
     }
 
     const stParam = params.get('status');
@@ -1343,36 +1304,33 @@ export default function AdminDashboardPage() {
   // Authentication gate rendering
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-brand-950 flex flex-col items-center justify-center p-8 text-center text-white gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-gold-500/20 border border-gold-400/40 flex items-center justify-center text-gold-400 animate-pulse">
-          <Lock className="w-6 h-6" />
+      <div className="min-h-screen bg-[#FAF6F0] flex flex-col items-center justify-center p-8 text-center text-[#231710] gap-3">
+        <div className="w-11 h-11 rounded-xl bg-white border border-[#E8E0D5] flex items-center justify-center text-[#9A6836]">
+          <Lock className="w-5 h-5" />
         </div>
-        <p className="text-sm font-extrabold text-brand-100">جاري التحقق من صلاحيات الإدارة...</p>
+        <p className="text-sm font-bold text-[#6E5D4F]">جاري التحقق من الجلسة...</p>
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-brand-950 via-brand-900 to-brand-950 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 border border-gold-500/30 shadow-2xl space-y-5">
-          <div className="text-center space-y-2">
-            <div className="w-14 h-14 bg-brand-950 text-gold-400 rounded-2xl mx-auto flex items-center justify-center shadow-md border border-gold-500/30">
-              <ShieldCheck className="w-7 h-7" />
+      <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md bg-white rounded-2xl p-6 sm:p-8 border border-[#E8E0D5] space-y-6">
+          <div className="text-center space-y-1.5">
+            <div className="w-12 h-12 bg-[#FAF6F0] text-[#231710] rounded-xl mx-auto flex items-center justify-center border border-[#E8E0D5]">
+              <ShieldCheck className="w-6 h-6 text-[#9A6836]" />
             </div>
-            <h1 className="text-xl font-black text-brand-950">
-              تسجيل دخول طاقم العمل
+            <h1 className="font-cairo text-xl font-bold text-[#231710]">
+              تسجيل دخول الإدارة
             </h1>
-            <p className="text-xs text-brand-600">
-              {settings?.storeName || 'محمصة حفصة'}
-            </p>
-            <p className="hidden">
-              {settings?.storeName || 'محمصة حفصة للبن والمكسرات'} — أدخل اسم المستخدم وكلمة المرور ليتم تحويلك تلقائياً إلى القسم المسموح لك حسب تخصصك
+            <p className="text-xs text-[#6E5D4F]">
+              {settings?.storeName || 'محمصة حفصة للبن والمكسرات'}
             </p>
           </div>
 
           {loginError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-xs font-bold p-3 rounded-xl flex items-center gap-2">
+            <div className="bg-red-50 border border-red-200 text-[#B83B2B] text-xs font-bold p-3 rounded-xl flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{loginError}</span>
             </div>
@@ -1380,7 +1338,7 @@ export default function AdminDashboardPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-brand-900 mb-1.5">
+              <label className="block text-xs font-bold text-[#231710] mb-1.5">
                 اسم المستخدم
               </label>
               <input
@@ -1389,12 +1347,12 @@ export default function AdminDashboardPage() {
                 value={loginUsername}
                 onChange={(e) => setLoginUsername(e.target.value)}
                 placeholder="أدخل اسم المستخدم"
-                className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-900"
+                className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] focus:bg-white rounded-xl px-3.5 py-2.5 text-sm font-mono font-medium text-[#231710] focus:outline-none transition"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-brand-900 mb-1.5">
+              <label className="block text-xs font-bold text-[#231710] mb-1.5">
                 كلمة المرور
               </label>
               <input
@@ -1402,38 +1360,35 @@ export default function AdminDashboardPage() {
                 required
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-brand-950 focus:outline-none focus:ring-2 focus:ring-brand-900"
+                placeholder="أدخل كلمة المرور"
+                className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] focus:bg-white rounded-xl px-3.5 py-2.5 text-sm font-mono font-medium text-[#231710] focus:outline-none transition"
               />
             </div>
 
             <button
               type="submit"
               disabled={loginSubmitting}
-              className="w-full bg-brand-900 hover:bg-brand-950 text-white font-black text-xs py-3 rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              className="w-full bg-[#231710] hover:bg-[#3A2519] text-white font-cairo font-bold text-sm py-3 rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               {loginSubmitting ? (
-                <span>جاري التحقق والتوجيه تلقائياً...</span>
+                <span>جاري التحقق...</span>
               ) : (
                 <>
-                  <KeyRound className="w-4 h-4 text-gold-400" />
+                  <KeyRound className="w-4 h-4" />
                   <span>تسجيل الدخول</span>
                 </>
               )}
             </button>
           </form>
 
-          {/* Direct Storefront Link */}
-          <div className="pt-3 border-t border-brand-100 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-            <span className="font-bold text-brand-600">
-              🛒 أو تصفح المتجر مباشرة كزائر:
-            </span>
+          <div className="pt-4 border-t border-[#E8E0D5] flex items-center justify-between gap-2 text-xs">
+            <span className="text-[#6E5D4F]">العودة لواجهة المتجر:</span>
             <Link
               href="/"
-              className="font-black text-pistachio-700 hover:text-pistachio-800 underline flex items-center gap-1"
+              className="font-bold text-[#231710] hover:text-[#9A6836] flex items-center gap-1 transition"
             >
-              <span>الانتقال إلى واجهة المتجر والشراء</span>
-              <ExternalLink className="w-3 h-3" />
+              <span>تصفح المتجر</span>
+              <ExternalLink className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
@@ -1527,7 +1482,7 @@ export default function AdminDashboardPage() {
             coupons: parsed.coupons || coupons,
             orders: parsed.orders || orders,
           },
-          'تمت استعادة النسخة الاحتياطية للنظام بنجاح ✅'
+          'تمت استعادة النسخة الاحتياطية للنظام بنجاح'
         );
       } catch {
         showToast('تعذر قراءة ملف JSON');
@@ -1576,7 +1531,7 @@ export default function AdminDashboardPage() {
       });
       if (res.ok) {
         await refreshStore();
-        showToast('🛵 تم إسناد الطلب لمندوب التوصيل بنجاح');
+        showToast('تم إسناد الطلب لمندوب التوصيل بنجاح');
       } else {
         const d = await res.json().catch(() => ({}));
         showToast(d.error || 'فشل إسناد المندوب', 'error');
@@ -1899,14 +1854,14 @@ export default function AdminDashboardPage() {
           themeConfig: themeDraft,
         },
       },
-      'تم حفظ وتطبيق تعديلات محتوى الصفحات على المتجر بالكامل ✅'
+      'تم حفظ وتطبيق تعديلات محتوى الصفحات على المتجر بالكامل'
     );
   };
 
   // Immediately persist a theme or layout change to the database and apply live
   const applyAndSaveThemeConfig = async (
     nextConfig: StoreThemeConfig,
-    toastMessage = 'تم حفظ وتطبيق ثيم وتخطيط الموقع الجديد لجميع الزوار بنجاح 🎨✅'
+    toastMessage = 'تم حفظ وتطبيق ثيم وتخطيط الموقع الجديد لجميع الزوار بنجاح'
   ) => {
     setThemeDraft(nextConfig);
     setThemeOverride(nextConfig);
@@ -1936,7 +1891,7 @@ export default function AdminDashboardPage() {
     };
     await applyAndSaveThemeConfig(
       nextConfig,
-      `تم تفعيل وحفظ ثيم "${preset.name}" على كامل الموقع 🎨✅`
+      `تم تفعيل وحفظ ثيم "${preset.name}" على كامل الموقع`
     );
   };
 
@@ -1945,7 +1900,7 @@ export default function AdminDashboardPage() {
     e.preventDefault();
     await applyAndSaveThemeConfig(
       themeDraft,
-      'تم حفظ وتطبيق ثيم وتخطيط الموقع الجديد لجميع الزوار بنجاح 🎨✅'
+      'تم حفظ وتطبيق ثيم وتخطيط الموقع الجديد لجميع الزوار بنجاح'
     );
   };
 
@@ -1953,128 +1908,138 @@ export default function AdminDashboardPage() {
     currentRole === 'super_admin' ||
     currentRole === 'admin';
 
-  // Sidebar navigation config isolated strictly by role
+  // Sidebar navigation config grouped into 4 logical sections, isolated strictly by role
+  const NAV_GROUPS: Array<{
+    id: 'sales' | 'inventory' | 'accounting' | 'management';
+    title: string;
+  }> = [
+    { id: 'sales', title: 'المبيعات' },
+    { id: 'inventory', title: 'المخزون والتوريد' },
+    { id: 'accounting', title: 'الحسابات' },
+    { id: 'management', title: 'الإدارة والإعدادات' },
+  ];
+
   const allNavItems: Array<{
     id: AdminTab;
+    group: 'sales' | 'inventory' | 'accounting' | 'management';
     label: string;
     icon: React.ReactNode;
-    badge?: string | number;
-    badgeColor?: string;
+    urgentCount?: number;
     roles: AdminRole[];
   }> = [
+    // Group 1: المبيعات
     {
       id: 'overview',
+      group: 'sales',
       label: currentRole === 'accountant' ? 'الدخل اليومي والملخص المالي' : 'النظرة العامة',
       icon: <LayoutDashboard className="w-4 h-4" />,
       roles: ['super_admin', 'admin', 'accountant'],
     },
     {
-      id: 'supply_portal',
-      label: 'بوابة المورد',
-      icon: <Truck className="w-4 h-4" />,
-      badge: `${products.length} صنف`,
-      badgeColor: 'bg-amber-500 text-brand-950',
-      roles: ['super_admin', 'admin', 'supplier'],
-    },
-    {
-      id: 'supply_invoices',
-      label: currentRole === 'accountant' ? 'فواتير الشراء والتوريد' : 'فواتير التوريد',
-      icon: <ClipboardList className="w-4 h-4" />,
-      badge: pendingSupplyInvoicesCount > 0 ? `${pendingSupplyInvoicesCount} معلقة` : effectiveSupplyInvoices.length,
-      badgeColor:
-        pendingSupplyInvoicesCount > 0
-          ? 'bg-amber-500 text-brand-950 font-black animate-pulse'
-          : 'bg-white/15 text-white',
-      roles: ['super_admin', 'admin', 'accountant'],
-    },
-    {
-      id: 'accounting_portal',
-      label: currentRole === 'accountant' ? 'التقارير المالية الشاملة' : 'بوابة المحاسب',
-      icon: <TrendingUp className="w-4 h-4" />,
-      badge: 'مالي',
-      badgeColor: 'bg-pistachio-500 text-brand-950',
-      roles: ['super_admin', 'admin', 'accountant'],
-    },
-    {
-      id: 'cashier_portal',
-      label: 'بوابة الكاشير',
-      icon: <ShieldCheck className="w-4 h-4" />,
-      badge: 'POS',
-      badgeColor: 'bg-sky-400 text-brand-950',
-      roles: ['cashier'],
-    },
-    {
       id: 'orders',
+      group: 'sales',
       label:
         currentRole === 'accountant'
           ? 'فواتير المبيعات والكاشير'
           : currentRole === 'cashier'
-          ? 'تجهيز طلبات الموقع الأونلاين'
-          : 'الطلبات والفواتير',
+            ? 'تجهيز طلبات الأونلاين'
+            : 'الطلبات والفواتير',
       icon: <Package className="w-4 h-4" />,
-      badge: activeOrdersCount > 0 ? `${activeOrdersCount} جاري` : orders.length,
-      badgeColor: activeOrdersCount > 0 ? 'bg-amber-500 text-brand-950' : 'bg-white/15 text-white',
+      urgentCount: activeOrdersCount > 0 ? activeOrdersCount : undefined,
       roles: ['super_admin', 'admin', 'accountant', 'cashier'],
     },
     {
+      id: 'cashier_portal',
+      group: 'sales',
+      label: 'نقطة البيع (الكاشير)',
+      icon: <Scale className="w-4 h-4" />,
+      roles: ['cashier'],
+    },
+    {
+      id: 'coupons',
+      group: 'sales',
+      label: currentRole === 'accountant' ? 'الكوبونات والخصومات' : 'الكوبونات والعروض',
+      icon: <Tag className="w-4 h-4" />,
+      roles: ['super_admin', 'admin', 'accountant'],
+    },
+
+    // Group 2: المخزون والتوريد
+    {
       id: 'products',
+      group: 'inventory',
       label: currentRole === 'accountant' ? 'الأصناف والتكاليف والأسعار' : 'المنتجات والأسعار',
       icon: <ShoppingBag className="w-4 h-4" />,
-      badge: products.length,
       roles: ['super_admin', 'admin', 'accountant'],
     },
     {
       id: 'categories',
+      group: 'inventory',
       label: currentRole === 'supplier' ? 'الأقسام والتصنيفات (عرض)' : 'الأقسام والتصنيفات',
       icon: <Layers className="w-4 h-4" />,
-      badge: categories.length,
+      roles: ['super_admin', 'admin', 'supplier'],
+    },
+    {
+      id: 'supply_invoices',
+      group: 'inventory',
+      label: currentRole === 'accountant' ? 'فواتير الشراء والتوريد' : 'فواتير التوريد',
+      icon: <ClipboardList className="w-4 h-4" />,
+      urgentCount: pendingSupplyInvoicesCount > 0 ? pendingSupplyInvoicesCount : undefined,
+      roles: ['super_admin', 'admin', 'accountant'],
+    },
+    {
+      id: 'supply_portal',
+      group: 'inventory',
+      label: 'بوابة المورد',
+      icon: <Truck className="w-4 h-4" />,
       roles: ['super_admin', 'admin', 'supplier'],
     },
     {
       id: 'operations',
-      label: currentRole === 'accountant' ? 'الورديات والمصروفات والـ VIP' : 'أدوات التشغيل',
-      icon: <Sparkles className="w-4 h-4" />,
-      badge: currentRole === 'accountant' ? 'درج الكاشير' : 'VIP والعروض',
-      badgeColor: 'bg-gold-500 text-brand-950',
+      group: 'inventory',
+      label: currentRole === 'accountant' ? 'الورديات والمصروفات والـ VIP' : 'أدوات التشغيل والورديات',
+      icon: <FileText className="w-4 h-4" />,
       roles: ['super_admin', 'admin', 'accountant'],
     },
+
+    // Group 3: الحسابات
+    {
+      id: 'accounting_portal',
+      group: 'accounting',
+      label: currentRole === 'accountant' ? 'التقارير المالية الشاملة' : 'التقارير والمراجعة المالية',
+      icon: <TrendingUp className="w-4 h-4" />,
+      roles: ['super_admin', 'admin', 'accountant'],
+    },
+
+    // Group 4: الإدارة والإعدادات
     {
       id: 'shipping',
-      label: 'الشحن والمحافظات',
+      group: 'management',
+      label: 'الشحن والمناطق',
       icon: <Truck className="w-4 h-4" />,
-      badge: shippingRates.length,
       roles: ['super_admin', 'admin'],
     },
     {
-      id: 'coupons',
-      label: currentRole === 'accountant' ? 'الكوبونات والخصومات' : 'الكوبونات والعروض',
-      icon: <Tag className="w-4 h-4" />,
-      badge: coupons.filter((c) => c.active).length,
-      roles: ['super_admin', 'admin', 'accountant'],
+      id: 'reviews',
+      group: 'management',
+      label: 'تقييمات العملاء',
+      icon: <Star className="w-4 h-4" />,
+      roles: ['super_admin', 'admin'],
     },
     {
-      id: 'reviews',
-      label: 'تقييمات وآراء العملاء',
-      icon: <Star className="w-4 h-4" />,
-      badge: allReviewsFlattened.length,
+      id: 'permissions',
+      group: 'management',
+      label: 'الحسابات والصلاحيات',
+      icon: <KeyRound className="w-4 h-4" />,
       roles: ['super_admin', 'admin'],
     },
     {
       id: 'settings',
+      group: 'management',
       label: 'الإعدادات',
       icon: <Settings className="w-4 h-4" />,
       roles: ['super_admin', 'admin'],
     },
   ];
-
-  allNavItems.splice(allNavItems.length - 1, 0, {
-    id: 'permissions',
-    label: 'صلاحيات المستخدمين',
-    icon: <KeyRound className="w-4 h-4" />,
-    badge: '4 مستخدمين',
-    badgeColor: 'bg-gold-500 text-brand-950',
-    roles: ['super_admin', 'admin'],
-  });
 
   const canAccessTab = (tabId: AdminTab): boolean => {
     if (isFullAdmin) return true;
@@ -2082,136 +2047,150 @@ export default function AdminDashboardPage() {
     return hasRolePermission(currentRole, tabId as AdminPermissionId, settings);
   };
 
-  const navItems = allNavItems.filter((item) => canAccessTab(item.id));
+  const navItems = allNavItems.filter((item) =>
+    item.id === 'cashier_portal' ? currentRole === 'cashier' : canAccessTab(item.id)
+  );
 
-
-  const currentNav = navItems.find((n) => n.id === activeTab) || navItems[0];
+  const currentNav = allNavItems.find((n) => n.id === activeTab) || navItems[0];
 
   const roleHeaderBadge =
     currentRole === 'supplier'
-      ? { label: '📦 المورد', cls: 'bg-amber-100 text-amber-950 border-amber-300' }
+      ? { label: 'المورد', cls: 'bg-[#FAF6F0] text-[#9A6836] border-[#E8E0D5]' }
       : currentRole === 'accountant'
-      ? { label: '📊 المحاسب', cls: 'bg-pistachio-100 text-pistachio-900 border-pistachio-300' }
-      : currentRole === 'cashier'
-      ? { label: '⚖️ الكاشير', cls: 'bg-sky-100 text-sky-950 border-sky-300' }
-      : { label: '👑 الأدمن', cls: 'bg-gold-500/20 text-brand-950 border-gold-500/40' };
+        ? { label: 'المحاسب', cls: 'bg-[#FAF6F0] text-[#3B6E4C] border-[#E8E0D5]' }
+        : currentRole === 'cashier'
+          ? { label: 'الكاشير', cls: 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]' }
+          : { label: 'المدير العام', cls: 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]' };
 
   return (
-    <div className="min-h-screen bg-brand-50 flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-[#FAF6F0] text-[#231710] flex flex-col lg:flex-row">
       {/* Mobile Sidebar Backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden"
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* RIGHT-HAND RTL SIDEBAR NAVIGATION */}
+      {/* RIGHT-HAND CLEAN LIGHT ERP RTL SIDEBAR */}
       <aside
-        className={`fixed lg:sticky top-0 right-0 z-50 lg:z-30 h-screen w-56 bg-brand-950 text-white border-l border-gold-500/25 flex flex-col justify-between transition-transform duration-300 ${
+        className={`fixed lg:sticky top-0 right-0 z-50 lg:z-30 h-screen w-60 bg-white text-[#231710] border-l border-[#E8E0D5] flex flex-col justify-between transition-transform duration-300 ${
           sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Top Brand Identity */}
-        <div className="p-3 border-b border-white/10 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 text-brand-950 flex items-center justify-center font-black text-sm shrink-0 shadow-xs">
-              {cmsDraft.logoEmoji || '🌰'}
+        <div className="px-4 py-3.5 border-b border-[#E8E0D5] flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-[#231710] text-white flex items-center justify-center font-cairo font-bold text-sm shrink-0">
+              ح
             </div>
             <div className="min-w-0">
-              <h2 className="text-[11px] font-black text-white truncate">{settings.storeName}</h2>
-              <div className="text-[9.5px] font-bold text-gold-400 truncate">
+              <h2 className="font-cairo text-xs font-bold text-[#231710] truncate">
+                {settings.storeName}
+              </h2>
+              <div className="text-[11px] font-medium text-[#6E5D4F] truncate">
                 {roleHeaderBadge.label}
               </div>
             </div>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-1 rounded-lg bg-white/10 text-white hover:bg-white/20"
+            className="lg:hidden p-1.5 rounded-lg bg-[#FAF6F0] text-[#231710] hover:bg-[#F4EFE6] border border-[#E8E0D5]"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Navigation Links List */}
-        <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
-          {navItems.map((item) => {
-            const isActive = activeTab === item.id;
-            const tabHref = buildUrlWithParams('/admin', {
-              tab: item.id,
-              subtab: null,
-              status: null,
-              invoice: null,
-              productModal: null,
-              invStatus: null,
-            });
+        {/* Grouped Navigation Links */}
+        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+          {NAV_GROUPS.map((grp) => {
+            const groupItems = navItems.filter((item) => item.group === grp.id);
+            if (groupItems.length === 0) return null;
             return (
-              <a
-                key={item.id}
-                href={tabHref}
-                onClick={(e) => {
-                  e.preventDefault();
-                  selectTab(item.id);
-                  setSidebarOpen(false);
-                }}
-                className={`w-full flex items-center justify-between gap-1.5 px-2.5 py-2 rounded-xl text-right transition group ${
-                  isActive
-                    ? 'bg-gradient-to-l from-gold-500 to-gold-400 text-brand-950 font-black shadow-xs'
-                    : 'text-brand-100 hover:bg-white/10 font-bold'
-                }`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span
-                    className={`shrink-0 ${
-                      isActive ? 'text-brand-950' : 'text-gold-400 group-hover:scale-110 transition'
-                    }`}
-                  >
-                    {item.icon}
-                  </span>
-                  <div className="text-[11px] leading-tight truncate">{item.label}</div>
+              <div key={grp.id} className="space-y-1">
+                <div className="px-2.5 text-[11px] font-bold text-[#6E5D4F]">
+                  {grp.title}
                 </div>
+                {groupItems.map((item) => {
+                  const isActive = activeTab === item.id;
+                  const tabHref = buildUrlWithParams('/admin', {
+                    tab: item.id,
+                    subtab: null,
+                    status: null,
+                    invoice: null,
+                    productModal: null,
+                    invStatus: null,
+                  });
+                  return (
+                    <a
+                      key={item.id}
+                      href={tabHref}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        selectTab(item.id);
+                        setSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-right transition ${
+                        isActive
+                          ? 'bg-[#231710] text-white font-bold'
+                          : 'text-[#231710] hover:bg-[#FAF6F0] font-medium'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span
+                          className={`shrink-0 ${
+                            isActive ? 'text-white' : 'text-[#6E5D4F]'
+                          }`}
+                        >
+                          {item.icon}
+                        </span>
+                        <span className="text-xs truncate">{item.label}</span>
+                      </div>
 
-                {item.badge !== undefined && (
-                  <span
-                    className={`text-[9.5px] font-black px-1.5 py-0.5 rounded-md shrink-0 ${
-                      isActive
-                        ? 'bg-brand-950 text-gold-400'
-                        : item.badgeColor || 'bg-white/10 text-brand-100'
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-              </a>
+                      {item.urgentCount !== undefined && item.urgentCount > 0 && (
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 tabular-nums ${
+                            isActive
+                              ? 'bg-white text-[#231710]'
+                              : 'bg-[#B83B2B] text-white'
+                          }`}
+                        >
+                          {item.urgentCount}
+                        </span>
+                      )}
+                    </a>
+                  );
+                })}
+              </div>
             );
           })}
         </nav>
 
         {/* Bottom Sidebar Footer Actions */}
-        <div className="p-2.5 border-t border-white/10 space-y-1.5 bg-brand-950/90">
+        <div className="p-3 border-t border-[#E8E0D5] space-y-1.5 bg-[#FAF6F0]/60">
           {(isFullAdmin || currentRole === 'cashier') && (
             <Link
               href="/pos"
-              className="w-full bg-gold-500 hover:bg-gold-400 text-brand-950 text-[11px] font-black px-2.5 py-1.5 rounded-xl flex items-center justify-between transition shadow-xs"
+              className="w-full bg-white hover:bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] text-xs font-bold px-3 py-2 rounded-xl flex items-center justify-between transition"
             >
-              <span>⚖️ شاشة الكاشير والميزان POS</span>
-              <ExternalLink className="w-3 h-3 text-brand-950" />
+              <span>نقطة البيع (POS)</span>
+              <ExternalLink className="w-3.5 h-3.5 text-[#6E5D4F]" />
             </Link>
           )}
 
           <Link
             href="/"
-            className="w-full bg-pistachio-600/20 hover:bg-pistachio-600/30 border border-pistachio-500/40 text-pistachio-100 text-[11px] font-extrabold px-2.5 py-1.5 rounded-xl flex items-center justify-between transition"
+            className="w-full bg-white hover:bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] text-xs font-medium px-3 py-2 rounded-xl flex items-center justify-between transition"
           >
-            <span>معاينة المتجر الحي</span>
-            <ExternalLink className="w-3 h-3 text-pistachio-400" />
+            <span>معاينة المتجر</span>
+            <ExternalLink className="w-3.5 h-3.5 text-[#6E5D4F]" />
           </Link>
 
           <button
             onClick={handleLogout}
-            className="w-full bg-red-500/20 hover:bg-red-500/30 text-red-200 hover:text-white text-[10px] font-extrabold px-2 py-1.5 rounded-xl flex items-center justify-center gap-1 transition border border-red-500/30"
+            className="w-full bg-white hover:bg-red-50 text-[#B83B2B] text-xs font-bold px-3 py-2 rounded-xl flex items-center justify-center gap-1.5 transition border border-[#E8E0D5] cursor-pointer"
           >
-            <LogOut className="w-3 h-3" />
+            <LogOut className="w-3.5 h-3.5" />
             <span>تسجيل خروج</span>
           </button>
         </div>
@@ -2219,59 +2198,66 @@ export default function AdminDashboardPage() {
 
       {/* MAIN WORKSPACE CONTENT AREA */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Sticky Admin Topbar */}
-        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-brand-200 shadow-2xs">
-          <div className="px-3 sm:px-5 py-2 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
+        {/* Sticky Clean Light Topbar */}
+        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#E8E0D5]">
+          <div className="px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-1.5 rounded-xl bg-brand-950 text-gold-400 shrink-0 cursor-pointer"
+                className="lg:hidden p-2 rounded-xl bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] shrink-0 cursor-pointer"
                 aria-label="فتح القائمة الجانبية"
               >
-                <Menu className="w-3.5 h-3.5" />
+                <Menu className="w-4 h-4" />
               </button>
               <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                <h1 className="text-xs sm:text-sm font-black text-brand-950 truncate">
+                <h1 className="font-cairo text-sm sm:text-base font-bold text-[#231710] truncate">
                   {currentNav?.label}
                 </h1>
                 <span
-                  className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${roleHeaderBadge.cls}`}
+                  className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md border ${roleHeaderBadge.cls}`}
                 >
                   {roleHeaderBadge.label}
                 </span>
                 {saving && (
-                  <span className="text-[9.5px] bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full animate-pulse shrink-0">
+                  <span className="text-[11px] bg-[#FAF6F0] text-[#9A6836] border border-[#E8E0D5] font-bold px-2.5 py-0.5 rounded-md shrink-0">
                     جاري الحفظ...
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsSoundMuted(toggleAudioMuted())}
+                className="p-2 rounded-xl bg-[#FAF6F0] hover:bg-[#F4EFE6] text-[#231710] border border-[#E8E0D5] transition cursor-pointer"
+                title={isSoundMuted ? 'تشغيل التنبيه الصوتي للطلبات' : 'كتم التنبيه الصوتي'}
+              >
+                {isSoundMuted ? (
+                  <VolumeX className="w-4 h-4 text-[#6E5D4F]" />
+                ) : (
+                  <Volume2 className="w-4 h-4 text-[#231710]" />
+                )}
+              </button>
+
               {(isFullAdmin || currentRole === 'cashier') && (
                 <Link
                   href="/pos"
-                  className="bg-amber-100 hover:bg-amber-200 text-brand-950 border border-amber-300 text-[10px] sm:text-[11px] font-black px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition"
+                  className="bg-[#FAF6F0] hover:bg-[#F4EFE6] text-[#231710] border border-[#E8E0D5] text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 transition"
                 >
-                  <span>⚖️ الكاشير POS</span>
+                  <span>الكاشير POS</span>
                 </Link>
               )}
-              <Link
-                href="/"
-                className="lg:hidden bg-pistachio-50 hover:bg-pistachio-100 text-pistachio-800 border border-pistachio-200 text-[10px] font-extrabold px-2 py-1 rounded-xl flex items-center gap-1 transition"
-              >
-                <span>المتجر</span>
-                <ExternalLink className="w-3 h-3" />
-              </Link>
+
               {isFullAdmin && (
                 <button
                   onClick={() => {
                     selectTab('products', { productModal: 'new' });
                     openCreateProductModal();
                   }}
-                  className="bg-brand-900 hover:bg-brand-950 text-white text-[10px] sm:text-[11px] font-extrabold px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition shadow-2xs cursor-pointer"
+                  className="bg-[#231710] hover:bg-[#3A2519] text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
                 >
-                  <Plus className="w-3 h-3 text-gold-400 shrink-0" />
+                  <Plus className="w-3.5 h-3.5 shrink-0" />
                   <span>إضافة منتج</span>
                 </button>
               )}
@@ -2279,7 +2265,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Mobile & Tablet Horizontal Quick-Switch Tab Bar */}
-          <div className="lg:hidden flex items-center gap-1 overflow-x-auto no-scrollbar px-3 py-1.5 bg-brand-50/90 border-t border-brand-100">
+          <div className="lg:hidden flex items-center gap-1.5 overflow-x-auto no-scrollbar px-4 py-2 bg-[#FAF6F0] border-t border-[#E8E0D5]">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               const tabHref = buildUrlWithParams('/admin', {
@@ -2298,21 +2284,21 @@ export default function AdminDashboardPage() {
                     e.preventDefault();
                     selectTab(item.id);
                   }}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] whitespace-nowrap shrink-0 transition cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap shrink-0 transition cursor-pointer ${
                     isActive
-                      ? 'bg-brand-950 text-gold-400 font-black shadow-2xs'
-                      : 'bg-white text-brand-800 border border-brand-200 font-bold hover:bg-brand-100'
+                      ? 'bg-[#231710] text-white font-bold'
+                      : 'bg-white text-[#231710] border border-[#E8E0D5] font-medium'
                   }`}
                 >
                   <span className="shrink-0">{item.icon}</span>
                   <span>{item.label}</span>
-                  {item.badge !== undefined && (
+                  {item.urgentCount !== undefined && item.urgentCount > 0 && (
                     <span
-                      className={`text-[8.5px] font-black px-1 py-0.5 rounded-md ${
-                        isActive ? 'bg-gold-500 text-brand-950' : 'bg-brand-100 text-brand-800'
+                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full tabular-nums ${
+                        isActive ? 'bg-white text-[#231710]' : 'bg-[#B83B2B] text-white'
                       }`}
                     >
-                      {item.badge}
+                      {item.urgentCount}
                     </span>
                   )}
                 </a>
@@ -2322,7 +2308,7 @@ export default function AdminDashboardPage() {
         </header>
 
         {/* Dynamic Module Container */}
-        <main className="p-3 sm:p-5 space-y-4 max-w-7xl w-full mx-auto">
+        <main className="p-4 sm:p-6 space-y-5 max-w-7xl w-full mx-auto">
           {/* ROLE PORTAL 1: SUPPLIER ISOLATION PORTAL */}
           {activeTab === 'supply_portal' &&
             canAccessTab('supply_portal') && (
@@ -2379,34 +2365,31 @@ export default function AdminDashboardPage() {
 
           {/* ROLE PORTAL 3: CASHIER ISOLATION PORTAL */}
           {activeTab === 'cashier_portal' && canAccessTab('cashier_portal') && (
-            <div className="bg-gradient-to-l from-brand-950 via-brand-900 to-brand-950 text-white p-6 rounded-3xl border border-gold-500/30 shadow-xl space-y-4">
+            <div className="bg-white p-5 rounded-2xl border border-[#E8E0D5] space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <span className="inline-block text-[11px] font-black bg-sky-400 text-brand-950 px-3 py-0.5 rounded-full">
-                    ⚖️ بوابة الكاشير المعزولة (Cashier Isolation)
+                  <span className="inline-block text-xs font-bold text-[#9A6836]">
+                    نقطة البيع والكاشير
                   </span>
-                  <h2 className="text-lg sm:text-xl font-black text-white">
-                    شاشة الكاشير والميزان الرقمي وتجهيز الطلبات
+                  <h2 className="font-cairo text-lg font-bold text-[#231710]">
+                    شاشة الكاشير والميزان وتجهيز الطلبات
                   </h2>
-                  <p className="hidden">
-                    حساب الكاشير معزول تماماً عن تكاليف الجملة (شيت عرفات)، صافي الأرباح، وإعدادات الإدارة. يمكنك فتح شاشة الميزان والباركود للبيع المباشر أو متابعة تجهيز طلبات الموقع الأونلاين.
-                  </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2.5">
                   <Link
                     href="/pos"
-                    className="bg-gold-500 hover:bg-gold-400 text-brand-950 font-black text-xs px-5 py-3 rounded-2xl flex items-center gap-2 shadow-lg transition"
+                    className="bg-[#231710] hover:bg-[#3A2519] text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 transition"
                   >
-                    <span>⚖️ فتح شاشة الكاشير والميزان POS</span>
+                    <span>فتح شاشة الكاشير POS</span>
                     <ExternalLink className="w-4 h-4" />
                   </Link>
                   <button
                     type="button"
                     onClick={() => selectTab('orders')}
-                    className="bg-white/10 hover:bg-white/15 border border-white/20 text-white font-extrabold text-xs px-4 py-3 rounded-2xl transition"
+                    className="bg-[#FAF6F0] hover:bg-[#F4EFE6] border border-[#E8E0D5] text-[#231710] font-bold text-xs px-4 py-2.5 rounded-xl transition cursor-pointer"
                   >
-                    📦 تجهيز طلبات الأونلاين ({activeOrdersCount} جاري)
+                    تجهيز طلبات الأونلاين ({activeOrdersCount} جاري)
                   </button>
                 </div>
               </div>
@@ -2414,7 +2397,7 @@ export default function AdminDashboardPage() {
           )}
 
           {activeTab === 'cashier_portal' && canAccessTab('cashier_portal') && (
-            <div className="rounded-3xl overflow-hidden border border-gold-500/30 shadow-2xl">
+            <div className="rounded-2xl overflow-hidden border border-[#E8E0D5] bg-white">
               <HafsaPosCashierPage />
             </div>
           )}
@@ -2456,8 +2439,8 @@ export default function AdminDashboardPage() {
                         onClick={() => setOverviewDatePreset(preset.id)}
                         className={`px-3 py-1 rounded-lg text-[11px] font-extrabold transition cursor-pointer ${
                           overviewDatePreset === preset.id
-                            ? 'bg-brand-950 text-gold-400 shadow-2xs'
-                            : 'text-brand-700 hover:bg-brand-100'
+                            ? 'bg-[#231710] text-white'
+                            : 'text-[#6E5D4F] hover:bg-[#FAF6F0]'
                         }`}
                       >
                         {preset.label}
@@ -2585,54 +2568,54 @@ export default function AdminDashboardPage() {
 
               {/* Financial Profit & Channel Breakdown Strip (Filtered by Date Range) */}
               {(isFullAdmin || currentRole === 'accountant') && (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-                  <div className="bg-gradient-to-l from-blue-50 to-white p-3 rounded-2xl border border-blue-200 shadow-2xs">
-                    <div className="text-[10px] font-bold text-blue-800">🌐 مبيعات المتجر الأونلاين</div>
-                    <div className="text-sm font-black text-blue-950 mt-0.5">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="bg-white p-4 rounded-2xl border border-[#E8E0D5]">
+                    <div className="text-xs font-medium text-[#6E5D4F]">مبيعات المتجر الأونلاين</div>
+                    <div className="text-base font-bold text-[#231710] mt-1 tabular-nums">
                       {overviewFinancialSummary.onlineMetrics.grossRevenue.toLocaleString()} ج.م
                     </div>
-                    <div className="text-[9.5px] text-blue-700 font-semibold mt-0.5">
+                    <div className="text-[11px] text-[#6E5D4F] mt-0.5">
                       {overviewFinancialSummary.onlineMetrics.orderCount} طلب أونلاين
                     </div>
                   </div>
 
-                  <div className="bg-gradient-to-l from-amber-50 to-white p-3 rounded-2xl border border-amber-200 shadow-2xs">
-                    <div className="text-[10px] font-bold text-amber-900">⚖️ مبيعات كاشير الفرع POS</div>
-                    <div className="text-sm font-black text-amber-950 mt-0.5">
+                  <div className="bg-white p-4 rounded-2xl border border-[#E8E0D5]">
+                    <div className="text-xs font-medium text-[#6E5D4F]">مبيعات كاشير الفرع POS</div>
+                    <div className="text-base font-bold text-[#231710] mt-1 tabular-nums">
                       {overviewFinancialSummary.posMetrics.grossRevenue.toLocaleString()} ج.م
                     </div>
-                    <div className="text-[9.5px] text-amber-800 font-semibold mt-0.5">
+                    <div className="text-[11px] text-[#6E5D4F] mt-0.5">
                       {overviewFinancialSummary.posMetrics.orderCount} فاتورة كاشير
                     </div>
                   </div>
 
-                  <div className="bg-gradient-to-l from-brand-50 to-white p-3 rounded-2xl border border-brand-200 shadow-2xs">
-                    <div className="text-[10px] font-bold text-brand-700">📦 تكلفة البضاعة والمصروفات</div>
-                    <div className="text-sm font-black text-brand-950 mt-0.5">
+                  <div className="bg-white p-4 rounded-2xl border border-[#E8E0D5]">
+                    <div className="text-xs font-medium text-[#6E5D4F]">تكلفة البضاعة والمصروفات</div>
+                    <div className="text-base font-bold text-[#231710] mt-1 tabular-nums">
                       {(overviewFinancialSummary.totalCogs + overviewFinancialSummary.operatingExpenses).toLocaleString()} ج.م
                     </div>
-                    <div className="text-[9.5px] text-brand-600 font-semibold mt-0.5">
+                    <div className="text-[11px] text-[#6E5D4F] mt-0.5">
                       خامات: {overviewFinancialSummary.totalCogs.toLocaleString()} • مصروفات: {overviewFinancialSummary.operatingExpenses.toLocaleString()}
                     </div>
                   </div>
 
-                  <div className="bg-gradient-to-l from-pistachio-50 to-white p-3 rounded-2xl border border-pistachio-300 shadow-2xs">
-                    <div className="flex items-center justify-between text-[10px] font-bold text-pistachio-800">
-                      <span>💰 صافي الربح الفعلي</span>
-                      <span className="bg-pistachio-200 text-pistachio-900 px-1.5 py-0.5 rounded font-black">
+                  <div className="bg-white p-4 rounded-2xl border border-[#E8E0D5]">
+                    <div className="flex items-center justify-between text-xs font-medium text-[#6E5D4F]">
+                      <span>صافي الربح الفعلي</span>
+                      <span className="bg-[#FAF6F0] text-[#3B6E4C] border border-[#E8E0D5] px-2 py-0.5 rounded-md font-bold tabular-nums">
                         {overviewFinancialSummary.netMarginPercent}%
                       </span>
                     </div>
                     <div
-                      className={`text-sm font-black mt-0.5 ${
+                      className={`text-base font-bold mt-1 tabular-nums ${
                         overviewFinancialSummary.netOperatingProfit >= 0
-                          ? 'text-pistachio-700'
-                          : 'text-red-700'
+                          ? 'text-[#3B6E4C]'
+                          : 'text-[#B83B2B]'
                       }`}
                     >
                       {overviewFinancialSummary.netOperatingProfit.toLocaleString()} ج.م
                     </div>
-                    <div className="text-[9.5px] text-pistachio-700 font-semibold mt-0.5">
+                    <div className="text-[11px] text-[#6E5D4F] mt-0.5">
                       بعد خصم تكلفة الجملة والمصروفات
                     </div>
                   </div>
@@ -2641,51 +2624,51 @@ export default function AdminDashboardPage() {
 
               {/* Second Row: Drawer Reconciliation, Inventory Valuation, Supply & VIP Liabilities, and Accounting Portal Shortcut */}
               {(isFullAdmin || currentRole === 'accountant') && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                  <div className="bg-white p-3 rounded-2xl border border-brand-200 shadow-2xs flex flex-col justify-between">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="bg-white p-4 rounded-2xl border border-[#E8E0D5] flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center justify-between text-[10px] font-bold text-brand-700">
-                        <span>🧾 مطابقة دروج الكاشير (Z-Reports)</span>
+                      <div className="flex items-center justify-between text-xs font-medium text-[#6E5D4F]">
+                        <span>مطابقة دروج الكاشير (Z-Reports)</span>
                         <span
-                          className={`px-1.5 py-0.5 rounded font-black ${
+                          className={`px-2 py-0.5 rounded-md font-bold text-[11px] ${
                             overviewFinancialSummary.totalDrawerVariance < 0
-                              ? 'bg-red-100 text-red-700'
+                              ? 'bg-red-50 text-[#B83B2B]'
                               : overviewFinancialSummary.totalDrawerVariance > 0
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-pistachio-100 text-pistachio-800'
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'bg-emerald-50 text-[#3B6E4C]'
                           }`}
                         >
                           {overviewFinancialSummary.totalDrawerVariance === 0
-                            ? 'مطابق ✓'
+                            ? 'مطابق'
                             : overviewFinancialSummary.totalDrawerVariance > 0
-                            ? `+${overviewFinancialSummary.totalDrawerVariance} فائض`
-                            : `${overviewFinancialSummary.totalDrawerVariance} عجز`}
+                              ? `+${overviewFinancialSummary.totalDrawerVariance} فائض`
+                              : `${overviewFinancialSummary.totalDrawerVariance} عجز`}
                         </span>
                       </div>
-                      <div className="text-xs font-black text-brand-950 mt-1">
-                        ✓ {overviewFinancialSummary.shiftAudits.filter((s) => s.varianceType === 'balanced').length} مطابق • ⚠️{' '}
-                        {overviewFinancialSummary.shiftAudits.filter((s) => s.varianceType === 'shortage').length} عجز • ➕{' '}
+                      <div className="text-xs font-bold text-[#231710] mt-1.5">
+                        {overviewFinancialSummary.shiftAudits.filter((s) => s.varianceType === 'balanced').length} مطابق •{' '}
+                        {overviewFinancialSummary.shiftAudits.filter((s) => s.varianceType === 'shortage').length} عجز •{' '}
                         {overviewFinancialSummary.shiftAudits.filter((s) => s.varianceType === 'surplus').length} زيادة
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => selectTab('accounting_portal', { subtab: 'shifts' })}
-                      className="mt-2 text-[10.5px] font-extrabold text-pistachio-700 hover:underline text-right cursor-pointer"
+                      className="mt-2.5 text-xs font-bold text-[#9A6836] hover:underline text-right cursor-pointer"
                     >
-                      مراجعة تقارير Z-Report والورديات ←
+                      مراجعة تقارير الورديات ←
                     </button>
                   </div>
 
-                  <div className="bg-white p-3 rounded-2xl border border-brand-200 shadow-2xs flex flex-col justify-between">
+                  <div className="bg-white p-4 rounded-2xl border border-[#E8E0D5] flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center justify-between text-[10px] font-bold text-brand-700">
-                        <span>📦 تقييم المخزون الفعلي ({productsInventoryValuation.totalStockKg} كجم)</span>
-                        <span className="bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded font-black">
+                      <div className="flex items-center justify-between text-xs font-medium text-[#6E5D4F]">
+                        <span>تقييم المخزون ({productsInventoryValuation.totalStockKg} كجم)</span>
+                        <span className="bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] px-2 py-0.5 rounded-md font-bold text-[11px]">
                           هامش {productsInventoryValuation.avgMarginPercent}%
                         </span>
                       </div>
-                      <div className="text-xs font-black text-brand-950 mt-1">
+                      <div className="text-xs font-bold text-[#231710] mt-1.5">
                         بالتكلفة: {productsInventoryValuation.totalCostValuation.toLocaleString()} ج.م • بالبيع:{' '}
                         {productsInventoryValuation.totalRetailValuation.toLocaleString()} ج.م
                       </div>
@@ -2693,21 +2676,21 @@ export default function AdminDashboardPage() {
                     <button
                       type="button"
                       onClick={() => selectTab('products')}
-                      className="mt-2 text-[10.5px] font-extrabold text-brand-700 hover:underline text-right cursor-pointer"
+                      className="mt-2.5 text-xs font-bold text-[#9A6836] hover:underline text-right cursor-pointer"
                     >
                       ربح المخزون الكامن: +{productsInventoryValuation.potentialInventoryProfit.toLocaleString()} ج.م ←
                     </button>
                   </div>
 
-                  <div className="bg-white p-3 rounded-2xl border border-brand-200 shadow-2xs flex flex-col justify-between">
+                  <div className="bg-white p-4 rounded-2xl border border-[#E8E0D5] flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center justify-between text-[10px] font-bold text-brand-700">
-                        <span>🚚 التزامات الموردين ومحافظ VIP</span>
-                        <span className="bg-brand-100 text-brand-900 px-1.5 py-0.5 rounded font-black">
+                      <div className="flex items-center justify-between text-xs font-medium text-[#6E5D4F]">
+                        <span>التزامات الموردين ومحافظ VIP</span>
+                        <span className="bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] px-2 py-0.5 rounded-md font-bold text-[11px]">
                           {overviewFinancialSummary.supplyFinancials.pendingCount} معلقة
                         </span>
                       </div>
-                      <div className="text-xs font-black text-brand-950 mt-1">
+                      <div className="text-xs font-bold text-[#231710] mt-1.5">
                         توريد معتمد: {overviewFinancialSummary.supplyFinancials.approvedTotal.toLocaleString()} ج.م • معلق:{' '}
                         {overviewFinancialSummary.supplyFinancials.pendingTotal.toLocaleString()} ج.م
                       </div>
@@ -2715,28 +2698,28 @@ export default function AdminDashboardPage() {
                     <button
                       type="button"
                       onClick={() => selectTab('supply_invoices')}
-                      className="mt-2 text-[10.5px] font-extrabold text-amber-800 hover:underline text-right cursor-pointer"
+                      className="mt-2.5 text-xs font-bold text-[#9A6836] hover:underline text-right cursor-pointer"
                     >
-                      رصيد نقاط VIP للعملاء: {overviewFinancialSummary.vipLiabilities.totalPointsBalance.toLocaleString()} ج.م ←
+                      رصيد نقاط VIP: {overviewFinancialSummary.vipLiabilities.totalPointsBalance.toLocaleString()} ج.م ←
                     </button>
                   </div>
 
-                  <div className="bg-gradient-to-l from-brand-950 to-brand-900 text-white p-3 rounded-2xl border border-gold-500/30 shadow-2xs flex flex-col justify-between">
+                  <div className="bg-white p-4 rounded-2xl border border-[#E8E0D5] flex flex-col justify-between">
                     <div>
-                      <div className="text-[10px] font-black text-gold-400">
-                        📊 بوابة المحاسبة والتدقيق الشامل
+                      <div className="text-xs font-bold text-[#9A6836]">
+                        المراجعة والتقارير المالية
                       </div>
-                      <div className="text-xs font-extrabold text-white mt-0.5">
-                        6 سجلات تفصيلية (بطاقات + جداول) وتصدير Excel
+                      <div className="text-xs font-medium text-[#6E5D4F] mt-1">
+                        6 سجلات محاسبية تفصيلية وتصدير CSV
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5 mt-2">
+                    <div className="flex items-center gap-2 mt-2.5">
                       <button
                         type="button"
                         onClick={() => selectTab('accounting_portal')}
-                        className="flex-1 bg-gold-500 hover:bg-gold-400 text-brand-950 text-[10.5px] font-black px-2.5 py-1.5 rounded-xl transition cursor-pointer"
+                        className="flex-1 bg-[#231710] hover:bg-[#3A2519] text-white text-xs font-bold px-3 py-2 rounded-xl transition cursor-pointer"
                       >
-                        فتح بوابة المحاسب ←
+                        التقارير المالية
                       </button>
                       <button
                         type="button"
@@ -2747,7 +2730,7 @@ export default function AdminDashboardPage() {
                             csv
                           );
                         }}
-                        className="bg-white/10 hover:bg-white/20 text-white text-[10.5px] font-bold px-2.5 py-1.5 rounded-xl border border-white/20 transition cursor-pointer"
+                        className="bg-[#FAF6F0] hover:bg-[#F4EFE6] text-[#231710] text-xs font-bold px-3 py-2 rounded-xl border border-[#E8E0D5] transition cursor-pointer"
                         title="تصدير الملخص المالي CSV"
                       >
                         CSV
@@ -2837,7 +2820,7 @@ export default function AdminDashboardPage() {
                   <div className="overflow-x-auto rounded-xl border border-brand-200">
                     <table className="w-full text-right border-collapse text-xs">
                       <thead>
-                        <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
+                        <tr className="bg-[#FAF6F0] text-[#231710] font-bold border-b border-[#E8E0D5]">
                           <th className="p-2.5 whitespace-nowrap">رقم الطلب</th>
                           <th className="p-2.5 whitespace-nowrap">العميل</th>
                           <th className="p-2.5 whitespace-nowrap">المحافظة</th>
@@ -2850,7 +2833,7 @@ export default function AdminDashboardPage() {
                         {filteredOrders.slice(0, 6).map((ord) => (
                           <tr key={ord.id} className="hover:bg-brand-50/70 transition">
                             <td className="p-2.5 whitespace-nowrap">
-                              <span className="font-mono font-black bg-brand-950 text-gold-400 px-2 py-0.5 rounded text-[11px]">
+                              <span className="font-mono font-bold bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] px-2 py-0.5 rounded-lg text-[11px]">
                                 {ord.orderNumber}
                               </span>
                             </td>
@@ -2898,7 +2881,7 @@ export default function AdminDashboardPage() {
                                   setSelectedInvoiceOrder(ord);
                                   updateUrlQueryParams({ invoice: ord.orderNumber });
                                 }}
-                                className="p-1.5 bg-brand-900 text-gold-400 rounded-lg hover:bg-brand-950 inline-flex"
+                                className="p-1.5 bg-[#231710] text-white rounded-lg hover:bg-[#3A271C] inline-flex"
                                 title="طباعة الفاتورة"
                               >
                                 <Printer className="w-3.5 h-3.5" />
@@ -2930,8 +2913,8 @@ export default function AdminDashboardPage() {
                       <div className="space-y-2">
                         {outOfStockProducts.length > 0 && (
                           <div className="space-y-1.5">
-                            <div className="text-[10.5px] font-black text-red-700 flex items-center justify-between">
-                              <span>❌ أصناف نافدة ({outOfStockProducts.length})</span>
+                            <div className="text-[10.5px] font-bold text-red-700 flex items-center justify-between">
+                              <span>أصناف نافدة ({outOfStockProducts.length})</span>
                               <button
                                 type="button"
                                 onClick={() => {
@@ -2957,7 +2940,7 @@ export default function AdminDashboardPage() {
                                     إعادة التوفير
                                   </button>
                                 ) : (
-                                  <span className="text-[10px] font-black text-red-700 shrink-0">
+                                  <span className="text-[10px] font-bold text-red-700 shrink-0">
                                     0 كجم
                                   </span>
                                 )}
@@ -2968,8 +2951,8 @@ export default function AdminDashboardPage() {
 
                         {lowStockProducts.length > 0 && (
                           <div className="space-y-1.5 pt-1">
-                            <div className="text-[10.5px] font-black text-amber-800 flex items-center justify-between">
-                              <span>⚠️ نواقص حرجة ≤ 5 كجم ({lowStockProducts.length})</span>
+                            <div className="text-[10.5px] font-bold text-amber-800 flex items-center justify-between">
+                              <span>نواقص حرجة ≤ 5 كجم ({lowStockProducts.length})</span>
                               <button
                                 type="button"
                                 onClick={() => {
@@ -2987,7 +2970,7 @@ export default function AdminDashboardPage() {
                                 className="flex items-center justify-between p-2 rounded-xl bg-amber-50 border border-amber-200 text-xs"
                               >
                                 <span className="font-bold text-amber-950 truncate">{p.name}</span>
-                                <span className="font-mono font-black text-[10.5px] bg-white text-amber-800 border border-amber-300 px-2 py-0.5 rounded-lg shrink-0">
+                                <span className="font-mono font-bold text-[10.5px] bg-white text-amber-800 border border-amber-300 px-2 py-0.5 rounded-lg shrink-0">
                                   {p.stockKg} كجم متبقي
                                 </span>
                               </div>
@@ -3008,11 +2991,11 @@ export default function AdminDashboardPage() {
           {activeTab === 'orders' && (
             <div className="space-y-4">
               {/* Comprehensive Filters & Sort Bar */}
-              <div className="bg-white p-4 rounded-2xl border border-brand-200 shadow-2xs space-y-3">
+              <div className="bg-white p-4 rounded-2xl border border-[#E8E0D5] space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-brand-800" />
-                    <h2 className="text-sm font-black text-brand-950">
+                    <Filter className="w-4 h-4 text-[#6B5644]" />
+                    <h2 className="text-sm font-bold text-[#231710]">
                       فلترة وبحث جدول الطلبات ({filteredOrders.length} من {orders.length})
                     </h2>
                   </div>
@@ -3036,15 +3019,15 @@ export default function AdminDashboardPage() {
                           setOverviewDatePreset('all');
                           setOrderSort('newest');
                         }}
-                        className="text-[11px] bg-red-50 hover:bg-red-100 text-red-700 font-extrabold px-2.5 py-1.5 rounded-xl transition"
+                        className="text-[11px] bg-red-50 hover:bg-red-100 text-red-700 font-bold px-2.5 py-1.5 rounded-xl transition"
                       >
-                        إعادة ضبط الفلاتر ✕
+                        إعادة ضبط الفلاتر
                       </button>
                     )}
 
                     <button
                       onClick={handleExportCsv}
-                      className="bg-pistachio-700 hover:bg-pistachio-800 text-white text-xs font-black px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition shrink-0"
+                      className="bg-[#231710] hover:bg-[#3A271C] text-white text-xs font-bold px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition shrink-0"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>تصدير الجدول CSV</span>
@@ -3055,13 +3038,13 @@ export default function AdminDashboardPage() {
                 {/* Multi-Criteria Filter Controls */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5">
                   <div className="relative">
-                    <Search className="w-3.5 h-3.5 text-brand-500 absolute right-3 top-1/2 -translate-y-1/2" />
+                    <Search className="w-3.5 h-3.5 text-[#8A735E] absolute right-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={orderSearch}
                       onChange={(e) => setOrderSearch(e.target.value)}
                       placeholder="رقم الطلب، اسم العميل، الهاتف، العنوان..."
-                      className="w-full bg-brand-50 border border-brand-200 rounded-xl pr-8 pl-3 py-1.5 text-xs font-bold focus:outline-none focus:border-brand-800"
+                      className="w-full bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl pr-8 pl-3 py-1.5 text-xs font-medium focus:outline-none focus:border-[#231710]"
                     />
                   </div>
 
@@ -3070,17 +3053,17 @@ export default function AdminDashboardPage() {
                     onChange={(e) =>
                       setOrderChannelFilter(e.target.value as 'all' | 'online' | 'pos')
                     }
-                    className="bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-bold"
+                    className="bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-3 py-1.5 text-xs font-bold"
                   >
                     <option value="all">القناة: كل القنوات (أونلاين + كاشير)</option>
-                    <option value="online">🌐 المتجر الإلكتروني الأونلاين</option>
-                    <option value="pos">🧾 كاشير الفرع POS</option>
+                    <option value="online">المتجر الإلكتروني الأونلاين</option>
+                    <option value="pos">كاشير الفرع POS</option>
                   </select>
 
                   <select
                     value={overviewDatePreset}
                     onChange={(e) => setOverviewDatePreset(e.target.value as DateRangePreset)}
-                    className="bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-bold"
+                    className="bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-3 py-1.5 text-xs font-bold"
                   >
                     <option value="all">الفترة: كل الفترات</option>
                     <option value="today">الفترة: طلبات اليوم</option>
@@ -3092,7 +3075,7 @@ export default function AdminDashboardPage() {
                   <select
                     value={orderGovernorateFilter}
                     onChange={(e) => setOrderGovernorateFilter(e.target.value)}
-                    className="bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-bold"
+                    className="bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-3 py-1.5 text-xs font-bold"
                   >
                     <option value="all">كل المحافظات والمناطق</option>
                     {Array.from(
@@ -3110,14 +3093,14 @@ export default function AdminDashboardPage() {
                   <select
                     value={orderPaymentFilter}
                     onChange={(e) => setOrderPaymentFilter(e.target.value)}
-                    className="bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-bold"
+                    className="bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-3 py-1.5 text-xs font-bold"
                   >
                     <option value="all">كل طرق الدفع</option>
-                    <option value="cod">💵 الدفع عند الاستلام (COD)</option>
-                    <option value="cash">💵 نقدي بالكاشير (POS)</option>
-                    <option value="instapay">⚡ تحويل إنستا باي (InstaPay)</option>
-                    <option value="vodafone_cash">📱 محفظة فودافون كاش</option>
-                    <option value="vip_wallet">👑 محفظة كاش باك VIP</option>
+                    <option value="cod">الدفع عند الاستلام (COD)</option>
+                    <option value="cash">نقدي بالكاشير (POS)</option>
+                    <option value="instapay">تحويل إنستا باي (InstaPay)</option>
+                    <option value="vodafone_cash">محفظة فودافون كاش</option>
+                    <option value="vip_wallet">محفظة كاش باك VIP</option>
                   </select>
 
                   <select
@@ -3127,7 +3110,7 @@ export default function AdminDashboardPage() {
                         e.target.value as 'newest' | 'oldest' | 'highest' | 'lowest'
                       )
                     }
-                    className="bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-bold"
+                    className="bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-3 py-1.5 text-xs font-bold"
                   >
                     <option value="newest">الترتيب: الأحدث أولاً</option>
                     <option value="oldest">الترتيب: الأقدم أولاً</option>
@@ -3137,16 +3120,16 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Status Filter Pills */}
-                <div className="flex flex-wrap gap-1.5 pt-2 border-t border-brand-100">
+                <div className="flex flex-wrap gap-1.5 pt-2 border-t border-[#E8E0D5]">
                   <button
                     onClick={() => {
                       setOrderStatusFilter('all');
                       updateUrlQueryParams({ status: null });
                     }}
-                    className={`px-3 py-1 rounded-lg text-[11px] font-extrabold transition ${
+                    className={`px-3 py-1 rounded-lg text-[11px] font-bold transition ${
                       orderStatusFilter === 'all'
-                        ? 'bg-brand-900 text-white'
-                        : 'bg-brand-50 text-brand-800 hover:bg-brand-100'
+                        ? 'bg-[#231710] text-white'
+                        : 'bg-[#FAF6F0] text-[#4A3728] hover:bg-[#F2ECE2]'
                     }`}
                   >
                     الكل ({orders.length})
@@ -3163,10 +3146,10 @@ export default function AdminDashboardPage() {
                           setOrderStatusFilter(stKey);
                           updateUrlQueryParams({ status: stKey });
                         }}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition ${
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
                           orderStatusFilter === stKey
-                            ? 'bg-brand-900 text-white'
-                            : 'bg-brand-50 text-brand-800 hover:bg-brand-100'
+                            ? 'bg-[#231710] text-white'
+                            : 'bg-[#FAF6F0] text-[#4A3728] hover:bg-[#F2ECE2]'
                         }`}
                       >
                         {info.label} ({count})
@@ -3178,58 +3161,58 @@ export default function AdminDashboardPage() {
 
               {/* Financial Audit Strip for Filtered Orders (Admin & Accountant) */}
               {(isFullAdmin || currentRole === 'accountant') && (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-                  <div className="bg-white p-3 rounded-2xl border border-brand-200 shadow-2xs">
-                    <span className="text-[10px] font-bold text-brand-600 block">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="bg-white p-3.5 rounded-2xl border border-[#E8E0D5]">
+                    <span className="text-[11px] font-medium text-[#6B5644] block">
                       إجمالي مبيعات الفواتير المعروضة ({filteredOrdersFinancials.validCount} فاتورة)
                     </span>
-                    <span className="text-base font-black text-brand-950 mt-0.5 block">
+                    <span className="text-base font-bold text-[#231710] mt-1 block">
                       {filteredOrdersFinancials.revenue.toLocaleString('ar-EG')} ج.م
                     </span>
-                    <span className="text-[10px] text-brand-500 font-bold">
-                      🌐 {filteredOrdersFinancials.onlineCount} أونلاين • 🧾 {filteredOrdersFinancials.posCount} كاشير
+                    <span className="text-[10.5px] text-[#8A735E]">
+                      {filteredOrdersFinancials.onlineCount} أونلاين • {filteredOrdersFinancials.posCount} كاشير
                     </span>
                   </div>
 
-                  <div className="bg-amber-50/70 p-3 rounded-2xl border border-amber-200 shadow-2xs">
-                    <span className="text-[10px] font-bold text-amber-800 block">
+                  <div className="bg-white p-3.5 rounded-2xl border border-[#E8E0D5]">
+                    <span className="text-[11px] font-medium text-[#6B5644] block">
                       تكلفة البضاعة المباعة للفواتير (COGS)
                     </span>
-                    <span className="text-base font-black text-amber-950 mt-0.5 block">
+                    <span className="text-base font-bold text-[#231710] mt-1 block">
                       {filteredOrdersFinancials.cogs.toLocaleString('ar-EG')} ج.م
                     </span>
-                    <span className="text-[10px] text-amber-700 font-bold">
+                    <span className="text-[10.5px] text-[#8A735E]">
                       خامات الجملة وتكاليف التغليف
                     </span>
                   </div>
 
-                  <div className="bg-blue-50/70 p-3 rounded-2xl border border-blue-200 shadow-2xs">
-                    <span className="text-[10px] font-bold text-blue-800 block">
+                  <div className="bg-white p-3.5 rounded-2xl border border-[#E8E0D5]">
+                    <span className="text-[11px] font-medium text-[#6B5644] block">
                       الخصومات الممنوحة والشحن المحصل
                     </span>
-                    <span className="text-base font-black text-blue-950 mt-0.5 block">
+                    <span className="text-base font-bold text-[#231710] mt-1 block">
                       خصم: -{filteredOrdersFinancials.discounts.toLocaleString('ar-EG')} ج.م
                     </span>
-                    <span className="text-[10px] text-blue-700 font-bold">
+                    <span className="text-[10.5px] text-[#8A735E]">
                       شحن محصل: {filteredOrdersFinancials.shipping.toLocaleString('ar-EG')} ج.م
                     </span>
                   </div>
 
-                  <div className="bg-pistachio-50 p-3 rounded-2xl border border-pistachio-300 shadow-2xs">
-                    <div className="flex items-center justify-between text-[10px] font-bold text-pistachio-800">
+                  <div className="bg-white p-3.5 rounded-2xl border border-[#E8E0D5]">
+                    <div className="flex items-center justify-between text-[11px] font-medium text-[#6B5644]">
                       <span>صافي ربح الفواتير المعروضة</span>
-                      <span className="bg-pistachio-200 text-pistachio-950 px-1.5 py-0.5 rounded font-black">
+                      <span className="bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] px-1.5 py-0.5 rounded font-bold text-[10px]">
                         {filteredOrdersFinancials.marginPercent}%
                       </span>
                     </div>
                     <span
-                      className={`text-base font-black mt-0.5 block ${
-                        filteredOrdersFinancials.netProfit >= 0 ? 'text-pistachio-800' : 'text-red-700'
+                      className={`text-base font-bold mt-1 block ${
+                        filteredOrdersFinancials.netProfit >= 0 ? 'text-emerald-700' : 'text-red-700'
                       }`}
                     >
                       +{filteredOrdersFinancials.netProfit.toLocaleString('ar-EG')} ج.م
                     </span>
-                    <span className="text-[10px] text-pistachio-700 font-bold">
+                    <span className="text-[10.5px] text-[#8A735E]">
                       بعد خصم تكلفة البضاعة والخصومات
                     </span>
                   </div>
@@ -3238,9 +3221,9 @@ export default function AdminDashboardPage() {
 
               {/* Orders Data Table */}
               {filteredOrders.length === 0 ? (
-                <div className="bg-white p-8 rounded-2xl border border-brand-200 text-center space-y-2">
-                  <Package className="w-8 h-8 text-brand-400 mx-auto" />
-                  <h3 className="text-sm font-extrabold text-brand-950">
+                <div className="bg-white p-8 rounded-2xl border border-[#E8E0D5] text-center space-y-2">
+                  <Package className="w-8 h-8 text-[#8A735E] mx-auto" />
+                  <h3 className="text-sm font-bold text-[#231710]">
                     لا توجد طلبات مطابقة للفلاتر المحددة
                   </h3>
                   <button
@@ -3251,17 +3234,17 @@ export default function AdminDashboardPage() {
                       setOrderGovernorateFilter('all');
                       setOrderSort('newest');
                     }}
-                    className="text-xs font-bold text-brand-700 underline"
+                    className="text-xs font-bold text-[#6B5644] underline"
                   >
                     إعادة ضبط جميع الفلاتر
                   </button>
                 </div>
               ) : (
-                <div className="bg-white rounded-2xl border border-brand-200 shadow-2xs overflow-hidden">
+                <div className="bg-white rounded-2xl border border-[#E8E0D5] overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-right border-collapse text-xs">
                       <thead>
-                        <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
+                        <tr className="bg-[#FAF6F0] text-[#231710] font-bold border-b border-[#E8E0D5]">
                           <th className="p-3 whitespace-nowrap">رقم الطلب والتاريخ</th>
                           <th className="p-3 whitespace-nowrap">بيانات العميل</th>
                           <th className="p-3">المحافظة والعنوان والملاحظات</th>
@@ -3272,36 +3255,36 @@ export default function AdminDashboardPage() {
                           <th className="p-3 text-center whitespace-nowrap">إجراءات</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-brand-100 align-top">
+                      <tbody className="divide-y divide-[#F2ECE2] align-top">
                         {filteredOrders.map((order) => {
                           const st = getOrderStatusMeta(order.status);
                           return (
                             <tr
                               key={order.id}
-                              className="hover:bg-brand-50/60 transition"
+                              className="hover:bg-[#FAF6F0]/60 transition"
                             >
                               {/* Order Number & Date */}
                               <td className="p-3 whitespace-nowrap">
                                 <div className="flex items-center gap-1.5">
-                                  <span className="inline-block font-mono font-black text-xs bg-brand-950 text-gold-400 px-2.5 py-1 rounded-lg">
+                                  <span className="inline-block font-mono font-bold text-xs bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] px-2.5 py-1 rounded-lg">
                                     {order.orderNumber}
                                   </span>
                                   <span
-                                    className={`text-[9.5px] font-black px-1.5 py-0.5 rounded ${
+                                    className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded border ${
                                       isPosOrder(order)
-                                        ? 'bg-emerald-100 text-emerald-900'
-                                        : 'bg-blue-100 text-blue-900'
+                                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                        : 'bg-[#FAF6F0] text-[#4A3728] border-[#E8E0D5]'
                                     }`}
                                   >
-                                    {isPosOrder(order) ? '🧾 كاشير' : '🌐 أونلاين'}
+                                    {isPosOrder(order) ? 'كاشير' : 'أونلاين'}
                                   </span>
                                 </div>
-                                <div className="text-[10px] text-brand-600 mt-1">
+                                <div className="text-[10px] text-[#6B5644] mt-1">
                                   {new Date(order.createdAt).toLocaleDateString('ar-EG', {
                                     dateStyle: 'medium',
                                   })}
                                 </div>
-                                <div className="text-[10px] text-brand-400">
+                                <div className="text-[10px] text-[#8A735E]">
                                   {new Date(order.createdAt).toLocaleTimeString('ar-EG', {
                                     hour: '2-digit',
                                     minute: '2-digit',
@@ -3311,14 +3294,14 @@ export default function AdminDashboardPage() {
 
                               {/* Customer Info */}
                               <td className="p-3 whitespace-nowrap">
-                                <div className="font-extrabold text-brand-950">
+                                <div className="font-bold text-[#231710]">
                                   {order.customerName}
                                 </div>
-                                <div className="text-[11px] font-mono text-brand-700 mt-0.5">
-                                  📞 {order.customerPhone}
+                                <div className="text-[11px] font-mono text-[#6B5644] mt-0.5">
+                                  {order.customerPhone}
                                 </div>
                                 {order.customerAltPhone && (
-                                  <div className="text-[10px] font-mono text-brand-500">
+                                  <div className="text-[10px] font-mono text-[#8A735E]">
                                     بديل: {order.customerAltPhone}
                                   </div>
                                 )}
@@ -3347,23 +3330,23 @@ export default function AdminDashboardPage() {
                                         <button
                                           type="button"
                                           onClick={() => handleSaveOrderNotes(order.id)}
-                                          className="bg-brand-900 text-white text-[10px] font-bold px-2 py-0.5 rounded"
+                                          className="bg-[#231710] text-white text-xs font-bold px-2.5 py-0.5 rounded"
                                         >
                                           حفظ
                                         </button>
                                         <button
                                           type="button"
                                           onClick={() => setEditingOrderNotesId(null)}
-                                          className="text-[10px] text-brand-600 px-1.5 py-0.5"
+                                          className="text-xs text-[#6B5A4E] px-1.5 py-0.5"
                                         >
                                           إلغاء
                                         </button>
                                       </div>
                                     </div>
                                   ) : (
-                                    <div className="flex items-center justify-between gap-1 text-[10px]">
-                                      <span className="text-amber-900 font-bold truncate">
-                                        📝 {order.notes || 'بدون ملاحظات'}
+                                    <div className="flex items-center justify-between gap-1 text-xs">
+                                      <span className="text-[#6B5A4E] font-medium truncate">
+                                        {order.notes || 'بدون ملاحظات'}
                                       </span>
                                       {currentRole !== 'accountant' && (
                                         <button
@@ -3372,7 +3355,7 @@ export default function AdminDashboardPage() {
                                             setEditingOrderNotesId(order.id);
                                             setOrderNotesDraft(order.notes || '');
                                           }}
-                                          className="text-brand-700 hover:underline font-bold shrink-0"
+                                          className="text-[#231710] hover:underline font-bold shrink-0"
                                         >
                                           تعديل
                                         </button>
@@ -3388,27 +3371,27 @@ export default function AdminDashboardPage() {
                                   {order.items.map((item, idx) => (
                                     <div
                                       key={item.cartItemId || `${order.id}-item-${idx}-${item.productId || 'p'}`}
-                                      className="bg-brand-50/80 px-2 py-1.5 rounded-lg border border-brand-100 text-[11px]"
+                                      className="bg-[#FAF6F0] px-2.5 py-1.5 rounded-lg border border-[#E8E0D5] text-xs"
                                     >
                                       <div className="flex items-center justify-between gap-2">
-                                        <span className="font-bold text-brand-950">
-                                          {item.productName} × {item.quantity}
+                                        <span className="font-bold text-[#231710]">
+                                          {stripUiEmojis(item.productName)} × {item.quantity}
                                         </span>
-                                        <span className="font-extrabold text-brand-900 shrink-0">
+                                        <span className="font-bold text-[#231710] shrink-0">
                                           {item.unitPrice * item.quantity} ج.م
                                         </span>
                                       </div>
                                       {item.isCustomMix && item.customBreakdown ? (
-                                        <div className="text-[10px] text-brand-700 mt-1 pr-1.5 border-r-2 border-gold-500 space-y-0.5">
+                                        <div className="text-[11px] text-[#6B5A4E] mt-1 pr-1.5 border-r-2 border-[#9A6836] space-y-0.5">
                                           {item.customBreakdown.map((b, bIdx) => (
                                             <div key={b.productId ? `${b.productId}-${bIdx}` : bIdx}>
-                                              • {b.productName} ({b.roastOption}) — {b.weightGrams}جم (
+                                              • {stripUiEmojis(b.productName)} ({b.roastOption}) — {b.weightGrams}جم (
                                               {b.percentage}%)
                                             </div>
                                           ))}
                                         </div>
                                       ) : (
-                                        <div className="text-[10px] text-brand-600">
+                                        <div className="text-[11px] text-[#6B5A4E]">
                                           {item.weightLabel} • {item.roastOption}
                                         </div>
                                       )}
@@ -3419,19 +3402,19 @@ export default function AdminDashboardPage() {
 
                               {/* Payment Method */}
                               <td className="p-3 whitespace-nowrap">
-                                <span className="inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-brand-100 text-brand-900">
+                                <span className="inline-block text-xs font-bold px-2.5 py-0.5 rounded-md bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710]">
                                   {order.paymentMethod === 'cod'
-                                    ? '💵 الدفع عند الاستلام'
+                                    ? 'الدفع عند الاستلام'
                                     : (order.paymentMethod as string) === 'cash'
-                                    ? '💵 نقدي بالكاشير (POS)'
+                                    ? 'نقدي بالكاشير'
                                     : order.paymentMethod === 'instapay'
-                                    ? '⚡ إنستا باي'
+                                    ? 'إنستا باي'
                                     : (order.paymentMethod as string) === 'vip_wallet'
-                                    ? '👑 محفظة كاش باك VIP'
-                                    : '📱 فودافون كاش'}
+                                    ? 'محفظة كاش باك VIP'
+                                    : 'فودافون كاش'}
                                 </span>
                                 {order.paymentReference && (
-                                  <div className="text-[10px] font-mono text-brand-600 mt-1">
+                                  <div className="text-[11px] font-mono text-[#6B5A4E] mt-1">
                                     مرجع: {order.paymentReference}
                                   </div>
                                 )}
@@ -3440,26 +3423,26 @@ export default function AdminDashboardPage() {
                                   order.status === 'delivered' && (
                                     <div className="mt-1.5 space-y-1">
                                       <span
-                                        className={`inline-block text-[9.5px] font-black px-2 py-0.5 rounded-full border ${
+                                        className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded-full border ${
                                           order.riderCodSettled
                                             ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                                             : 'bg-amber-50 text-amber-800 border-amber-300'
                                         }`}
                                       >
                                         {order.riderCodSettled
-                                          ? '✅ تم توريد العهدة بالدرج'
-                                          : `⏳ بعهدة المندوب (${order.cashCollected ?? order.total} ج)`}
+                                          ? 'تم توريد العهدة بالدرج'
+                                          : `بعهدة المندوب (${order.cashCollected ?? order.total} ج)`}
                                       </span>
                                       {!order.riderCodSettled && currentRole !== 'accountant' && (
                                         <button
                                           type="button"
                                           disabled={settlingCodOrderId === order.id}
                                           onClick={() => handleAdminSettleRiderCod(order.id)}
-                                          className="block w-full bg-brand-900 hover:bg-brand-950 text-gold-400 text-[10px] font-black px-2 py-1 rounded-lg transition cursor-pointer disabled:opacity-50"
+                                          className="block w-full bg-[#231710] hover:bg-[#3A271C] text-white text-xs font-bold px-2.5 py-1 rounded-lg transition cursor-pointer disabled:opacity-50"
                                         >
                                           {settlingCodOrderId === order.id
                                             ? 'جاري التوريد...'
-                                            : '💰 توريد الكاش بالدرج'}
+                                            : 'توريد الكاش بالدرج'}
                                         </button>
                                       )}
                                     </div>
@@ -3471,20 +3454,20 @@ export default function AdminDashboardPage() {
                                 <div className="text-sm font-black text-pistachio-700">
                                   {order.total} ج.م
                                 </div>
-                                <div className="text-[10px] text-brand-600">
+                                <div className="text-[11px] text-[#6B5A4E]">
                                   شحن: {order.shippingCost === 0 ? 'مجاني' : `${order.shippingCost} ج.م`}
                                 </div>
                                 {order.discountAmount > 0 && (
-                                  <div className="text-[10px] text-pistachio-700 font-bold">
+                                  <div className="text-[11px] text-pistachio-700 font-bold">
                                     خصم: -{order.discountAmount} ج.م
                                   </div>
                                 )}
                                 {(isFullAdmin || currentRole === 'accountant') && (
-                                  <div className="mt-1 pt-1 border-t border-brand-100 text-[10px] space-y-0.5">
-                                    <div className="text-amber-800 font-bold">
+                                  <div className="mt-1 pt-1 border-t border-[#E8E0D5] text-[11px] space-y-0.5">
+                                    <div className="text-[#9A6836] font-bold">
                                       تكلفة: {calculateOrderCogs(order, products)} ج.م
                                     </div>
-                                    <div className="text-pistachio-700 font-black">
+                                    <div className="text-pistachio-700 font-bold">
                                       ربح صافي: +{Math.round((order.total - calculateOrderCogs(order, products)) * 100) / 100} ج.م
                                     </div>
                                   </div>
@@ -3495,7 +3478,7 @@ export default function AdminDashboardPage() {
                               <td className="p-3 whitespace-nowrap space-y-1.5">
                                 <div>
                                   <span
-                                    className={`inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${st?.badgeClass || 'bg-amber-100 text-amber-800 border-amber-200'}`}
+                                    className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded-full border ${st?.badgeClass || 'bg-amber-100 text-amber-800 border-amber-200'}`}
                                   >
                                     {st?.label || order.status || 'قيد المراجعة'}
                                   </span>
@@ -3506,7 +3489,7 @@ export default function AdminDashboardPage() {
                                     onChange={(e) =>
                                       handleOrderStatusChange(order.id, e.target.value as OrderStatus)
                                     }
-                                    className="block w-full bg-brand-50 border border-brand-300 text-brand-950 text-[11px] font-bold rounded-lg px-2 py-1 focus:outline-none"
+                                    className="block w-full bg-white border border-[#E8E0D5] text-[#231710] text-xs font-bold rounded-lg px-2 py-1 focus:outline-none focus:border-[#231710]"
                                   >
                                     <option value="pending">قيد المراجعة</option>
                                     <option value="confirmed">تم التأكيد</option>
@@ -3528,20 +3511,20 @@ export default function AdminDashboardPage() {
                                         matchedRider?.displayName || matchedRider?.username || (selectedRiderId ? 'مندوب التوصيل' : '')
                                       );
                                     }}
-                                    className="block w-full bg-[#FAF6F0] border border-[#D4AF37]/40 text-[#231710] text-[10px] font-bold rounded-lg px-1.5 py-1 focus:outline-none mt-1"
+                                    className="block w-full bg-white border border-[#E8E0D5] text-[#231710] text-xs font-bold rounded-lg px-2 py-1 focus:outline-none focus:border-[#231710] mt-1"
                                   >
-                                    <option value="">🛵 {order.riderName ? `المندوب: ${order.riderName}` : 'إسناد مندوب...'}</option>
+                                    <option value="">{order.riderName ? `المندوب: ${order.riderName}` : 'إسناد مندوب...'}</option>
                                     {(storeData?.staffAccounts || [])
                                       .filter((s) => s.role === 'delivery_rider' && s.active !== false)
                                       .map((r) => (
                                         <option key={r.id} value={r.id}>
-                                          🛵 {r.displayName || r.username}
+                                          {r.displayName || r.username}
                                         </option>
                                       ))}
                                     {(!storeData?.staffAccounts ||
                                       !storeData.staffAccounts.some((s) => s.role === 'delivery_rider')) && (
                                       <option value="staff-primary-delivery_rider">
-                                        🛵 مندوب التوصيل الرئيسي
+                                        مندوب التوصيل الرئيسي
                                       </option>
                                     )}
                                   </select>
@@ -3556,7 +3539,7 @@ export default function AdminDashboardPage() {
                                       setSelectedInvoiceOrder(order);
                                       updateUrlQueryParams({ invoice: order.orderNumber });
                                     }}
-                                    className="p-1.5 bg-brand-900 hover:bg-brand-950 text-gold-400 rounded-lg transition"
+                                    className="p-1.5 bg-[#231710] hover:bg-[#3A271C] text-white rounded-lg transition"
                                     title="معاينة وطباعة الفاتورة"
                                   >
                                     <Printer className="w-3.5 h-3.5" />
@@ -3666,46 +3649,46 @@ export default function AdminDashboardPage() {
                       type="button"
                       onClick={() => {
                         downloadScalePluCsv(products);
-                        showToast('✅ تم تصدير ملف أصناف وأسعار الميزان الإلكتروني (PLU CSV) بنجاح');
+                        showToast('تم تصدير ملف أصناف وأسعار الميزان الإلكتروني (PLU CSV) بنجاح');
                       }}
-                      className="bg-[#D4AF37] hover:bg-[#c9a12b] text-[#231710] text-xs font-black px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition cursor-pointer"
-                      title="تصدير شيت الأصناف والأكواد والأسعار للميزان الإلكتروني (Cas, Rongta, Aclas)"
+                      className="bg-[#FAF6F0] hover:bg-[#F2EAE0] border border-[#E8E0D5] text-[#231710] text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
+                      title="تصدير شيت الأصناف والأكواد والأسعار للميزان الإلكتروني"
                     >
-                      <Scale className="w-4 h-4 text-[#231710]" />
+                      <Scale className="w-4 h-4 text-[#9A6836]" />
                       <span>تصدير شيت الميزان (PLU CSV)</span>
                     </button>
                     {isFullAdmin && (
                       <button
                         type="button"
                         onClick={() => setIsInventoryAdjustmentModalOpen(true)}
-                        className="bg-[#C88A4B] hover:bg-[#b0753a] text-white text-xs font-black px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                        className="bg-[#FAF6F0] hover:bg-[#F2EAE0] border border-[#E8E0D5] text-[#231710] text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
                         title="تسوية الجرد الفعلي ومطابقة أرصدة الصوامع والمخزن"
                       >
-                        <Scale className="w-4 h-4 text-white" />
+                        <Scale className="w-4 h-4 text-[#9A6836]" />
                         <span>تسوية الجرد الفعلي للمخزون</span>
                       </button>
                     )}
                     {isFullAdmin && (
                       <button
                         onClick={openCreateProductModal}
-                        className="bg-brand-900 hover:bg-brand-950 text-white text-xs font-extrabold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs"
+                        className="bg-[#231710] hover:bg-[#3A271C] text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer"
                       >
-                        <Plus className="w-4 h-4 text-gold-400" />
-                        <span>إضافة منتج مكسرات جديد</span>
+                        <Plus className="w-4 h-4 text-white" />
+                        <span>إضافة منتج جديد</span>
                       </button>
                     )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 pt-2 border-t border-brand-100">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 pt-2 border-t border-[#E8E0D5]">
                   <div className="relative lg:col-span-2">
-                    <Search className="w-3.5 h-3.5 text-brand-500 absolute right-3 top-1/2 -translate-y-1/2" />
+                    <Search className="w-3.5 h-3.5 text-[#6B5A4E] absolute right-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={productSearch}
                       onChange={(e) => setProductSearch(e.target.value)}
                       placeholder="ابحث بالاسم، المنشأ، الشارة، أو الرابط..."
-                      className="w-full bg-brand-50 border border-brand-200 rounded-xl pr-8 pl-3 py-1.5 text-xs font-bold"
+                      className="w-full bg-white border border-[#E8E0D5] rounded-xl pr-8 pl-3 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                     />
                   </div>
 
@@ -3716,12 +3699,12 @@ export default function AdminDashboardPage() {
                       setProductCategoryFilter(val);
                       updateUrlQueryParams({ cat: val === 'all' ? null : val });
                     }}
-                    className="bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
+                    className="bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                   >
                     <option value="all">جميع الأقسام ({categories.length})</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.name}
+                        {formatCategoryName(c.name)}
                       </option>
                     ))}
                   </select>
@@ -3731,11 +3714,11 @@ export default function AdminDashboardPage() {
                     onChange={(e) =>
                       setProductStockFilter(e.target.value as 'all' | 'in' | 'low' | 'out')
                     }
-                    className="bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
+                    className="bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                   >
                     <option value="all">كل حالات التوفر</option>
                     <option value="in">متوفر في المخزون</option>
-                    <option value="low">⚠️ نواقص حرجة (5 كجم فأقل)</option>
+                    <option value="low">نواقص حرجة (5 كجم فأقل)</option>
                     <option value="out">غير متوفر (نافد)</option>
                   </select>
 
@@ -3746,10 +3729,10 @@ export default function AdminDashboardPage() {
                         e.target.value as 'all' | 'featured' | 'regular'
                       )
                     }
-                    className="bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
+                    className="bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                   >
                     <option value="all">التمييز: الكل</option>
-                    <option value="featured">مميز في الرئيسية ⭐</option>
+                    <option value="featured">مميز في الرئيسية</option>
                     <option value="regular">غير مميز</option>
                   </select>
 
@@ -3760,7 +3743,7 @@ export default function AdminDashboardPage() {
                         e.target.value as 'default' | 'price_asc' | 'price_desc' | 'rating_desc'
                       )
                     }
-                    className="bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
+                    className="bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                   >
                     <option value="default">الترتيب: الافتراضي</option>
                     <option value="price_asc">السعر: الأقل أولاً</option>
@@ -3770,17 +3753,17 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Roast Option Filter Pills */}
-                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-brand-100">
-                  <span className="text-[11px] font-bold text-brand-600 ml-1">
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[#E8E0D5]">
+                  <span className="text-xs font-bold text-[#6B5A4E] ml-1">
                     فلترة حسب التحميص:
                   </span>
                   <button
                     type="button"
                     onClick={() => setProductRoastFilter('all')}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition ${
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
                       productRoastFilter === 'all'
-                        ? 'bg-brand-900 text-white'
-                        : 'bg-brand-50 text-brand-800 hover:bg-brand-100'
+                        ? 'bg-[#231710] text-white'
+                        : 'bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] hover:bg-[#F2EAE0]'
                     }`}
                   >
                     كل التحميصات
@@ -3790,10 +3773,10 @@ export default function AdminDashboardPage() {
                       key={roast}
                       type="button"
                       onClick={() => setProductRoastFilter(roast)}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition ${
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
                         productRoastFilter === roast
-                          ? 'bg-brand-900 text-white'
-                          : 'bg-brand-50 text-brand-800 hover:bg-brand-100'
+                          ? 'bg-[#231710] text-white'
+                          : 'bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] hover:bg-[#F2EAE0]'
                       }`}
                     >
                       {roast}
@@ -3806,13 +3789,13 @@ export default function AdminDashboardPage() {
               {editingProduct && (
                 <form
                   onSubmit={handleSaveProductModal}
-                  className="bg-white p-4 sm:p-6 rounded-2xl border-2 border-brand-900 shadow-xl space-y-4"
+                  className="bg-white p-4 sm:p-6 rounded-2xl border border-[#E8E0D5] shadow-lg space-y-4"
                 >
-                  <div className="flex items-center justify-between border-b border-brand-100 pb-3">
-                    <h3 className="font-black text-sm sm:text-base text-brand-950">
+                  <div className="flex items-center justify-between border-b border-[#E8E0D5] pb-3">
+                    <h3 className="font-bold text-sm sm:text-base text-[#231710]">
                       {isCreatingProduct
-                        ? '➕ إضافة منتج جديد إلى المتجر'
-                        : `✏️ تحرير شامل للمنتج: ${editingProduct.name}`}
+                        ? 'إضافة منتج جديد إلى المتجر'
+                        : `تحرير المنتج: ${editingProduct.name}`}
                     </h3>
                     <button
                       type="button"
@@ -3822,14 +3805,14 @@ export default function AdminDashboardPage() {
                       }}
                       className="text-xs font-bold text-red-600 hover:bg-red-50 px-2.5 py-1 rounded-lg"
                     >
-                      إغلاق ✕
+                      إغلاق
                     </button>
                   </div>
 
                   {/* Basic Info Row */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold mb-1">اسم المنتج *</label>
+                      <label className="block text-xs font-bold mb-1 text-[#231710]">اسم المنتج *</label>
                       <input
                         type="text"
                         required
@@ -3838,36 +3821,36 @@ export default function AdminDashboardPage() {
                           setEditingProduct({ ...editingProduct, name: e.target.value })
                         }
                         placeholder="مثال: فستق أمريكي جامبو محمص"
-                        className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-bold"
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold mb-1">القسم *</label>
+                      <label className="block text-xs font-bold mb-1 text-[#231710]">القسم *</label>
                       <select
                         value={editingProduct.categoryId}
                         onChange={(e) =>
                           setEditingProduct({ ...editingProduct, categoryId: e.target.value })
                         }
-                        className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-bold"
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                       >
                         {categories.map((c) => (
                           <option key={c.id} value={c.id}>
-                            {c.name}
+                            {formatCategoryName(c.name)}
                           </option>
                         ))}
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold mb-1">الرابط المختصر (Slug)</label>
+                      <label className="block text-xs font-bold mb-1 text-[#231710]">الرابط المختصر</label>
                       <input
                         type="text"
                         value={editingProduct.slug}
                         onChange={(e) =>
                           setEditingProduct({ ...editingProduct, slug: e.target.value })
                         }
-                        className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-mono"
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-1.5 text-xs font-mono text-[#231710] outline-none focus:border-[#231710]"
                       />
                     </div>
                   </div>
@@ -3875,19 +3858,19 @@ export default function AdminDashboardPage() {
                   {/* Origin, Badge, Image */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold mb-1">بلد المنشأ / درجة الفرز</label>
+                      <label className="block text-xs font-bold mb-1 text-[#231710]">بلد المنشأ / درجة الفرز</label>
                       <input
                         type="text"
                         value={editingProduct.origin}
                         onChange={(e) =>
                           setEditingProduct({ ...editingProduct, origin: e.target.value })
                         }
-                        className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs"
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-1.5 text-xs text-[#231710] outline-none focus:border-[#231710]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold mb-1">الشارة المميزة (Badge)</label>
+                      <label className="block text-xs font-bold mb-1 text-[#231710]">الشارة المميزة</label>
                       <input
                         type="text"
                         value={editingProduct.badge || ''}
@@ -3895,7 +3878,7 @@ export default function AdminDashboardPage() {
                           setEditingProduct({ ...editingProduct, badge: e.target.value })
                         }
                         placeholder="الأكثر مبيعاً / تحميص اليوم"
-                        className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs"
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-1.5 text-xs text-[#231710] outline-none focus:border-[#231710]"
                       />
                     </div>
 
@@ -3903,10 +3886,10 @@ export default function AdminDashboardPage() {
                       <ImageUploadDropzone
                         currentImage={editingProduct.image}
                         onImageSelected={(url) => setEditingProduct({ ...editingProduct, image: url })}
-                        label="صورة المنتج المضغوطة (WebP)"
+                        label="صورة المنتج المضغوطة"
                       />
                       <div className="mt-2 flex items-center gap-2">
-                        <span className="text-[10.5px] font-bold text-brand-600 shrink-0">أو رابط يدوي:</span>
+                        <span className="text-xs font-bold text-[#6B5A4E] shrink-0">أو رابط يدوي:</span>
                         <input
                           type="text"
                           value={editingProduct.image}
@@ -3914,7 +3897,7 @@ export default function AdminDashboardPage() {
                             setEditingProduct({ ...editingProduct, image: e.target.value })
                           }
                           placeholder="/images/products/pistachio.jpg أو رابط صورة خارجي"
-                          className="w-full bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1 text-xs font-mono"
+                          className="w-full bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-1 text-xs font-mono text-[#231710] outline-none focus:border-[#231710]"
                         />
                       </div>
                       <div className="flex flex-wrap gap-1.5 mt-2">
@@ -3925,10 +3908,10 @@ export default function AdminDashboardPage() {
                             onClick={() =>
                               setEditingProduct({ ...editingProduct, image: imgOpt.url })
                             }
-                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-lg border text-[10px] font-bold transition ${
+                            className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border text-xs font-bold transition ${
                               editingProduct.image === imgOpt.url
-                                ? 'bg-brand-900 text-gold-400 border-brand-900'
-                                : 'bg-brand-50 text-brand-800 border-brand-200 hover:bg-brand-100'
+                                ? 'bg-[#231710] text-white border-[#231710]'
+                                : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5] hover:bg-[#F2EAE0]'
                             }`}
                           >
                             <img
@@ -3946,34 +3929,34 @@ export default function AdminDashboardPage() {
                   {/* Subtitle & Description */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold mb-1">الوصف المختصر (Subtitle)</label>
+                      <label className="block text-xs font-bold mb-1 text-[#231710]">الوصف المختصر</label>
                       <input
                         type="text"
                         value={editingProduct.subtitle}
                         onChange={(e) =>
                           setEditingProduct({ ...editingProduct, subtitle: e.target.value })
                         }
-                        className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs"
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-1.5 text-xs text-[#231710] outline-none focus:border-[#231710]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold mb-1">الوصف التفصيلي الكامل</label>
+                      <label className="block text-xs font-bold mb-1 text-[#231710]">الوصف التفصيلي الكامل</label>
                       <textarea
                         rows={2}
                         value={editingProduct.description}
                         onChange={(e) =>
                           setEditingProduct({ ...editingProduct, description: e.target.value })
                         }
-                        className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs"
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-1.5 text-xs text-[#231710] outline-none focus:border-[#231710]"
                       />
                     </div>
                   </div>
 
                   {/* Nutrition & Toggles */}
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2 border-t border-brand-100">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2 border-t border-[#E8E0D5]">
                     <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-bold mb-1">القيمة والفائدة الغذائية</label>
+                      <label className="block text-xs font-bold mb-1 text-[#231710]">القيمة والفائدة الغذائية</label>
                       <input
                         type="text"
                         value={editingProduct.nutritionalHighlight}
@@ -3983,12 +3966,12 @@ export default function AdminDashboardPage() {
                             nutritionalHighlight: e.target.value,
                           })
                         }
-                        className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs"
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-1.5 text-xs text-[#231710] outline-none focus:border-[#231710]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold mb-1">السعرات (لكل 100 جم)</label>
+                      <label className="block text-xs font-bold mb-1 text-[#231710]">السعرات (لكل 100 جم)</label>
                       <input
                         type="number"
                         value={editingProduct.caloriesPer100g}
@@ -3998,12 +3981,12 @@ export default function AdminDashboardPage() {
                             caloriesPer100g: Number(e.target.value),
                           })
                         }
-                        className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-bold"
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold mb-1">البروتين (لكل 100 جم)</label>
+                      <label className="block text-xs font-bold mb-1 text-[#231710]">البروتين (لكل 100 جم)</label>
                       <input
                         type="text"
                         value={editingProduct.proteinPer100g}
@@ -4013,14 +3996,14 @@ export default function AdminDashboardPage() {
                             proteinPer100g: e.target.value,
                           })
                         }
-                        className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-bold"
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                       />
                     </div>
                   </div>
 
                   {/* Roast Options Checkboxes */}
-                  <div className="pt-2 border-t border-brand-100 space-y-1.5">
-                    <label className="block text-[11px] font-extrabold text-brand-900">
+                  <div className="pt-2 border-t border-[#E8E0D5] space-y-1.5">
+                    <label className="block text-xs font-bold text-[#231710]">
                       خيارات التحميص المتاحة لهذا الصنف:
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -4038,8 +4021,8 @@ export default function AdminDashboardPage() {
                             }}
                             className={`px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition ${
                               checked
-                                ? 'bg-brand-900 text-gold-400 border-brand-900'
-                                : 'bg-brand-50 text-brand-700 border-brand-200'
+                                ? 'bg-[#231710] text-white border-[#231710]'
+                                : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]'
                             }`}
                           >
                             {checked && <Check className="w-3 h-3" />}
@@ -4197,40 +4180,40 @@ export default function AdminDashboardPage() {
                         <span>متوفر للبيع</span>
                       </label>
 
-                      <label className="flex items-center gap-1.5 text-xs font-extrabold cursor-pointer">
+                      <label className="flex items-center gap-1.5 text-xs font-bold cursor-pointer">
                         <input
                           type="checkbox"
                           checked={editingProduct.showOnline !== false}
                           onChange={(e) =>
                             setEditingProduct({ ...editingProduct, showOnline: e.target.checked })
                           }
-                          className="rounded text-brand-900"
+                          className="rounded text-[#231710]"
                         />
-                        <span>🌐 متاح بالمتجر الإلكتروني</span>
+                        <span>متاح بالمتجر الإلكتروني</span>
                       </label>
 
-                      <label className="flex items-center gap-1.5 text-xs font-extrabold cursor-pointer">
+                      <label className="flex items-center gap-1.5 text-xs font-bold cursor-pointer">
                         <input
                           type="checkbox"
                           checked={editingProduct.showInPos !== false}
                           onChange={(e) =>
                             setEditingProduct({ ...editingProduct, showInPos: e.target.checked })
                           }
-                          className="rounded text-brand-900"
+                          className="rounded text-[#231710]"
                         />
-                        <span>🧾 متاح بالكاشير (POS)</span>
+                        <span>متاح بالكاشير (POS)</span>
                       </label>
 
-                      <label className="flex items-center gap-1.5 text-xs font-extrabold cursor-pointer">
+                      <label className="flex items-center gap-1.5 text-xs font-bold cursor-pointer">
                         <input
                           type="checkbox"
                           checked={editingProduct.featured}
                           onChange={(e) =>
                             setEditingProduct({ ...editingProduct, featured: e.target.checked })
                           }
-                          className="rounded text-brand-900"
+                          className="rounded text-[#231710]"
                         />
-                        <span>منتج مميز في الرئيسية ⭐</span>
+                        <span>منتج مميز في الرئيسية</span>
                       </label>
                     </div>
 
@@ -4241,16 +4224,16 @@ export default function AdminDashboardPage() {
                           setEditingProduct(null);
                           setIsCreatingProduct(false);
                         }}
-                        className="px-4 py-2 rounded-xl text-xs font-bold text-brand-700 hover:bg-brand-100"
+                        className="px-4 py-2 rounded-xl text-xs font-bold text-[#6B5644] hover:bg-[#FAF6F0]"
                       >
                         إلغاء
                       </button>
                       <button
                         type="submit"
                         disabled={saving}
-                        className="bg-brand-900 hover:bg-brand-950 text-white px-5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md"
+                        className="bg-[#231710] hover:bg-[#3A271C] text-white px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
                       >
-                        <Save className="w-3.5 h-3.5 text-gold-400" />
+                        <Save className="w-3.5 h-3.5" />
                         <span>حفظ ونشر التعديلات</span>
                       </button>
                     </div>
@@ -4260,54 +4243,54 @@ export default function AdminDashboardPage() {
 
               {/* 4 Inventory Valuation & Margin Summary Cards (Admin & Accountant) */}
               {(isFullAdmin || currentRole === 'accountant') && (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-                  <div className="bg-white p-3.5 rounded-2xl border border-brand-200 shadow-2xs">
-                    <span className="text-[10px] font-bold text-brand-600 block">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="bg-white p-3.5 rounded-2xl border border-[#E8E0D5]">
+                    <span className="text-[11px] font-medium text-[#6B5644] block">
                       إجمالي الوزن الفعلي بالمخزن
                     </span>
-                    <span className="text-base font-black text-brand-950 mt-0.5 block">
+                    <span className="text-base font-bold text-[#231710] mt-1 block">
                       {productsInventoryValuation.totalStockKg.toLocaleString('ar-EG')} كجم
                     </span>
-                    <span className="text-[10px] text-brand-500 font-bold">
+                    <span className="text-[10.5px] text-[#8A735E]">
                       موزعة على {products.length} صنف
                     </span>
                   </div>
 
-                  <div className="bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200 shadow-2xs">
-                    <span className="text-[10px] font-bold text-amber-800 block">
+                  <div className="bg-white p-3.5 rounded-2xl border border-[#E8E0D5]">
+                    <span className="text-[11px] font-medium text-[#6B5644] block">
                       قيمة المخزون بالتكلفة والجملة (رأس المال العامل)
                     </span>
-                    <span className="text-base font-black text-amber-950 mt-0.5 block">
+                    <span className="text-base font-bold text-[#231710] mt-1 block">
                       {productsInventoryValuation.totalCostValuation.toLocaleString('ar-EG')} ج.م
                     </span>
-                    <span className="text-[10px] text-amber-700 font-bold">
+                    <span className="text-[10.5px] text-[#8A735E]">
                       شامل تكلفة الخامات والتغليف
                     </span>
                   </div>
 
-                  <div className="bg-blue-50/70 p-3.5 rounded-2xl border border-blue-200 shadow-2xs">
-                    <span className="text-[10px] font-bold text-blue-800 block">
+                  <div className="bg-white p-3.5 rounded-2xl border border-[#E8E0D5]">
+                    <span className="text-[11px] font-medium text-[#6B5644] block">
                       قيمة المخزون بسعر البيع للجمهور
                     </span>
-                    <span className="text-base font-black text-blue-950 mt-0.5 block">
+                    <span className="text-base font-bold text-[#231710] mt-1 block">
                       {productsInventoryValuation.totalRetailValuation.toLocaleString('ar-EG')} ج.م
                     </span>
-                    <span className="text-[10px] text-blue-700 font-bold">
+                    <span className="text-[10.5px] text-[#8A735E]">
                       تقييم البيع التقديري للكيلو
                     </span>
                   </div>
 
-                  <div className="bg-pistachio-50 p-3.5 rounded-2xl border border-pistachio-300 shadow-2xs">
-                    <div className="flex items-center justify-between text-[10px] font-bold text-pistachio-800">
+                  <div className="bg-white p-3.5 rounded-2xl border border-[#E8E0D5]">
+                    <div className="flex items-center justify-between text-[11px] font-medium text-[#6B5644]">
                       <span>الربح الكامن المتوقع من المخزون</span>
-                      <span className="bg-pistachio-200 text-pistachio-950 px-1.5 py-0.5 rounded font-black">
+                      <span className="bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] px-1.5 py-0.5 rounded font-bold text-[10px]">
                         {productsInventoryValuation.avgMarginPercent}%
                       </span>
                     </div>
-                    <span className="text-base font-black text-pistachio-800 mt-0.5 block">
+                    <span className="text-base font-bold text-emerald-700 mt-1 block">
                       +{productsInventoryValuation.potentialInventoryProfit.toLocaleString('ar-EG')} ج.م
                     </span>
-                    <span className="text-[10px] text-pistachio-700 font-bold">
+                    <span className="text-[10.5px] text-[#8A735E]">
                       متوسط هامش الربح للصنف
                     </span>
                   </div>
@@ -4341,7 +4324,7 @@ export default function AdminDashboardPage() {
                   <div className="overflow-x-auto">
                     <table className="w-full text-right border-collapse text-xs">
                       <thead>
-                        <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
+                        <tr className="bg-[#FAF6F0] text-[#231710] font-bold border-b border-[#E8E0D5]">
                           <th className="p-3 whitespace-nowrap">الصنف والرابط</th>
                           <th className="p-3 whitespace-nowrap">القسم والمنشأ</th>
                           <th className="p-3">الأوزان والأسعار (ج.م)</th>
@@ -4356,29 +4339,30 @@ export default function AdminDashboardPage() {
                       </thead>
                       <tbody className="divide-y divide-brand-100 align-top">
                         {filteredProducts.map((prod) => {
-                          const catName =
+                          const catName = formatCategoryName(
                             categories.find((c) => c.id === prod.categoryId)?.name ||
-                            prod.categoryId;
+                              prod.categoryId
+                          );
                           return (
-                            <tr key={prod.id} className="hover:bg-brand-50/60 transition">
+                            <tr key={prod.id} className="hover:bg-[#FAF6F0]/60 transition">
                               {/* Product Image, Name, Badge & Slug */}
                               <td className="p-3 min-w-[210px]">
                                 <div className="flex items-start gap-2.5">
                                   <img
                                     src={getSafeImageUrl(prod.image)}
                                     alt={prod.name}
-                                    className="w-12 h-12 rounded-xl object-cover shrink-0 bg-brand-100 border border-brand-200"
+                                    className="w-12 h-12 rounded-xl object-cover shrink-0 bg-[#FAF6F0] border border-[#E8E0D5]"
                                   />
                                   <div className="min-w-0 space-y-0.5">
-                                    <div className="font-extrabold text-brand-950 text-xs leading-snug">
+                                    <div className="font-bold text-[#231710] text-xs leading-snug">
                                       {prod.name}
                                     </div>
-                                    {prod.badge && (
-                                      <span className="inline-block text-[9px] bg-gold-500/25 text-brand-950 px-1.5 py-0.5 rounded font-extrabold">
-                                        {prod.badge}
+                                    {prod.badge && stripUiEmojis(prod.badge) && (
+                                      <span className="inline-block text-[10px] bg-[#FAF6F0] border border-[#E8E0D5] text-[#9A6836] px-1.5 py-0.5 rounded font-bold">
+                                        {stripUiEmojis(prod.badge)}
                                       </span>
                                     )}
-                                    <div className="text-[10px] font-mono text-brand-500 truncate">
+                                    <div className="text-[11px] font-mono text-[#6B5A4E] truncate">
                                       /{prod.slug}
                                     </div>
                                   </div>
@@ -4387,11 +4371,11 @@ export default function AdminDashboardPage() {
 
                               {/* Category & Origin */}
                               <td className="p-3 whitespace-nowrap">
-                                <span className="inline-block text-[10px] font-extrabold bg-brand-100 text-brand-900 px-2 py-0.5 rounded-md">
+                                <span className="inline-block text-xs font-bold bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] px-2 py-0.5 rounded-md">
                                   {catName}
                                 </span>
-                                <div className="text-[11px] text-brand-700 font-bold mt-1">
-                                  🌍 {prod.origin}
+                                <div className="text-xs text-[#6B5A4E] font-medium mt-1">
+                                  {prod.origin}
                                 </div>
                               </td>
 
@@ -4401,15 +4385,15 @@ export default function AdminDashboardPage() {
                                   {prod.weights.map((w) => (
                                     <div
                                       key={w.id}
-                                      className="flex items-center justify-between gap-2 bg-brand-50 px-2 py-1 rounded-lg border border-brand-200/80 text-[10px]"
+                                      className="flex items-center justify-between gap-2 bg-[#FAF6F0] px-2 py-1 rounded-lg border border-[#E8E0D5] text-[11px]"
                                     >
-                                      <span className="font-bold text-brand-800">{w.label}</span>
+                                      <span className="font-bold text-[#231710]">{w.label}</span>
                                       <div className="flex items-center gap-1 shrink-0">
-                                        <strong className="text-pistachio-700 font-black">
+                                        <strong className="text-pistachio-700 font-bold">
                                           {w.price} ج.م
                                         </strong>
                                         {w.originalPrice && (
-                                          <span className="line-through text-brand-400">
+                                          <span className="line-through text-[#8C7A6B]">
                                             {w.originalPrice}
                                           </span>
                                         )}
@@ -4444,24 +4428,24 @@ export default function AdminDashboardPage() {
                                       : 0;
                                   return (
                                     <td className="p-3 whitespace-nowrap">
-                                      <div className="space-y-1 text-[10.5px]">
-                                        <div className="text-amber-900 font-bold">
+                                      <div className="space-y-1 text-[11px]">
+                                        <div className="text-[#9A6836] font-bold">
                                           تكلفة جملة: {rawCostKg} ج.م
                                           {packCostKg > 0 ? ` (+${packCostKg} تغليف)` : ''}
                                         </div>
-                                        <div className="text-brand-800 font-bold">
+                                        <div className="text-[#231710] font-bold">
                                           بيع الكيلو: {retailKg} ج.م
                                         </div>
                                         <div className="flex items-center gap-1.5 pt-0.5">
                                           <span
-                                            className={`font-black ${
+                                            className={`font-bold ${
                                               profitKg >= 0 ? 'text-pistachio-700' : 'text-red-700'
                                             }`}
                                           >
                                             ربح: +{profitKg} ج.م
                                           </span>
                                           <span
-                                            className={`px-1.5 py-0.5 rounded font-black text-[9.5px] ${
+                                            className={`px-1.5 py-0.5 rounded font-bold text-[10px] ${
                                               marginPct < 15
                                                 ? 'bg-red-100 text-red-700'
                                                 : 'bg-pistachio-100 text-pistachio-900'
@@ -4481,7 +4465,7 @@ export default function AdminDashboardPage() {
                                   {prod.roastOptions.map((r) => (
                                     <span
                                       key={r}
-                                      className="text-[9px] bg-amber-50 border border-amber-200 text-brand-900 px-1.5 py-0.5 rounded font-bold"
+                                      className="text-[11px] bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] px-2 py-0.5 rounded font-medium"
                                     >
                                       {r}
                                     </span>
@@ -4491,15 +4475,15 @@ export default function AdminDashboardPage() {
 
                               {/* Rating & Nutrition */}
                               <td className="p-3 whitespace-nowrap">
-                                <div className="font-black text-brand-950 flex items-center gap-1">
-                                  <span className="text-gold-500">★</span>
+                                <div className="font-bold text-[#231710] flex items-center gap-1">
+                                  <Star className="w-3.5 h-3.5 text-[#9A6836] fill-[#9A6836]" />
                                   <span>{prod.rating || 5.0}</span>
-                                  <span className="text-[10px] text-brand-500 font-normal">
+                                  <span className="text-[11px] text-[#6B5A4E] font-normal">
                                     ({prod.reviewsCount || 0})
                                   </span>
                                 </div>
-                                <div className="text-[10px] text-brand-600 mt-1">
-                                  🔥 {prod.caloriesPer100g} سعرة • 💪 {prod.proteinPer100g}
+                                <div className="text-[11px] text-[#6B5A4E] mt-1">
+                                  {prod.caloriesPer100g} سعرة • {prod.proteinPer100g}
                                 </div>
                               </td>
 
@@ -4510,20 +4494,20 @@ export default function AdminDashboardPage() {
                                     type="button"
                                     disabled={!isFullAdmin}
                                     onClick={() => isFullAdmin && handleToggleProductStock(prod.id)}
-                                    className={`text-[10px] font-extrabold px-2 py-0.5 rounded-lg border transition ${
+                                    className={`text-[11px] font-bold px-2 py-0.5 rounded-lg border transition ${
                                       prod.inStock
                                         ? 'bg-pistachio-50 text-pistachio-700 border-pistachio-200 hover:bg-pistachio-100'
                                         : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
                                     }`}
                                     title="حالة التوفر"
                                   >
-                                    {prod.inStock ? 'متوفر ✓' : 'نافد ✕'}
+                                    {prod.inStock ? 'متوفر' : 'نافد'}
                                   </button>
                                   <span
-                                    className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                                    className={`text-[11px] font-mono font-bold px-1.5 py-0.5 rounded border ${
                                       (prod.stockKg ?? 0) <= 5
                                         ? 'bg-amber-50 text-amber-800 border-amber-300'
-                                        : 'bg-brand-50 text-brand-700 border-brand-200'
+                                        : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]'
                                     }`}
                                     title="المخزون المتوفر بالكيلوجرام"
                                   >
@@ -4537,27 +4521,27 @@ export default function AdminDashboardPage() {
                                     type="button"
                                     disabled={!isFullAdmin}
                                     onClick={() => isFullAdmin && handleToggleProductShowOnline(prod.id)}
-                                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border transition ${
+                                    className={`text-[11px] font-bold px-2 py-0.5 rounded-md border transition ${
                                       prod.showOnline !== false
-                                        ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                                        ? 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5] hover:bg-[#F2EAE0]'
                                         : 'bg-zinc-100 text-zinc-400 border-zinc-200 line-through'
                                     }`}
                                     title="قناة المتجر الإلكتروني"
                                   >
-                                    🌐 {prod.showOnline !== false ? 'أونلاين' : 'معطل'}
+                                    {prod.showOnline !== false ? 'أونلاين' : 'أونلاين معطل'}
                                   </button>
                                   <button
                                     type="button"
                                     disabled={!isFullAdmin}
                                     onClick={() => isFullAdmin && handleToggleProductShowInPos(prod.id)}
-                                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border transition ${
+                                    className={`text-[11px] font-bold px-2 py-0.5 rounded-md border transition ${
                                       prod.showInPos !== false
                                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                                         : 'bg-zinc-100 text-zinc-400 border-zinc-200 line-through'
                                     }`}
-                                    title="قناة الكاشير POS"
+                                    title="قناة الكاشير"
                                   >
-                                    🧾 {prod.showInPos !== false ? 'كاشير' : 'معطل'}
+                                    {prod.showInPos !== false ? 'كاشير' : 'كاشير معطل'}
                                   </button>
                                 </div>
 
@@ -4566,13 +4550,13 @@ export default function AdminDashboardPage() {
                                     type="button"
                                     disabled={!isFullAdmin}
                                     onClick={() => isFullAdmin && handleToggleProductFeatured(prod.id)}
-                                    className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border transition ${
+                                    className={`text-[11px] font-bold px-2 py-0.5 rounded-lg border transition ${
                                       prod.featured
-                                        ? 'bg-gold-500/20 text-brand-950 border-gold-500/40'
-                                        : 'bg-brand-50 text-brand-400 border-brand-200'
+                                        ? 'bg-[#FAF6F0] text-[#9A6836] border-[#E8E0D5]'
+                                        : 'bg-white text-[#8C7A6B] border-[#E8E0D5]'
                                     }`}
                                   >
-                                    {prod.featured ? '⭐ مميز بالرئيسية' : '☆ غير مميز'}
+                                    {prod.featured ? 'مميز بالرئيسية' : 'غير مميز'}
                                   </button>
                                 </div>
                               </td>
@@ -4589,8 +4573,8 @@ export default function AdminDashboardPage() {
                                           setEditingProduct(prod);
                                           updateUrlQueryParams({ productModal: prod.slug });
                                         }}
-                                        className="bg-amber-100 hover:bg-amber-200 text-brand-950 text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg flex items-center gap-1"
-                                        title="تحرير شامل للمنتج"
+                                        className="bg-[#FAF6F0] hover:bg-[#F2EAE0] border border-[#E8E0D5] text-[#231710] text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1"
+                                        title="تحرير المنتج"
                                       >
                                         <Edit3 className="w-3 h-3" />
                                         <span>تحرير</span>
@@ -4599,7 +4583,7 @@ export default function AdminDashboardPage() {
                                       <button
                                         type="button"
                                         onClick={() => handleDuplicateProduct(prod)}
-                                        className="p-1.5 text-brand-700 hover:bg-brand-100 rounded-lg"
+                                        className="p-1.5 text-[#6B5A4E] hover:bg-[#FAF6F0] rounded-lg"
                                         title="نسخ المنتج"
                                       >
                                         <Copy className="w-3.5 h-3.5" />
@@ -4647,17 +4631,17 @@ export default function AdminDashboardPage() {
               {isFullAdmin && (
                 <form
                   onSubmit={handleSaveCategory}
-                  className="bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 space-y-3 h-fit shadow-2xs"
+                  className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E0D5] space-y-3 h-fit"
                 >
                 <div className="flex items-center justify-between">
-                  <h3 className="font-extrabold text-sm text-brand-950">
-                    {editingCategory ? `تعديل قسم: ${editingCategory.name}` : '+ إضافة قسم جديد'}
+                  <h3 className="font-bold text-sm text-[#231710]">
+                    {editingCategory ? `تعديل قسم: ${formatCategoryName(editingCategory.name)}` : 'إضافة قسم جديد'}
                   </h3>
                   {editingCategory && (
                     <button
                       type="button"
                       onClick={() => setEditingCategory(null)}
-                      className="text-[11px] text-red-600 font-bold"
+                      className="text-xs text-red-600 font-bold"
                     >
                       إلغاء
                     </button>
@@ -4665,7 +4649,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold mb-1">اسم القسم *</label>
+                  <label className="block text-xs font-bold mb-1 text-[#231710]">اسم القسم *</label>
                   <input
                     type="text"
                     required
@@ -4676,12 +4660,12 @@ export default function AdminDashboardPage() {
                         : setCatName(e.target.value)
                     }
                     placeholder="مثال: زبدة المكسرات الطبيعية"
-                    className="w-full bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
+                    className="w-full bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold mb-1">وصف القسم</label>
+                  <label className="block text-xs font-bold mb-1 text-[#231710]">وصف القسم</label>
                   <textarea
                     rows={2}
                     value={editingCategory ? editingCategory.description : catDesc}
@@ -4691,14 +4675,14 @@ export default function AdminDashboardPage() {
                         : setCatDesc(e.target.value)
                     }
                     placeholder="زبدة الفول السوداني وزبدة البندق والفستق"
-                    className="w-full bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs"
+                    className="w-full bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-1.5 text-xs text-[#231710] outline-none focus:border-[#231710]"
                   />
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-[11px] font-bold">صورة القسم</label>
-                    <label className="text-[10px] bg-brand-900 hover:bg-brand-950 text-gold-400 font-bold px-2 py-0.5 rounded-lg cursor-pointer flex items-center gap-1 transition">
+                    <label className="block text-xs font-bold text-[#231710]">صورة القسم</label>
+                    <label className="text-xs bg-[#FAF6F0] hover:bg-[#F2EAE0] border border-[#E8E0D5] text-[#231710] font-bold px-2.5 py-1 rounded-lg cursor-pointer flex items-center gap-1 transition">
                       <Upload className="w-3 h-3" />
                       <span>رفع من الجهاز</span>
                       <input
@@ -4724,7 +4708,7 @@ export default function AdminDashboardPage() {
                     <img
                       src={getSafeImageUrl(editingCategory ? editingCategory.image : catImage)}
                       alt="معاينة القسم"
-                      className="w-9 h-9 rounded-lg object-cover border border-brand-200 shrink-0 bg-brand-50"
+                      className="w-9 h-9 rounded-lg object-cover border border-[#E8E0D5] shrink-0 bg-[#FAF6F0]"
                     />
                     <input
                       type="text"
@@ -4735,7 +4719,7 @@ export default function AdminDashboardPage() {
                           : setCatImage(e.target.value)
                       }
                       placeholder="/images/products/pistachio.jpg أو رابط صورة"
-                      className="w-full bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-mono"
+                      className="w-full bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-1.5 text-xs font-mono text-[#231710] outline-none focus:border-[#231710]"
                     />
                   </div>
                   <div className="flex flex-wrap gap-1 mt-2">
@@ -4750,10 +4734,10 @@ export default function AdminDashboardPage() {
                               ? setEditingCategory({ ...editingCategory, image: imgOpt.url })
                               : setCatImage(imgOpt.url)
                           }
-                          className={`flex items-center gap-1 px-1.5 py-0.5 rounded-lg border text-[10px] font-bold transition ${
+                          className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border text-xs font-bold transition ${
                             activeImg === imgOpt.url
-                              ? 'bg-brand-900 text-gold-400 border-brand-900'
-                              : 'bg-brand-50 text-brand-800 border-brand-200 hover:bg-brand-100'
+                              ? 'bg-[#231710] text-white border-[#231710]'
+                              : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5] hover:bg-[#F2EAE0]'
                           }`}
                         >
                           <img
@@ -4771,19 +4755,19 @@ export default function AdminDashboardPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="w-full bg-brand-900 hover:bg-brand-950 text-white font-extrabold py-2 rounded-xl text-xs"
+                  className="w-full bg-[#231710] hover:bg-[#3A271C] text-white font-bold py-2.5 rounded-xl text-xs cursor-pointer"
                 >
-                  {editingCategory ? 'حفظ تعديلات القسم' : '+ إضافة القسم للمتجر'}
+                  {editingCategory ? 'حفظ تعديلات القسم' : 'إضافة القسم للمتجر'}
                 </button>
               </form>
               )}
 
               {/* Categories Filter Bar & Data Table */}
-              <div className="lg:col-span-2 bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 space-y-3 h-fit shadow-2xs">
+              <div className="lg:col-span-2 bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E0D5] space-y-3 h-fit">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
-                    <Filter className="w-4 h-4 text-brand-800" />
-                    <h3 className="text-sm font-black text-brand-950">
+                    <Filter className="w-4 h-4 text-[#9A6836]" />
+                    <h3 className="text-sm font-bold text-[#231710]">
                       جدول الأقسام والتصنيفات ({filteredCategories.length} من {categories.length})
                     </h3>
                   </div>
@@ -4795,22 +4779,22 @@ export default function AdminDashboardPage() {
                         setCategorySearch('');
                         setCategoryCountFilter('all');
                       }}
-                      className="text-[11px] bg-red-50 text-red-700 font-bold px-2.5 py-1 rounded-lg"
+                      className="text-xs bg-red-50 text-red-700 font-bold px-2.5 py-1 rounded-lg"
                     >
-                      إعادة ضبط الفلتر ✕
+                      إعادة ضبط الفلتر
                     </button>
                   )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div className="relative">
-                    <Search className="w-3.5 h-3.5 text-brand-500 absolute right-3 top-1/2 -translate-y-1/2" />
+                    <Search className="w-3.5 h-3.5 text-[#6B5A4E] absolute right-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={categorySearch}
                       onChange={(e) => setCategorySearch(e.target.value)}
                       placeholder="ابحث باسم القسم أو الوصف..."
-                      className="w-full bg-brand-50 border border-brand-200 rounded-xl pr-8 pl-3 py-1.5 text-xs font-bold"
+                      className="w-full bg-white border border-[#E8E0D5] rounded-xl pr-8 pl-3 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                     />
                   </div>
 
@@ -4821,7 +4805,7 @@ export default function AdminDashboardPage() {
                         e.target.value as 'all' | 'with_products' | 'empty'
                       )
                     }
-                    className="bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-bold"
+                    className="bg-white border border-[#E8E0D5] rounded-xl px-3 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                   >
                     <option value="all">جميع الأقسام</option>
                     <option value="with_products">أقسام تحتوي على منتجات</option>
@@ -4829,10 +4813,10 @@ export default function AdminDashboardPage() {
                   </select>
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-brand-200">
+                <div className="overflow-x-auto rounded-xl border border-[#E8E0D5]">
                   <table className="w-full text-right border-collapse text-xs">
                     <thead>
-                      <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
+                      <tr className="bg-[#FAF6F0] text-[#231710] font-bold border-b border-[#E8E0D5]">
                         <th className="p-2.5 whitespace-nowrap">الصورة</th>
                         <th className="p-2.5 whitespace-nowrap">اسم القسم والرابط</th>
                         <th className="p-2.5">الوصف</th>
@@ -4842,21 +4826,21 @@ export default function AdminDashboardPage() {
                         )}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-brand-100">
+                    <tbody className="divide-y divide-[#E8E0D5]">
                       {filteredCategories.map((cat) => {
                         const prodCount = products.filter((p) => p.categoryId === cat.id).length;
                         return (
-                          <tr key={cat.id} className="hover:bg-brand-50/70 transition">
+                          <tr key={cat.id} className="hover:bg-[#FAF6F0]/70 transition">
                             <td className="p-2.5 whitespace-nowrap">
                               <img
                                 src={getSafeImageUrl(cat.image)}
-                                alt={cat.name}
-                                className="w-11 h-11 rounded-xl object-cover bg-brand-100 border border-brand-200"
+                                alt={formatCategoryName(cat.name)}
+                                className="w-11 h-11 rounded-xl object-cover bg-[#FAF6F0] border border-[#E8E0D5]"
                               />
                             </td>
                             <td className="p-2.5 whitespace-nowrap">
-                              <div className="font-extrabold text-brand-950">{cat.name}</div>
-                              <div className="text-[10px] font-mono text-brand-500">{cat.slug}</div>
+                              <div className="font-bold text-[#231710]">{formatCategoryName(cat.name)}</div>
+                              <div className="text-[11px] font-mono text-[#6B5A4E]">{cat.slug}</div>
                             </td>
                             <td className="p-2.5 text-[11px] text-brand-700 max-w-xs">
                               {cat.description}
@@ -5060,7 +5044,7 @@ export default function AdminDashboardPage() {
                 <div className="overflow-x-auto rounded-xl border border-brand-200">
                   <table className="w-full text-right border-collapse text-xs">
                     <thead>
-                      <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
+                      <tr className="bg-[#FAF6F0] text-[#231710] font-bold border-b border-[#E8E0D5]">
                         <th className="p-2.5 whitespace-nowrap">#</th>
                         <th className="p-2.5">المحافظة / منطقة التوصيل</th>
                         <th className="p-2.5">مدة التوصيل المتوقعة</th>
@@ -5391,22 +5375,22 @@ export default function AdminDashboardPage() {
                         setCouponStatusFilter('all');
                         setCouponTypeFilter('all');
                       }}
-                      className="text-[11px] bg-red-50 text-red-700 font-bold px-2.5 py-1 rounded-lg"
+                      className="text-xs bg-red-50 text-red-700 font-bold px-2.5 py-1 rounded-lg"
                     >
-                      إعادة ضبط الفلاتر ✕
+                      إعادة ضبط الفلاتر
                     </button>
                   )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   <div className="relative">
-                    <Search className="w-3.5 h-3.5 text-brand-500 absolute right-3 top-1/2 -translate-y-1/2" />
+                    <Search className="w-3.5 h-3.5 text-[#6B5A4E] absolute right-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={couponSearch}
                       onChange={(e) => setCouponSearch(e.target.value)}
                       placeholder="ابحث بكود الخصم أو الوصف..."
-                      className="w-full bg-brand-50 border border-brand-200 rounded-xl pr-8 pl-3 py-1.5 text-xs font-bold"
+                      className="w-full bg-white border border-[#E8E0D5] rounded-xl pr-8 pl-3 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                     />
                   </div>
 
@@ -5417,12 +5401,12 @@ export default function AdminDashboardPage() {
                         e.target.value as 'all' | 'active' | 'inactive' | 'expired'
                       )
                     }
-                    className="bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
+                    className="bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                   >
                     <option value="all">الحالة: جميع الكوبونات</option>
-                    <option value="active">الكوبونات الفعالة والصالحة ✓</option>
+                    <option value="active">الكوبونات الفعالة والصالحة</option>
                     <option value="inactive">الكوبونات المتوقفة يدوياً</option>
-                    <option value="expired">منتهية الصلاحية / مكتملة الحد ⚠️</option>
+                    <option value="expired">منتهية الصلاحية / مكتملة الحد</option>
                   </select>
 
                   <select
@@ -5430,7 +5414,7 @@ export default function AdminDashboardPage() {
                     onChange={(e) =>
                       setCouponTypeFilter(e.target.value as 'all' | 'percentage' | 'fixed')
                     }
-                    className="bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
+                    className="bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                   >
                     <option value="all">النوع: كل أنواع الخصم</option>
                     <option value="percentage">نسبة مئوية (%)</option>
@@ -5438,10 +5422,10 @@ export default function AdminDashboardPage() {
                   </select>
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-brand-200">
+                <div className="overflow-x-auto rounded-xl border border-[#E8E0D5]">
                   <table className="w-full text-right border-collapse text-xs">
                     <thead>
-                      <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
+                      <tr className="bg-[#FAF6F0] text-[#231710] font-bold border-b border-[#E8E0D5]">
                         <th className="p-2.5 whitespace-nowrap">كود الخصم</th>
                         <th className="p-2.5 whitespace-nowrap">قيمة الخصم</th>
                         <th className="p-2.5 whitespace-nowrap">الحد الأدنى</th>
@@ -5453,7 +5437,7 @@ export default function AdminDashboardPage() {
                         )}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-brand-100">
+                    <tbody className="divide-y divide-[#E8E0D5]">
                       {filteredCoupons.map((c) => {
                         const used = c.usedCount || 0;
                         const max = typeof c.maxUses === 'number' && c.maxUses > 0 ? c.maxUses : null;
@@ -5464,37 +5448,37 @@ export default function AdminDashboardPage() {
                         const usagePct = max ? Math.min(100, Math.round((used / max) * 100)) : 0;
 
                         return (
-                          <tr key={c.id} className="hover:bg-brand-50/70 transition">
+                          <tr key={c.id} className="hover:bg-[#FAF6F0]/70 transition">
                             <td className="p-2.5 whitespace-nowrap">
-                              <span className="font-mono font-black text-xs text-brand-950 bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-200">
+                              <span className="font-mono font-bold text-xs text-[#231710] bg-[#FAF6F0] px-2.5 py-1 rounded-lg border border-[#E8E0D5]">
                                 {c.code}
                               </span>
                             </td>
                             <td className="p-2.5 whitespace-nowrap">
-                              <div className="font-black text-pistachio-700">
+                              <div className="font-bold text-pistachio-700">
                                 {c.discountType === 'percentage' ? `${c.value}%` : `${c.value} ج.م`}
                               </div>
-                              <div className="text-[10px] text-brand-500">
+                              <div className="text-[11px] text-[#6B5A4E]">
                                 {c.discountType === 'percentage' ? 'نسبة مئوية' : 'مبلغ ثابت'}
                               </div>
                             </td>
-                            <td className="p-2.5 whitespace-nowrap font-bold text-brand-900">
+                            <td className="p-2.5 whitespace-nowrap font-bold text-[#231710]">
                               {c.minOrderAmount} ج.م
                             </td>
                             <td className="p-2.5 whitespace-nowrap min-w-[140px]">
                               <div className="space-y-1">
-                                <div className="flex items-center justify-between text-[10.5px] font-bold">
-                                  <span className={isMaxedOut ? 'text-red-700 font-black' : 'text-brand-800'}>
-                                    الاستخدام: {used} / {max ?? '∞'}
+                                <div className="flex items-center justify-between text-[11px] font-bold">
+                                  <span className={isMaxedOut ? 'text-red-700 font-bold' : 'text-[#231710]'}>
+                                    الاستخدام: {used} / {max ?? 'مفتوح'}
                                   </span>
                                   {isMaxedOut && (
-                                    <span className="bg-red-100 text-red-700 px-1.5 py-0.5 rounded text-[9px] font-black">
+                                    <span className="bg-red-100 text-red-700 px-1.5 py-0.5 rounded text-[10px] font-bold">
                                       مكتمل الحد
                                     </span>
                                   )}
                                 </div>
                                 {max !== null && (
-                                  <div className="w-full h-1.5 bg-brand-100 rounded-full overflow-hidden">
+                                  <div className="w-full h-1.5 bg-[#FAF6F0] rounded-full overflow-hidden">
                                     <div
                                       className={`h-full rounded-full ${
                                         isMaxedOut ? 'bg-red-500' : 'bg-pistachio-600'
@@ -5503,24 +5487,24 @@ export default function AdminDashboardPage() {
                                     />
                                   </div>
                                 )}
-                                <div className="text-[10px]">
+                                <div className="text-[11px]">
                                   {c.expiresAt ? (
                                     isExpiredByDate ? (
-                                      <span className="text-red-600 font-extrabold">
-                                        ⚠️ منتهي ({c.expiresAt.slice(0, 10)})
+                                      <span className="text-red-600 font-bold">
+                                        منتهي ({c.expiresAt.slice(0, 10)})
                                       </span>
                                     ) : (
-                                      <span className="text-amber-800 font-bold">
-                                        📅 ينتهي: {c.expiresAt.slice(0, 10)}
+                                      <span className="text-[#9A6836] font-bold">
+                                        ينتهي: {c.expiresAt.slice(0, 10)}
                                       </span>
                                     )
                                   ) : (
-                                    <span className="text-brand-500">⏳ مفتوح المدة</span>
+                                    <span className="text-[#6B5A4E]">مفتوح المدة</span>
                                   )}
                                 </div>
                               </div>
                             </td>
-                            <td className="p-2.5 text-[11px] text-brand-600">{c.description}</td>
+                            <td className="p-2.5 text-xs text-[#6B5A4E]">{stripUiEmojis(c.description || '')}</td>
                             <td className="p-2.5 whitespace-nowrap text-center">
                               <button
                                 type="button"
@@ -5535,21 +5519,21 @@ export default function AdminDashboardPage() {
                                     'تم تحديث حالة تفعيل الكوبون'
                                   );
                                 }}
-                                className={`text-[10px] font-extrabold px-2.5 py-1 rounded-lg border ${
+                                className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border ${
                                   c.active && !isExpiredByDate && !isMaxedOut
-                                    ? 'bg-pistachio-100 text-pistachio-700 border-pistachio-300'
+                                    ? 'bg-pistachio-50 text-pistachio-700 border-pistachio-200'
                                     : c.active && (isExpiredByDate || isMaxedOut)
-                                    ? 'bg-amber-100 text-amber-800 border-amber-300'
-                                    : 'bg-brand-100 text-brand-500 border-brand-200'
+                                    ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                    : 'bg-[#FAF6F0] text-[#6B5A4E] border-[#E8E0D5]'
                                 }`}
                               >
                                 {!c.active
                                   ? 'متوقف'
                                   : isExpiredByDate
-                                  ? 'منتهي الصلاحية ⚠️'
+                                  ? 'منتهي الصلاحية'
                                   : isMaxedOut
-                                  ? 'مكتمل العدد ⚠️'
-                                  : 'فعال ✓'}
+                                  ? 'مكتمل العدد'
+                                  : 'فعال'}
                               </button>
                             </td>
                             {isFullAdmin && (
@@ -5558,7 +5542,7 @@ export default function AdminDashboardPage() {
                                   <button
                                     type="button"
                                     onClick={() => setEditingCoupon(c)}
-                                    className="p-1.5 bg-amber-100 hover:bg-amber-200 text-brand-950 rounded-lg"
+                                    className="p-1.5 bg-[#FAF6F0] hover:bg-[#F2EAE0] border border-[#E8E0D5] text-[#231710] rounded-lg"
                                     title="تعديل"
                                   >
                                     <Edit3 className="w-3.5 h-3.5" />
@@ -5595,15 +5579,15 @@ export default function AdminDashboardPage() {
               {/* Add Review Form */}
               <form
                 onSubmit={handleAddAdminReview}
-                className="bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 space-y-3 h-fit shadow-2xs"
+                className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E0D5] space-y-3 h-fit"
               >
-                <h3 className="text-sm font-black text-brand-950">+ إضافة تقييم عميل موثق</h3>
+                <h3 className="text-sm font-bold text-[#231710]">إضافة تقييم عميل موثق</h3>
                 <div>
-                  <label className="block text-[11px] font-bold mb-1">المنتج *</label>
+                  <label className="block text-xs font-bold mb-1 text-[#231710]">المنتج *</label>
                   <select
                     value={newReviewProdId || products[0]?.id || ''}
                     onChange={(e) => setNewReviewProdId(e.target.value)}
-                    className="w-full bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
+                    className="w-full bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                   >
                     {products.map((p) => (
                       <option key={p.id} value={p.id}>
@@ -5615,58 +5599,58 @@ export default function AdminDashboardPage() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[11px] font-bold mb-1">اسم العميل *</label>
+                    <label className="block text-xs font-bold mb-1 text-[#231710]">اسم العميل *</label>
                     <input
                       type="text"
                       required
                       value={newReviewCustomer}
                       onChange={(e) => setNewReviewCustomer(e.target.value)}
                       placeholder="أحمد محمود"
-                      className="w-full bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
+                      className="w-full bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold mb-1">التقييم (1 - 5)</label>
+                    <label className="block text-xs font-bold mb-1 text-[#231710]">التقييم (1 - 5)</label>
                     <select
                       value={newReviewRating}
                       onChange={(e) => setNewReviewRating(Number(e.target.value))}
-                      className="w-full bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
+                      className="w-full bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                     >
-                      <option value={5}>5 نجوم ⭐⭐⭐⭐⭐</option>
-                      <option value={4}>4 نجوم ⭐⭐⭐⭐</option>
-                      <option value={3}>3 نجوم ⭐⭐⭐</option>
-                      <option value={2}>نجمتان ⭐⭐</option>
-                      <option value={1}>نجمة واحدة ⭐</option>
+                      <option value={5}>5 نجوم</option>
+                      <option value={4}>4 نجوم</option>
+                      <option value={3}>3 نجوم</option>
+                      <option value={2}>نجمتان</option>
+                      <option value={1}>نجمة واحدة</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold mb-1">نص التعليق *</label>
+                  <label className="block text-xs font-bold mb-1 text-[#231710]">نص التعليق *</label>
                   <textarea
                     rows={2}
                     required
                     value={newReviewComment}
                     onChange={(e) => setNewReviewComment(e.target.value)}
                     placeholder="اكتب رأي العميل..."
-                    className="w-full bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs"
+                    className="w-full bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-1.5 text-xs text-[#231710] outline-none focus:border-[#231710]"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full bg-brand-900 hover:bg-brand-950 text-white font-extrabold py-2 rounded-xl text-xs"
+                  className="w-full bg-[#231710] hover:bg-[#3A271C] text-white font-bold py-2.5 rounded-xl text-xs cursor-pointer"
                 >
                   إضافة ونشر التقييم
                 </button>
               </form>
 
               {/* Reviews Filter Bar & Data Table */}
-              <div className="lg:col-span-2 bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 space-y-3 h-fit shadow-2xs">
+              <div className="lg:col-span-2 bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E0D5] space-y-3 h-fit">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
-                    <Filter className="w-4 h-4 text-brand-800" />
-                    <h3 className="text-sm font-black text-brand-950">
+                    <Filter className="w-4 h-4 text-[#9A6836]" />
+                    <h3 className="text-sm font-bold text-[#231710]">
                       جدول تقييمات وآراء العملاء ({allReviewsFlattened.length})
                     </h3>
                   </div>
@@ -5681,29 +5665,29 @@ export default function AdminDashboardPage() {
                         setReviewProductFilter('all');
                         setReviewRatingFilter('all');
                       }}
-                      className="text-[11px] bg-red-50 text-red-700 font-bold px-2.5 py-1 rounded-lg"
+                      className="text-xs bg-red-50 text-red-700 font-bold px-2.5 py-1 rounded-lg"
                     >
-                      إعادة ضبط الفلاتر ✕
+                      إعادة ضبط الفلاتر
                     </button>
                   )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   <div className="relative">
-                    <Search className="w-3.5 h-3.5 text-brand-500 absolute right-3 top-1/2 -translate-y-1/2" />
+                    <Search className="w-3.5 h-3.5 text-[#6B5A4E] absolute right-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={reviewSearch}
                       onChange={(e) => setReviewSearch(e.target.value)}
                       placeholder="ابحث باسم العميل أو نص التعليق..."
-                      className="w-full bg-brand-50 border border-brand-200 rounded-xl pr-8 pl-3 py-1.5 text-xs font-bold"
+                      className="w-full bg-white border border-[#E8E0D5] rounded-xl pr-8 pl-3 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                     />
                   </div>
 
                   <select
                     value={reviewProductFilter}
                     onChange={(e) => setReviewProductFilter(e.target.value)}
-                    className="bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
+                    className="bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                   >
                     <option value="all">جميع المنتجات</option>
                     {products.map((p) => (
@@ -5720,24 +5704,24 @@ export default function AdminDashboardPage() {
                         e.target.value as 'all' | '5' | '4' | '3_or_less'
                       )
                     }
-                    className="bg-brand-50 border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-bold"
+                    className="bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
                   >
                     <option value="all">كل التقييمات (1 - 5 نجوم)</option>
-                    <option value="5">5 نجوم فقط ⭐⭐⭐⭐⭐</option>
-                    <option value="4">4 نجوم فقط ⭐⭐⭐⭐</option>
+                    <option value="5">5 نجوم فقط</option>
+                    <option value="4">4 نجوم فقط</option>
                     <option value="3_or_less">3 نجوم فأقل</option>
                   </select>
                 </div>
 
                 {allReviewsFlattened.length === 0 ? (
-                  <p className="text-xs text-brand-600 py-6 text-center">
+                  <p className="text-xs text-[#6B5A4E] py-6 text-center">
                     لا توجد تقييمات مطابقة للفلاتر المحددة حالياً.
                   </p>
                 ) : (
-                  <div className="overflow-x-auto rounded-xl border border-brand-200">
+                  <div className="overflow-x-auto rounded-xl border border-[#E8E0D5]">
                     <table className="w-full text-right border-collapse text-xs">
                       <thead>
-                        <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
+                        <tr className="bg-[#FAF6F0] text-[#231710] font-bold border-b border-[#E8E0D5]">
                           <th className="p-2.5 whitespace-nowrap">اسم العميل</th>
                           <th className="p-2.5 whitespace-nowrap">المنتج</th>
                           <th className="p-2.5 whitespace-nowrap">التقييم</th>
@@ -5746,39 +5730,37 @@ export default function AdminDashboardPage() {
                           <th className="p-2.5 whitespace-nowrap text-center">إجراءات</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-brand-100">
+                      <tbody className="divide-y divide-[#E8E0D5]">
                         {allReviewsFlattened.map(({ product, review }) => (
                           <tr
                             key={`${product.id}-${review.id}`}
-                            className="hover:bg-brand-50/70 transition"
+                            className="hover:bg-[#FAF6F0]/70 transition"
                           >
                             <td className="p-2.5 whitespace-nowrap">
-                              <div className="font-extrabold text-brand-950">
+                              <div className="font-bold text-[#231710]">
                                 {review.customerName}
                               </div>
                               {review.verified && (
-                                <span className="text-[9px] text-pistachio-700 font-bold">
-                                  ✓ مشتري موثق
+                                <span className="text-[10px] text-pistachio-700 font-bold">
+                                  مشتري موثق
                                 </span>
                               )}
                             </td>
                             <td className="p-2.5 whitespace-nowrap">
-                              <span className="text-[10px] bg-brand-100 text-brand-900 px-2 py-0.5 rounded font-bold">
+                              <span className="text-xs bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] px-2 py-0.5 rounded font-bold">
                                 {product.name}
                               </span>
                             </td>
                             <td className="p-2.5 whitespace-nowrap">
-                              <span className="text-gold-500 font-black">
-                                {'★'.repeat(review.rating)}
-                              </span>
-                              <span className="text-[10px] text-brand-500 mr-1">
-                                ({review.rating}/5)
-                              </span>
+                              <div className="inline-flex items-center gap-1 font-bold text-[#9A6836]">
+                                <Star className="w-3.5 h-3.5 fill-[#9A6836] text-[#9A6836]" />
+                                <span>{review.rating} / 5</span>
+                              </div>
                             </td>
-                            <td className="p-2.5 text-[11px] text-brand-800 max-w-xs">
-                              {review.comment}
+                            <td className="p-2.5 text-xs text-[#231710] max-w-xs">
+                              {stripUiEmojis(review.comment || '')}
                             </td>
-                            <td className="p-2.5 whitespace-nowrap text-[10px] text-brand-500">
+                            <td className="p-2.5 whitespace-nowrap text-[11px] text-[#6B5A4E]">
                               {review.date}
                             </td>
                             <td className="p-2.5 whitespace-nowrap text-center">
@@ -5818,7 +5800,7 @@ export default function AdminDashboardPage() {
                         rolePermissions: updated,
                       },
                     },
-                    'تم حفظ وتطبيق صلاحيات المستخدمين (المورد، المحاسب، الكاشير) بنجاح ✅'
+                    'تم حفظ وتطبيق صلاحيات المستخدمين بنجاح'
                   );
                 }}
               />
@@ -5826,42 +5808,72 @@ export default function AdminDashboardPage() {
           )}
 
           {activeTab === 'settings' && canAccessTab('settings') && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Core Identity, Role Passwords & Payment Settings Form */}
+            <div className="max-w-4xl space-y-5">
+              {/* 5 Clean Settings Sub-Tabs Bar */}
+              <div className="bg-white p-1.5 rounded-2xl border border-[#E8E0D5] flex flex-wrap items-center gap-1.5">
+                {[
+                  { id: 'branch' as const, label: 'بيانات الفرع' },
+                  { id: 'payment' as const, label: 'الدفع والشحن' },
+                  { id: 'security' as const, label: 'الحسابات والأمان' },
+                  { id: 'telegram' as const, label: 'إشعارات تلجرام' },
+                  { id: 'backup' as const, label: 'النسخ الاحتياطي والنظام' },
+                ].map((sub) => (
+                  <button
+                    key={sub.id}
+                    type="button"
+                    onClick={() => {
+                      setSettingsSubTab(sub.id);
+                      updateUrlQueryParams({ subtab: sub.id === 'branch' ? null : sub.id });
+                    }}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                      settingsSubTab === sub.id
+                        ? 'bg-[#231710] text-white'
+                        : 'text-[#6B5644] hover:bg-[#FAF6F0] hover:text-[#231710]'
+                    }`}
+                  >
+                    {sub.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Core Settings Form (Sub-tabs 1..4: branch, payment, security, telegram) */}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
                   const formData = new FormData(e.currentTarget);
+                  const getStr = (key: string, fb: string, allowEmpty = true) => {
+                    const raw = formData.get(key);
+                    if (raw === null) return fb;
+                    const trimmed = String(raw).trim();
+                    if (!allowEmpty && trimmed === '') return fb;
+                    return trimmed;
+                  };
+                  const getNum = (key: string, fb: number) => {
+                    const raw = formData.get(key);
+                    if (raw === null || String(raw).trim() === '') return fb;
+                    const parsed = Number(raw);
+                    return Number.isFinite(parsed) && parsed >= 0 ? parsed : fb;
+                  };
                   const updatedSettings = {
                     ...settings,
-                    storeName: String(formData.get('storeName') || settings.storeName),
-                    tagline: String(formData.get('tagline') || settings.tagline),
-                    announcementText: String(
-                      formData.get('announcementText') || settings.announcementText
+                    storeName: getStr('storeName', settings.storeName, false),
+                    tagline: getStr('tagline', settings.tagline),
+                    announcementText: getStr('announcementText', settings.announcementText),
+                    whatsappNumber: getStr('whatsappNumber', settings.whatsappNumber, false),
+                    supportPhone: getStr('supportPhone', settings.supportPhone, false),
+                    freeShippingThreshold: getNum(
+                      'freeShippingThreshold',
+                      settings.freeShippingThreshold
                     ),
-                    whatsappNumber: String(
-                      formData.get('whatsappNumber') || settings.whatsappNumber
-                    ),
-                    supportPhone: String(formData.get('supportPhone') || settings.supportPhone),
-                    freeShippingThreshold: Number(
-                      formData.get('freeShippingThreshold') || settings.freeShippingThreshold
-                    ),
-                    instapayAddress: String(
-                      formData.get('instapayAddress') || settings.instapayAddress
-                    ),
-                    vodafoneCashNumber: String(
-                      formData.get('vodafoneCashNumber') || settings.vodafoneCashNumber
-                    ),
-                    address: String(formData.get('address') || settings.address),
-                    workingHours: String(formData.get('workingHours') || settings.workingHours),
+                    instapayAddress: getStr('instapayAddress', settings.instapayAddress),
+                    vodafoneCashNumber: getStr('vodafoneCashNumber', settings.vodafoneCashNumber),
+                    address: getStr('address', settings.address, false),
+                    workingHours: getStr('workingHours', settings.workingHours, false),
+                    googleMapsUrl: getStr('googleMapsUrl', settings.googleMapsUrl || ''),
                     pageContent: cmsDraft,
                     themeConfig: themeDraft,
-                    telegramBotToken: String(
-                      formData.get('telegramBotToken') ?? settings.telegramBotToken ?? ''
-                    ).trim(),
-                    telegramChatId: String(
-                      formData.get('telegramChatId') ?? settings.telegramChatId ?? ''
-                    ).trim(),
+                    telegramBotToken: getStr('telegramBotToken', settings.telegramBotToken ?? ''),
+                    telegramChatId: getStr('telegramChatId', settings.telegramChatId ?? ''),
                     telegramNotificationsEnabled: telegramEnabled,
                     telegramNotifyNewOrders: telegramNotifyOrders,
                     telegramNotifySupplyInvoices: telegramNotifySupply,
@@ -5894,182 +5906,236 @@ export default function AdminDashboardPage() {
                   };
                   updateStorePayload(
                     { settings: updatedSettings },
-                    'تم حفظ إعدادات المتجر وأسماء المستخدمين وكلمات المرور للأدوار الـ 4 بنجاح ✅'
+                    'تم حفظ الإعدادات بنجاح'
                   );
                   setNewAdminPassword('');
                   setNewSupplierPassword('');
                   setNewCashierPassword('');
                   setNewAccountantPassword('');
                 }}
-                className="lg:col-span-2 bg-white p-4 sm:p-6 rounded-2xl border border-brand-200 shadow-2xs space-y-4"
+                className={
+                  settingsSubTab === 'backup'
+                    ? 'hidden'
+                    : 'bg-white p-5 sm:p-6 rounded-2xl border border-[#E8E0D5] space-y-5'
+                }
               >
-                <h3 className="text-sm sm:text-base font-extrabold text-brand-950 border-b border-brand-100 pb-2.5">
-                  إعدادات الهوية، أرقام التواصل، ووسائل الدفع
-                </h3>
+                {/* Sub-Tab 1: بيانات الفرع */}
+                <div className={settingsSubTab === 'branch' ? 'space-y-4' : 'hidden'}>
+                  <div className="border-b border-[#E8E0D5] pb-3">
+                    <h3 className="text-base font-bold text-[#231710]">
+                      بيانات الفرع والتواصل
+                    </h3>
+                    <p className="text-xs text-[#6B5644] mt-0.5">
+                      الاسم التجاري للمحمصة، عنوان الفرع، مواعيد العمل، وأرقام خدمة العملاء.
+                    </p>
+                  </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-bold mb-1">اسم المتجر / المحمصة</label>
-                    <input
-                      name="storeName"
-                      defaultValue={settings.storeName}
-                      className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2 text-xs font-bold"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold mb-1">
-                      حد الشحن المجاني التلقائي (ج.م)
-                    </label>
-                    <input
-                      name="freeShippingThreshold"
-                      type="number"
-                      defaultValue={settings.freeShippingThreshold}
-                      className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2 text-xs font-bold"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold mb-1">
-                    الشعار اللفظي (Tagline)
-                  </label>
-                  <input
-                    name="tagline"
-                    defaultValue={settings.tagline}
-                    className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2 text-xs font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold mb-1">
-                    نص شريط العروض العلوي (Announcement Bar)
-                  </label>
-                  <input
-                    name="announcementText"
-                    defaultValue={settings.announcementText}
-                    className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2 text-xs font-bold"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-bold mb-1">
-                      رقم واتساب لاستقبال الطلبات (بكود الدولة 20)
-                    </label>
-                    <input
-                      name="whatsappNumber"
-                      defaultValue={settings.whatsappNumber}
-                      className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2 text-xs font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold mb-1">رقم هاتف خدمة العملاء</label>
-                    <input
-                      name="supportPhone"
-                      defaultValue={settings.supportPhone}
-                      className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2 text-xs font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-bold mb-1">عنوان الدفع عبر InstaPay</label>
-                    <input
-                      name="instapayAddress"
-                      defaultValue={settings.instapayAddress}
-                      className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2 text-xs font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold mb-1">رقم محفظة فودافون كاش</label>
-                    <input
-                      name="vodafoneCashNumber"
-                      defaultValue={settings.vodafoneCashNumber}
-                      className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2 text-xs font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-bold mb-1">عنوان الفرع الرئيسي</label>
-                    <input
-                      name="address"
-                      defaultValue={settings.address}
-                      className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold mb-1">مواعيد العمل</label>
-                    <input
-                      name="workingHours"
-                      defaultValue={settings.workingHours}
-                      className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2 text-xs"
-                    />
-                  </div>
-                </div>
-
-                {/* 4-Role Isolation & Independent Usernames + Passwords Section */}
-                <div className="pt-4 border-t border-brand-200 space-y-3">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <h4 className="text-xs sm:text-sm font-black text-brand-950 flex items-center gap-1.5">
-                        <ShieldCheck className="w-4 h-4 text-gold-500" />
-                        <span>إدارة حسابات وصلاحيات المستخدمين الـ 4 (الأدمن، المورد، المحاسب، الكاشير)</span>
-                        {isFullAdmin && (
-                          <button
-                            type="button"
-                            onClick={() => setActiveTab('permissions')}
-                            className="mr-2 px-3 py-1 rounded-lg bg-gold-500 hover:bg-gold-400 text-brand-950 text-[11px] font-black transition cursor-pointer"
-                          >
-                            ⚙️ منح أو حذف صلاحيات المستخدمين
-                          </button>
-                        )}
-                      </h4>
-                      <p className="text-[10.5px] text-brand-600 mt-0.5">
-                        لكل دور وظيفي اسم مستخدم (Username) وكلمة مرور (Password) مختلفان تماماً. اترك حقل كلمة المرور فارغاً للإبقاء على كلمة المرور الحالية.
+                      <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                        اسم المتجر / المحمصة
+                      </label>
+                      <input
+                        name="storeName"
+                        defaultValue={settings.storeName}
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm font-medium text-[#231710] focus:outline-none focus:border-[#231710]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                        الشعار اللفظي للمتجر
+                      </label>
+                      <input
+                        name="tagline"
+                        defaultValue={settings.tagline}
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm font-medium text-[#231710] focus:outline-none focus:border-[#231710]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                      نص الشريط العلوي للمتجر
+                    </label>
+                    <input
+                      name="announcementText"
+                      defaultValue={settings.announcementText}
+                      className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm font-medium text-[#231710] focus:outline-none focus:border-[#231710]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                        عنوان الفرع الرئيسي
+                      </label>
+                      <input
+                        name="address"
+                        defaultValue={settings.address}
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm text-[#231710] focus:outline-none focus:border-[#231710]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                        مواعيد العمل اليومية
+                      </label>
+                      <input
+                        name="workingHours"
+                        defaultValue={settings.workingHours}
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm text-[#231710] focus:outline-none focus:border-[#231710]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                        رقم واتساب لاستقبال الطلبات (بكود الدولة 20)
+                      </label>
+                      <input
+                        name="whatsappNumber"
+                        defaultValue={settings.whatsappNumber}
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm font-mono text-[#231710] focus:outline-none focus:border-[#231710]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                        رقم هاتف خدمة العملاء
+                      </label>
+                      <input
+                        name="supportPhone"
+                        defaultValue={settings.supportPhone}
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm font-mono text-[#231710] focus:outline-none focus:border-[#231710]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                      رابط موقع الفرع على خرائط جوجل
+                    </label>
+                    <input
+                      name="googleMapsUrl"
+                      dir="ltr"
+                      defaultValue={settings.googleMapsUrl || ''}
+                      placeholder="https://maps.google.com/?q=Bani+Mazar+Minya+Egypt"
+                      className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm font-mono text-[#231710] focus:outline-none focus:border-[#231710]"
+                    />
+                  </div>
+                </div>
+
+                {/* Sub-Tab 2: الدفع والشحن */}
+                <div className={settingsSubTab === 'payment' ? 'space-y-4' : 'hidden'}>
+                  <div className="border-b border-[#E8E0D5] pb-3">
+                    <h3 className="text-base font-bold text-[#231710]">
+                      وسائل الدفع الإلكتروني وحد الشحن المجاني
+                    </h3>
+                    <p className="text-xs text-[#6B5644] mt-0.5">
+                      بيانات التحويل عبر إنستا باي وفودافون كاش والحد الأدنى للشحن المجاني.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                        حد الشحن المجاني التلقائي (ج.م)
+                      </label>
+                      <input
+                        name="freeShippingThreshold"
+                        type="number"
+                        min={0}
+                        defaultValue={settings.freeShippingThreshold}
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm font-bold text-[#231710] focus:outline-none focus:border-[#231710]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                        عنوان الدفع عبر إنستا باي
+                      </label>
+                      <input
+                        name="instapayAddress"
+                        defaultValue={settings.instapayAddress}
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm font-mono text-[#231710] focus:outline-none focus:border-[#231710]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                        رقم محفظة فودافون كاش
+                      </label>
+                      <input
+                        name="vodafoneCashNumber"
+                        defaultValue={settings.vodafoneCashNumber}
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm font-mono text-[#231710] focus:outline-none focus:border-[#231710]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sub-Tab 3: الحسابات والأمان */}
+                <div className={settingsSubTab === 'security' ? 'space-y-4' : 'hidden'}>
+                  <div className="flex items-start justify-between flex-wrap gap-3 border-b border-[#E8E0D5] pb-3">
+                    <div>
+                      <h3 className="text-base font-bold text-[#231710] flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-[#9A6836]" />
+                        <span>الحسابات الأساسية وكلمات المرور للأدوار الأربعة</span>
+                      </h3>
+                      <p className="text-xs text-[#6B5644] mt-0.5">
+                        اترك حقل كلمة المرور فارغاً للإبقاء على كلمة المرور الحالية دون تغيير.
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowPasswordText(!showPasswordText)}
-                      className="text-[11px] font-bold text-brand-700 hover:text-brand-950 flex items-center gap-1 bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-200"
-                    >
-                      {showPasswordText ? (
-                        <>
-                          <EyeOff className="w-3.5 h-3.5" />
-                          <span>إخفاء كلمات المرور</span>
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>إظهار كلمات المرور</span>
-                        </>
+                    <div className="flex items-center gap-2">
+                      {isFullAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => selectTab('permissions')}
+                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] text-xs font-bold transition cursor-pointer"
+                        >
+                          إدارة صلاحيات الأقسام
+                        </button>
                       )}
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowPasswordText(!showPasswordText)}
+                        className="text-xs font-bold text-[#4A3728] hover:text-[#231710] flex items-center gap-1.5 bg-white hover:bg-[#FAF6F0] px-3 py-1.5 rounded-xl border border-[#E8E0D5] cursor-pointer"
+                      >
+                        {showPasswordText ? (
+                          <>
+                            <EyeOff className="w-3.5 h-3.5" />
+                            <span>إخفاء كلمات المرور</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>إظهار كلمات المرور</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Role 1: Super Admin */}
-                    <div className="p-3 rounded-xl bg-brand-50/70 border border-brand-200 space-y-2">
-                      <label className="block text-[11px] font-extrabold text-brand-950">
-                        1. 👑 الأدمن (المدير العام)
+                    <div className="p-4 rounded-xl bg-white border border-[#E8E0D5] space-y-2.5">
+                      <label className="block text-xs font-bold text-[#231710]">
+                        1. الأدمن (المدير العام)
                       </label>
                       <div>
-                        <span className="block text-[10px] font-bold text-brand-600 mb-0.5">
-                          اسم المستخدم (Username):
+                        <span className="block text-xs font-medium text-[#6B5644] mb-1">
+                          اسم المستخدم:
                         </span>
                         <input
                           type="text"
                           value={newAdminUsername}
                           onChange={(e) => setNewAdminUsername(e.target.value)}
                           placeholder="أدخل اسم مستخدم المدير..."
-                          className="w-full bg-white border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
+                          className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs font-mono font-bold text-[#231710] focus:outline-none focus:border-[#231710]"
                         />
                       </div>
                       <div>
-                        <span className="block text-[10px] font-bold text-brand-600 mb-0.5">
+                        <span className="block text-xs font-medium text-[#6B5644] mb-1">
                           كلمة المرور {showPasswordText && settings.adminPassword ? `(الحالية: ${settings.adminPassword})` : '(محفوظة ومحمية ••••••••)'}:
                         </span>
                         <input
@@ -6077,30 +6143,30 @@ export default function AdminDashboardPage() {
                           value={newAdminPassword}
                           onChange={(e) => setNewAdminPassword(e.target.value)}
                           placeholder="كلمة مرور جديدة للأدمن..."
-                          className="w-full bg-white border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
+                          className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs font-mono font-bold text-[#231710] focus:outline-none focus:border-[#231710]"
                         />
                       </div>
                     </div>
 
                     {/* Role 2: Supplier */}
-                    <div className="p-3 rounded-xl bg-amber-50/60 border border-amber-200 space-y-2">
-                      <label className="block text-[11px] font-extrabold text-amber-950">
-                        2. 📦 المورد (بوابة التوريد والمخزون)
+                    <div className="p-4 rounded-xl bg-white border border-[#E8E0D5] space-y-2.5">
+                      <label className="block text-xs font-bold text-[#231710]">
+                        2. المورد (بوابة التوريد والمخزون)
                       </label>
                       <div>
-                        <span className="block text-[10px] font-bold text-amber-800 mb-0.5">
-                          اسم المستخدم (Username):
+                        <span className="block text-xs font-medium text-[#6B5644] mb-1">
+                          اسم المستخدم:
                         </span>
                         <input
                           type="text"
                           value={newSupplierUsername}
                           onChange={(e) => setNewSupplierUsername(e.target.value)}
                           placeholder="أدخل اسم مستخدم المورد..."
-                          className="w-full bg-white border border-amber-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
+                          className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs font-mono font-bold text-[#231710] focus:outline-none focus:border-[#231710]"
                         />
                       </div>
                       <div>
-                        <span className="block text-[10px] font-bold text-amber-800 mb-0.5">
+                        <span className="block text-xs font-medium text-[#6B5644] mb-1">
                           كلمة المرور {showPasswordText && settings.supplierPassword ? `(الحالية: ${settings.supplierPassword})` : '(محفوظة ومحمية ••••••••)'}:
                         </span>
                         <input
@@ -6108,30 +6174,30 @@ export default function AdminDashboardPage() {
                           value={newSupplierPassword}
                           onChange={(e) => setNewSupplierPassword(e.target.value)}
                           placeholder="كلمة مرور جديدة للمورد..."
-                          className="w-full bg-white border border-amber-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
+                          className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs font-mono font-bold text-[#231710] focus:outline-none focus:border-[#231710]"
                         />
                       </div>
                     </div>
 
                     {/* Role 3: Cashier */}
-                    <div className="p-3 rounded-xl bg-sky-50/60 border border-sky-200 space-y-2">
-                      <label className="block text-[11px] font-extrabold text-sky-950">
-                        3. ⚖️ الكاشير (شاشة البيع والميزان POS)
+                    <div className="p-4 rounded-xl bg-white border border-[#E8E0D5] space-y-2.5">
+                      <label className="block text-xs font-bold text-[#231710]">
+                        3. الكاشير (نقطة البيع والميزان)
                       </label>
                       <div>
-                        <span className="block text-[10px] font-bold text-sky-800 mb-0.5">
-                          اسم المستخدم (Username):
+                        <span className="block text-xs font-medium text-[#6B5644] mb-1">
+                          اسم المستخدم:
                         </span>
                         <input
                           type="text"
                           value={newCashierUsername}
                           onChange={(e) => setNewCashierUsername(e.target.value)}
                           placeholder="أدخل اسم مستخدم الكاشير..."
-                          className="w-full bg-white border border-sky-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
+                          className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs font-mono font-bold text-[#231710] focus:outline-none focus:border-[#231710]"
                         />
                       </div>
                       <div>
-                        <span className="block text-[10px] font-bold text-sky-800 mb-0.5">
+                        <span className="block text-xs font-medium text-[#6B5644] mb-1">
                           كلمة المرور {showPasswordText && settings.cashierPassword ? `(الحالية: ${settings.cashierPassword})` : '(محفوظة ومحمية ••••••••)'}:
                         </span>
                         <input
@@ -6139,30 +6205,30 @@ export default function AdminDashboardPage() {
                           value={newCashierPassword}
                           onChange={(e) => setNewCashierPassword(e.target.value)}
                           placeholder="كلمة مرور جديدة للكاشير..."
-                          className="w-full bg-white border border-sky-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
+                          className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs font-mono font-bold text-[#231710] focus:outline-none focus:border-[#231710]"
                         />
                       </div>
                     </div>
 
                     {/* Role 4: Accountant */}
-                    <div className="p-3 rounded-xl bg-pistachio-50/60 border border-pistachio-200 space-y-2">
-                      <label className="block text-[11px] font-extrabold text-pistachio-900">
-                        4. 📊 المحاسب (المراجعة المالية والجرد)
+                    <div className="p-4 rounded-xl bg-white border border-[#E8E0D5] space-y-2.5">
+                      <label className="block text-xs font-bold text-[#231710]">
+                        4. المحاسب (المراجعة المالية والجرد)
                       </label>
                       <div>
-                        <span className="block text-[10px] font-bold text-pistachio-800 mb-0.5">
-                          اسم المستخدم (Username):
+                        <span className="block text-xs font-medium text-[#6B5644] mb-1">
+                          اسم المستخدم:
                         </span>
                         <input
                           type="text"
                           value={newAccountantUsername}
                           onChange={(e) => setNewAccountantUsername(e.target.value)}
                           placeholder="أدخل اسم مستخدم المحاسب..."
-                          className="w-full bg-white border border-pistachio-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
+                          className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs font-mono font-bold text-[#231710] focus:outline-none focus:border-[#231710]"
                         />
                       </div>
                       <div>
-                        <span className="block text-[10px] font-bold text-pistachio-800 mb-0.5">
+                        <span className="block text-xs font-medium text-[#6B5644] mb-1">
                           كلمة المرور {showPasswordText && settings.accountantPassword ? `(الحالية: ${settings.accountantPassword})` : '(محفوظة ومحمية ••••••••)'}:
                         </span>
                         <input
@@ -6170,102 +6236,98 @@ export default function AdminDashboardPage() {
                           value={newAccountantPassword}
                           onChange={(e) => setNewAccountantPassword(e.target.value)}
                           placeholder="كلمة مرور جديدة للمحاسب..."
-                          className="w-full bg-white border border-pistachio-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold"
+                          className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs font-mono font-bold text-[#231710] focus:outline-none focus:border-[#231710]"
                         />
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Package 5: Telegram Bot Automated Push Alerts Card */}
-                <div className="pt-4 border-t border-brand-200 space-y-3">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
+                {/* Sub-Tab 4: إشعارات تلجرام */}
+                <div className={settingsSubTab === 'telegram' ? 'space-y-4' : 'hidden'}>
+                  <div className="flex items-start justify-between flex-wrap gap-3 border-b border-[#E8E0D5] pb-3">
                     <div>
-                      <h4 className="text-xs sm:text-sm font-black text-brand-950 flex items-center gap-1.5">
-                        <Send className="w-4 h-4 text-sky-600" />
-                        <span>إشعارات بوت تلجرام الفورية (Telegram Bot Webhook Alerts)</span>
-                      </h4>
-                      <p className="text-[10.5px] text-brand-600 mt-0.5">
-                        إرسال إشعارات لحظية ومجانية لإدارة المحمصة على تليجرام عند وصول طلبات أونلاين جديدة، فواتير التوريد، وتقفيل الوردية اليومية (Z-Report).
+                      <h3 className="text-base font-bold text-[#231710] flex items-center gap-2">
+                        <Send className="w-4 h-4 text-[#9A6836]" />
+                        <span>إشعارات بوت تلجرام الفورية</span>
+                      </h3>
+                      <p className="text-xs text-[#6B5644] mt-0.5">
+                        إرسال تنبيهات لحظية لإدارة المحمصة عند وصول طلبات أونلاين جديدة، فواتير التوريد، وتقفيل الوردية.
                       </p>
                     </div>
-                    <label className="flex items-center gap-2 cursor-pointer bg-sky-50 px-3 py-1.5 rounded-xl border border-sky-200">
+                    <label className="flex items-center gap-2 cursor-pointer bg-white px-3.5 py-2 rounded-xl border border-[#E8E0D5]">
                       <input
                         type="checkbox"
                         checked={telegramEnabled}
                         onChange={(e) => setTelegramEnabled(e.target.checked)}
-                        className="w-4 h-4 rounded text-sky-600 cursor-pointer"
+                        className="w-4 h-4 rounded text-[#231710] cursor-pointer"
                       />
-                      <span className="text-xs font-black text-sky-950">تفعيل إشعارات تلجرام</span>
+                      <span className="text-xs font-bold text-[#231710]">تفعيل إشعارات تلجرام</span>
                     </label>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-sky-50/50 p-3.5 rounded-xl border border-sky-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-sky-950 mb-1">
-                        توكن بوت تلجرام (Bot Token):
+                      <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                        رمز بوت تلجرام
                       </label>
                       <input
                         name="telegramBotToken"
+                        dir="ltr"
                         defaultValue={settings?.telegramBotToken || ''}
                         placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ..."
-                        className="w-full bg-white border border-sky-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold outline-none"
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-[#231710] focus:outline-none focus:border-[#231710]"
                       />
-                      <span className="text-[9.5px] text-sky-700 block mt-0.5">
-                        يتم الحصول عليه مجاناً عبر محادثة @BotFather في تلجرام
-                      </span>
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-sky-950 mb-1">
-                        معرف المحادثة أو القناة (Chat ID):
+                      <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                        معرف محادثة أو مجموعة الإدارة
                       </label>
                       <input
                         name="telegramChatId"
+                        dir="ltr"
                         defaultValue={settings?.telegramChatId || ''}
-                        placeholder="-1001234567890 أو رقم حسابك الشخصي"
-                        className="w-full bg-white border border-sky-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold outline-none"
+                        placeholder="-1001234567890"
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-[#231710] focus:outline-none focus:border-[#231710]"
                       />
-                      <span className="text-[9.5px] text-sky-700 block mt-0.5">
-                        معرف الشات أو المجموعة الخاصة بإدارة المحمصة
-                      </span>
                     </div>
 
-                    <div className="sm:col-span-2 pt-2 border-t border-sky-200/60 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <label className="flex items-center gap-1.5 text-[11px] font-bold text-sky-950 cursor-pointer">
+                    <div className="sm:col-span-2 pt-3 border-t border-[#E8E0D5] flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-4">
+                        <label className="flex items-center gap-1.5 text-xs font-medium text-[#231710] cursor-pointer">
                           <input
                             type="checkbox"
                             checked={telegramNotifyOrders}
                             onChange={(e) => setTelegramNotifyOrders(e.target.checked)}
-                            className="rounded text-sky-600"
+                            className="rounded text-[#231710]"
                           />
                           <span>طلبات الأونلاين الجديدة</span>
                         </label>
-                        <label className="flex items-center gap-1.5 text-[11px] font-bold text-sky-950 cursor-pointer">
+                        <label className="flex items-center gap-1.5 text-xs font-medium text-[#231710] cursor-pointer">
                           <input
                             type="checkbox"
                             checked={telegramNotifySupply}
                             onChange={(e) => setTelegramNotifySupply(e.target.checked)}
-                            className="rounded text-sky-600"
+                            className="rounded text-[#231710]"
                           />
                           <span>فواتير التوريد والمخزون</span>
                         </label>
-                        <label className="flex items-center gap-1.5 text-[11px] font-bold text-sky-950 cursor-pointer">
+                        <label className="flex items-center gap-1.5 text-xs font-medium text-[#231710] cursor-pointer">
                           <input
                             type="checkbox"
                             checked={telegramNotifyZReport}
                             onChange={(e) => setTelegramNotifyZReport(e.target.checked)}
-                            className="rounded text-sky-600"
+                            className="rounded text-[#231710]"
                           />
-                          <span>تقفيل وردية الكاشير (Z-Report)</span>
+                          <span>تقفيل وردية الكاشير</span>
                         </label>
-                        <label className="flex items-center gap-1.5 text-[11px] font-bold text-sky-950 cursor-pointer">
+                        <label className="flex items-center gap-1.5 text-xs font-medium text-[#231710] cursor-pointer">
                           <input
                             type="checkbox"
                             checked={telegramNotifyLowStock}
                             onChange={(e) => setTelegramNotifyLowStock(e.target.checked)}
-                            className="rounded text-sky-600"
+                            className="rounded text-[#231710]"
                           />
                           <span>تنبيهات النواقص الحرجة (≤ 5 كجم)</span>
                         </label>
@@ -6282,80 +6344,88 @@ export default function AdminDashboardPage() {
                           const chatVal = chatInput?.value || settings?.telegramChatId || '';
                           handleTestTelegram(tokenVal, chatVal);
                         }}
-                        className="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-[11px] font-black flex items-center gap-1 transition cursor-pointer"
+                        className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
                       >
-                        <Send className="w-3 h-3" />
-                        <span>{telegramTesting ? 'جاري الإرسال...' : 'إرسال إشعار تجريبي (Test)'}</span>
+                        <Send className="w-3.5 h-3.5" />
+                        <span>{telegramTesting ? 'جاري الإرسال...' : 'إرسال إشعار تجريبي'}</span>
                       </button>
                     </div>
 
                     {telegramTestFeedback && (
                       <div
-                        className={`sm:col-span-2 text-xs font-bold p-2.5 rounded-xl border flex items-center gap-1.5 ${
+                        className={`sm:col-span-2 text-xs font-bold p-3 rounded-xl border flex items-center gap-2 ${
                           telegramTestFeedback.success
                             ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                             : 'bg-rose-50 text-rose-800 border-rose-200'
                         }`}
                       >
-                        <span>{telegramTestFeedback.success ? '✅' : '⚠️'}</span>
                         <span>{telegramTestFeedback.message}</span>
                       </div>
                     )}
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="bg-brand-900 hover:bg-brand-950 text-white font-extrabold px-6 py-2.5 rounded-xl text-xs flex items-center gap-1.5 shadow-md"
-                >
-                  <CheckCircle2 className="w-4 h-4 text-gold-400" />
-                  <span>حفظ جميع الإعدادات وأسماء المستخدمين وكلمات المرور</span>
-                </button>
+                {/* Shared Save Button for Sub-tabs 1..4 */}
+                <div className="pt-3 border-t border-[#E8E0D5] flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="bg-[#231710] hover:bg-[#3A271C] text-white font-bold px-6 py-2.5 rounded-xl text-xs flex items-center gap-2 transition cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>{saving ? 'جاري الحفظ...' : 'حفظ التغييرات'}</span>
+                  </button>
+                </div>
               </form>
 
-              {/* Backup & Restore Card */}
-              <div className="space-y-4">
-                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 space-y-3 shadow-2xs">
-                  <h3 className="text-sm font-black text-brand-950">
-                    النسخ الاحتياطي واستعادة النظام
-                  </h3>
-                  <p className="text-[11px] text-brand-600 leading-relaxed">
-                    يمكنك تحميل نسخة احتياطية كاملة (تشمل كافة المنتجات، الأقسام، الطلبات، وإعدادات الصفحات) بصيغة JSON أو استعادتها في أي وقت.
-                  </p>
+              {/* Sub-Tab 5: النسخ الاحتياطي والنظام */}
+              {settingsSubTab === 'backup' && (
+                <div className="space-y-4">
+                  <div className="bg-white p-5 sm:p-6 rounded-2xl border border-[#E8E0D5] space-y-4">
+                    <div className="border-b border-[#E8E0D5] pb-3">
+                      <h3 className="text-base font-bold text-[#231710]">
+                        النسخ الاحتياطي واستعادة قاعدة البيانات
+                      </h3>
+                      <p className="text-xs text-[#6B5644] mt-0.5 leading-relaxed">
+                        تحميل نسخة احتياطية شاملة لكافة المنتجات والأقسام والطلبات والإعدادات أو استعادتها في أي وقت.
+                      </p>
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={handleExportBackupJson}
-                    className="w-full bg-brand-900 hover:bg-brand-950 text-white text-xs font-extrabold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition"
-                  >
-                    <Download className="w-4 h-4 text-gold-400" />
-                    <span>تحميل نسخة احتياطية كاملة (JSON)</span>
-                  </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={handleExportBackupJson}
+                        className="w-full bg-[#231710] hover:bg-[#3A271C] text-white text-xs font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition cursor-pointer"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>تحميل نسخة احتياطية كاملة</span>
+                      </button>
 
-                  <label className="w-full bg-brand-50 hover:bg-brand-100 border border-brand-300 text-brand-950 text-xs font-extrabold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition cursor-pointer">
-                    <Upload className="w-4 h-4 text-brand-700" />
-                    <span>استيراد واستعادة نسخة احتياطية</span>
-                    <input
-                      type="file"
-                      accept=".json,application/json"
-                      onChange={handleImportBackupJson}
-                      className="hidden"
+                      <label className="w-full bg-white hover:bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] text-xs font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition cursor-pointer">
+                        <Upload className="w-4 h-4 text-[#6B5644]" />
+                        <span>استيراد واستعادة نسخة احتياطية</span>
+                        <input
+                          type="file"
+                          accept=".json,application/json"
+                          onChange={handleImportBackupJson}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Pre-Launch Operational Reset Safeguard (Super Admin Only) */}
+                  {currentRole === 'super_admin' && (
+                    <PreLaunchResetSafeguard
+                      adminToken={adminToken}
+                      isSuperAdmin={true}
+                      onResetComplete={() => {
+                        refreshStore();
+                      }}
                     />
-                  </label>
+                  )}
                 </div>
-
-                {/* Pre-Launch Operational Reset Safeguard (Super Admin Only) */}
-                {currentRole === 'super_admin' && (
-                  <PreLaunchResetSafeguard
-                    adminToken={adminToken}
-                    isSuperAdmin={true}
-                    onResetComplete={() => {
-                      refreshStore();
-                    }}
-                  />
-                )}
-              </div>
+              )}
             </div>
           )}
         </main>

@@ -13,7 +13,6 @@ import {
   Minus,
   CheckCircle2,
   ChevronLeft,
-  Sparkles,
   Send,
   Loader2,
   AlertCircle,
@@ -28,7 +27,7 @@ import {
   ProductReview,
 } from '@/types/store';
 import { useStore } from '@/context/StoreContext';
-import { getSafeImageUrl } from '@/lib/defaults';
+import { formatCategoryName, getSafeImageUrl } from '@/lib/defaults';
 import ProductCard from '@/components/ProductCard';
 import NutritionFactsCard from '@/components/product/NutritionFactsCard';
 import { updateUrlQueryParams, useBrowserUrlSync, buildUrlWithParams } from '@/lib/url-sync';
@@ -275,23 +274,23 @@ export default function ProductDetailClient({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-5">
       {/* Breadcrumb Navigation */}
-      <nav className="flex items-center gap-1.5 text-[11px] font-semibold text-brand-700 overflow-x-auto no-scrollbar whitespace-nowrap">
-        <Link href="/" className="hover:text-brand-950 transition shrink-0">
+      <nav className="flex items-center gap-1.5 text-xs font-medium text-[#6E5D4F] overflow-x-auto no-scrollbar whitespace-nowrap">
+        <Link href="/" className="hover:text-[#231710] transition shrink-0">
           الرئيسية
         </Link>
-        <ChevronLeft className="w-3 h-3 text-brand-400 shrink-0" />
+        <ChevronLeft className="w-3.5 h-3.5 text-[#8A7968] shrink-0" />
         {category && (
           <>
             <Link
-              href={`/?category=${category.id}`}
-              className="hover:text-brand-950 transition shrink-0"
+              href={`/shop?cat=${category.id}`}
+              className="hover:text-[#231710] transition shrink-0"
             >
-              {category.name}
+              {formatCategoryName(category.name)}
             </Link>
-            <ChevronLeft className="w-3 h-3 text-brand-400 shrink-0" />
+            <ChevronLeft className="w-3.5 h-3.5 text-[#8A7968] shrink-0" />
           </>
         )}
-        <span className="text-brand-950 font-bold truncate">
+        <span className="text-[#231710] font-bold truncate">
           {product.name}
         </span>
       </nav>
@@ -300,37 +299,36 @@ export default function ProductDetailClient({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-start">
         {/* Product Image Gallery Column (5 cols) */}
         <div className="lg:col-span-5 space-y-2.5">
-          <div className="relative rounded-xl overflow-hidden bg-brand-100 border border-brand-200/80 shadow-xs h-56 sm:h-64 group">
+          <div className="relative rounded-2xl overflow-hidden bg-[#FAF6F0] border border-[#E8E0D5] aspect-[4/3] group">
             <img
               src={getSafeImageUrl(selectedImage || product.image)}
               alt={product.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
             />
-            {product.badge && (
-              <span className="absolute top-2.5 right-2.5 bg-brand-950/90 backdrop-blur-sm text-gold-400 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
-                <Sparkles className="w-2.5 h-2.5" />
-                {product.badge}
+            {discountPercent && (
+              <span className="absolute top-3 right-3 bg-[#B83B2B] text-white text-xs font-bold px-2.5 py-0.5 rounded-lg tabular-nums">
+                -{discountPercent}%
               </span>
             )}
-            <span className="absolute bottom-2.5 right-2.5 bg-white/95 backdrop-blur-sm text-brand-950 text-[10px] font-bold px-2 py-0.5 rounded-md shadow-xs flex items-center gap-1">
-              <MapPin className="w-2.5 h-2.5 text-brand-600" />
+            <span className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-xs text-[#231710] border border-[#E8E0D5] text-xs font-medium px-2.5 py-1 rounded-xl flex items-center gap-1">
+              <MapPin className="w-3 h-3 text-[#9A6836]" />
               {product.origin}
             </span>
           </div>
 
           {/* Optional Gallery Thumbnails */}
           {product.gallery && product.gallery.filter((img) => Boolean(img && img.trim())).length > 0 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
               <button
                 type="button"
                 onClick={() => {
                   setSelectedImage(getSafeImageUrl(product.image));
                   updateUrlQueryParams({ img: 0 });
                 }}
-                className={`w-10 h-10 rounded-lg overflow-hidden border transition shrink-0 ${
+                className={`w-12 h-12 rounded-xl overflow-hidden border transition shrink-0 cursor-pointer ${
                   selectedImage === getSafeImageUrl(product.image)
-                    ? 'border-brand-900 shadow-2xs scale-105'
-                    : 'border-brand-200 hover:border-brand-400 opacity-70 hover:opacity-100'
+                    ? 'border-[#231710]'
+                    : 'border-[#E8E0D5] opacity-70 hover:opacity-100'
                 }`}
               >
                 <img
@@ -347,10 +345,10 @@ export default function ProductDetailClient({
                     setSelectedImage(imgUrl);
                     updateUrlQueryParams({ img: idx + 1 });
                   }}
-                  className={`w-10 h-10 rounded-lg overflow-hidden border transition shrink-0 ${
+                  className={`w-12 h-12 rounded-xl overflow-hidden border transition shrink-0 cursor-pointer ${
                     selectedImage === imgUrl
-                      ? 'border-brand-900 shadow-2xs scale-105'
-                      : 'border-brand-200 hover:border-brand-400 opacity-70 hover:opacity-100'
+                      ? 'border-[#231710]'
+                      : 'border-[#E8E0D5] opacity-70 hover:opacity-100'
                   }`}
                 >
                   <img
@@ -365,65 +363,62 @@ export default function ProductDetailClient({
         </div>
 
         {/* Product Details & Purchase Column (7 cols) */}
-        <div className="lg:col-span-7 space-y-3">
+        <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E8E0D5] p-5 sm:p-6 space-y-5">
           <div>
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <div className="inline-flex items-center gap-1 bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-full text-[10px] font-bold">
-                <Star className="w-2.5 h-2.5 fill-gold-400 text-gold-400" />
-                <span>{averageRating.toFixed(1)}</span>
-                <span className="text-amber-700 text-[9.5px]">
-                  ({reviewsCount} تقييم)
-                </span>
+            {reviewsCount > 0 && (
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                <div className="inline-flex items-center gap-1 text-xs font-medium text-[#5C4A3D] tabular-nums">
+                  <Star className="w-3.5 h-3.5 fill-[#D4AF37] text-[#D4AF37]" />
+                  <span className="font-bold text-[#231710]">{averageRating.toFixed(1)}</span>
+                  <span>({reviewsCount} تقييم)</span>
+                </div>
               </div>
-              <span className="text-[10px] text-brand-600 font-medium">
-                كود المنتج: {product.id}
-              </span>
-            </div>
+            )}
 
-            <h1 className="text-lg sm:text-xl font-extrabold text-brand-950 leading-tight">
+            <h1 className="font-cairo text-xl sm:text-2xl font-bold text-[#231710] leading-snug">
               {product.name}
             </h1>
           </div>
 
           {/* Price Display */}
-          <div className="bg-brand-50/70 border border-brand-200 rounded-xl p-2.5 sm:p-3 flex flex-wrap items-baseline justify-between gap-2">
+          <div className="bg-[#FAF6F0] border border-[#E8E0D5] rounded-2xl p-4 flex flex-wrap items-baseline justify-between gap-2 tabular-nums">
             <div>
-              <span className="text-[10px] text-brand-600 font-bold block mb-0.5">
-                السعر للوزن المحدد ({selectedWeight.label}):
+              <span className="text-xs text-[#6E5D4F] font-medium block mb-1">
+                السعر للوزن المحدد ({selectedWeight.label})
               </span>
-              <div className="flex flex-wrap items-baseline gap-1">
-                <span className="text-xl sm:text-2xl font-extrabold text-brand-950">
+              <div className="flex flex-wrap items-baseline gap-1.5">
+                <span className="font-cairo text-2xl font-bold text-[#231710]">
                   {selectedWeight.price}
                 </span>
-                <span className="text-[11px] font-bold text-brand-800">
-                  جنيه مصري
+                <span className="text-xs font-medium text-[#5C4A3D]">
+                  ج.م
                 </span>
                 {selectedWeight.originalPrice &&
                   selectedWeight.originalPrice > selectedWeight.price && (
-                    <span className="text-[10.5px] text-gray-400 line-through mr-1">
+                    <span className="text-xs text-[#8A7968] line-through mr-1">
                       {selectedWeight.originalPrice} ج.م
                     </span>
                   )}
               </div>
             </div>
             {discountPercent && (
-              <span className="bg-pistachio-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-2xs">
-                وفر {discountPercent}%
+              <span className="bg-[#B83B2B] text-white text-xs font-bold px-2.5 py-1 rounded-lg">
+                خصم {discountPercent}%
               </span>
             )}
           </div>
 
           {/* Description */}
-          <div className="text-[11px] sm:text-xs text-brand-800 leading-relaxed">
+          <div className="text-sm text-[#5C4A3D] leading-relaxed">
             <p>{product.description}</p>
           </div>
 
           {/* Interactive Weight Variant Selector */}
-          <div className="space-y-1.5">
-            <label className="text-[10.5px] font-extrabold text-brand-900 block">
-              1. اختر الوزن المطلوب (ثمن • ربع • نصف • كيلو • ٢ كجم):
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-[#231710] block">
+              اختر الوزن المطلوب:
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-1.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2">
               {availableWeights.map((w) => {
                 const isSelected = selectedWeight.id === w.id;
                 return (
@@ -434,16 +429,16 @@ export default function ProductDetailClient({
                       setSelectedWeight(w);
                       updateUrlQueryParams({ weight: w.id });
                     }}
-                    className={`py-2 px-2 rounded-xl border text-center transition cursor-pointer tabular-nums ${
+                    className={`py-2.5 px-2 rounded-xl border text-center transition cursor-pointer tabular-nums ${
                       isSelected
-                        ? 'bg-[#231710] text-[#FAF6F0] border-[#D4AF37] shadow-xs'
-                        : 'bg-white text-brand-900 border-brand-200 hover:border-[#C88A4B]'
+                        ? 'bg-[#231710] text-[#FAF6F0] border-[#231710]'
+                        : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5] hover:border-[#231710]/30'
                     }`}
                   >
-                    <div className="text-[10.5px] sm:text-[11px] font-extrabold">{w.label}</div>
+                    <div className="text-xs font-bold">{w.label}</div>
                     <div
-                      className={`text-[10px] font-black mt-0.5 ${
-                        isSelected ? 'text-[#D4AF37]' : 'text-brand-600'
+                      className={`text-xs font-medium mt-0.5 ${
+                        isSelected ? 'text-[#E8E0D5]' : 'text-[#6E5D4F]'
                       }`}
                     >
                       {w.price} ج.م
@@ -456,11 +451,11 @@ export default function ProductDetailClient({
 
           {/* Interactive Roast Option Selector */}
           {product.roastOptions.length > 0 && (
-            <div className="space-y-1">
-              <label className="text-[10.5px] font-extrabold text-brand-900 block">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-[#231710] block">
                 درجة التحميص / الطحنة:
               </label>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {product.roastOptions.map((roast) => {
                   const isActive = selectedRoast === roast;
                   return (
@@ -471,10 +466,10 @@ export default function ProductDetailClient({
                         setSelectedRoast(roast);
                         updateUrlQueryParams({ roast });
                       }}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition cursor-pointer ${
+                      className={`px-3.5 py-2 rounded-xl text-xs border transition cursor-pointer ${
                         isActive
-                          ? 'bg-[#231710] text-[#D4AF37] border-[#D4AF37] shadow-2xs font-extrabold'
-                          : 'bg-white text-brand-700 border-brand-200 hover:bg-brand-50'
+                          ? 'bg-[#231710] text-[#FAF6F0] border-[#231710] font-bold'
+                          : 'bg-white text-[#5C4A3D] border-[#E8E0D5] hover:bg-[#FAF6F0] font-medium'
                       }`}
                     >
                       {roast}
@@ -485,113 +480,87 @@ export default function ProductDetailClient({
             </div>
           )}
 
-          {/* Special Worker Notes Field (ملاحظات خاصة للعامل) */}
-          <div className="space-y-1">
-            <label className="text-[10.5px] font-extrabold text-brand-900 block">
-              3. ملاحظات خاصة للعامل في فرع بني مزار (اختياري):
+          {/* Special Worker Notes Field */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[#231710] block">
+              ملاحظات التجهيز (اختياري):
             </label>
             <input
               type="text"
               value={workerNotes}
               onChange={(e) => setWorkerNotes(e.target.value)}
-              placeholder="مثال: طحنة ناعمة للكنكة النحاس / تقسيم الوزن في كيسين ربع كيلو..."
-              className="w-full bg-white border border-brand-200 focus:border-[#C88A4B] rounded-xl px-3 py-2 text-xs text-brand-950 focus:outline-none"
+              placeholder="مثال: طحنة ناعمة / تقسيم الوزن في كيسين..."
+              className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs text-[#231710] focus:outline-none transition"
             />
           </div>
 
-          {/* Freshness & Stock Availability */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-[#231710] bg-[#D4AF37]/20 border border-[#D4AF37] px-2.5 py-0.5 rounded-full">
-              <Flame className="w-3 h-3 text-[#B83B2B]" />
-              محمص اليوم طازجاً في فرع بني مزار
-            </span>
-            {product.inStock ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                متوفر وجاهز للتوصيل الفوري
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                غير متوفر حالياً
-              </span>
-            )}
-          </div>
-
-          {/* Quantity & Dual Action Buttons (Add to Cart & Fast Checkout) */}
-          <div className="pt-1 space-y-2">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              {/* Quantity Selector */}
-              <div className="flex items-center justify-between border border-brand-300 rounded-lg bg-white p-0.5">
-                <button
-                  type="button"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="p-1.5 text-brand-900 hover:bg-brand-100 rounded-md transition"
-                  aria-label="تقليل الكمية"
-                >
-                  <Minus className="w-3 h-3" />
-                </button>
-                <span className="px-3 font-extrabold text-brand-950 text-xs">
-                  {quantity}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setQuantity((q) => q + 1)}
-                  className="p-1.5 text-brand-900 hover:bg-brand-100 rounded-md transition"
-                  aria-label="زيادة الكمية"
-                >
-                  <Plus className="w-3 h-3" />
-                </button>
-              </div>
-
-              {/* Add to Cart Button */}
+          {/* Quantity & Dual Action Buttons */}
+          <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+            <div className="flex items-center justify-between border border-[#E8E0D5] rounded-xl bg-[#FAF6F0] p-1">
               <button
                 type="button"
-                disabled={!product.inStock}
-                onClick={handleAddToCart}
-                className={`flex-1 py-2 px-3.5 rounded-lg font-extrabold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 shadow-sm transition active:scale-95 ${
-                  !product.inStock
-                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                    : justAdded
-                    ? 'bg-pistachio-600 text-white'
-                    : 'bg-brand-900 hover:bg-brand-950 text-white'
-                }`}
+                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                className="p-2 text-[#231710] hover:bg-white rounded-lg transition cursor-pointer"
+                aria-label="تقليل الكمية"
               >
-                {!product.inStock ? (
-                  <span>نفدت الكمية حالياً</span>
-                ) : justAdded ? (
-                  <>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-gold-400" />
-                    <span>تمت الإضافة للسلة!</span>
-                  </>
-                ) : (
-                  <>
-                    <ShoppingBag className="w-3.5 h-3.5 text-gold-400" />
-                    <span>
-                      أضف للسلة • {selectedWeight.price * quantity} ج.م
-                    </span>
-                  </>
-                )}
+                <Minus className="w-3.5 h-3.5" />
               </button>
-
-              {/* Fast Checkout ("شراء فوري") Button */}
+              <span className="px-4 font-bold text-[#231710] text-sm tabular-nums">
+                {quantity}
+              </span>
               <button
                 type="button"
-                disabled={!product.inStock}
-                onClick={handleFastCheckout}
-                className="py-2 px-3.5 rounded-lg font-extrabold text-[11px] sm:text-xs bg-amber-600 hover:bg-amber-700 text-white flex items-center justify-center gap-1 shadow-2xs transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="إتمام الشراء والانتقال لصفحة الدفع مباشرة"
+                onClick={() => setQuantity((q) => q + 1)}
+                className="p-2 text-[#231710] hover:bg-white rounded-lg transition cursor-pointer"
+                aria-label="زيادة الكمية"
               >
-                <Zap className="w-3.5 h-3.5 text-gold-300" />
-                <span>شراء فوري</span>
+                <Plus className="w-3.5 h-3.5" />
               </button>
             </div>
+
+            <button
+              type="button"
+              disabled={!product.inStock}
+              onClick={handleAddToCart}
+              className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer tabular-nums ${
+                !product.inStock
+                  ? 'bg-[#F4EFE6] text-[#8A7968] cursor-not-allowed'
+                  : justAdded
+                  ? 'bg-[#3B6E4C] text-white'
+                  : 'bg-[#231710] hover:bg-[#362419] text-[#FAF6F0]'
+              }`}
+            >
+              {!product.inStock ? (
+                <span>غير متوفر حالياً</span>
+              ) : justAdded ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>تمت الإضافة للسلة</span>
+                </>
+              ) : (
+                <>
+                  <ShoppingBag className="w-4 h-4" />
+                  <span>
+                    أضف للسلة • {selectedWeight.price * quantity} ج.م
+                  </span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              disabled={!product.inStock}
+              onClick={handleFastCheckout}
+              className="py-3 px-4 rounded-xl font-bold text-xs sm:text-sm bg-white hover:bg-[#FAF6F0] text-[#231710] border border-[#231710] flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span>شراء فوري</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Sub-pages / Sections Navigation Bar with Dedicated URLs */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar bg-white p-2 rounded-2xl border border-brand-200 shadow-2xs">
+      {/* Sub-pages / Sections Navigation Bar */}
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar bg-white p-2 rounded-2xl border border-[#E8E0D5]">
         {[
           { id: 'all' as const, label: 'نظرة شاملة' },
           { id: 'nutrition' as const, label: 'القيمة الغذائية' },
@@ -620,10 +589,10 @@ export default function ProductDetailClient({
                   section: tab.id === 'all' ? null : tab.id,
                 });
               }}
-              className={`px-4 py-2 rounded-xl text-xs font-cairo font-black whitespace-nowrap transition cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-cairo font-bold whitespace-nowrap transition cursor-pointer ${
                 isActive
-                  ? 'bg-[#231710] text-[#D4AF37] shadow-xs'
-                  : 'bg-[#FAF6F0] text-[#231710] hover:bg-[#F3ECE1]'
+                  ? 'bg-[#231710] text-[#FAF6F0]'
+                  : 'bg-[#FAF6F0] text-[#5C4A3D] hover:text-[#231710]'
               }`}
             >
               {tab.label}
@@ -641,51 +610,51 @@ export default function ProductDetailClient({
 
       {/* Customer Reviews Section */}
       {(activeSection === 'all' || activeSection === 'reviews') && (
-      <section id="reviews" className="bg-white rounded-xl border border-brand-200/80 shadow-2xs p-3.5 sm:p-5 space-y-4">
-        <div className="border-b border-brand-100 pb-3">
-          <h2 className="text-sm sm:text-base font-extrabold text-brand-950">
+      <section id="reviews" className="bg-white rounded-2xl border border-[#E8E0D5] p-5 sm:p-6 space-y-5">
+        <div className="border-b border-[#F0EAE0] pb-3">
+          <h2 className="font-cairo text-base sm:text-lg font-bold text-[#231710]">
             تقييمات العملاء
           </h2>
         </div>
 
         {/* Reviews Summary & Distribution Breakdown */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-brand-50/50 p-3 rounded-xl border border-brand-100">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center bg-[#FAF6F0] p-4 rounded-2xl border border-[#E8E0D5]">
           {/* Big Score Box (4 cols) */}
-          <div className="md:col-span-4 text-center md:border-l md:border-brand-200 md:pl-4 space-y-1">
-            <div className="text-2xl font-extrabold text-brand-950">
+          <div className="md:col-span-4 text-center md:border-l md:border-[#E8E0D5] md:pl-4 space-y-1.5">
+            <div className="font-cairo text-3xl font-bold text-[#231710] tabular-nums">
               {averageRating.toFixed(1)}
             </div>
-            <div className="flex items-center justify-center gap-0.5">
+            <div className="flex items-center justify-center gap-1">
               {[1, 2, 3, 4, 5].map((s) => (
                 <Star
                   key={s}
-                  className={`w-3.5 h-3.5 ${
+                  className={`w-4 h-4 ${
                     s <= Math.round(averageRating)
-                      ? 'fill-gold-400 text-gold-400'
-                      : 'text-brand-200'
+                      ? 'fill-[#9A6836] text-[#9A6836]'
+                      : 'text-[#D8CFC3]'
                   }`}
                 />
               ))}
             </div>
-            <div className="text-[10px] font-bold text-brand-700">
+            <div className="text-xs font-medium text-[#6E5D4F] tabular-nums">
               استناداً إلى {reviewsCount} تقييماً
             </div>
           </div>
 
           {/* Distribution Bars (8 cols) */}
-          <div className="md:col-span-8 space-y-1">
+          <div className="md:col-span-8 space-y-1.5">
             {starDistribution.map((item) => (
-              <div key={item.stars} className="flex items-center gap-2 text-[10px]">
-                <span className="w-10 font-bold text-brand-800 text-left">
+              <div key={item.stars} className="flex items-center gap-2.5 text-xs tabular-nums">
+                <span className="w-12 font-bold text-[#231710] text-left">
                   {item.stars} نجوم
                 </span>
-                <div className="flex-1 h-1.5 bg-brand-100 rounded-full overflow-hidden">
+                <div className="flex-1 h-2 bg-white border border-[#E8E0D5] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gold-500 rounded-full transition-all duration-500"
+                    className="h-full bg-[#9A6836] rounded-full transition-all duration-500"
                     style={{ width: `${item.percentage}%` }}
                   />
                 </div>
-                <span className="w-6 text-brand-600 font-semibold text-right">
+                <span className="w-6 text-[#6E5D4F] font-medium text-right">
                   {item.count}
                 </span>
               </div>
@@ -694,31 +663,31 @@ export default function ProductDetailClient({
         </div>
 
         {/* Review Submission Form & Existing Reviews Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Review Submission Form Column (5 cols) */}
-          <div className="lg:col-span-5 bg-brand-50/70 border border-brand-200 rounded-xl p-3.5 space-y-2.5 h-fit">
+          <div className="lg:col-span-5 bg-[#FAF6F0] border border-[#E8E0D5] rounded-2xl p-4 sm:p-5 space-y-3.5 h-fit">
             <div>
-              <h3 className="text-xs sm:text-sm font-extrabold text-brand-950">أضف تقييمك</h3>
+              <h3 className="font-cairo text-sm font-bold text-[#231710]">أضف تقييمك</h3>
             </div>
 
             {formError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-[11px] font-bold p-2.5 rounded-lg flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <div className="bg-red-50 border border-red-200 text-[#B83B2B] text-xs font-bold p-3 rounded-xl flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{formError}</span>
               </div>
             )}
 
             {formSuccess && (
-              <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold p-2.5 rounded-lg flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <div className="bg-emerald-50 border border-emerald-200 text-[#3B6E4C] text-xs font-bold p-3 rounded-xl flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-[#3B6E4C] shrink-0" />
                 <span>{formSuccess}</span>
               </div>
             )}
 
-            <form onSubmit={handleReviewSubmit} className="space-y-2.5">
+            <form onSubmit={handleReviewSubmit} className="space-y-3">
               {/* Star Rating Picker */}
               <div>
-                <label className="text-[10px] font-extrabold text-brand-900 block mb-1">
+                <label className="text-xs font-bold text-[#231710] block mb-1.5">
                   التقييم بالنجوم:
                 </label>
                 <div className="flex items-center gap-1">
@@ -731,20 +700,20 @@ export default function ProductDetailClient({
                         onClick={() => setFormRating(starVal)}
                         onMouseEnter={() => setHoverRating(starVal)}
                         onMouseLeave={() => setHoverRating(0)}
-                        className="p-0.5 text-gold-400 hover:scale-110 transition-transform"
+                        className="p-0.5 cursor-pointer transition-transform hover:scale-110"
                         title={`${starVal} نجوم`}
                       >
                         <Star
                           className={`w-4 h-4 transition-colors ${
                             isFilled
-                              ? 'fill-gold-400 text-gold-400'
-                              : 'text-brand-300'
+                              ? 'fill-[#9A6836] text-[#9A6836]'
+                              : 'text-[#D8CFC3]'
                           }`}
                         />
                       </button>
                     );
                   })}
-                  <span className="text-[10px] font-extrabold text-brand-900 mr-1.5 bg-white px-2 py-0.5 rounded border border-brand-200">
+                  <span className="text-xs font-bold text-[#231710] mr-2 bg-white px-2.5 py-0.5 rounded-lg border border-[#E8E0D5]">
                     {RATING_LABELS[hoverRating || formRating] || 'ممتاز'}
                   </span>
                 </div>
@@ -752,7 +721,7 @@ export default function ProductDetailClient({
 
               {/* Customer Name */}
               <div>
-                <label className="text-[10px] font-extrabold text-brand-900 block mb-1">
+                <label className="text-xs font-bold text-[#231710] block mb-1">
                   اسمك الكريم:
                 </label>
                 <input
@@ -761,28 +730,28 @@ export default function ProductDetailClient({
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="مثال: أحمد عبد الله"
-                  className="w-full px-2.5 py-1.5 bg-white border border-brand-200 rounded-lg text-[11px] font-bold text-brand-950 focus:outline-none focus:ring-1 focus:ring-brand-700 transition"
+                  className="w-full px-3 py-2 bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl text-xs font-medium text-[#231710] focus:outline-none transition"
                 />
               </div>
 
               {/* Comment Textarea */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-[10px] font-extrabold text-brand-900">
+                  <label className="text-xs font-bold text-[#231710]">
                     رأيك وتجربتك:
                   </label>
-                  <span className="text-[9.5px] text-brand-500 font-semibold">
+                  <span className="text-xs text-[#6E5D4F] tabular-nums">
                     {comment.length} / 500 حرف
                   </span>
                 </div>
                 <textarea
                   required
-                  rows={2}
+                  rows={3}
                   maxLength={500}
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="ما رأيك في القرمشة والتحميص وجودة التغليف؟"
-                  className="w-full px-2.5 py-1.5 bg-white border border-brand-200 rounded-lg text-[11px] font-medium text-brand-950 focus:outline-none focus:ring-1 focus:ring-brand-700 transition resize-none leading-relaxed"
+                  className="w-full px-3 py-2 bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl text-xs font-medium text-[#231710] focus:outline-none transition resize-none leading-relaxed"
                 />
               </div>
 
@@ -790,17 +759,17 @@ export default function ProductDetailClient({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-2 px-3 bg-brand-900 hover:bg-brand-950 text-white rounded-lg text-[11px] font-extrabold flex items-center justify-center gap-1.5 shadow-2xs transition disabled:opacity-50"
+                className="w-full py-2.5 px-4 bg-[#231710] hover:bg-[#362419] text-[#FAF6F0] rounded-xl font-cairo text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="w-3 h-3 animate-spin text-gold-400" />
-                    <span>جاري إرسال ونشر تقييمك...</span>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>جاري إرسال تقييمك...</span>
                   </>
                 ) : (
                   <>
-                    <Send className="w-3 h-3 text-gold-400" />
-                    <span>إرسال التقييم الآن</span>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>إرسال التقييم</span>
                   </>
                 )}
               </button>
@@ -808,47 +777,47 @@ export default function ProductDetailClient({
           </div>
 
           {/* Customer Reviews List Column (7 cols) */}
-          <div className="lg:col-span-7 space-y-2.5">
-            <h3 className="text-xs sm:text-sm font-extrabold text-brand-950">
+          <div className="lg:col-span-7 space-y-3">
+            <h3 className="font-cairo text-sm font-bold text-[#231710]">
               قائمة التقييمات ({reviews.length})
             </h3>
 
             {reviews.length === 0 ? (
-              <div className="text-center py-6 px-4 bg-brand-50/50 rounded-xl border border-dashed border-brand-200 space-y-1.5">
-                <Star className="w-6 h-6 text-brand-300 mx-auto" />
-                <p className="text-[11px] font-bold text-brand-800">
+              <div className="text-center py-8 px-4 bg-[#FAF6F0] rounded-2xl border border-dashed border-[#E8E0D5] space-y-1.5">
+                <Star className="w-6 h-6 text-[#9A6836] mx-auto opacity-60" />
+                <p className="text-xs font-bold text-[#231710]">
                   لا توجد تقييمات مكتوبة لهذا المنتج حتى الآن.
                 </p>
-                <p className="text-[10px] text-brand-600">
-                  كن أول من يشارك رأيه وتجربته مع هذا الصنف الرائع!
+                <p className="text-xs text-[#6E5D4F]">
+                  كن أول من يشارك رأيه وتجربته مع هذا الصنف.
                 </p>
               </div>
             ) : (
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
                 {reviews.map((rev) => (
                   <div
                     key={rev.id}
-                    className="bg-brand-50/60 p-2.5 rounded-lg border border-brand-200/80 space-y-1 hover:border-brand-300 transition"
+                    className="bg-white p-3.5 rounded-2xl border border-[#E8E0D5] space-y-1.5"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2.5">
                         {/* Name Avatar */}
-                        <div className="w-6 h-6 rounded-full bg-brand-900 text-gold-400 font-extrabold text-[10px] flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] font-bold text-xs flex items-center justify-center">
                           {rev.customerName ? rev.customerName.trim()[0] : 'ع'}
                         </div>
                         <div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-[11px] font-extrabold text-brand-950">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-[#231710]">
                               {rev.customerName}
                             </span>
                             {rev.verified && (
-                              <span className="text-[8.5px] text-pistachio-700 bg-pistachio-50 border border-pistachio-200 px-1.5 py-0.2 rounded-full flex items-center gap-0.5 font-bold">
-                                <CheckCircle2 className="w-2.5 h-2.5 text-pistachio-600" />{' '}
-                                مشتري موثق
+                              <span className="text-xs text-[#3B6E4C] bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg flex items-center gap-1 font-bold">
+                                <CheckCircle2 className="w-3 h-3 text-[#3B6E4C]" />
+                                <span>مشتري موثق</span>
                               </span>
                             )}
                           </div>
-                          <span className="text-[9.5px] text-brand-500">
+                          <span className="text-xs text-[#6E5D4F]">
                             {rev.date}
                           </span>
                         </div>
@@ -859,16 +828,16 @@ export default function ProductDetailClient({
                         {[1, 2, 3, 4, 5].map((s) => (
                           <Star
                             key={s}
-                            className={`w-2.5 h-2.5 ${
+                            className={`w-3.5 h-3.5 ${
                               s <= rev.rating
-                                ? 'fill-gold-400 text-gold-400'
-                                : 'text-brand-200'
+                                ? 'fill-[#9A6836] text-[#9A6836]'
+                                : 'text-[#D8CFC3]'
                             }`}
                           />
                         ))}
                       </div>
                     </div>
-                    <p className="text-[11px] text-brand-800 leading-relaxed pt-0.5">
+                    <p className="text-xs sm:text-sm text-[#5C4A3D] leading-relaxed pt-0.5">
                       {rev.comment}
                     </p>
                   </div>
@@ -880,15 +849,15 @@ export default function ProductDetailClient({
       </section>
       )}
 
-      {/* Smart Cross-Sell Recommendation (يكمل سهرتك مع هذا الصنف) */}
+      {/* Smart Cross-Sell Recommendation */}
       {relatedProducts.length > 0 && (activeSection === 'all' || activeSection === 'related') && (
-        <section id="related" className="space-y-3 pt-2">
-          <div className="border-b border-brand-200 pb-2.5">
-            <h2 className="font-cairo text-sm sm:text-base font-extrabold text-brand-950">
-              ✨ يكمل سهرتك مع هذا الصنف
+        <section id="related" className="space-y-4 pt-2">
+          <div className="border-b border-[#E8E0D5] pb-3">
+            <h2 className="font-cairo text-base sm:text-lg font-bold text-[#231710]">
+              أصناف مشابهة قد تعجبك
             </h2>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
             {relatedProducts.map((relProduct) => (
               <ProductCard key={relProduct.id} product={relProduct} />
             ))}

@@ -37,37 +37,37 @@ const ROLE_META: Record<
   super_admin: {
     label: 'المدير العام (الأدمن)',
     badgeBg: 'bg-[#231710]',
-    badgeText: 'text-[#D4AF37]',
+    badgeText: 'text-[#FAF6F0]',
     portalLabel: 'لوحة التحكم الكاملة (/admin)',
   },
   admin: {
     label: 'المدير العام (الأدمن)',
     badgeBg: 'bg-[#231710]',
-    badgeText: 'text-[#D4AF37]',
+    badgeText: 'text-[#FAF6F0]',
     portalLabel: 'لوحة التحكم الكاملة (/admin)',
   },
   accountant: {
     label: 'المحاسب المالي',
-    badgeBg: 'bg-emerald-900/10 border border-emerald-700/30',
-    badgeText: 'text-emerald-900',
+    badgeBg: 'bg-[#FAF6F0] border border-[#E8E0D5]',
+    badgeText: 'text-[#231710]',
     portalLabel: 'بوابة التدقيق المحاسبي (/admin)',
   },
   cashier: {
-    label: 'كاشير الفرع (POS)',
-    badgeBg: 'bg-amber-900/10 border border-amber-700/30',
-    badgeText: 'text-amber-900',
+    label: 'كاشير الفرع',
+    badgeBg: 'bg-[#FAF6F0] border border-[#E8E0D5]',
+    badgeText: 'text-[#231710]',
     portalLabel: 'نقطة بيع المحمصة (/pos)',
   },
   supplier: {
     label: 'المورد ومسؤول الخامات',
-    badgeBg: 'bg-sky-900/10 border border-sky-700/30',
-    badgeText: 'text-sky-900',
+    badgeBg: 'bg-[#FAF6F0] border border-[#E8E0D5]',
+    badgeText: 'text-[#231710]',
     portalLabel: 'بوابة التوريد والمخزون (/supplier)',
   },
   delivery_rider: {
     label: 'مندوب التوصيل',
-    badgeBg: 'bg-purple-900/10 border border-purple-700/30',
-    badgeText: 'text-purple-900',
+    badgeBg: 'bg-[#FAF6F0] border border-[#E8E0D5]',
+    badgeText: 'text-[#231710]',
     portalLabel: 'بوابة مناديب التوصيل (/rider)',
   },
 };
@@ -212,7 +212,7 @@ export default function StaffAccountsManager({
         notify(data.error || 'تعذر إنشاء حساب الموظف', 'error');
         return;
       }
-      notify(`تم إنشاء حساب الموظف «${data.account.displayName}» وتشفير كلمة المرور بـ scrypt بنجاح ✅`);
+      notify(`تم إنشاء حساب الموظف «${data.account.displayName}» بنجاح`);
       setNewDisplayName('');
       setNewUsername('');
       setNewPassword('');
@@ -276,7 +276,7 @@ export default function StaffAccountsManager({
           );
         } catch {}
       }
-      notify(`تم تحديث بيانات حساب «${data.account.displayName}» بنجاح ✅`);
+      notify(`تم تحديث بيانات حساب «${data.account.displayName}» بنجاح`);
       setEditingAccount(null);
       await loadStaffAndHealth();
     } catch {
@@ -304,8 +304,8 @@ export default function StaffAccountsManager({
       }
       notify(
         data.account.active
-          ? `تم تفعيل حساب «${acc.displayName}» بنجاح ✅`
-          : `تم إيقاف حساب «${acc.displayName}» وإلغاء جلسته النشطة فوراً 🔒`
+          ? `تم تفعيل حساب «${acc.displayName}» بنجاح`
+          : `تم إيقاف حساب «${acc.displayName}» وإلغاء جلسته النشطة فوراً`
       );
       await loadStaffAndHealth();
     } catch {
@@ -328,7 +328,7 @@ export default function StaffAccountsManager({
         notify(data.error || 'تعذر حذف الحساب', 'error');
         return;
       }
-      notify(`تم حذف حساب الموظف «${acc.displayName}» نهائياً 🗑️`);
+      notify(`تم حذف حساب الموظف «${acc.displayName}» نهائياً`);
       await loadStaffAndHealth();
     } catch {
       notify('حدث خطأ أثناء حذف حساب الموظف', 'error');
@@ -338,33 +338,33 @@ export default function StaffAccountsManager({
   };
 
   return (
-    <div className="mb-8 space-y-6" dir="rtl">
-      {/* Neon Postgres Relational Engine Status Card */}
-      <div className="rounded-2xl border border-[#D4AF37]/30 bg-gradient-to-l from-[#231710] via-[#2c1d14] to-[#1a110c] p-5 text-[#FAF6F0] shadow-lg">
+    <div className="mb-8 space-y-5" dir="rtl">
+      {/* Database Engine Status Card (Calm White ERP) */}
+      <div className="rounded-2xl border border-[#E8E0D5] bg-white p-5 text-[#231710]">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#D4AF37]/20 text-[#D4AF37]">
-              <Database className="h-6 w-6" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FAF6F0] border border-[#E8E0D5] text-[#9A6836]">
+              <Database className="h-5 w-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-[#FAF6F0]">
-                  محرك قاعدة البيانات العلائقية ومعاملات ACID
+              <div className="flex items-center flex-wrap gap-2">
+                <h3 className="text-base font-bold text-[#231710]">
+                  حالة اتصال قاعدة البيانات والمزامنة
                 </h3>
                 <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold border ${
                     dbHealth?.connected !== false
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
-                      : 'bg-red-500/20 text-red-300 border border-red-400/30'
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      : 'bg-red-50 text-red-800 border-red-200'
                   }`}
                 >
                   {dbHealth?.engine === 'neon_postgres'
-                    ? 'Neon Serverless Postgres متصل'
-                    : 'تخزين محلي مؤمّن بـ Mutex'}
+                    ? 'قاعدة بيانات سحابية متصلة'
+                    : 'تخزين محلي مؤمّن'}
                 </span>
               </div>
-              <p className="mt-1 text-xs text-[#FAF6F0]/75">
-                مزامنة ذرية لـ {dbHealth?.tables?.length || 10} جداول علائقية مفهرسة مع قفل التزاحم الصارم (SELECT FOR UPDATE / Atomic SQL Transactions) وتشفير كلمات المرور بـ scrypt.
+              <p className="mt-0.5 text-xs text-[#6B5644]">
+                مزامنة ذرية لـ {dbHealth?.tables?.length || 10} جداول علائقية مفهرسة وتشفير آمن لكلمات المرور.
               </p>
             </div>
           </div>
@@ -373,10 +373,10 @@ export default function StaffAccountsManager({
             type="button"
             onClick={loadStaffAndHealth}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#D4AF37]/40 bg-[#D4AF37]/10 px-3.5 py-2 text-xs font-bold text-[#D4AF37] transition hover:bg-[#D4AF37]/20 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#E8E0D5] bg-[#FAF6F0] px-3.5 py-2 text-xs font-bold text-[#231710] transition hover:bg-[#F2ECE2] disabled:opacity-50"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            تحديث الفحص الحي
+            <RefreshCw className={`h-4 w-4 text-[#6B5644] ${loading ? 'animate-spin' : ''}`} />
+            تحديث الفحص
           </button>
         </div>
 
@@ -392,10 +392,10 @@ export default function StaffAccountsManager({
             ].map((stat) => (
               <div
                 key={stat.key}
-                className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-center"
+                className="rounded-xl border border-[#E8E0D5] bg-[#FAF6F0] px-3 py-2 text-center"
               >
-                <div className="text-lg font-extrabold text-[#D4AF37]">{stat.val ?? 0}</div>
-                <div className="text-[11px] text-[#FAF6F0]/75">{stat.label}</div>
+                <div className="text-base font-bold text-[#231710]">{stat.val ?? 0}</div>
+                <div className="text-[11px] text-[#6B5644]">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -403,18 +403,18 @@ export default function StaffAccountsManager({
       </div>
 
       {/* Multi-Staff Directory Management Card */}
-      <div className="rounded-2xl border border-[#231710]/15 bg-white p-6 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#231710]/10 pb-4">
+      <div className="rounded-2xl border border-[#E8E0D5] bg-white p-5 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E8E0D5] pb-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#231710] text-[#D4AF37]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710]">
               <Users className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-lg font-extrabold text-[#231710]">
-                إدارة حسابات الموظفين وتعدد المستخدمين (5 أدوار معزولة)
+              <h2 className="text-base sm:text-lg font-bold text-[#231710]">
+                إدارة حسابات الموظفين وتعدد المستخدمين
               </h2>
-              <p className="text-xs text-[#231710]/65">
-                أنشئ حساباً مستقلاً لكل كاشير أو محاسب أو مورد أو مندوب توصيل لتتبع الورديات والفواتير باسم الموظف الفعلي مع إمكانية الإيقاف الفوري.
+              <p className="text-xs text-[#6B5644] mt-0.5">
+                أنشئ حساباً مستقلاً لكل كاشير أو محاسب أو مورد أو مندوب توصيل لتتبع الورديات والفواتير مع إمكانية الإيقاف الفوري.
               </p>
             </div>
           </div>
@@ -422,7 +422,7 @@ export default function StaffAccountsManager({
           <button
             type="button"
             onClick={() => setShowCreateForm((prev) => !prev)}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#231710] px-4 py-2.5 text-sm font-bold text-[#D4AF37] shadow transition hover:bg-[#3a261b]"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#231710] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#3A271C]"
           >
             <Plus className="h-4 w-4" />
             {showCreateForm ? 'إغلاق نموذج الإضافة' : 'إضافة حساب موظف جديد'}
@@ -450,11 +450,11 @@ export default function StaffAccountsManager({
         {showCreateForm && (
           <form
             onSubmit={handleCreateStaff}
-            className="mt-5 rounded-2xl border border-[#D4AF37]/40 bg-[#FAF6F0] p-5 space-y-4"
+            className="mt-5 rounded-2xl border border-[#E8E0D5] bg-[#FAF6F0] p-5 space-y-4"
           >
-            <div className="flex items-center gap-2 text-sm font-extrabold text-[#231710]">
-              <ShieldCheck className="h-4 w-4 text-[#D4AF37]" />
-              <span>تسجيل حساب موظف جديد (تشفير scrypt تلقائي وتوجيه لبوابة التخصص)</span>
+            <div className="flex items-center gap-2 text-sm font-bold text-[#231710]">
+              <ShieldCheck className="h-4 w-4 text-[#9A6836]" />
+              <span>تسجيل حساب موظف جديد</span>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -468,7 +468,7 @@ export default function StaffAccountsManager({
                   value={newDisplayName}
                   onChange={(e) => setNewDisplayName(e.target.value)}
                   placeholder="الاسم الثلاثي كما سيظهر في الوردية"
-                  className="w-full rounded-xl border border-[#231710]/20 bg-white px-3.5 py-2 text-sm text-[#231710] focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-xl border border-[#E8E0D5] bg-white px-3.5 py-2 text-sm text-[#231710] focus:border-[#231710] focus:outline-none"
                 />
               </div>
 
@@ -483,7 +483,7 @@ export default function StaffAccountsManager({
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
                   placeholder="staff_member_01"
-                  className="w-full rounded-xl border border-[#231710]/20 bg-white px-3.5 py-2 text-sm text-[#231710] focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-xl border border-[#E8E0D5] bg-white px-3.5 py-2 text-sm text-[#231710] focus:border-[#231710] focus:outline-none"
                 />
               </div>
 
@@ -499,7 +499,7 @@ export default function StaffAccountsManager({
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-xl border border-[#231710]/20 bg-white px-3.5 py-2 text-sm text-[#231710] focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-xl border border-[#E8E0D5] bg-white px-3.5 py-2 text-sm text-[#231710] focus:border-[#231710] focus:outline-none"
                 />
               </div>
 
@@ -510,13 +510,13 @@ export default function StaffAccountsManager({
                 <select
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value as AdminRole)}
-                  className="w-full rounded-xl border border-[#231710]/20 bg-white px-3.5 py-2 text-sm font-bold text-[#231710] focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-xl border border-[#E8E0D5] bg-white px-3.5 py-2 text-sm font-bold text-[#231710] focus:border-[#231710] focus:outline-none"
                 >
-                  <option value="cashier">الكاشير ونقطة البيع (/pos)</option>
-                  <option value="accountant">المحاسب المالي والتدقيق (/admin)</option>
-                  <option value="supplier">المورد وإدارة التوريد (/supplier)</option>
-                  <option value="delivery_rider">مندوب التوصيل — البندر والقرى (/rider)</option>
-                  <option value="super_admin">المدير العام — صلاحية كاملة (/admin)</option>
+                  <option value="cashier">الكاشير ونقطة البيع</option>
+                  <option value="accountant">المحاسب المالي والتدقيق</option>
+                  <option value="supplier">المورد وإدارة التوريد</option>
+                  <option value="delivery_rider">مندوب التوصيل — البندر والقرى</option>
+                  <option value="super_admin">المدير العام — صلاحية كاملة</option>
                 </select>
               </div>
 
@@ -530,7 +530,7 @@ export default function StaffAccountsManager({
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
                   placeholder="01XXXXXXXXX"
-                  className="w-full rounded-xl border border-[#231710]/20 bg-white px-3.5 py-2 text-sm text-[#231710] focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-xl border border-[#E8E0D5] bg-white px-3.5 py-2 text-sm text-[#231710] focus:border-[#231710] focus:outline-none"
                 />
               </div>
 
@@ -543,7 +543,7 @@ export default function StaffAccountsManager({
                   value={newNotes}
                   onChange={(e) => setNewNotes(e.target.value)}
                   placeholder="مثال: الوردية المسائية — فرع مسجد الزراعيين"
-                  className="w-full rounded-xl border border-[#231710]/20 bg-white px-3.5 py-2 text-sm text-[#231710] focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-xl border border-[#E8E0D5] bg-white px-3.5 py-2 text-sm text-[#231710] focus:border-[#231710] focus:outline-none"
                 />
               </div>
             </div>
@@ -552,17 +552,17 @@ export default function StaffAccountsManager({
               <button
                 type="button"
                 onClick={() => setShowCreateForm(false)}
-                className="rounded-xl border border-[#231710]/20 px-4 py-2 text-xs font-bold text-[#231710]"
+                className="rounded-xl border border-[#E8E0D5] bg-white px-4 py-2 text-xs font-bold text-[#231710]"
               >
                 إلغاء
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#231710] px-5 py-2 text-xs font-bold text-[#D4AF37] shadow hover:bg-[#3a261b] disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#231710] px-5 py-2 text-xs font-bold text-white hover:bg-[#3a261b] disabled:opacity-50"
               >
                 <UserCheck className="h-4 w-4" />
-                {submitting ? 'جاري التشفير والحفظ...' : 'حفظ وتفعيل حساب الموظف'}
+                {submitting ? 'جاري الحفظ...' : 'حفظ وتفعيل حساب الموظف'}
               </button>
             </div>
           </form>
@@ -749,7 +749,7 @@ export default function StaffAccountsManager({
                   required
                   value={editDisplayName}
                   onChange={(e) => setEditDisplayName(e.target.value)}
-                  className="w-full rounded-xl border border-[#231710]/20 px-3.5 py-2 text-sm text-[#231710]"
+                  className="w-full rounded-xl border border-[#E8E0D5] bg-white px-3.5 py-2 text-sm text-[#231710] outline-none focus:border-[#231710]"
                 />
               </div>
 
@@ -764,7 +764,7 @@ export default function StaffAccountsManager({
                     dir="ltr"
                     value={editUsername}
                     onChange={(e) => setEditUsername(e.target.value)}
-                    className="w-full rounded-xl border border-[#231710]/20 px-3.5 py-2 text-sm text-[#231710]"
+                    className="w-full rounded-xl border border-[#E8E0D5] bg-white px-3.5 py-2 text-sm text-[#231710] outline-none focus:border-[#231710]"
                   />
                 </div>
 
@@ -776,7 +776,7 @@ export default function StaffAccountsManager({
                     value={editRole}
                     disabled={Boolean(editingAccount.isPrimary)}
                     onChange={(e) => setEditRole(e.target.value as AdminRole)}
-                    className="w-full rounded-xl border border-[#231710]/20 bg-white px-3.5 py-2 text-sm font-bold text-[#231710] disabled:bg-gray-100"
+                    className="w-full rounded-xl border border-[#E8E0D5] bg-white px-3.5 py-2 text-sm font-bold text-[#231710] outline-none focus:border-[#231710] disabled:bg-[#FAF6F0]"
                   >
                     <option value="cashier">الكاشير ونقطة البيع</option>
                     <option value="accountant">المحاسب المالي</option>
@@ -798,7 +798,7 @@ export default function StaffAccountsManager({
                   value={editPassword}
                   onChange={(e) => setEditPassword(e.target.value)}
                   placeholder="أدخل كلمة مرور جديدة لتدويرها وإبطال الجلسات القديمة"
-                  className="w-full rounded-xl border border-[#231710]/20 px-3.5 py-2 text-sm text-[#231710]"
+                  className="w-full rounded-xl border border-[#E8E0D5] bg-white px-3.5 py-2 text-sm text-[#231710] outline-none focus:border-[#231710]"
                 />
               </div>
 
@@ -812,7 +812,7 @@ export default function StaffAccountsManager({
                     dir="ltr"
                     value={editPhone}
                     onChange={(e) => setEditPhone(e.target.value)}
-                    className="w-full rounded-xl border border-[#231710]/20 px-3.5 py-2 text-sm text-[#231710]"
+                    className="w-full rounded-xl border border-[#E8E0D5] bg-white px-3.5 py-2 text-sm text-[#231710] outline-none focus:border-[#231710]"
                   />
                 </div>
 
@@ -824,23 +824,23 @@ export default function StaffAccountsManager({
                     type="text"
                     value={editNotes}
                     onChange={(e) => setEditNotes(e.target.value)}
-                    className="w-full rounded-xl border border-[#231710]/20 px-3.5 py-2 text-sm text-[#231710]"
+                    className="w-full rounded-xl border border-[#E8E0D5] bg-white px-3.5 py-2 text-sm text-[#231710] outline-none focus:border-[#231710]"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 border-t border-[#231710]/10 pt-4">
+              <div className="flex items-center justify-end gap-3 border-t border-[#E8E0D5] pt-4">
                 <button
                   type="button"
                   onClick={() => setEditingAccount(null)}
-                  className="rounded-xl border border-[#231710]/20 px-4 py-2 text-xs font-bold text-[#231710]"
+                  className="rounded-xl border border-[#E8E0D5] bg-white px-4 py-2 text-xs font-bold text-[#231710] hover:bg-[#FAF6F0]"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-xl bg-[#231710] px-5 py-2 text-xs font-bold text-[#D4AF37] shadow hover:bg-[#3a261b] disabled:opacity-50"
+                  className="rounded-xl bg-[#231710] px-5 py-2 text-xs font-bold text-white hover:bg-[#3a261b] disabled:opacity-50"
                 >
                   {submitting ? 'جاري الحفظ...' : 'حفظ التعديلات'}
                 </button>

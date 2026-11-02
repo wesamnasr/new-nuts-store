@@ -12,12 +12,12 @@ interface BestSellersSectionProps {
 }
 
 const FILTER_TABS = [
-  { id: 'all', label: '🔥 الأكثر مبيعاً' },
-  { id: 'cat-snacks', label: '🌻 التسالي واللب' },
-  { id: 'cat-luxury-nuts', label: '🥜 المكسرات' },
-  { id: 'cat-coffee-espresso', label: '☕ البن والقهوة' },
-  { id: 'cat-honey-spices', label: '🍯 العسل والتمور' },
-  { id: 'cat-choco-candy', label: '🍫 الشوكولاتة' },
+  { id: 'all', label: 'الأكثر مبيعاً' },
+  { id: 'cat-snacks', label: 'التسالي واللب' },
+  { id: 'cat-luxury-nuts', label: 'المكسرات الفاخرة' },
+  { id: 'cat-coffee-espresso', label: 'البن والقهوة' },
+  { id: 'cat-honey-spices', label: 'العسل والتمور' },
+  { id: 'cat-choco-candy', label: 'الشوكولاتة' },
 ];
 
 export default function BestSellersSection({
@@ -47,14 +47,19 @@ export default function BestSellersSection({
   if (!products || products.length === 0) return null;
 
   return (
-    <section id="best-sellers" className="max-w-7xl mx-auto px-4 pt-8 sm:pt-10">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-        <h2 className="font-cairo text-xl sm:text-2xl font-black text-[#231710]">
-          الأكثر طلباً
-        </h2>
+    <section id="best-sellers" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 className="font-cairo text-xl sm:text-2xl font-bold text-[#231710]">
+            مختارات المحمصة
+          </h2>
+          <p className="text-xs sm:text-sm text-[#6E5D4F] mt-0.5">
+            اختر الوزن المناسب لك مباشرة من ثمن كيلو حتى كيلو كامل
+          </p>
+        </div>
 
-        {/* Category Filter Pills with Dedicated URLs & History Support */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+        {/* Clean Category Filter Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
           {FILTER_TABS.map((tab) => {
             const href = buildUrlWithParams('/', {
               category: tab.id === 'all' ? null : tab.id,
@@ -70,10 +75,10 @@ export default function BestSellersSection({
                     category: tab.id === 'all' ? null : tab.id,
                   });
                 }}
-                className={`px-3.5 py-2 rounded-xl text-xs font-cairo font-black whitespace-nowrap transition cursor-pointer ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-cairo font-bold whitespace-nowrap transition cursor-pointer ${
                   activeFilter === tab.id
-                    ? 'bg-[#231710] text-[#D4AF37] shadow-sm'
-                    : 'bg-white text-[#231710] border border-[#E6DFD3] hover:bg-[#F3ECE1]'
+                    ? 'bg-[#231710] text-[#FAF6F0]'
+                    : 'bg-white text-[#5C4A3D] border border-[#E8E0D5] hover:text-[#231710] hover:border-[#231710]/30'
                 }`}
               >
                 {tab.label}
@@ -84,20 +89,18 @@ export default function BestSellersSection({
       </div>
 
       {/* 4-Column Product Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {displayedProducts.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
       </div>
 
-      <div className="mt-6 text-center">
+      <div className="mt-8 text-center">
         <Link
-          href={
-            activeFilter === 'all' ? '/shop' : `/shop?cat=${activeFilter}`
-          }
-          className="inline-flex items-center gap-2 bg-[#231710] hover:bg-[#3a261a] text-[#D4AF37] font-cairo font-black text-xs sm:text-sm px-6 py-3 rounded-2xl shadow transition"
+          href={activeFilter === 'all' ? '/shop' : `/shop?cat=${activeFilter}`}
+          className="inline-flex items-center gap-2 bg-white hover:bg-[#F4EFE6] text-[#231710] border border-[#E8E0D5] font-cairo font-bold text-sm px-6 py-3 rounded-xl transition"
         >
-          <span>عرض كل المنتجات</span>
+          <span>عرض جميع المنتجات</span>
           <ArrowLeft className="w-4 h-4" />
         </Link>
       </div>

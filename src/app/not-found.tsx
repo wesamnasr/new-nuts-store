@@ -1,26 +1,29 @@
 import Link from 'next/link';
- 
+import { Compass } from 'lucide-react';
+
 export const dynamic = 'force-static';
- 
+
 export default function NotFound() {
   return (
-    <div className="min-h-[55vh] flex items-center justify-center px-4 py-8">
-      <div className="max-w-xs w-full text-center bg-white rounded-2xl shadow-xs border border-brand-100 p-5">
-        <div className="w-11 h-11 mx-auto mb-3 bg-brand-50 border border-brand-200 rounded-full flex items-center justify-center text-xl">
-          🥜
+    <div className="min-h-[60vh] bg-[#FAF6F0] flex items-center justify-center px-4 py-12">
+      <div className="max-w-sm w-full text-center bg-white rounded-2xl border border-[#E8E0D5] p-6 sm:p-8 space-y-4">
+        <div className="w-12 h-12 mx-auto bg-[#FAF6F0] border border-[#E8E0D5] rounded-2xl flex items-center justify-center text-[#9A6836]">
+          <Compass className="w-5 h-5" />
         </div>
-        <span className="inline-block px-2 py-0.5 bg-brand-100 text-brand-800 text-[10px] font-bold rounded-full mb-1.5">
-          خطأ 404
-        </span>
-        <h1 className="text-lg sm:text-xl font-extrabold text-brand-950 mb-1.5">
-          الصفحة غير موجودة
-        </h1>
-        <p className="text-brand-700 text-[11px] leading-relaxed mb-4">
-          عذراً، الصفحة التي تبحث عنها غير متوفرة أو ربما تم نقلها أو حذفها. يمكنك العودة إلى المتجر وتصفح منتجاتنا الطازجة.
-        </p>
+        <div className="space-y-1.5">
+          <span className="inline-block px-2.5 py-0.5 bg-[#FAF6F0] text-[#9A6836] border border-[#E8E0D5] text-xs font-bold rounded-lg">
+            خطأ 404
+          </span>
+          <h1 className="font-cairo text-xl font-bold text-[#231710]">
+            الصفحة غير موجودة
+          </h1>
+          <p className="text-[#5C4A3D] text-xs sm:text-sm leading-relaxed">
+            عذراً، الصفحة التي تبحث عنها غير متوفرة أو تم نقلها. يمكنك العودة إلى المتجر وتصفح منتجاتنا الطازجة.
+          </p>
+        </div>
         <Link
           href="/"
-          className="inline-flex items-center justify-center w-full px-3.5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-colors shadow-xs hover:shadow-sm"
+          className="inline-flex items-center justify-center w-full px-4 py-3 bg-[#231710] hover:bg-[#362419] text-[#FAF6F0] font-cairo text-xs sm:text-sm font-bold rounded-xl transition-colors"
         >
           العودة إلى الصفحة الرئيسية
         </Link>

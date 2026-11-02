@@ -26,7 +26,6 @@ import {
   ExternalLink,
   ShoppingBag,
   CreditCard,
-  Sparkles,
   ShoppingCart,
   Percent,
   Archive,
@@ -102,8 +101,8 @@ const EXPENSE_CATEGORY_LABELS: Record<string, string> = {
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   cod: 'نقدي / كاش وعند الاستلام',
-  cash: 'نقدي بالدرج (Cash)',
-  instapay: 'إنستا باي (InstaPay)',
+  cash: 'نقدي بالدرج',
+  instapay: 'إنستا باي',
   vodafone_cash: 'فودافون كاش',
   vip_wallet: 'محفظة VIP',
 };
@@ -658,14 +657,14 @@ export default function AccountantIsolationPortal({
       {/* ===================================================================== */}
       {/* TOP HEADER BANNER + QUICK LINKS & EXCEL EXPORTS                       */}
       {/* ===================================================================== */}
-      <div className="bg-gradient-to-l from-indigo-950 via-brand-900 to-brand-950 rounded-3xl p-5 md:p-6 text-white shadow-xl border border-indigo-500/30">
+      <div className="bg-white rounded-2xl p-5 md:p-6 text-[#231710] border border-[#E8E0D5]">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/40 text-indigo-200 text-[11px] font-black">
-              <Calculator className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FAF6F0] border border-[#E8E0D5] text-[#6B5A4E] text-[11px] font-bold">
+              <Calculator className="w-3.5 h-3.5 text-[#9A6836]" />
               <span>مركز التقارير المالية والدخل اليومي والرقابة المحاسبية - وضع المراجعة والتدقيق المالي (Read-Only Audit)</span>
             </div>
-            <h2 className="text-xl md:text-2xl font-black">
+            <h2 className="text-xl md:text-2xl font-bold text-[#231710]">
               التقارير المالية الشاملة وتدقيق القنوات والورديات والمخزون
             </h2>
           </div>
@@ -677,9 +676,9 @@ export default function AccountantIsolationPortal({
               onClick={() =>
                 downloadBlobCsv(generateFinancialSummaryCsv(report), `hafsa-financial-summary-${datePreset}`)
               }
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-black text-xs shadow transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#FAF6F0] hover:bg-[#F2EAE0] text-[#231710] border border-[#E8E0D5] font-bold text-xs transition cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5 text-[#9A6836]" />
               <span>قائمة الدخل والأرباح (CSV)</span>
             </button>
             <button
@@ -689,9 +688,9 @@ export default function AccountantIsolationPortal({
                 else if (onExportOrdersCsv) onExportOrdersCsv();
                 else downloadBlobCsv(generateOrdersCsv(filteredOrders), `hafsa-orders-audit-${datePreset}`);
               }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black text-xs shadow transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#FAF6F0] hover:bg-[#F2EAE0] text-[#231710] border border-[#E8E0D5] font-bold text-xs transition cursor-pointer"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <FileSpreadsheet className="w-3.5 h-3.5 text-[#9A6836]" />
               <span>تصدير الفواتير (CSV)</span>
             </button>
             <button
@@ -702,9 +701,9 @@ export default function AccountantIsolationPortal({
                   `hafsa-shifts-zreport-${datePreset}`
                 )
               }
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-black text-xs shadow transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#FAF6F0] hover:bg-[#F2EAE0] text-[#231710] border border-[#E8E0D5] font-bold text-xs transition cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5 text-[#9A6836]" />
               <span>تصدير الورديات (CSV)</span>
             </button>
             <button
@@ -715,9 +714,9 @@ export default function AccountantIsolationPortal({
                   `hafsa-operating-expenses-${datePreset}`
                 )
               }
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/90 hover:bg-rose-400 text-white font-black text-xs shadow transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#FAF6F0] hover:bg-[#F2EAE0] text-[#231710] border border-[#E8E0D5] font-bold text-xs transition cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5 text-[#9A6836]" />
               <span>دفتر المصروفات (CSV)</span>
             </button>
             <button
@@ -728,15 +727,15 @@ export default function AccountantIsolationPortal({
                   `hafsa-supply-invoices-${datePreset}`
                 )
               }
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-black text-xs transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#FAF6F0] hover:bg-[#F2EAE0] text-[#231710] border border-[#E8E0D5] font-bold text-xs transition cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5 text-[#9A6836]" />
               <span>سجل التوريدات (CSV)</span>
             </button>
             <button
               type="button"
               onClick={() => setShowInventoryModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#C88A4B] hover:bg-[#b0753a] text-white font-black text-xs shadow transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#231710] hover:bg-[#3A271C] text-white font-bold text-xs transition cursor-pointer"
             >
               <Scale className="w-3.5 h-3.5" />
               <span>دفتر تسويات وهالك الجرد (Audit)</span>
@@ -745,59 +744,59 @@ export default function AccountantIsolationPortal({
         </div>
 
         {/* Accountant Quick Navigation Shortcuts Row + Display Mode Switcher */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3.5 border-t border-white/10">
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3.5 border-t border-[#E8E0D5]">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-bold text-indigo-200 ml-1">
-              🔗 انتقال سريع لأقسام الداشبورد:
+            <span className="text-[11px] font-bold text-[#6B5A4E] ml-1">
+              انتقال سريع لأقسام الداشبورد:
             </span>
             {onOpenOrdersTab && (
               <button
                 type="button"
                 onClick={onOpenOrdersTab}
-                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-black flex items-center gap-1.5 transition cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F2EAE0] text-[#231710] border border-[#E8E0D5] text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer"
               >
-                <Receipt className="w-3.5 h-3.5 text-gold-400" />
+                <Receipt className="w-3.5 h-3.5 text-[#9A6836]" />
                 <span>جدول الفواتير والكاشير ({orders.length})</span>
-                <ExternalLink className="w-3 h-3 opacity-75" />
+                <ExternalLink className="w-3 h-3 opacity-60" />
               </button>
             )}
             {onOpenSupplyInvoicesTab && (
               <button
                 type="button"
                 onClick={onOpenSupplyInvoicesTab}
-                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-black flex items-center gap-1.5 transition cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F2EAE0] text-[#231710] border border-[#E8E0D5] text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer"
               >
-                <Truck className="w-3.5 h-3.5 text-amber-400" />
+                <Truck className="w-3.5 h-3.5 text-[#9A6836]" />
                 <span>فواتير الشراء والتوريد ({supplyInvoices.length})</span>
-                <ExternalLink className="w-3 h-3 opacity-75" />
+                <ExternalLink className="w-3 h-3 opacity-60" />
               </button>
             )}
             {onOpenOperationsTab && (
               <button
                 type="button"
                 onClick={onOpenOperationsTab}
-                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-black flex items-center gap-1.5 transition cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F2EAE0] text-[#231710] border border-[#E8E0D5] text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer"
               >
-                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                <Layers className="w-3.5 h-3.5 text-[#9A6836]" />
                 <span>الأوزان والعروض والـ VIP</span>
-                <ExternalLink className="w-3 h-3 opacity-75" />
+                <ExternalLink className="w-3 h-3 opacity-60" />
               </button>
             )}
             {onOpenProductsTab && (
               <button
                 type="button"
                 onClick={onOpenProductsTab}
-                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[11px] font-black flex items-center gap-1.5 transition cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F2EAE0] text-[#231710] border border-[#E8E0D5] text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer"
               >
-                <ShoppingBag className="w-3.5 h-3.5 text-sky-400" />
+                <ShoppingBag className="w-3.5 h-3.5 text-[#9A6836]" />
                 <span>الأصناف والتكاليف والأسعار ({products.length})</span>
-                <ExternalLink className="w-3 h-3 opacity-75" />
+                <ExternalLink className="w-3 h-3 opacity-60" />
               </button>
             )}
           </div>
 
           {/* Display Mode Toggle (Both / Cards / Tables) */}
-          <div className="inline-flex items-center bg-black/30 p-1 rounded-xl border border-white/15 gap-1">
+          <div className="inline-flex items-center bg-[#FAF6F0] p-1 rounded-xl border border-[#E8E0D5] gap-1">
             {(
               [
                 { id: 'both', label: 'بطاقات + جداول' },
@@ -809,10 +808,10 @@ export default function AccountantIsolationPortal({
                 key={m.id}
                 type="button"
                 onClick={() => setDisplayMode(m.id)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-black flex items-center gap-1 transition cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition cursor-pointer ${
                   displayMode === m.id
-                    ? 'bg-gold-500 text-brand-950 shadow-2xs'
-                    : 'text-white/80 hover:bg-white/10'
+                    ? 'bg-[#231710] text-white'
+                    : 'text-[#6B5A4E] hover:text-[#231710]'
                 }`}
               >
                 {m.id === 'table' ? (
@@ -830,12 +829,12 @@ export default function AccountantIsolationPortal({
       {/* ===================================================================== */}
       {/* UNIFIED MULTI-CRITERIA ACCOUNTANT FILTER SUITE                        */}
       {/* ===================================================================== */}
-      <div className="bg-white rounded-3xl p-4 sm:p-5 border border-brand-200 shadow-sm space-y-3.5">
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E8E0D5] space-y-3.5">
         {/* Row 1: Date Range Preset Pills + Custom Date Picker + Reset */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 text-brand-950 font-black text-xs ml-1">
-              <Calendar className="w-4 h-4 text-indigo-600" />
+            <div className="flex items-center gap-1.5 text-[#231710] font-bold text-xs ml-1">
+              <Calendar className="w-4 h-4 text-[#9A6836]" />
               <span>الفترة الزمنية للتقارير:</span>
             </div>
             {(
@@ -854,10 +853,10 @@ export default function AccountantIsolationPortal({
                   setDatePreset(p.id);
                   updateUrlQueryParams({ range: p.id === 'all' ? null : p.id });
                 }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                   datePreset === p.id
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'bg-brand-50 text-brand-800 hover:bg-brand-100 border border-brand-200/70'
+                    ? 'bg-[#231710] text-white'
+                    : 'bg-[#FAF6F0] text-[#231710] hover:bg-[#F2EAE0] border border-[#E8E0D5]'
                 }`}
               >
                 {p.label}
@@ -869,7 +868,7 @@ export default function AccountantIsolationPortal({
             <button
               type="button"
               onClick={resetAllFilters}
-              className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-black flex items-center gap-1.5 transition cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>إعادة ضبط الفلاتر</span>
@@ -878,42 +877,42 @@ export default function AccountantIsolationPortal({
         </div>
 
         {datePreset === 'custom' && (
-          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-brand-100">
-            <span className="text-xs font-bold text-brand-700">من تاريخ:</span>
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#E8E0D5]">
+            <span className="text-xs font-bold text-[#6B5A4E]">من تاريخ:</span>
             <input
               type="date"
               value={customStart}
               onChange={(e) => setCustomStart(e.target.value)}
-              className="px-3 py-1.5 rounded-xl border border-brand-200 bg-brand-50 text-xs font-bold"
+              className="px-3 py-1.5 rounded-xl border border-[#E8E0D5] bg-white text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
             />
-            <span className="text-xs font-bold text-brand-700">إلى تاريخ:</span>
+            <span className="text-xs font-bold text-[#6B5A4E]">إلى تاريخ:</span>
             <input
               type="date"
               value={customEnd}
               onChange={(e) => setCustomEnd(e.target.value)}
-              className="px-3 py-1.5 rounded-xl border border-brand-200 bg-brand-50 text-xs font-bold"
+              className="px-3 py-1.5 rounded-xl border border-[#E8E0D5] bg-white text-xs font-bold text-[#231710] outline-none focus:border-[#231710]"
             />
           </div>
         )}
 
         {/* Row 2: Search + Channel Filter + Payment Filter + Status/Margin Filter */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-2.5 border-t border-brand-100">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-2.5 border-t border-[#E8E0D5]">
           {/* Quick Search */}
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-brand-500 absolute right-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-[#6B5A4E] absolute right-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="بحث برقم فاتورة، عميل، كاشير، مورد، صنف..."
-              className="w-full bg-brand-50 border border-brand-200 rounded-xl pr-8 pl-3 py-2 text-xs font-bold text-brand-950 focus:outline-none focus:border-indigo-600"
+              className="w-full bg-white border border-[#E8E0D5] rounded-xl pr-8 pl-3 py-2 text-xs font-bold text-[#231710] focus:outline-none focus:border-[#231710]"
             />
           </div>
 
           {/* Channel Filter */}
-          <div className="flex items-center gap-1.5 bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5">
-            <Filter className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-            <span className="text-[11px] font-bold text-brand-600 shrink-0">القناة:</span>
+          <div className="flex items-center gap-1.5 bg-white border border-[#E8E0D5] rounded-xl px-3 py-1.5">
+            <Filter className="w-3.5 h-3.5 text-[#9A6836] shrink-0" />
+            <span className="text-xs font-bold text-[#6B5A4E] shrink-0">القناة:</span>
             <select
               value={channelFilter}
               onChange={(e) => {
@@ -921,18 +920,18 @@ export default function AccountantIsolationPortal({
                 setChannelFilter(next);
                 updateUrlQueryParams({ channel: next === 'all' ? null : next });
               }}
-              className="w-full bg-transparent text-xs font-black text-brand-950 focus:outline-none"
+              className="w-full bg-transparent text-xs font-bold text-[#231710] focus:outline-none"
             >
-              <option value="all">كل القنوات (الأونلاين + الكاشير)</option>
-              <option value="pos">كاشير الفرع (POS) فقط</option>
+              <option value="all">كل القنوات (الأونلاين والكاشير)</option>
+              <option value="pos">كاشير الفرع فقط</option>
               <option value="online">المتجر الأونلاين فقط</option>
             </select>
           </div>
 
           {/* Payment Method Filter */}
-          <div className="flex items-center gap-1.5 bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5">
-            <CreditCard className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span className="text-[11px] font-bold text-brand-600 shrink-0">الدفع:</span>
+          <div className="flex items-center gap-1.5 bg-white border border-[#E8E0D5] rounded-xl px-3 py-1.5">
+            <CreditCard className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+            <span className="text-xs font-bold text-[#6B5A4E] shrink-0">الدفع:</span>
             <select
               value={paymentFilter}
               onChange={(e) => {
@@ -940,11 +939,11 @@ export default function AccountantIsolationPortal({
                 setPaymentFilter(next);
                 updateUrlQueryParams({ pay: next === 'all' ? null : next });
               }}
-              className="w-full bg-transparent text-xs font-black text-brand-950 focus:outline-none"
+              className="w-full bg-transparent text-xs font-bold text-[#231710] focus:outline-none"
             >
               <option value="all">كل طرق الدفع</option>
               <option value="cod">نقدي بالدرج وعند الاستلام</option>
-              <option value="instapay">تحويل إنستا باي (InstaPay)</option>
+              <option value="instapay">تحويل إنستا باي</option>
               <option value="vodafone_cash">فودافون كاش</option>
               <option value="vip_wallet">محفظة نقاط VIP</option>
             </select>
@@ -952,27 +951,27 @@ export default function AccountantIsolationPortal({
 
           {/* Status / Margin Filter */}
           {activeSubTab === 'margins' ? (
-            <div className="flex items-center gap-1.5 bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5">
-              <Layers className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span className="text-[11px] font-bold text-brand-600 shrink-0">الهامش:</span>
+            <div className="flex items-center gap-1.5 bg-white border border-[#E8E0D5] rounded-xl px-3 py-1.5">
+              <Layers className="w-3.5 h-3.5 text-[#9A6836] shrink-0" />
+              <span className="text-xs font-bold text-[#6B5A4E] shrink-0">الهامش:</span>
               <select
                 value={marginTierFilter}
                 onChange={(e) => setMarginTierFilter(e.target.value as any)}
-                className="w-full bg-transparent text-xs font-black text-brand-950 focus:outline-none"
+                className="w-full bg-transparent text-xs font-bold text-[#231710] focus:outline-none"
               >
                 <option value="all">كل مستويات الربحية</option>
-                <option value="high">✅ ربحية مرتفعة (≥ 20%)</option>
-                <option value="low">⚠️ ربحية منخفضة (&lt; 15%)</option>
+                <option value="high">ربحية مرتفعة (≥ 20%)</option>
+                <option value="low">ربحية منخفضة (&lt; 15%)</option>
               </select>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span className="text-[11px] font-bold text-brand-600 shrink-0">الحالة:</span>
+            <div className="flex items-center gap-1.5 bg-white border border-[#E8E0D5] rounded-xl px-3 py-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#9A6836] shrink-0" />
+              <span className="text-xs font-bold text-[#6B5A4E] shrink-0">الحالة:</span>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="w-full bg-transparent text-xs font-black text-brand-950 focus:outline-none"
+                className="w-full bg-transparent text-xs font-bold text-[#231710] focus:outline-none"
               >
                 <option value="all">كل الحالات</option>
                 <option value="completed">مكتملة / معتمدة / مغلقة</option>
@@ -989,40 +988,40 @@ export default function AccountantIsolationPortal({
       {/* ===================================================================== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         {/* KPI 1: Total Gross Revenue */}
-        <div className="bg-white rounded-2xl p-4 border border-brand-200 shadow-xs flex flex-col justify-between">
+        <div className="bg-white rounded-2xl p-4 border border-[#E8E0D5] flex flex-col justify-between">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-brand-600">إجمالي الإيرادات (Total Revenue)</span>
-            <DollarSign className="w-4 h-4 text-indigo-600" />
+            <span className="text-xs font-bold text-[#6B5A4E]">إجمالي الإيرادات</span>
+            <DollarSign className="w-4 h-4 text-[#9A6836]" />
           </div>
-          <p className="text-xl font-black text-brand-950">
+          <p className="text-xl font-bold text-[#231710]">
             {report.totalRevenue.toLocaleString('ar-EG')} <span className="text-xs">ج.م</span>
           </p>
-          <p className="text-[10.5px] text-brand-500 mt-1 font-bold">
+          <p className="text-xs text-[#6B5A4E] mt-1 font-medium">
             مجموع {report.onlineMetrics.orderCount + report.posMetrics.orderCount} طلب وفاتورة مبيعات
           </p>
         </div>
 
         {/* KPI 2: Online vs POS Distribution */}
-        <div className="bg-white rounded-2xl p-4 border border-brand-200 shadow-xs flex flex-col justify-between">
+        <div className="bg-white rounded-2xl p-4 border border-[#E8E0D5] flex flex-col justify-between">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-brand-600">توزيع القنوات (Online vs POS)</span>
-            <ShoppingCart className="w-4 h-4 text-blue-600" />
+            <span className="text-xs font-bold text-[#6B5A4E]">توزيع القنوات</span>
+            <ShoppingCart className="w-4 h-4 text-[#9A6836]" />
           </div>
           <div className="space-y-1 text-xs">
             <div className="flex justify-between">
-              <span className="text-brand-600 font-bold">المتجر الأونلاين:</span>
-              <span className="font-black text-indigo-700">
+              <span className="text-[#6B5A4E] font-medium">المتجر الأونلاين:</span>
+              <span className="font-bold text-[#231710]">
                 {report.onlineMetrics.grossRevenue.toLocaleString('ar-EG')} ج.م
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-brand-600 font-bold">كاشير الفرع:</span>
-              <span className="font-black text-amber-700">
+              <span className="text-[#6B5A4E] font-medium">كاشير الفرع:</span>
+              <span className="font-bold text-[#9A6836]">
                 {report.posMetrics.grossRevenue.toLocaleString('ar-EG')} ج.م
               </span>
             </div>
           </div>
-          <p className="text-[10.5px] text-brand-500 mt-1 font-bold">
+          <p className="text-xs text-[#6B5A4E] mt-1 font-medium">
             {report.totalRevenue > 0
               ? `نسبة الأونلاين: ${roundCurrency((report.onlineMetrics.grossRevenue / report.totalRevenue) * 100)}%`
               : 'لا توجد مبيعات في الفترة'}
@@ -1030,91 +1029,91 @@ export default function AccountantIsolationPortal({
         </div>
 
         {/* KPI 3: COGS */}
-        <div className="bg-white rounded-2xl p-4 border border-brand-200 shadow-xs flex flex-col justify-between">
+        <div className="bg-white rounded-2xl p-4 border border-[#E8E0D5] flex flex-col justify-between">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-brand-600">تكلفة البضاعة المباعة (COGS)</span>
-            <Archive className="w-4 h-4 text-amber-600" />
+            <span className="text-xs font-bold text-[#6B5A4E]">تكلفة البضاعة المباعة</span>
+            <Archive className="w-4 h-4 text-[#9A6836]" />
           </div>
-          <p className="text-xl font-black text-amber-800">
+          <p className="text-xl font-bold text-[#9A6836]">
             {report.totalCogs.toLocaleString('ar-EG')} <span className="text-xs">ج.م</span>
           </p>
-          <p className="text-[10.5px] text-brand-500 mt-1 font-bold">
+          <p className="text-xs text-[#6B5A4E] mt-1 font-medium">
             تمثل {report.totalRevenue > 0 ? roundCurrency((report.totalCogs / report.totalRevenue) * 100) : 0}% من إجمالي المبيعات
           </p>
         </div>
 
         {/* KPI 4: Gross Profit & Operating Expenses */}
-        <div className="bg-white rounded-2xl p-4 border border-brand-200 shadow-xs flex flex-col justify-between">
+        <div className="bg-white rounded-2xl p-4 border border-[#E8E0D5] flex flex-col justify-between">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-brand-600">المصروفات التشغيلية ومجمل الربح</span>
+            <span className="text-xs font-bold text-[#6B5A4E]">المصروفات التشغيلية ومجمل الربح</span>
             <Wallet className="w-4 h-4 text-rose-600" />
           </div>
           <div className="space-y-1 text-xs">
             <div className="flex justify-between">
-              <span className="text-brand-600 font-bold">مجمل الربح:</span>
-              <span className="font-black text-emerald-700">
+              <span className="text-[#6B5A4E] font-medium">مجمل الربح:</span>
+              <span className="font-bold text-emerald-700">
                 {report.grossProfit.toLocaleString('ar-EG')} ج.م ({report.grossMarginPercent}%)
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-brand-600 font-bold">المصروفات النثرية:</span>
-              <span className="font-black text-rose-600">
+              <span className="text-[#6B5A4E] font-medium">المصروفات النثرية:</span>
+              <span className="font-bold text-rose-600">
                 -{report.operatingExpenses.toLocaleString('ar-EG')} ج.م ({filteredExpenses.length})
               </span>
             </div>
           </div>
-          <p className="text-[10.5px] text-brand-500 mt-1 font-bold">
+          <p className="text-xs text-[#6B5A4E] mt-1 font-medium">
             مصروفات الفرع المسحوبة من الدرج
           </p>
         </div>
 
         {/* KPI 5: Net Operating Profit */}
-        <div className="bg-emerald-950 text-white rounded-2xl p-4 border border-emerald-700 shadow-md flex flex-col justify-between">
+        <div className="bg-white rounded-2xl p-4 border border-[#E8E0D5] flex flex-col justify-between">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-emerald-200">صافي الربح الفعلي (Net Profit)</span>
-            <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-bold text-[#6B5A4E]">صافي الربح الفعلي</span>
+            <ArrowUpRight className="w-4 h-4 text-emerald-600" />
           </div>
-          <p className="text-xl font-black text-emerald-300">
+          <p className="text-xl font-bold text-emerald-700">
             {report.netOperatingProfit.toLocaleString('ar-EG')} <span className="text-xs">ج.م</span>
           </p>
-          <p className="text-[10.5px] text-emerald-200/80 mt-1 font-bold">
+          <p className="text-xs text-[#6B5A4E] mt-1 font-medium">
             الإيرادات - تكلفة الخامات - المصروفات
           </p>
         </div>
 
         {/* KPI 6: Net Margin % */}
-        <div className="bg-white rounded-2xl p-4 border border-brand-200 shadow-xs flex flex-col justify-between">
+        <div className="bg-white rounded-2xl p-4 border border-[#E8E0D5] flex flex-col justify-between">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-brand-600">هامش الربح الصافي (Net Margin)</span>
-            <Percent className="w-4 h-4 text-purple-600" />
+            <span className="text-xs font-bold text-[#6B5A4E]">هامش الربح الصافي</span>
+            <Percent className="w-4 h-4 text-[#9A6836]" />
           </div>
           <p
-            className={`text-xl font-black ${
-              report.netMarginPercent >= 15 ? 'text-purple-700' : 'text-amber-700'
+            className={`text-xl font-bold ${
+              report.netMarginPercent >= 15 ? 'text-[#231710]' : 'text-[#9A6836]'
             }`}
           >
             {report.netMarginPercent}%
           </p>
-          <p className="text-[10.5px] text-brand-500 mt-1 font-bold">
+          <p className="text-xs text-[#6B5A4E] mt-1 font-medium">
             {report.netMarginPercent >= 15
-              ? '✅ نسبة صحية ومطابقة لمعايير الربحية'
-              : '⚠️ أقل من المستهدف المرجعي (15%)'}
+              ? 'نسبة صحية ومطابقة لمعايير الربحية'
+              : 'أقل من المستهدف المرجعي (15%)'}
           </p>
         </div>
 
         {/* KPI 7: Cash Drawer Reconciliation */}
-        <div className="bg-white rounded-2xl p-4 border border-brand-200 shadow-xs flex flex-col justify-between">
+        <div className="bg-white rounded-2xl p-4 border border-[#E8E0D5] flex flex-col justify-between">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-brand-600">مطابقة دروج الكاشير</span>
-            <Receipt className="w-4 h-4 text-brand-700" />
+            <span className="text-xs font-bold text-[#6B5A4E]">مطابقة دروج الكاشير</span>
+            <Receipt className="w-4 h-4 text-[#9A6836]" />
           </div>
           <div className="flex items-baseline gap-2">
             <span
-              className={`text-lg font-black ${
+              className={`text-lg font-bold ${
                 report.totalDrawerVariance === 0
                   ? 'text-emerald-700'
                   : report.totalDrawerVariance > 0
-                  ? 'text-blue-700'
+                  ? 'text-[#231710]'
                   : 'text-rose-700'
               }`}
             >
@@ -1124,12 +1123,12 @@ export default function AccountantIsolationPortal({
               ج.م
             </span>
             <span
-              className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+              className={`text-xs px-2 py-0.5 rounded-full font-bold ${
                 report.totalDrawerVariance === 0
-                  ? 'bg-emerald-100 text-emerald-800'
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                   : report.totalDrawerVariance > 0
-                  ? 'bg-blue-100 text-blue-800'
-                  : 'bg-rose-100 text-rose-800'
+                  ? 'bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5]'
+                  : 'bg-rose-50 text-rose-800 border border-rose-200'
               }`}
             >
               {report.totalDrawerVariance === 0
@@ -1139,7 +1138,7 @@ export default function AccountantIsolationPortal({
                 : 'عجز بالدرج'}
             </span>
           </div>
-          <div className="text-[10px] text-brand-500 mt-1 font-bold flex justify-between">
+          <div className="text-xs text-[#6B5A4E] mt-1 font-medium flex justify-between">
             <span>عجز: {report.totalDrawerShortage} ج</span>
             <span>فائض: +{report.totalDrawerSurplus} ج</span>
             <span>الورديات: {report.shiftAudits.length}</span>
@@ -1147,26 +1146,26 @@ export default function AccountantIsolationPortal({
         </div>
 
         {/* KPI 8: Supply & VIP Liabilities */}
-        <div className="bg-white rounded-2xl p-4 border border-brand-200 shadow-xs flex flex-col justify-between">
+        <div className="bg-white rounded-2xl p-4 border border-[#E8E0D5] flex flex-col justify-between">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-brand-600">التوريدات ومحافظ VIP</span>
-            <Crown className="w-4 h-4 text-amber-600" />
+            <span className="text-xs font-bold text-[#6B5A4E]">التوريدات ومحافظ VIP</span>
+            <Crown className="w-4 h-4 text-[#9A6836]" />
           </div>
           <div className="space-y-1 text-xs">
             <div className="flex justify-between">
-              <span className="text-brand-600 font-bold">توريد معتمد:</span>
-              <span className="font-black text-brand-950">
+              <span className="text-[#6B5A4E] font-medium">توريد معتمد:</span>
+              <span className="font-bold text-[#231710]">
                 {report.supplyFinancials.approvedTotal.toLocaleString('ar-EG')} ج.م
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-brand-600 font-bold">رصيد محافظ VIP:</span>
-              <span className="font-black text-purple-700">
+              <span className="text-[#6B5A4E] font-medium">رصيد محافظ VIP:</span>
+              <span className="font-bold text-[#9A6836]">
                 {report.vipLiabilities.totalPointsBalance.toLocaleString('ar-EG')} ج.م
               </span>
             </div>
           </div>
-          <p className="text-[10.5px] text-amber-700 mt-1 font-bold">
+          <p className="text-xs text-[#6B5A4E] mt-1 font-medium">
             توريد معلق: {report.supplyFinancials.pendingTotal.toLocaleString('ar-EG')} ج.م ({report.vipLiabilities.membersCount} عضو VIP)
           </p>
         </div>
@@ -1175,21 +1174,21 @@ export default function AccountantIsolationPortal({
       {/* ===================================================================== */}
       {/* READ-ONLY RIDER COD CUSTODY & CASH DRAWER HANDOVER AUDIT STRIP         */}
       {/* ===================================================================== */}
-      <div className="bg-white rounded-2xl p-4 border border-brand-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white rounded-2xl p-4 border border-[#E8E0D5] flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-[#FAF6F0] border border-[#E8E0D5] text-[#9A6836] flex items-center justify-center shrink-0">
             <Truck className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-xs sm:text-sm font-black text-brand-950">
-                مراجعة ذمم وعهد تحصيل المناديب (Rider COD Custody Audit)
+              <h3 className="text-xs sm:text-sm font-bold text-[#231710]">
+                مراجعة ذمم وعهد تحصيل المناديب
               </h3>
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-                🔒 رقابة محاسبية للقراءة فقط
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#FAF6F0] text-[#6B5A4E] border border-[#E8E0D5]">
+                رقابة محاسبية للقراءة فقط
               </span>
             </div>
-            <p className="text-[10.5px] text-brand-600 font-bold">
+            <p className="text-xs text-[#6B5A4E] font-medium">
               مطابقة نقدية طلبات الأونلاين المُسلَّمة (الدفع عند الاستلام) بين عهدة الطيارين ودرج الكاشير
             </p>
           </div>
@@ -1234,7 +1233,7 @@ export default function AccountantIsolationPortal({
       {/* ===================================================================== */}
       {/* INTERNAL REPORT TABS BAR (INSIDE REPORTS SECTION)                     */}
       {/* ===================================================================== */}
-      <div className="flex flex-wrap items-center gap-2 bg-white p-2 rounded-2xl border border-brand-200 shadow-xs">
+      <div className="flex flex-wrap items-center gap-2 bg-white p-2 rounded-2xl border border-[#E8E0D5]">
         {[
           {
             id: 'daily_income' as const,
@@ -1283,10 +1282,10 @@ export default function AccountantIsolationPortal({
                   subtab: tab.id === 'daily_income' ? null : tab.id,
                 });
               }}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                 isActive
-                  ? 'bg-brand-950 text-gold-400 shadow-xs'
-                  : 'text-brand-700 hover:bg-brand-50'
+                  ? 'bg-[#231710] text-white'
+                  : 'text-[#6B5A4E] hover:bg-[#FAF6F0] hover:text-[#231710]'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -1303,132 +1302,132 @@ export default function AccountantIsolationPortal({
         <div className="space-y-5">
           {/* Today's Live Treasury & Daily Income Highlight Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-gradient-to-br from-brand-950 to-brand-900 text-white rounded-3xl p-5 border border-gold-500/30 shadow-md space-y-2">
+            <div className="bg-white rounded-2xl p-5 border border-[#E8E0D5] space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-gold-400">📅 إيراد اليوم الحالي</span>
-                <span className="text-[10px] font-bold bg-white/10 px-2.5 py-0.5 rounded-full">
+                <span className="text-xs font-bold text-[#6B5A4E]">إيراد اليوم الحالي</span>
+                <span className="text-[10px] font-bold bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] px-2.5 py-0.5 rounded-full">
                   {todaySnapshot.ordersCount} فاتورة اليوم
                 </span>
               </div>
-              <p className="text-2xl font-black text-white">
+              <p className="text-2xl font-bold text-[#231710]">
                 {todaySnapshot.revenue.toLocaleString('ar-EG')} ج.م
               </p>
-              <div className="flex items-center justify-between text-[11px] text-brand-200 pt-2 border-t border-white/10">
+              <div className="flex items-center justify-between text-[11px] text-[#6B5A4E] pt-2 border-t border-[#E8E0D5]">
                 <span>كاشير: {todaySnapshot.posRevenue.toLocaleString('ar-EG')} ج</span>
                 <span>أونلاين: {todaySnapshot.onlineRevenue.toLocaleString('ar-EG')} ج</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl p-5 border border-emerald-200 shadow-xs space-y-2">
+            <div className="bg-white rounded-2xl p-5 border border-[#E8E0D5] space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-emerald-800">💵 النقدية الحالية بالدرج</span>
+                <span className="text-xs font-bold text-[#6B5A4E]">النقدية الحالية بالدرج</span>
                 <span
-                  className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${
+                  className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
                     todaySnapshot.hasOpenShift
-                      ? 'bg-emerald-100 text-emerald-800'
+                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                       : 'bg-gray-100 text-gray-600'
                   }`}
                 >
                   {todaySnapshot.hasOpenShift ? 'وردية مفتوحة' : 'الوردية مغلقة'}
                 </span>
               </div>
-              <p className="text-2xl font-black text-emerald-700">
+              <p className="text-2xl font-bold text-emerald-700">
                 {todaySnapshot.drawerCash.toLocaleString('ar-EG')} ج.م
               </p>
-              <p className="text-[11px] text-brand-500 font-bold pt-2 border-t border-brand-100">
+              <p className="text-[11px] text-[#6B5A4E] font-medium pt-2 border-t border-[#E8E0D5]">
                 إجمالي الكاش والمقبوضات: {paymentBreakdown.cod.toLocaleString('ar-EG')} ج.م
               </p>
             </div>
 
-            <div className="bg-white rounded-3xl p-5 border border-indigo-200 shadow-xs space-y-2">
+            <div className="bg-white rounded-2xl p-5 border border-[#E8E0D5] space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-indigo-800">📱 المحافظ والتحويلات</span>
-                <span className="text-[10px] font-black bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full">
-                  InstaPay + Vodafone
+                <span className="text-xs font-bold text-[#6B5A4E]">المحافظ والتحويلات</span>
+                <span className="text-xs font-bold bg-[#FAF6F0] text-[#6B5A4E] border border-[#E8E0D5] px-2.5 py-0.5 rounded-full">
+                  إنستا باي وفودافون
                 </span>
               </div>
-              <p className="text-2xl font-black text-indigo-700">
+              <p className="text-2xl font-bold text-[#231710]">
                 {(paymentBreakdown.instapay + paymentBreakdown.vodafone_cash).toLocaleString(
                   'ar-EG'
                 )}{' '}
                 ج.م
               </p>
-              <div className="flex items-center justify-between text-[11px] text-brand-600 font-bold pt-2 border-t border-brand-100">
+              <div className="flex items-center justify-between text-xs text-[#6B5A4E] font-medium pt-2 border-t border-[#E8E0D5]">
                 <span>إنستا باي: {paymentBreakdown.instapay.toLocaleString('ar-EG')} ج</span>
                 <span>فودافون: {paymentBreakdown.vodafone_cash.toLocaleString('ar-EG')} ج</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl p-5 border border-amber-200 shadow-xs space-y-2">
+            <div className="bg-white rounded-2xl p-5 border border-[#E8E0D5] space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-amber-900">📈 صافي دخل اليوم</span>
-                <span className="text-[10px] font-black bg-rose-50 text-rose-700 px-2.5 py-0.5 rounded-full">
+                <span className="text-xs font-bold text-[#6B5A4E]">صافي دخل اليوم</span>
+                <span className="text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded-full">
                   مصروفات اليوم: {todaySnapshot.expenses} ج
                 </span>
               </div>
-              <p className="text-2xl font-black text-emerald-700">
+              <p className="text-2xl font-bold text-emerald-700">
                 {todaySnapshot.netProfit.toLocaleString('ar-EG')} ج.م
               </p>
-              <p className="text-[11px] text-brand-600 font-bold pt-2 border-t border-brand-100">
+              <p className="text-xs text-[#6B5A4E] font-medium pt-2 border-t border-[#E8E0D5]">
                 بعد خصم تكلفة الخامات والمصروفات اليومية
               </p>
             </div>
           </div>
 
           {dailyIncomeCards.length === 0 ? (
-            <div className="bg-white rounded-3xl p-8 text-center border border-brand-200 text-brand-500 font-bold text-xs">
+            <div className="bg-white rounded-2xl p-8 text-center border border-[#E8E0D5] text-[#6B5A4E] font-bold text-xs">
               لا توجد حركات مالية مسجلة مطابقة للفلاتر المحددة
             </div>
           ) : (
             <>
               {/* Day-by-Day Income Table View */}
               {showTables && (
-                <div className="bg-white rounded-3xl p-4 sm:p-5 border border-brand-200 shadow-xs space-y-3">
+                <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E8E0D5] space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm sm:text-base font-black text-brand-950">
+                    <h3 className="text-sm sm:text-base font-bold text-[#231710]">
                       جدول تقارير الدخل اليومي التفصيلي ({dailyIncomeCards.length} يوم)
                     </h3>
                   </div>
-                  <div className="overflow-x-auto rounded-2xl border border-brand-200">
+                  <div className="overflow-x-auto rounded-2xl border border-[#E8E0D5]">
                     <table className="w-full text-right text-xs border-collapse">
                       <thead>
-                        <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
+                        <tr className="bg-[#FAF6F0] text-[#231710] font-bold border-b border-[#E8E0D5]">
                           <th className="p-3 whitespace-nowrap">التاريخ واليوم</th>
                           <th className="p-3 whitespace-nowrap">عدد الفواتير</th>
-                          <th className="p-3 whitespace-nowrap">مبيعات الكاشير POS</th>
+                          <th className="p-3 whitespace-nowrap">مبيعات الكاشير</th>
                           <th className="p-3 whitespace-nowrap">مبيعات الأونلاين</th>
                           <th className="p-3 whitespace-nowrap">إجمالي الإيراد</th>
-                          <th className="p-3 whitespace-nowrap">تكلفة البضاعة (COGS)</th>
+                          <th className="p-3 whitespace-nowrap">تكلفة البضاعة</th>
                           <th className="p-3 whitespace-nowrap">المصروفات اليومية</th>
                           <th className="p-3 whitespace-nowrap">صافي الربح اليومي</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-brand-100 bg-white">
+                      <tbody className="divide-y divide-[#E8E0D5] bg-white">
                         {dailyIncomeCards.map((day) => (
-                          <tr key={day.dateKey} className="hover:bg-brand-50/70 transition">
+                          <tr key={day.dateKey} className="hover:bg-[#FAF6F0]/70 transition">
                             <td className="p-3 whitespace-nowrap">
-                              <div className="font-black text-brand-950">{day.dateLabel}</div>
-                              <div className="text-[10px] font-mono text-brand-500">{day.dateKey}</div>
+                              <div className="font-bold text-[#231710]">{day.dateLabel}</div>
+                              <div className="text-xs font-mono text-[#6B5A4E]">{day.dateKey}</div>
                             </td>
-                            <td className="p-3 whitespace-nowrap font-bold text-brand-900">
+                            <td className="p-3 whitespace-nowrap font-bold text-[#231710]">
                               {day.ordersCount} فاتورة
                             </td>
-                            <td className="p-3 whitespace-nowrap font-bold text-amber-800">
+                            <td className="p-3 whitespace-nowrap font-bold text-[#9A6836]">
                               {day.posRevenue.toLocaleString('ar-EG')} ج.م ({day.posCount})
                             </td>
-                            <td className="p-3 whitespace-nowrap font-bold text-indigo-800">
+                            <td className="p-3 whitespace-nowrap font-bold text-[#231710]">
                               {day.onlineRevenue.toLocaleString('ar-EG')} ج.م ({day.onlineCount})
                             </td>
-                            <td className="p-3 whitespace-nowrap font-black text-brand-950">
+                            <td className="p-3 whitespace-nowrap font-bold text-[#231710]">
                               {day.totalRevenue.toLocaleString('ar-EG')} ج.م
                             </td>
-                            <td className="p-3 whitespace-nowrap font-bold text-amber-700">
+                            <td className="p-3 whitespace-nowrap font-bold text-[#9A6836]">
                               {day.cogs.toLocaleString('ar-EG')} ج.م
                             </td>
                             <td className="p-3 whitespace-nowrap font-bold text-rose-600">
                               -{day.expenses.toLocaleString('ar-EG')} ج.م
                             </td>
-                            <td className="p-3 whitespace-nowrap font-black text-emerald-700">
+                            <td className="p-3 whitespace-nowrap font-bold text-emerald-700">
                               +{day.netProfit.toLocaleString('ar-EG')} ج.م
                             </td>
                           </tr>
@@ -1442,76 +1441,76 @@ export default function AccountantIsolationPortal({
               {/* Day-by-Day Income Cards Grid */}
               {showCards && (
                 <div className="space-y-3">
-                  <h3 className="text-sm sm:text-base font-black text-brand-950">
+                  <h3 className="text-sm sm:text-base font-bold text-[#231710]">
                     بطاقات تقارير الدخل اليومي ({dailyIncomeCards.length} يوم)
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {dailyIncomeCards.map((day) => (
                       <div
                         key={day.dateKey}
-                        className="bg-white rounded-3xl p-5 border border-brand-200 shadow-xs hover:shadow-md transition space-y-3.5"
+                        className="bg-white rounded-2xl p-5 border border-[#E8E0D5] space-y-3.5"
                       >
-                        <div className="flex items-center justify-between border-b border-brand-100 pb-3">
+                        <div className="flex items-center justify-between border-b border-[#E8E0D5] pb-3">
                           <div>
-                            <span className="text-xs font-black text-brand-950 block">
+                            <span className="text-xs font-bold text-[#231710] block">
                               {day.dateLabel}
                             </span>
-                            <span className="text-[10.5px] font-mono text-brand-500">
+                            <span className="text-xs font-mono text-[#6B5A4E]">
                               {day.dateKey}
                             </span>
                           </div>
-                          <span className="px-2.5 py-1 rounded-full bg-brand-950 text-gold-400 text-[11px] font-black">
+                          <span className="px-2.5 py-1 rounded-full bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] text-xs font-bold">
                             {day.ordersCount} فاتورة
                           </span>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="p-2.5 rounded-2xl bg-brand-50/80 border border-brand-100">
-                            <span className="text-[10.5px] text-brand-600 font-bold block">
+                          <div className="p-2.5 rounded-xl bg-[#FAF6F0] border border-[#E8E0D5]">
+                            <span className="text-xs text-[#6B5A4E] font-medium block">
                               إجمالي الدخل اليومي
                             </span>
-                            <span className="text-sm font-black text-brand-950">
+                            <span className="text-sm font-bold text-[#231710]">
                               {day.totalRevenue.toLocaleString('ar-EG')} ج.م
                             </span>
                           </div>
-                          <div className="p-2.5 rounded-2xl bg-emerald-50/80 border border-emerald-200">
-                            <span className="text-[10.5px] text-emerald-700 font-bold block">
+                          <div className="p-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200">
+                            <span className="text-xs text-emerald-700 font-medium block">
                               صافي الربح اليومي
                             </span>
-                            <span className="text-sm font-black text-emerald-800">
+                            <span className="text-sm font-bold text-emerald-800">
                               {day.netProfit.toLocaleString('ar-EG')} ج.م
                             </span>
                           </div>
                         </div>
 
-                        <div className="space-y-1.5 text-xs font-bold text-brand-700">
-                          <div className="flex justify-between px-2.5 py-1.5 rounded-xl bg-brand-50/50">
-                            <span>⚖️ مبيعات الكاشير ({day.posCount}):</span>
-                            <span className="font-black text-brand-950">
+                        <div className="space-y-1.5 text-xs font-medium text-[#6B5A4E]">
+                          <div className="flex justify-between px-2.5 py-1.5 rounded-xl bg-[#FAF6F0]">
+                            <span>مبيعات الكاشير ({day.posCount}):</span>
+                            <span className="font-bold text-[#231710]">
                               {day.posRevenue.toLocaleString('ar-EG')} ج.م
                             </span>
                           </div>
-                          <div className="flex justify-between px-2.5 py-1.5 rounded-xl bg-indigo-50/50">
-                            <span>🌐 مبيعات الأونلاين ({day.onlineCount}):</span>
-                            <span className="font-black text-indigo-800">
+                          <div className="flex justify-between px-2.5 py-1.5 rounded-xl bg-[#FAF6F0]">
+                            <span>مبيعات الأونلاين ({day.onlineCount}):</span>
+                            <span className="font-bold text-[#231710]">
                               {day.onlineRevenue.toLocaleString('ar-EG')} ج.م
                             </span>
                           </div>
-                          <div className="flex justify-between px-2.5 py-1.5 rounded-xl bg-amber-50/50">
-                            <span>📦 تكلفة الخامات (COGS):</span>
-                            <span className="font-black text-amber-800">
+                          <div className="flex justify-between px-2.5 py-1.5 rounded-xl bg-[#FAF6F0]">
+                            <span>تكلفة الخامات:</span>
+                            <span className="font-bold text-[#9A6836]">
                               {day.cogs.toLocaleString('ar-EG')} ج.م
                             </span>
                           </div>
                           <div className="flex justify-between px-2.5 py-1.5 rounded-xl bg-rose-50/50">
-                            <span>💸 المصروفات اليومية:</span>
-                            <span className="font-black text-rose-700">
-                              {day.expenses.toLocaleString('ar-EG')} ج.م
+                            <span>المصروفات اليومية:</span>
+                            <span className="font-bold text-rose-700">
+                              -{day.expenses.toLocaleString('ar-EG')} ج.م
                             </span>
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between text-[11px] font-bold text-brand-600 pt-2 border-t border-brand-100">
+                        <div className="flex items-center justify-between text-xs font-medium text-[#6B5A4E] pt-2 border-t border-[#E8E0D5]">
                           <span>كاش: {day.cashRevenue.toLocaleString('ar-EG')} ج.م</span>
                           <span>إلكتروني: {day.digitalRevenue.toLocaleString('ar-EG')} ج.م</span>
                         </div>
@@ -1533,67 +1532,66 @@ export default function AccountantIsolationPortal({
           {/* Detailed Side-by-Side Channel P&L Breakdown (Online Storefront vs POS Terminal) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Online Storefront Full P&L Card */}
-            <div className="bg-white border border-indigo-200 rounded-3xl p-5 relative overflow-hidden shadow-xs">
-              <div className="absolute top-0 right-0 left-0 h-1.5 bg-indigo-600" />
+            <div className="bg-white border border-[#E8E0D5] rounded-2xl p-5">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-indigo-50 text-indigo-700 rounded-xl">
+                  <div className="p-2.5 bg-[#FAF6F0] border border-[#E8E0D5] text-[#9A6836] rounded-xl">
                     <ShoppingCart className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-black text-sm sm:text-base text-brand-950">
-                      المتجر الإلكتروني (Online Storefront)
+                    <h3 className="font-bold text-sm sm:text-base text-[#231710]">
+                      المتجر الإلكتروني الأونلاين
                     </h3>
-                    <p className="text-[11px] text-brand-500">
+                    <p className="text-xs text-[#6B5A4E]">
                       طلبات التوصيل للمنازل وقرى مركز بني مزار والمحافظات
                     </p>
                   </div>
                 </div>
-                <span className="text-xs bg-indigo-50 text-indigo-800 px-3 py-1 rounded-full font-black border border-indigo-200">
+                <span className="text-xs bg-[#FAF6F0] text-[#231710] px-3 py-1 rounded-full font-bold border border-[#E8E0D5]">
                   {report.onlineMetrics.orderCount} طلب
                 </span>
               </div>
 
-              <div className="space-y-2.5 divide-y divide-brand-100 text-xs">
+              <div className="space-y-2.5 divide-y divide-[#E8E0D5] text-xs">
                 <div className="flex justify-between pt-2">
-                  <span className="text-brand-600 font-bold">إجمالي المبيعات (Gross Revenue):</span>
-                  <span className="font-black text-brand-950 text-sm">
+                  <span className="text-[#6B5A4E] font-medium">إجمالي المبيعات:</span>
+                  <span className="font-bold text-[#231710] text-sm">
                     {report.onlineMetrics.grossRevenue.toLocaleString('ar-EG')} ج.م
                   </span>
                 </div>
                 <div className="flex justify-between pt-2">
-                  <span className="text-brand-600 font-bold">المجموع الفرعي (Subtotal):</span>
-                  <span className="font-bold text-brand-900">
+                  <span className="text-[#6B5A4E] font-medium">المجموع الفرعي:</span>
+                  <span className="font-bold text-[#231710]">
                     {report.onlineMetrics.subtotal.toLocaleString('ar-EG')} ج.م
                   </span>
                 </div>
                 <div className="flex justify-between pt-2">
-                  <span className="text-brand-600 font-bold">إيرادات الشحن والتوصيل:</span>
-                  <span className="font-bold text-brand-900">
+                  <span className="text-[#6B5A4E] font-medium">إيرادات الشحن والتوصيل:</span>
+                  <span className="font-bold text-[#231710]">
                     {report.onlineMetrics.shippingRevenue.toLocaleString('ar-EG')} ج.م
                   </span>
                 </div>
                 <div className="flex justify-between pt-2">
-                  <span className="text-brand-600 font-bold">الخصومات وكوبونات الترويج:</span>
+                  <span className="text-[#6B5A4E] font-medium">الخصومات وكوبونات الترويج:</span>
                   <span className="font-bold text-rose-600">
                     -{report.onlineMetrics.discountTotal.toLocaleString('ar-EG')} ج.م
                   </span>
                 </div>
                 <div className="flex justify-between pt-2">
-                  <span className="text-brand-600 font-bold">تكلفة البضاعة المباعة (COGS):</span>
-                  <span className="font-bold text-amber-800">
+                  <span className="text-[#6B5A4E] font-medium">تكلفة البضاعة المباعة:</span>
+                  <span className="font-bold text-[#9A6836]">
                     {report.onlineMetrics.cogs.toLocaleString('ar-EG')} ج.م
                   </span>
                 </div>
-                <div className="flex justify-between pt-2 bg-indigo-50/70 p-2.5 rounded-xl">
-                  <span className="text-indigo-950 font-black">إجمالي الربح التجاري (Gross Profit):</span>
-                  <span className="font-black text-indigo-900 text-sm">
+                <div className="flex justify-between pt-2 bg-[#FAF6F0] border border-[#E8E0D5] p-2.5 rounded-xl">
+                  <span className="text-[#231710] font-bold">إجمالي الربح التجاري:</span>
+                  <span className="font-bold text-emerald-700 text-sm">
                     {report.onlineMetrics.grossProfit.toLocaleString('ar-EG')} ج.م ({report.onlineMetrics.grossMarginPercent}%)
                   </span>
                 </div>
                 <div className="flex justify-between pt-2">
-                  <span className="text-brand-600 font-bold">متوسط قيمة الطلب (Average Ticket):</span>
-                  <span className="font-black text-brand-900">
+                  <span className="text-[#6B5A4E] font-medium">متوسط قيمة الطلب:</span>
+                  <span className="font-bold text-[#231710]">
                     {report.onlineMetrics.avgTicket.toLocaleString('ar-EG')} ج.م
                   </span>
                 </div>
@@ -1601,61 +1599,60 @@ export default function AccountantIsolationPortal({
             </div>
 
             {/* POS Store Terminal Full P&L Card */}
-            <div className="bg-white border border-amber-200 rounded-3xl p-5 relative overflow-hidden shadow-xs">
-              <div className="absolute top-0 right-0 left-0 h-1.5 bg-amber-500" />
+            <div className="bg-white border border-[#E8E0D5] rounded-2xl p-5">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-amber-50 text-amber-700 rounded-xl">
+                  <div className="p-2.5 bg-[#FAF6F0] border border-[#E8E0D5] text-[#9A6836] rounded-xl">
                     <Store className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-black text-sm sm:text-base text-brand-950">
-                      كاشير الفرع المباشر (POS Store Terminal)
+                    <h3 className="font-bold text-sm sm:text-base text-[#231710]">
+                      كاشير الفرع المباشر
                     </h3>
-                    <p className="text-[11px] text-brand-500">
+                    <p className="text-xs text-[#6B5A4E]">
                       مبيعات المحل المباشرة (أمام مسجد الزراعيين) والميزان وتوليفة البن
                     </p>
                   </div>
                 </div>
-                <span className="text-xs bg-amber-50 text-amber-900 px-3 py-1 rounded-full font-black border border-amber-200">
+                <span className="text-xs bg-[#FAF6F0] text-[#231710] px-3 py-1 rounded-full font-bold border border-[#E8E0D5]">
                   {report.posMetrics.orderCount} فاتورة
                 </span>
               </div>
 
-              <div className="space-y-2.5 divide-y divide-brand-100 text-xs">
+              <div className="space-y-2.5 divide-y divide-[#E8E0D5] text-xs">
                 <div className="flex justify-between pt-2">
-                  <span className="text-brand-600 font-bold">إجمالي المبيعات (Gross Revenue):</span>
-                  <span className="font-black text-brand-950 text-sm">
+                  <span className="text-[#6B5A4E] font-medium">إجمالي المبيعات:</span>
+                  <span className="font-bold text-[#231710] text-sm">
                     {report.posMetrics.grossRevenue.toLocaleString('ar-EG')} ج.م
                   </span>
                 </div>
                 <div className="flex justify-between pt-2">
-                  <span className="text-brand-600 font-bold">المجموع الفرعي (Subtotal):</span>
-                  <span className="font-bold text-brand-900">
+                  <span className="text-[#6B5A4E] font-medium">المجموع الفرعي:</span>
+                  <span className="font-bold text-[#231710]">
                     {report.posMetrics.subtotal.toLocaleString('ar-EG')} ج.م
                   </span>
                 </div>
                 <div className="flex justify-between pt-2">
-                  <span className="text-brand-600 font-bold">خصومات فورية واستبدال نقاط VIP:</span>
+                  <span className="text-[#6B5A4E] font-medium">خصومات فورية واستبدال نقاط VIP:</span>
                   <span className="font-bold text-rose-600">
                     -{report.posMetrics.discountTotal.toLocaleString('ar-EG')} ج.م
                   </span>
                 </div>
                 <div className="flex justify-between pt-2">
-                  <span className="text-brand-600 font-bold">تكلفة الخامات والمواد المباعة (COGS):</span>
-                  <span className="font-bold text-amber-800">
+                  <span className="text-[#6B5A4E] font-medium">تكلفة الخامات والمواد المباعة:</span>
+                  <span className="font-bold text-[#9A6836]">
                     {report.posMetrics.cogs.toLocaleString('ar-EG')} ج.م
                   </span>
                 </div>
-                <div className="flex justify-between pt-2 bg-amber-50/70 p-2.5 rounded-xl">
-                  <span className="text-amber-950 font-black">إجمالي الربح التجاري (Gross Profit):</span>
-                  <span className="font-black text-amber-900 text-sm">
+                <div className="flex justify-between pt-2 bg-[#FAF6F0] border border-[#E8E0D5] p-2.5 rounded-xl">
+                  <span className="text-[#231710] font-bold">إجمالي الربح التجاري:</span>
+                  <span className="font-bold text-emerald-700 text-sm">
                     {report.posMetrics.grossProfit.toLocaleString('ar-EG')} ج.م ({report.posMetrics.grossMarginPercent}%)
                   </span>
                 </div>
                 <div className="flex justify-between pt-2">
-                  <span className="text-brand-600 font-bold">متوسط قيمة الفاتورة (Average Ticket):</span>
-                  <span className="font-black text-brand-900">
+                  <span className="text-[#6B5A4E] font-medium">متوسط قيمة الفاتورة:</span>
+                  <span className="font-bold text-[#231710]">
                     {report.posMetrics.avgTicket.toLocaleString('ar-EG')} ج.م
                   </span>
                 </div>
@@ -1665,38 +1662,38 @@ export default function AccountantIsolationPortal({
 
           {/* Payment Methods Breakdown + VIP Liabilities Row */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2 bg-white rounded-3xl p-5 border border-brand-200 shadow-xs space-y-3">
-              <h3 className="font-black text-brand-950 text-sm">💳 توزيع المقبوضات حسب طريقة الدفع</h3>
+            <div className="lg:col-span-2 bg-white rounded-2xl p-5 border border-[#E8E0D5] space-y-3">
+              <h3 className="font-bold text-[#231710] text-sm">توزيع المقبوضات حسب طريقة الدفع</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-bold">
-                <div className="p-3 rounded-2xl bg-brand-50 border border-brand-100">
-                  <span className="text-[10.5px] text-brand-500 block">
+                <div className="p-3 rounded-xl bg-[#FAF6F0] border border-[#E8E0D5]">
+                  <span className="text-xs text-[#6B5A4E] font-medium block">
                     نقدي وعند الاستلام ({paymentBreakdown.codCount})
                   </span>
-                  <span className="text-sm font-black text-brand-950 mt-0.5 block">
+                  <span className="text-sm font-bold text-[#231710] mt-0.5 block">
                     {paymentBreakdown.cod.toLocaleString('ar-EG')} ج.م
                   </span>
                 </div>
-                <div className="p-3 rounded-2xl bg-indigo-50 border border-indigo-100">
-                  <span className="text-[10.5px] text-indigo-600 block">
+                <div className="p-3 rounded-xl bg-[#FAF6F0] border border-[#E8E0D5]">
+                  <span className="text-xs text-[#6B5A4E] font-medium block">
                     إنستا باي ({paymentBreakdown.instapayCount})
                   </span>
-                  <span className="text-sm font-black text-indigo-800 mt-0.5 block">
+                  <span className="text-sm font-bold text-[#231710] mt-0.5 block">
                     {paymentBreakdown.instapay.toLocaleString('ar-EG')} ج.م
                   </span>
                 </div>
-                <div className="p-3 rounded-2xl bg-rose-50 border border-rose-100">
-                  <span className="text-[10.5px] text-rose-600 block">
+                <div className="p-3 rounded-xl bg-[#FAF6F0] border border-[#E8E0D5]">
+                  <span className="text-xs text-[#6B5A4E] font-medium block">
                     فودافون كاش ({paymentBreakdown.vodafoneCount})
                   </span>
-                  <span className="text-sm font-black text-rose-800 mt-0.5 block">
+                  <span className="text-sm font-bold text-[#231710] mt-0.5 block">
                     {paymentBreakdown.vodafone_cash.toLocaleString('ar-EG')} ج.م
                   </span>
                 </div>
-                <div className="p-3 rounded-2xl bg-purple-50 border border-purple-100">
-                  <span className="text-[10.5px] text-purple-600 block">
+                <div className="p-3 rounded-xl bg-[#FAF6F0] border border-[#E8E0D5]">
+                  <span className="text-xs text-[#6B5A4E] font-medium block">
                     محفظة VIP ({paymentBreakdown.vipCount})
                   </span>
-                  <span className="text-sm font-black text-purple-800 mt-0.5 block">
+                  <span className="text-sm font-bold text-[#9A6836] mt-0.5 block">
                     {paymentBreakdown.vip_wallet.toLocaleString('ar-EG')} ج.م
                   </span>
                 </div>
@@ -1704,25 +1701,25 @@ export default function AccountantIsolationPortal({
             </div>
 
             {/* VIP Cashback Liabilities Card */}
-            <div className="p-5 bg-amber-50/70 border border-amber-200 rounded-3xl flex flex-col justify-between text-xs shadow-xs">
+            <div className="p-5 bg-white border border-[#E8E0D5] rounded-2xl flex flex-col justify-between text-xs">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-amber-200 text-amber-900 rounded-xl shrink-0">
+                <div className="p-2.5 bg-[#FAF6F0] border border-[#E8E0D5] text-[#9A6836] rounded-xl shrink-0">
                   <Wallet className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="font-black text-amber-950 text-sm">
+                  <div className="font-bold text-[#231710] text-sm">
                     التزامات نادي عملاء حفصة VIP
                   </div>
-                  <div className="text-amber-800 text-[11px]">
+                  <div className="text-[#6B5A4E] text-xs">
                     أرصدة الكاش باك المعلقة في محافظ العملاء المستحقة للاستبدال
                   </div>
                 </div>
               </div>
-              <div className="flex items-baseline justify-between pt-3 mt-3 border-t border-amber-200/80">
-                <span className="text-amber-800 font-bold">
+              <div className="flex items-baseline justify-between pt-3 mt-3 border-t border-[#E8E0D5]">
+                <span className="text-[#6B5A4E] font-medium">
                   إجمالي {report.vipLiabilities.membersCount} عميل مسجل
                 </span>
-                <span className="text-lg font-black text-amber-950">
+                <span className="text-lg font-bold text-[#231710]">
                   {report.vipLiabilities.totalPointsBalance.toLocaleString('ar-EG')} ج.م
                 </span>
               </div>
@@ -1755,7 +1752,7 @@ export default function AccountantIsolationPortal({
                   <div className="overflow-x-auto rounded-2xl border border-brand-200">
                     <table className="w-full text-right text-xs border-collapse">
                       <thead>
-                        <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
+                        <tr className="bg-[#FAF6F0] text-[#231710] font-bold border-b border-[#E8E0D5]">
                           <th className="p-3 whitespace-nowrap">رقم الفاتورة</th>
                           <th className="p-3 whitespace-nowrap">القناة</th>
                           <th className="p-3 whitespace-nowrap">العميل والمنطقة</th>
@@ -1776,19 +1773,19 @@ export default function AccountantIsolationPortal({
                           return (
                             <tr key={ord.id} className="hover:bg-brand-50/70 transition">
                               <td className="p-3 whitespace-nowrap">
-                                <span className="font-mono font-black text-xs bg-brand-950 text-gold-400 px-2.5 py-1 rounded-lg">
+                                <span className="font-mono font-bold text-xs bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] px-2.5 py-1 rounded-lg">
                                   {ord.orderNumber}
                                 </span>
                               </td>
                               <td className="p-3 whitespace-nowrap">
                                 <span
-                                  className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-black ${
+                                  className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-bold ${
                                     isPos
                                       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                       : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                                   }`}
                                 >
-                                  {isPos ? '⚖️ كاشير POS' : '🌐 متجر أونلاين'}
+                                  {isPos ? 'كاشير POS' : 'متجر أونلاين'}
                                 </span>
                               </td>
                               <td className="p-3 whitespace-nowrap">
@@ -1818,7 +1815,7 @@ export default function AccountantIsolationPortal({
                                 <button
                                   type="button"
                                   onClick={() => setSelectedInvoiceOrder(ord)}
-                                  className="px-2.5 py-1 bg-brand-900 hover:bg-brand-950 text-gold-400 rounded-lg text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer"
+                                  className="px-2.5 py-1 bg-[#231710] hover:bg-[#3A271C] text-white rounded-lg text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer"
                                 >
                                   <Printer className="w-3 h-3" />
                                   <span>طباعة</span>
@@ -1852,17 +1849,17 @@ export default function AccountantIsolationPortal({
                           className="bg-white rounded-3xl p-4 sm:p-5 border border-brand-200 shadow-xs hover:shadow-md transition space-y-3"
                         >
                           <div className="flex items-center justify-between border-b border-brand-100 pb-2.5">
-                            <span className="font-mono font-black text-xs bg-brand-950 text-gold-400 px-2.5 py-1 rounded-lg">
+                            <span className="font-mono font-bold text-xs bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] px-2.5 py-1 rounded-lg">
                               {ord.orderNumber}
                             </span>
                             <span
-                              className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-black ${
+                              className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-bold ${
                                 isPos
                                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                   : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                               }`}
                             >
-                              {isPos ? '⚖️ كاشير POS' : '🌐 متجر أونلاين'}
+                              {isPos ? 'كاشير POS' : 'متجر أونلاين'}
                             </span>
                           </div>
 
@@ -1971,7 +1968,7 @@ export default function AccountantIsolationPortal({
                   <div className="overflow-x-auto rounded-2xl border border-brand-200">
                     <table className="w-full text-right text-xs border-collapse">
                       <thead>
-                        <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
+                        <tr className="bg-[#FAF6F0] text-[#231710] font-bold border-b border-[#E8E0D5]">
                           <th className="p-3 whitespace-nowrap">رقم الوردية</th>
                           <th className="p-3 whitespace-nowrap">الكاشير</th>
                           <th className="p-3 whitespace-nowrap">الحالة</th>
@@ -1999,13 +1996,13 @@ export default function AccountantIsolationPortal({
                               <td className="p-3 font-bold text-brand-800">{shift.cashierName}</td>
                               <td className="p-3">
                                 <span
-                                  className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                     shift.status === 'open'
                                       ? 'bg-emerald-100 text-emerald-800'
                                       : 'bg-brand-100 text-brand-800'
                                   }`}
                                 >
-                                  {shift.status === 'open' ? '🟢 مفتوحة' : 'مغلقة'}
+                                  {shift.status === 'open' ? 'مفتوحة' : 'مغلقة'}
                                 </span>
                               </td>
                               <td className="p-3 font-bold text-brand-800">
@@ -2057,7 +2054,7 @@ export default function AccountantIsolationPortal({
                                       zreport: origShift.shiftNumber || origShift.id,
                                     });
                                   }}
-                                  className="py-1 px-2.5 bg-amber-50 hover:bg-amber-100 text-amber-950 rounded-lg font-black text-[11px] border border-amber-300 inline-flex items-center gap-1 cursor-pointer"
+                                  className="py-1 px-2.5 bg-[#FAF6F0] hover:bg-[#F2EAE0] text-[#231710] rounded-lg font-bold text-[11px] border border-[#E8E0D5] inline-flex items-center gap-1 cursor-pointer"
                                 >
                                   <Printer className="w-3 h-3" />
                                   <span>تقرير Z</span>
@@ -2088,7 +2085,7 @@ export default function AccountantIsolationPortal({
                         >
                           <div className="flex items-center justify-between border-b border-brand-100 pb-3">
                             <div>
-                              <span className="font-mono font-black text-xs bg-brand-950 text-gold-400 px-2.5 py-1 rounded-lg">
+                              <span className="font-mono font-bold text-xs bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] px-2.5 py-1 rounded-lg">
                                 {shift.shiftNumber}
                               </span>
                               <p className="text-xs font-black text-brand-950 mt-1.5">
@@ -2175,7 +2172,7 @@ export default function AccountantIsolationPortal({
                               setSelectedShiftForZReport(shift);
                               updateUrlQueryParams({ zreport: shift.shiftNumber || shift.id });
                             }}
-                            className="w-full py-2 px-3 rounded-xl bg-brand-950 hover:bg-brand-900 text-gold-400 font-black text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                            className="w-full py-2 px-3 rounded-xl bg-[#231710] hover:bg-[#3A271C] text-white font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
                           >
                             <Printer className="w-3.5 h-3.5" />
                             <span>عرض وطباعة تقرير Z-Report</span>
@@ -2200,7 +2197,7 @@ export default function AccountantIsolationPortal({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-white rounded-3xl p-4 border border-emerald-200 shadow-xs">
               <span className="text-xs font-bold text-emerald-700 block">
-                ✅ فواتير مشتريات معتمدة ومضافة للمخزون
+                فواتير مشتريات معتمدة ومضافة للمخزون
               </span>
               <p className="text-xl font-black text-emerald-800 mt-1">
                 {report.supplyFinancials.approvedTotal.toLocaleString('ar-EG')} ج.م
@@ -2211,7 +2208,7 @@ export default function AccountantIsolationPortal({
             </div>
             <div className="bg-white rounded-3xl p-4 border border-amber-200 shadow-xs">
               <span className="text-xs font-bold text-amber-700 block">
-                ⏳ فواتير مشتريات قيد المراجعة
+                فواتير مشتريات قيد المراجعة
               </span>
               <p className="text-xl font-black text-amber-800 mt-1">
                 {report.supplyFinancials.pendingTotal.toLocaleString('ar-EG')} ج.م
@@ -2222,7 +2219,7 @@ export default function AccountantIsolationPortal({
             </div>
             <div className="bg-white rounded-3xl p-4 border border-brand-200 shadow-xs">
               <span className="text-xs font-bold text-brand-600 block">
-                ❌ فواتير توريد مرفوضة
+                فواتير توريد مرفوضة
               </span>
               <p className="text-xl font-black text-brand-950 mt-1">
                 {report.supplyFinancials.rejectedTotal.toLocaleString('ar-EG')} ج.م
@@ -2269,7 +2266,7 @@ export default function AccountantIsolationPortal({
                   <div className="overflow-x-auto rounded-2xl border border-brand-200">
                     <table className="w-full text-right text-xs border-collapse">
                       <thead>
-                        <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
+                        <tr className="bg-[#FAF6F0] text-[#231710] font-bold border-b border-[#E8E0D5]">
                           <th className="p-3">رقم الفاتورة</th>
                           <th className="p-3">المورد</th>
                           <th className="p-3">الحالة</th>
@@ -2403,7 +2400,7 @@ export default function AccountantIsolationPortal({
                       className="bg-white rounded-3xl p-5 border border-brand-200 shadow-xs hover:shadow-md transition space-y-3"
                     >
                       <div className="flex items-center justify-between border-b border-brand-100 pb-2.5">
-                        <span className="font-mono font-black text-xs bg-brand-950 text-gold-400 px-2.5 py-1 rounded-lg">
+                        <span className="font-mono font-bold text-xs bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] px-2.5 py-1 rounded-lg">
                           {inv.invoiceNumber}
                         </span>
                         <span
@@ -2525,7 +2522,7 @@ export default function AccountantIsolationPortal({
                   <div className="overflow-x-auto rounded-2xl border border-brand-200">
                     <table className="w-full text-right text-xs border-collapse">
                       <thead>
-                        <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
+                        <tr className="bg-[#FAF6F0] text-[#231710] font-bold border-b border-[#E8E0D5]">
                           <th className="p-3">المعرف</th>
                           <th className="p-3">الوردية</th>
                           <th className="p-3">بيان المصروف</th>
@@ -2670,8 +2667,8 @@ export default function AccountantIsolationPortal({
                 className="bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-bold"
               >
                 <option value="all">المخزون: كل الأصناف</option>
-                <option value="low">⚠️ نواقص حرجة (≤ 5 كجم)</option>
-                <option value="out">❌ أصناف نافدة (0 كجم)</option>
+                <option value="low">نواقص حرجة (≤ 5 كجم)</option>
+                <option value="out">أصناف نافدة (0 كجم)</option>
               </select>
 
               <select
@@ -2680,8 +2677,8 @@ export default function AccountantIsolationPortal({
                 className="bg-brand-50 border border-brand-200 rounded-xl px-3 py-1.5 text-xs font-bold"
               >
                 <option value="all">الهامش: كل المستويات</option>
-                <option value="high">✅ هامش مرتفع (≥ 20%)</option>
-                <option value="low">⚠️ هامش منخفض (&lt; 15%)</option>
+                <option value="high">هامش مرتفع (≥ 20%)</option>
+                <option value="low">هامش منخفض (&lt; 15%)</option>
               </select>
             </div>
           </div>
@@ -2692,7 +2689,7 @@ export default function AccountantIsolationPortal({
               <div className="overflow-x-auto rounded-2xl border border-brand-200">
                 <table className="w-full text-right text-xs border-collapse">
                   <thead>
-                    <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
+                    <tr className="bg-[#FAF6F0] text-[#231710] font-bold border-b border-[#E8E0D5]">
                       <th className="p-3">اسم المنتج</th>
                       <th className="p-3">المنشأ / التصنيف</th>
                       <th className="p-3">رصيد المخزون</th>

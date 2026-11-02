@@ -3,20 +3,15 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
-  Crown,
   QrCode,
-  Sparkles,
-  CheckCircle2,
   ArrowUpRight,
   ArrowDownLeft,
-  Gift,
   ShoppingBag,
   Calculator,
   Phone,
   User,
   Lock,
-  KeyRound,
-  ShieldCheck,
+  Wallet,
 } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 import { calculateVipCashback } from '@/lib/pricing';
@@ -34,7 +29,7 @@ export default function VipWalletPage() {
     refreshStore,
   } = useStore();
 
-  const [phoneInput, setPhoneInput] = useState(activeVipMember?.phone || '01012345678');
+  const [phoneInput, setPhoneInput] = useState(activeVipMember?.phone || '');
   const [nameInput, setNameInput] = useState('');
   const [lookedUpMember, setLookedUpMember] = useState<VipMember | null>(null);
   const [loading, setLoading] = useState(false);
@@ -43,7 +38,6 @@ export default function VipWalletPage() {
     text: string;
   } | null>(null);
 
-  // VIP 4-Digit PIN Management state
   const [pinInput, setPinInput] = useState('');
   const [oldPinInput, setOldPinInput] = useState('');
   const [pinLoading, setPinLoading] = useState(false);
@@ -52,7 +46,6 @@ export default function VipWalletPage() {
     text: string;
   } | null>(null);
 
-  // Interactive Cashback Calculator state
   const [simOrderAmount, setSimOrderAmount] = useState<number>(300);
 
   useBrowserUrlSync((params) => {
@@ -67,7 +60,7 @@ export default function VipWalletPage() {
     }
   });
 
-  const currentMember = lookedUpMember || activeVipMember || storeData?.vipMembers?.[0] || null;
+  const currentMember = lookedUpMember || activeVipMember || null;
 
   const vipPromos = useMemo(
     () => (storeData?.promotions || []).filter((p) => p.active),
@@ -100,8 +93,8 @@ export default function VipWalletPage() {
         setFeedback({
           type: 'success',
           text: data.isNew
-            ? `🎉 مبروك! تم تفعيل بطاقة حفصة VIP الذهبية وإضافة ${data.member.pointsBalance} ج.م هدية ترحيبية.`
-            : `👑 تم فتح محفظة ${data.member.customerName} بنجاح (الرصيد المتاح: ${data.member.pointsBalance} ج.م).`,
+            ? `تم تفعيل محفظة حفصة VIP وإضافة ${data.member.pointsBalance} ج.م رصيد ترحيبي.`
+            : `تم فتح محفظة ${data.member.customerName} (الرصيد المتاح: ${data.member.pointsBalance} ج.م).`,
         });
       }
     } catch {
@@ -117,7 +110,7 @@ export default function VipWalletPage() {
     if (!pinInput.trim() || !/^\d{4}$/.test(pinInput.trim())) {
       setPinFeedback({
         type: 'error',
-        text: 'يجب أن يتكون الرمز السري من 4 أرقام عددية فقط (مثال: 5599)',
+        text: 'يجب أن يتكون الرمز السري من 4 أرقام عددية فقط',
       });
       return;
     }
@@ -140,7 +133,7 @@ export default function VipWalletPage() {
       } else {
         setPinFeedback({
           type: 'success',
-          text: '🎉 تم تأمين محفظتك بنجاح بالرمز السري المكون من 4 أرقام!',
+          text: 'تم تأمين محفظتك بنجاح بالرمز السري المكون من 4 أرقام.',
         });
         if (data.member) {
           setLookedUpMember(data.member);
@@ -160,27 +153,25 @@ export default function VipWalletPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF6F0] text-[#231710] pb-16">
-      {/* Luxury Header */}
-      <div className="bg-gradient-to-b from-[#231710] via-[#2F1E14] to-[#231710] text-[#FAF6F0] border-b-2 border-[#D4AF37]/50 py-8 sm:py-12 px-4">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          <div className="lg:col-span-7 space-y-3">
-            <div className="inline-flex items-center gap-1.5 bg-[#D4AF37] text-[#231710] px-3.5 py-1 rounded-full text-xs font-black">
-              <Crown className="w-4 h-4" />
-              <span>محفظة حفصة VIP</span>
+      {/* Calm Light Page Header */}
+      <div className="bg-white border-b border-[#E8E0D5] py-8 sm:py-10 px-4">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="lg:col-span-7 space-y-4">
+            <div className="inline-flex items-center gap-2 text-xs font-bold text-[#9A6836]">
+              <Wallet className="w-4 h-4" />
+              <span>محفظة ومكافآت حفصة VIP</span>
             </div>
-            <h1 className="font-cairo text-2xl sm:text-4xl font-black text-white leading-tight">
-              محفظتك الذهبية للكاش باك الفوري (5%)
+            <h1 className="font-cairo text-2xl sm:text-3xl font-bold text-[#231710] leading-snug">
+              اكسب 5% كاش باك تلقائي برقم هاتفك مع كل طلب
             </h1>
-            <p className="hidden">
-              بدون بطاقات بلاستيكية أو تعقيد! رقم موبايلك هو حسابك في محمصة حفصة. اكسب 5% كاش باك
-              نقدي على كل طلب من 150 ج.م، واستبدل نقاطك كخصم فوري عند الدفع أونلاين أو عبر مسح
-              الـ QR Code عند الكاشير أمام مسجد الزراعيين.
+            <p className="text-sm text-[#5C4A3D] max-w-xl leading-relaxed">
+              أدخل رقم هاتفك للاستعلام عن رصيد نقاطك الحالي أو لتفعيل محفظتك مجاناً واستخدام الرصيد عند الدفع أونلاين أو في الفرع.
             </p>
 
             {/* Phone Lookup / Free Registration Form */}
             <form
               onSubmit={handleLookupOrJoin}
-              className="bg-white/10 backdrop-blur-sm p-3.5 rounded-2xl border border-[#D4AF37]/40 flex flex-col sm:flex-row gap-2.5 max-w-xl"
+              className="bg-[#FAF6F0] p-3.5 rounded-2xl border border-[#E8E0D5] flex flex-col sm:flex-row gap-2.5 max-w-xl"
             >
               <div className="relative sm:w-44">
                 <input
@@ -188,9 +179,9 @@ export default function VipWalletPage() {
                   value={nameInput}
                   onChange={(e) => setNameInput(e.target.value)}
                   placeholder="الاسم (للعضو الجديد)"
-                  className="w-full bg-[#231710]/80 border border-[#D4AF37]/40 rounded-xl py-2.5 pr-8 pl-3 text-xs text-white placeholder-[#F3ECE1]/60 focus:outline-none focus:border-[#D4AF37]"
+                  className="w-full bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl py-2.5 pr-8 pl-3 text-xs text-[#231710] placeholder-[#8A7968] focus:outline-none"
                 />
-                <User className="w-3.5 h-3.5 text-[#D4AF37] absolute right-2.5 top-3" />
+                <User className="w-3.5 h-3.5 text-[#8A7968] absolute right-2.5 top-3" />
               </div>
 
               <div className="relative flex-1">
@@ -199,27 +190,27 @@ export default function VipWalletPage() {
                   dir="ltr"
                   value={phoneInput}
                   onChange={(e) => setPhoneInput(e.target.value)}
-                  placeholder="01012345678"
-                  className="w-full bg-[#231710]/80 border border-[#D4AF37]/40 rounded-xl py-2.5 pr-8 pl-3 text-xs text-white placeholder-[#F3ECE1]/60 focus:outline-none focus:border-[#D4AF37] text-right tabular-nums"
+                  placeholder="رقم الموبايل (11 رقم)"
+                  className="w-full bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl py-2.5 pr-8 pl-3 text-xs text-[#231710] placeholder-[#8A7968] focus:outline-none text-right tabular-nums"
                 />
-                <Phone className="w-3.5 h-3.5 text-[#D4AF37] absolute right-2.5 top-3" />
+                <Phone className="w-3.5 h-3.5 text-[#8A7968] absolute right-2.5 top-3" />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="bg-[#D4AF37] hover:bg-[#C88A4B] text-[#231710] font-cairo font-black text-xs px-5 py-2.5 rounded-xl shadow cursor-pointer transition shrink-0"
+                className="bg-[#231710] hover:bg-[#362419] text-[#FAF6F0] font-cairo font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer transition shrink-0"
               >
-                {loading ? 'جاري التحقق...' : 'فتح المحفظة / تسجيل مجاني'}
+                {loading ? 'جاري التحقق...' : 'فتح المحفظة'}
               </button>
             </form>
 
             {feedback && (
               <div
-                className={`p-3 rounded-xl text-xs font-extrabold border max-w-xl ${
+                className={`p-3 rounded-xl text-xs font-bold border max-w-xl ${
                   feedback.type === 'success'
-                    ? 'bg-[#3B6E4C]/30 border-emerald-400 text-emerald-200'
-                    : 'bg-[#B83B2B]/30 border-red-400 text-red-200'
+                    ? 'bg-[#EEF5F0] border-[#D4E8DA] text-[#2F5A3D]'
+                    : 'bg-red-50 border-red-200 text-[#B83B2B]'
                 }`}
               >
                 {feedback.text}
@@ -227,99 +218,95 @@ export default function VipWalletPage() {
             )}
           </div>
 
-          {/* Digital Gold VIP Card with Scannable Store QR Code */}
+          {/* Calm Artisanal Digital VIP Card */}
           <div className="lg:col-span-5">
-            {currentMember && (
-              <div className="bg-gradient-to-br from-[#D4AF37] via-[#C88A4B] to-[#8C5A23] text-[#231710] rounded-3xl p-6 shadow-2xl border-2 border-white/40 space-y-5">
+            {currentMember ? (
+              <div className="bg-[#FAF6F0] rounded-2xl p-6 border border-[#E8E0D5] space-y-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <span className="text-[10px] font-black tracking-widest uppercase block opacity-85">
-                      HAFSA ROASTERY • {currentMember.tier === 'platinum' ? 'PLATINUM VIP' : 'GOLD VIP'}
+                    <span className="text-xs font-bold text-[#9A6836] block">
+                      عضوية {currentMember.tier === 'platinum' ? 'بلاتينيوم' : 'ذهبية'}
                     </span>
-                    <h2 className="font-cairo text-xl font-black text-[#231710] mt-0.5">
+                    <h2 className="font-cairo text-xl font-bold text-[#231710] mt-0.5">
                       {currentMember.customerName}
                     </h2>
-                    <span className="text-xs font-black tabular-nums block mt-0.5">
-                      📱 {currentMember.phone}
+                    <span className="text-xs text-[#6E5D4F] tabular-nums block mt-0.5">
+                      {currentMember.phone}
                     </span>
                   </div>
 
-                  {/* Simulated SVG QR Code for Cashier Scanner */}
-                  <div className="bg-white p-2 rounded-2xl shadow-md border border-[#231710]/20 text-center">
-                    <QrCode className="w-14 h-14 text-[#231710] mx-auto" />
-                    <span className="text-[8px] font-black text-[#231710] block mt-0.5 font-mono">
+                  <div className="bg-white p-2 rounded-xl border border-[#E8E0D5] text-center">
+                    <QrCode className="w-12 h-12 text-[#231710] mx-auto" />
+                    <span className="text-[9px] font-bold text-[#6E5D4F] block mt-0.5 font-mono">
                       {currentMember.qrCodeValue}
                     </span>
                   </div>
                 </div>
 
                 {/* Balance Box */}
-                <div className="bg-[#231710] text-[#FAF6F0] rounded-2xl p-4 flex items-center justify-between tabular-nums">
+                <div className="bg-white rounded-xl p-4 border border-[#E8E0D5] flex items-center justify-between tabular-nums">
                   <div>
-                    <span className="text-[10.5px] text-[#D4AF37] font-bold block">
-                      الرصيد النقدي المتاح للاستبدال الفوري
+                    <span className="text-xs text-[#6E5D4F] block">
+                      الرصيد النقدي المتاح
                     </span>
-                    <span className="font-cairo text-3xl font-black text-white">
-                      {currentMember.pointsBalance} <span className="text-sm text-[#D4AF37]">ج.م</span>
-                    </span>
-                    <span className="text-[10px] text-emerald-400 block mt-0.5">
-                      (يعادل {currentMember.pointsBalance * 10} نقطة ذهبية • كل 10 نقاط = 1 ج.م)
+                    <span className="font-cairo text-2xl font-bold text-[#231710]">
+                      {currentMember.pointsBalance} <span className="text-xs font-medium text-[#6E5D4F]">ج.م</span>
                     </span>
                   </div>
 
                   <Link
                     href="/checkout"
-                    className="bg-[#D4AF37] hover:bg-[#C88A4B] text-[#231710] font-cairo font-black text-xs px-3.5 py-2.5 rounded-xl shadow transition"
+                    className="bg-[#231710] hover:bg-[#362419] text-[#FAF6F0] font-cairo font-bold text-xs px-4 py-2.5 rounded-xl transition"
                   >
-                    استخدم الرصيد في الطلب ←
+                    استخدم الرصيد
                   </Link>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-xs font-extrabold tabular-nums">
-                  <div className="bg-white/25 rounded-xl p-2.5">
-                    <span className="text-[10px] block opacity-80">إجمالي المشتريات</span>
-                    <span className="font-cairo text-sm font-black">
+                <div className="grid grid-cols-2 gap-2.5 text-xs tabular-nums">
+                  <div className="bg-white rounded-xl p-3 border border-[#E8E0D5]">
+                    <span className="text-[11px] text-[#6E5D4F] block">إجمالي المشتريات</span>
+                    <span className="font-cairo text-sm font-bold text-[#231710]">
                       {currentMember.totalSpent} ج.م
                     </span>
                   </div>
-                  <div className="bg-white/25 rounded-xl p-2.5">
-                    <span className="text-[10px] block opacity-80">عدد الطلبات</span>
-                    <span className="font-cairo text-sm font-black">
+                  <div className="bg-white rounded-xl p-3 border border-[#E8E0D5]">
+                    <span className="text-[11px] text-[#6E5D4F] block">عدد الطلبات</span>
+                    <span className="font-cairo text-sm font-bold text-[#231710]">
                       {currentMember.ordersCount} طلبات
                     </span>
                   </div>
                 </div>
 
                 {/* 4-Digit Security PIN Section */}
-                <div className="bg-[#231710]/95 text-[#FAF6F0] rounded-2xl p-4 border border-[#D4AF37]/40 space-y-3">
+                <div className="bg-white rounded-xl p-4 border border-[#E8E0D5] space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-[#D4AF37] text-[#231710] flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-lg bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] flex items-center justify-center">
                         <Lock className="w-4 h-4" />
                       </div>
                       <div>
-                        <h4 className="font-cairo text-xs font-black text-white">
-                          أمان المحفظة (الرمز السري 4-Digit PIN)
+                        <h4 className="font-cairo text-xs font-bold text-[#231710]">
+                          أمان المحفظة (الرمز السري 4 أرقام)
                         </h4>
-                        <span className="text-[10px] text-[#FAF6F0]/70 font-bold block">
+                        <span className="text-[11px] text-[#6E5D4F] block">
                           {currentMember.hasPin
-                            ? '✅ محفظتك مؤمنة برمز سري عند الصرف أونلاين'
-                            : '⚠️ لم يتم تعيين رمز سري بعد (عيّن رمزك لحماية رصيدك)'}
+                            ? 'المحفظة محمية برمز سري عند الصرف أونلاين'
+                            : 'عيّن رمزاً من 4 أرقام لحماية رصيدك عند الدفع'}
                         </span>
                       </div>
                     </div>
 
-                    <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-[#D4AF37]/20 text-[#D4AF37]">
-                      {currentMember.hasPin ? 'مؤمن 🔒' : 'غير محمي'}
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-lg bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710]">
+                      {currentMember.hasPin ? 'مؤمن' : 'غير معيّن'}
                     </span>
                   </div>
 
                   {pinFeedback && (
                     <div
-                      className={`p-2.5 rounded-xl text-xs font-black border ${
+                      className={`p-2.5 rounded-xl text-xs font-bold border ${
                         pinFeedback.type === 'success'
-                          ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200'
-                          : 'bg-red-500/20 border-red-400 text-red-200'
+                          ? 'bg-[#EEF5F0] border-[#D4E8DA] text-[#2F5A3D]'
+                          : 'bg-red-50 border-red-200 text-[#B83B2B]'
                       }`}
                     >
                       {pinFeedback.text}
@@ -336,7 +323,7 @@ export default function VipWalletPage() {
                         value={oldPinInput}
                         onChange={(e) => setOldPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
                         placeholder="الرمز الحالي"
-                        className="bg-white/10 border border-[#D4AF37]/40 focus:border-[#D4AF37] rounded-xl px-3 py-2 text-xs text-white placeholder-white/40 focus:outline-none font-mono text-center tracking-widest sm:w-28"
+                        className="bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs text-[#231710] focus:outline-none font-mono text-center tracking-widest sm:w-28"
                       />
                     )}
 
@@ -348,47 +335,58 @@ export default function VipWalletPage() {
                       value={pinInput}
                       onChange={(e) => setPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
                       placeholder={currentMember.hasPin ? 'الرمز الجديد (4 أرقام)' : 'عيّن رمز 4 أرقام'}
-                      className="bg-white/10 border border-[#D4AF37]/40 focus:border-[#D4AF37] rounded-xl px-3 py-2 text-xs text-white placeholder-white/40 focus:outline-none font-mono text-center tracking-widest flex-1"
+                      className="bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs text-[#231710] focus:outline-none font-mono text-center tracking-widest flex-1"
                       required
                     />
 
                     <button
                       type="submit"
                       disabled={pinLoading}
-                      className="bg-[#D4AF37] hover:bg-[#C88A4B] text-[#231710] font-cairo font-black text-xs px-4 py-2 rounded-xl transition cursor-pointer shrink-0"
+                      className="bg-[#231710] hover:bg-[#362419] text-[#FAF6F0] font-cairo font-bold text-xs px-4 py-2 rounded-xl transition cursor-pointer shrink-0"
                     >
-                      {pinLoading ? 'جاري الحفظ...' : currentMember.hasPin ? 'تغيير الرمز' : 'حفظ وتأمين'}
+                      {pinLoading ? 'جاري الحفظ...' : currentMember.hasPin ? 'تحديث الرمز' : 'حفظ الرمز'}
                     </button>
                   </form>
                 </div>
+              </div>
+            ) : (
+              <div className="bg-[#FAF6F0] rounded-2xl p-6 border border-[#E8E0D5] space-y-3 text-right">
+                <h3 className="font-cairo text-base font-bold text-[#231710]">
+                  كيف تعمل محفظة حفصة VIP؟
+                </h3>
+                <ul className="space-y-2 text-xs text-[#5C4A3D] leading-relaxed">
+                  <li>• تُربط المحفظة برقم هاتفك مباشرة بدون بطاقات بلاستيكية.</li>
+                  <li>• تحصل على 5% كاش باك نقدي تلقائياً على الطلبات من 150 ج.م فأكثر.</li>
+                  <li>• يمكنك حماية رصيدك برمز سري (PIN) من 4 أرقام وصرفه في أي وقت.</li>
+                </ul>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Main Content: Transaction History + Cashback Calculator + Secret VIP Offers */}
+      {/* Main Content: Transaction History + Cashback Calculator + Active Offers */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Transaction History (7 cols) */}
-          <div className="lg:col-span-7 bg-white rounded-3xl p-5 sm:p-6 border border-[#E6DFD3] shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-[#E6DFD3] pb-3">
+          {/* Transaction History */}
+          <div className="lg:col-span-7 bg-white rounded-2xl p-6 border border-[#E8E0D5] space-y-4">
+            <div className="flex items-center justify-between border-b border-[#F0EAE0] pb-3">
               <div>
-                <h3 className="font-cairo text-base sm:text-lg font-black text-[#231710]">
-                  سجل حركات محفظة حفصة VIP
+                <h3 className="font-cairo text-base sm:text-lg font-bold text-[#231710]">
+                  سجل حركات المحفظة
                 </h3>
                 <p className="text-xs text-[#6E5D4F]">
-                  جميع نقاط الكاش باك المكتسبة والمستبدلة في الموقع أو فرع بني مزار
+                  سجل نقاط الكاش باك المكتسبة والمستبدلة
                 </p>
               </div>
-              <span className="text-xs font-black text-[#3B6E4C] bg-[#3B6E4C]/10 px-3 py-1 rounded-full tabular-nums">
+              <span className="text-xs font-bold text-[#5C4A3D] bg-[#FAF6F0] border border-[#E8E0D5] px-3 py-1 rounded-xl tabular-nums">
                 {currentMember?.transactions?.length || 0} حركات
               </span>
             </div>
 
             {!currentMember?.transactions || currentMember.transactions.length === 0 ? (
-              <p className="text-xs text-[#6E5D4F] py-6 text-center">
-                لا توجد حركات مسجلة بعد لهذا الرقم.
+              <p className="text-xs text-[#6E5D4F] py-8 text-center">
+                {currentMember ? 'لا توجد حركات مسجلة بعد لهذا الرقم.' : 'أدخل رقم موبايلك بالأعلى لعرض سجل الحركات.'}
               </p>
             ) : (
               <div className="space-y-2.5">
@@ -397,14 +395,14 @@ export default function VipWalletPage() {
                   return (
                     <div
                       key={tx.id}
-                      className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-[#FAF6F0] border border-[#E6DFD3]"
+                      className="flex items-center justify-between gap-3 p-3.5 rounded-xl bg-[#FAF6F0] border border-[#E8E0D5]"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                             isEarned
-                              ? 'bg-[#3B6E4C]/15 text-[#3B6E4C]'
-                              : 'bg-[#B83B2B]/15 text-[#B83B2B]'
+                              ? 'bg-[#EEF5F0] text-[#3B6E4C]'
+                              : 'bg-red-50 text-[#B83B2B]'
                           }`}
                         >
                           {isEarned ? (
@@ -414,10 +412,10 @@ export default function VipWalletPage() {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <div className="text-xs font-black text-[#231710] truncate">
+                          <div className="text-xs font-bold text-[#231710] truncate">
                             {tx.description}
                           </div>
-                          <div className="text-[10px] text-[#6E5D4F] tabular-nums">
+                          <div className="text-[11px] text-[#6E5D4F] tabular-nums">
                             {new Date(tx.date).toLocaleDateString('ar-EG')}
                             {tx.orderNumber ? ` • طلب #${tx.orderNumber}` : ''}
                           </div>
@@ -425,7 +423,7 @@ export default function VipWalletPage() {
                       </div>
 
                       <span
-                        className={`font-cairo text-sm font-black shrink-0 tabular-nums ${
+                        className={`font-cairo text-sm font-bold shrink-0 tabular-nums ${
                           isEarned ? 'text-[#3B6E4C]' : 'text-[#B83B2B]'
                         }`}
                       >
@@ -438,22 +436,22 @@ export default function VipWalletPage() {
             )}
           </div>
 
-          {/* Interactive 5% Cashback Calculator (5 cols) */}
-          <div className="lg:col-span-5 bg-[#F3ECE1] rounded-3xl p-5 sm:p-6 border border-[#D4AF37] space-y-4">
+          {/* Interactive 5% Cashback Calculator */}
+          <div className="lg:col-span-5 bg-white rounded-2xl p-6 border border-[#E8E0D5] space-y-4 h-fit">
             <div className="flex items-center gap-2">
-              <Calculator className="w-5 h-5 text-[#C88A4B]" />
-              <h3 className="font-cairo text-base sm:text-lg font-black text-[#231710]">
-                حاسبة الكاش باك الفوري (5%)
+              <Calculator className="w-4 h-4 text-[#9A6836]" />
+              <h3 className="font-cairo text-base sm:text-lg font-bold text-[#231710]">
+                حاسبة الكاش باك (5%)
               </h3>
             </div>
-            <p className="text-xs text-[#6E5D4F] leading-relaxed">
-              حرّك المؤشر لتعرف قيمة الكاش باك النقدي الذي يضاف فوراً لمحفظتك عند الشراء من محمصة حفصة:
+            <p className="text-xs text-[#5C4A3D] leading-relaxed">
+              حرّك المؤشر لمعرفة قيمة الرصيد المضاف لمحفظتك حسب قيمة الطلب:
             </p>
 
-            <div className="bg-white rounded-2xl p-4 border border-[#E6DFD3] space-y-3 tabular-nums">
+            <div className="bg-[#FAF6F0] rounded-xl p-4 border border-[#E8E0D5] space-y-3 tabular-nums">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-[#6E5D4F]">قيمة فاتورة مشترياتك:</span>
-                <span className="font-cairo text-lg font-black text-[#231710]">
+                <span className="text-xs text-[#6E5D4F]">قيمة المشتريات</span>
+                <span className="font-cairo text-lg font-bold text-[#231710]">
                   {simOrderAmount} ج.م
                 </span>
               </div>
@@ -466,89 +464,78 @@ export default function VipWalletPage() {
                 onChange={(e) => setSimOrderAmount(Number(e.target.value))}
                 className="w-full accent-[#231710] cursor-pointer"
               />
-              <div className="pt-2 border-t border-[#E6DFD3] flex items-center justify-between">
-                <span className="text-xs font-extrabold text-[#231710]">
-                  رصيد الكاش باك الفوري (5%):
+              <div className="pt-2.5 border-t border-[#E8E0D5] flex items-center justify-between">
+                <span className="text-xs font-bold text-[#231710]">
+                  الكاش باك المكتسب:
                 </span>
-                <span className="font-cairo text-xl font-black text-[#3B6E4C]">
+                <span className="font-cairo text-base font-bold text-[#3B6E4C]">
                   {simulatedCashback > 0
-                    ? `+${simulatedCashback} ج.م (${simulatedCashback * 10} نقطة)`
+                    ? `+${simulatedCashback} ج.م`
                     : 'يبدأ من طلبات 150 ج.م'}
                 </span>
               </div>
             </div>
-
-            <div className="bg-[#231710] text-[#FAF6F0] rounded-2xl p-4 space-y-1.5 text-xs">
-              <div className="font-cairo font-black text-[#D4AF37]">
-                💡 كيف تستخدم نقاطك في فرع بني مزار؟
-              </div>
-              <p className="text-[11px] text-[#F3ECE1]/85 leading-relaxed">
-                أعطِ الكاشير رقم موبايلك أو اعرض رمز الـ QR Code الموجود أعلى الصفحة ليتم خصم
-                رصيدك مباشرة من فاتورتك داخل المحل!
-              </p>
-            </div>
           </div>
         </div>
 
-        {/* Secret VIP Offers Table */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 border-2 border-[#D4AF37] shadow-md space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <span className="text-xs font-black text-[#C88A4B] block">
-                🔒 عروض حصرية لأعضاء نادي حفصة VIP
+        {/* Active VIP Offers */}
+        {vipPromos.length > 0 && (
+          <div className="bg-white rounded-2xl p-6 border border-[#E8E0D5] space-y-4">
+            <div>
+              <span className="text-xs font-bold text-[#9A6836] block">
+                باقات مختارة
               </span>
-              <h3 className="font-cairo text-lg sm:text-xl font-black text-[#231710]">
-                جدول عروض أعضاء VIP السرية وباقات التوفير
+              <h3 className="font-cairo text-lg sm:text-xl font-bold text-[#231710]">
+                عروض وباقات التوفير لأعضاء VIP
               </h3>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {vipPromos.map((promo) => (
-              <div
-                key={promo.id}
-                className="bg-[#FAF6F0] rounded-2xl p-4 border border-[#E6DFD3] flex flex-col justify-between gap-3"
-              >
-                <div className="space-y-1.5">
-                  <span className="bg-[#231710] text-[#D4AF37] text-[10px] font-black px-2.5 py-0.5 rounded-full">
-                    {promo.badgeText || 'عرض VIP'}
-                  </span>
-                  <h4 className="font-cairo text-sm font-black text-[#231710]">
-                    {promo.title}
-                  </h4>
-                  <p className="text-xs text-[#6E5D4F]">{promo.subtitle}</p>
-                </div>
-
-                <div className="flex items-center justify-between pt-2 border-t border-[#E6DFD3] tabular-nums">
-                  <div>
-                    <span className="text-[10px] text-[#6E5D4F] line-through block">
-                      {promo.originalPrice} ج.م
-                    </span>
-                    <span className="font-cairo text-base font-black text-[#3B6E4C]">
-                      {promo.promoPrice} ج.م
-                    </span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {vipPromos.map((promo) => (
+                <div
+                  key={promo.id}
+                  className="bg-[#FAF6F0] rounded-xl p-4 border border-[#E8E0D5] flex flex-col justify-between gap-3"
+                >
+                  <div className="space-y-1">
+                    <h4 className="font-cairo text-sm font-bold text-[#231710]">
+                      {promo.title}
+                    </h4>
+                    <p className="text-xs text-[#6E5D4F]">{promo.subtitle}</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      addFlashPromoToCart(
-                        promo.id,
-                        promo.title,
-                        promo.promoPrice,
-                        getSafeImageUrl(promo.image)
-                      );
-                      setIsCartOpen(true);
-                    }}
-                    className="bg-[#231710] text-[#D4AF37] px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1 cursor-pointer"
-                  >
-                    <ShoppingBag className="w-3.5 h-3.5" />
-                    <span>اطلب العرض</span>
-                  </button>
+
+                  <div className="flex items-center justify-between pt-2.5 border-t border-[#E8E0D5] tabular-nums">
+                    <div>
+                      {promo.originalPrice && (
+                        <span className="text-xs text-[#8A7968] line-through block">
+                          {promo.originalPrice} ج.م
+                        </span>
+                      )}
+                      <span className="font-cairo text-base font-bold text-[#231710]">
+                        {promo.promoPrice} ج.م
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        addFlashPromoToCart(
+                          promo.id,
+                          promo.title,
+                          promo.promoPrice,
+                          getSafeImageUrl(promo.image)
+                        );
+                        setIsCartOpen(true);
+                      }}
+                      className="bg-[#231710] hover:bg-[#362419] text-[#FAF6F0] px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition"
+                    >
+                      <ShoppingBag className="w-3.5 h-3.5" />
+                      <span>أضف للسلة</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

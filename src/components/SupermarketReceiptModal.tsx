@@ -249,10 +249,10 @@ export default function SupermarketReceiptModal({
         <div className="w-full bg-[#231710] text-white rounded-t-2xl px-3.5 py-2.5 flex items-center justify-between border-b border-[#D4AF37]/40 no-print print:hidden">
           <span className="font-cairo font-black text-xs text-[#D4AF37]">
             {mode === 'sticker'
-              ? '🏷️ استيكر الميزان'
+              ? 'استيكر الميزان'
               : mode === 'zreport'
-                ? '📊 تقرير تقفيل الوردية (Z-Report)'
-                : '🧾 بون سوبر ماركت حراري'}
+                ? 'تقرير تقفيل الوردية (Z-Report)'
+                : 'بون سوبر ماركت حراري'}
           </span>
           <div className="flex items-center gap-1.5">
             <button

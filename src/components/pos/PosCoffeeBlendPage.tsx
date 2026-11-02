@@ -5,7 +5,7 @@ import {
   Coffee,
   Plus,
   Tag,
-  Sparkles,
+  Layers,
   RotateCcw,
   X,
 } from 'lucide-react';
@@ -134,7 +134,7 @@ export default function PosCoffeeBlendPage({
   >(null);
   const [targetEgp, setTargetEgp] = useState<number>(50);
 
-  // Custom Bag State (Add beans by grams or EGP without percentage sliders!)
+  // Custom Bag State (Add beans by grams or EGP without percentage sliders)
   const [bagItems, setBagItems] = useState<CustomBagItem[]>([]);
 
   const roastLabel =
@@ -192,7 +192,7 @@ export default function PosCoffeeBlendPage({
     });
   };
 
-  // Confirm Ready Coffee by EGP Amount ("عايز بـ 50 جنيه بن")
+  // Confirm Ready Coffee by EGP Amount
   const handleConfirmAmountModal = () => {
     if (!amountModalCard) return;
     const effectivePricePerKg = amountModalCard.pricePerKg + spicingSurchargePerKg;
@@ -252,7 +252,7 @@ export default function PosCoffeeBlendPage({
     });
   };
 
-  // Add Bean to Custom Bag by EGP Amount ("حطلي بـ 50 جنيه برازيلي في الكيس")
+  // Add Bean to Custom Bag by EGP Amount
   const handleAddBeanByEgp = (
     origin: (typeof COFFEE_ORIGINS_CATALOG)[number],
     amountEgp: number
@@ -308,13 +308,13 @@ export default function PosCoffeeBlendPage({
       {/* =================================================================== */}
       {/* 2 SIMPLE TABS: READY COFFEE VS CUSTOM BLEND BAG                     */}
       {/* =================================================================== */}
-      <div className="grid grid-cols-2 gap-3 bg-white p-2 rounded-2xl border border-[#E6DFD3] shadow-xs">
+      <div className="grid grid-cols-2 gap-3 bg-white p-2 rounded-2xl border border-[#E8E0D5]">
         <button
           type="button"
           onClick={() => setCoffeeTab('ready')}
-          className={`py-3 px-4 rounded-xl font-cairo font-black text-sm flex items-center justify-center gap-2 transition cursor-pointer ${
+          className={`py-3 px-4 rounded-xl font-cairo font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer ${
             coffeeTab === 'ready'
-              ? 'bg-[#231710] text-[#D4AF37] shadow-sm'
+              ? 'bg-[#231710] text-white'
               : 'bg-[#FAF6F0] text-[#231710] hover:bg-[#F3ECE1]'
           }`}
         >
@@ -325,13 +325,13 @@ export default function PosCoffeeBlendPage({
         <button
           type="button"
           onClick={() => setCoffeeTab('custom_bag')}
-          className={`py-3 px-4 rounded-xl font-cairo font-black text-sm flex items-center justify-center gap-2 transition cursor-pointer ${
+          className={`py-3 px-4 rounded-xl font-cairo font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer ${
             coffeeTab === 'custom_bag'
-              ? 'bg-[#3B6E4C] text-white shadow-sm'
+              ? 'bg-[#231710] text-white'
               : 'bg-[#FAF6F0] text-[#231710] hover:bg-[#F3ECE1]'
           }`}
         >
-          <Sparkles className="w-4 h-4" />
+          <Layers className="w-4 h-4" />
           <span>خلط توليفة مخصوصة (بالجرام أو الجنيه)</span>
         </button>
       </div>
@@ -339,20 +339,20 @@ export default function PosCoffeeBlendPage({
       {/* =================================================================== */}
       {/* SIMPLE ROAST / SPICING / GRIND BAR (1-CLICK PILLS)                  */}
       {/* =================================================================== */}
-      <div className="bg-white rounded-2xl p-3.5 border border-[#E6DFD3] shadow-xs grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="bg-white rounded-2xl p-3.5 border border-[#E8E0D5] grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Roast */}
-        <div className="flex items-center gap-1.5 bg-[#FAF6F0] p-1.5 rounded-xl">
-          <span className="text-xs font-black text-[#6E5D4F] px-2 shrink-0">
-            🔥 التحميص:
+        <div className="flex items-center gap-1.5 bg-[#FAF6F0] p-1.5 rounded-xl border border-[#E8E0D5]">
+          <span className="text-xs font-bold text-[#6B5B4E] px-2 shrink-0">
+            التحميص:
           </span>
           {ROAST_OPTIONS.map((r) => (
             <button
               key={r.id}
               type="button"
               onClick={() => setRoastLevel(r.id)}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-cairo font-black transition cursor-pointer ${
+              className={`flex-1 py-1.5 rounded-lg text-xs font-cairo font-bold transition cursor-pointer ${
                 roastLevel === r.id
-                  ? 'bg-[#231710] text-[#D4AF37]'
+                  ? 'bg-[#231710] text-white'
                   : 'text-[#231710] hover:bg-white'
               }`}
             >
@@ -362,18 +362,18 @@ export default function PosCoffeeBlendPage({
         </div>
 
         {/* Spicing */}
-        <div className="flex items-center gap-1 bg-[#FAF6F0] p-1.5 rounded-xl overflow-x-auto">
-          <span className="text-xs font-black text-[#6E5D4F] px-1.5 shrink-0">
-            🌿 التحويجة:
+        <div className="flex items-center gap-1 bg-[#FAF6F0] p-1.5 rounded-xl border border-[#E8E0D5] overflow-x-auto">
+          <span className="text-xs font-bold text-[#6B5B4E] px-1.5 shrink-0">
+            التحويجة:
           </span>
           {SPICING_OPTIONS.map((s) => (
             <button
               key={s.id}
               type="button"
               onClick={() => setSpicing(s.id)}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-cairo font-black shrink-0 transition cursor-pointer ${
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-cairo font-bold shrink-0 transition cursor-pointer ${
                 spicing === s.id
-                  ? 'bg-[#3B6E4C] text-white'
+                  ? 'bg-[#231710] text-white'
                   : 'text-[#231710] hover:bg-white'
               }`}
             >
@@ -383,18 +383,18 @@ export default function PosCoffeeBlendPage({
         </div>
 
         {/* Grind */}
-        <div className="flex items-center gap-1 bg-[#FAF6F0] p-1.5 rounded-xl overflow-x-auto">
-          <span className="text-xs font-black text-[#6E5D4F] px-1.5 shrink-0">
-            ⚙️ الطحن:
+        <div className="flex items-center gap-1 bg-[#FAF6F0] p-1.5 rounded-xl border border-[#E8E0D5] overflow-x-auto">
+          <span className="text-xs font-bold text-[#6B5B4E] px-1.5 shrink-0">
+            الطحن:
           </span>
           {GRIND_OPTIONS.map((g) => (
             <button
               key={g.id}
               type="button"
               onClick={() => setGrindSize(g.id)}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-cairo font-black shrink-0 transition cursor-pointer ${
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-cairo font-bold shrink-0 transition cursor-pointer ${
                 grindSize === g.id
-                  ? 'bg-[#231710] text-[#D4AF37]'
+                  ? 'bg-[#231710] text-white'
                   : 'text-[#231710] hover:bg-white'
               }`}
             >
@@ -405,7 +405,7 @@ export default function PosCoffeeBlendPage({
       </div>
 
       {/* =================================================================== */}
-      {/* TAB 1: READY COFFEE & BLENDS (LARGE SIMPLE CARDS)                   */}
+      {/* TAB 1: READY COFFEE & BLENDS                                        */}
       {/* =================================================================== */}
       {coffeeTab === 'ready' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5">
@@ -414,12 +414,12 @@ export default function PosCoffeeBlendPage({
             return (
               <div
                 key={card.id}
-                className="bg-white rounded-2xl border-2 border-[#E6DFD3] hover:border-[#D4AF37] p-4 flex flex-col justify-between transition shadow-xs hover:shadow-md space-y-3"
+                className="bg-white rounded-2xl border border-[#E8E0D5] hover:border-[#C5B8A8] p-4 flex flex-col justify-between transition space-y-3"
               >
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="bg-[#FAF6F0] text-[#C88A4B] border border-[#E6DFD3] text-[11px] font-black px-2.5 py-0.5 rounded-lg tabular-nums">
-                      ☕ {effectivePricePerKg} ج/كجم
+                    <span className="bg-[#FAF6F0] text-[#9A6836] border border-[#E8E0D5] text-[11px] font-bold px-2.5 py-0.5 rounded-lg tabular-nums">
+                      {effectivePricePerKg} ج/كجم
                     </span>
                     <button
                       type="button"
@@ -427,16 +427,16 @@ export default function PosCoffeeBlendPage({
                         setAmountModalCard(card);
                         setTargetEgp(50);
                       }}
-                      className="bg-[#3B6E4C]/10 hover:bg-[#3B6E4C] text-[#3B6E4C] hover:text-white px-2.5 py-1 rounded-lg text-xs font-cairo font-black transition cursor-pointer"
+                      className="bg-[#FAF6F0] hover:bg-[#231710] text-[#231710] hover:text-white border border-[#E8E0D5] px-2.5 py-1 rounded-lg text-xs font-cairo font-bold transition cursor-pointer"
                     >
-                      💵 بيع بمبلغ
+                      بيع بمبلغ
                     </button>
                   </div>
 
-                  <h3 className="font-cairo font-black text-base text-[#231710]">
+                  <h3 className="font-cairo font-bold text-base text-[#231710]">
                     {card.name}
                   </h3>
-                  <p className="text-xs font-bold text-[#6E5D4F] mt-0.5">
+                  <p className="text-xs font-medium text-[#6B5B4E] mt-0.5">
                     {card.desc}
                   </p>
                 </div>
@@ -450,10 +450,10 @@ export default function PosCoffeeBlendPage({
                         key={w.grams}
                         type="button"
                         onClick={() => handleAddReadyCoffeeWeight(card, w.grams)}
-                        className="bg-[#FAF6F0] hover:bg-[#231710] text-[#231710] hover:text-[#D4AF37] border border-[#E6DFD3] hover:border-[#231710] rounded-xl py-2.5 px-2.5 flex items-center justify-between transition cursor-pointer group"
+                        className="bg-[#FAF6F0] hover:bg-[#231710] text-[#231710] hover:text-white border border-[#E8E0D5] hover:border-[#231710] rounded-xl py-2.5 px-2.5 flex items-center justify-between transition cursor-pointer group"
                       >
-                        <span className="font-cairo font-black text-xs">{w.label}</span>
-                        <span className="font-black text-xs text-[#3B6E4C] group-hover:text-[#D4AF37] tabular-nums">
+                        <span className="font-cairo font-bold text-xs">{w.label}</span>
+                        <span className="font-bold text-xs text-[#6B5B4E] group-hover:text-white tabular-nums">
                           {price} ج
                         </span>
                       </button>
@@ -467,18 +467,18 @@ export default function PosCoffeeBlendPage({
       )}
 
       {/* =================================================================== */}
-      {/* TAB 2: CUSTOM BLEND BAG BY GRAMS OR EGP (ZERO SLIDERS!)             */}
+      {/* TAB 2: CUSTOM BLEND BAG BY GRAMS OR EGP                             */}
       {/* =================================================================== */}
       {coffeeTab === 'custom_bag' && (
         <div className="space-y-4">
           {/* Top Tray: Current Custom Coffee Bag */}
-          <div className="bg-white rounded-2xl p-4 border-2 border-[#D4AF37] shadow-sm space-y-3">
+          <div className="bg-white rounded-2xl p-4 border border-[#E8E0D5] space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="font-cairo font-black text-base text-[#231710]">
-                  🥣 كيس التوليفة الحالي:
+                <span className="font-cairo font-bold text-base text-[#231710]">
+                  كيس التوليفة الحالي:
                 </span>
-                <span className="text-xs font-bold text-[#6E5D4F]">
+                <span className="text-xs font-medium text-[#6B5B4E]">
                   اضغط على أوزان أو مبالغ البن بالأسفل لإضافتها في نفس الكيس
                 </span>
               </div>
@@ -496,7 +496,7 @@ export default function PosCoffeeBlendPage({
             </div>
 
             {bagItems.length === 0 ? (
-              <div className="bg-[#FAF6F0] rounded-xl p-5 text-center border border-dashed border-[#C88A4B]/50 text-xs font-bold text-[#6E5D4F]">
+              <div className="bg-[#FAF6F0] rounded-xl p-5 text-center border border-dashed border-[#E8E0D5] text-xs font-medium text-[#6B5B4E]">
                 الكيس فارغ حالياً — اختر من أصناف البن بالأسفل بالجرام أو بالجنيه لتكوين التوليفة
               </div>
             ) : (
@@ -504,13 +504,13 @@ export default function PosCoffeeBlendPage({
                 {bagItems.map((item) => (
                   <div
                     key={item.id}
-                    className="bg-[#FAF6F0] border-2 border-[#3B6E4C] rounded-xl px-3 py-2 flex items-center gap-2.5"
+                    className="bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-3 py-2 flex items-center gap-2.5"
                   >
                     <div>
-                      <span className="font-cairo font-black text-xs text-[#231710] block">
+                      <span className="font-cairo font-bold text-xs text-[#231710] block">
                         {item.name}
                       </span>
-                      <span className="text-[11px] font-bold text-[#3B6E4C] tabular-nums">
+                      <span className="text-[11px] font-medium text-[#6B5B4E] tabular-nums">
                         {item.grams} جم • {item.priceEgp} ج.م
                       </span>
                     </div>
@@ -519,7 +519,7 @@ export default function PosCoffeeBlendPage({
                       onClick={() =>
                         setBagItems((prev) => prev.filter((x) => x.id !== item.id))
                       }
-                      className="w-6 h-6 rounded-lg bg-red-100 hover:bg-red-200 text-[#B83B2B] flex items-center justify-center cursor-pointer"
+                      className="w-6 h-6 rounded-lg bg-red-50 hover:bg-red-100 text-[#B83B2B] flex items-center justify-center cursor-pointer"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -529,21 +529,21 @@ export default function PosCoffeeBlendPage({
             )}
 
             {/* Total & Add Bag Button */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#E6DFD3]">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#E8E0D5]">
               <div className="flex items-center gap-4">
                 <div>
-                  <span className="text-xs font-bold text-[#6E5D4F] block">
+                  <span className="text-xs font-medium text-[#6B5B4E] block">
                     إجمالي وزن الكيس
                   </span>
-                  <span className="font-cairo font-black text-lg text-[#231710] tabular-nums">
+                  <span className="font-cairo font-bold text-lg text-[#231710] tabular-nums">
                     {bagTotals.totalGrams} جم
                   </span>
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-[#6E5D4F] block">
+                  <span className="text-xs font-medium text-[#6B5B4E] block">
                     إجمالي سعر التوليفة
                   </span>
-                  <span className="font-cairo font-black text-2xl text-[#3B6E4C] tabular-nums">
+                  <span className="font-cairo font-bold text-2xl text-[#231710] tabular-nums">
                     {bagTotals.finalPriceEgp} ج.م
                   </span>
                 </div>
@@ -563,9 +563,9 @@ export default function PosCoffeeBlendPage({
                         date: new Date().toLocaleDateString('ar-EG'),
                       })
                     }
-                    className="bg-[#FAF6F0] hover:bg-[#F3ECE1] text-[#231710] border border-[#E6DFD3] px-4 py-3 rounded-xl font-cairo font-black text-xs flex items-center gap-1.5 cursor-pointer"
+                    className="bg-[#FAF6F0] hover:bg-[#F3ECE1] text-[#231710] border border-[#E8E0D5] px-4 py-3 rounded-xl font-cairo font-bold text-xs flex items-center gap-1.5 cursor-pointer"
                   >
-                    <Tag className="w-4 h-4 text-[#C88A4B]" />
+                    <Tag className="w-4 h-4 text-[#9A6836]" />
                     <span>طباعة استيكر</span>
                   </button>
                 )}
@@ -574,10 +574,10 @@ export default function PosCoffeeBlendPage({
                   type="button"
                   onClick={handleAddCustomBagToInvoice}
                   disabled={bagItems.length === 0}
-                  className={`px-6 py-3 rounded-xl font-cairo font-black text-sm flex items-center gap-2 transition cursor-pointer ${
+                  className={`px-6 py-3 rounded-xl font-cairo font-bold text-sm flex items-center gap-2 transition cursor-pointer ${
                     bagItems.length > 0
-                      ? 'bg-[#3B6E4C] hover:bg-[#2F5A3D] text-white shadow-md'
-                      : 'bg-[#E6DFD3] text-[#6E5D4F] cursor-not-allowed'
+                      ? 'bg-[#231710] hover:bg-[#3A271C] text-white'
+                      : 'bg-[#FAF6F0] text-[#6B5B4E] border border-[#E8E0D5] cursor-not-allowed'
                   }`}
                 >
                   <Plus className="w-4 h-4" />
@@ -592,20 +592,20 @@ export default function PosCoffeeBlendPage({
             {COFFEE_ORIGINS_CATALOG.map((origin) => (
               <div
                 key={origin.id}
-                className="bg-white rounded-2xl border-2 border-[#E6DFD3] hover:border-[#D4AF37] p-4 space-y-3 shadow-xs"
+                className="bg-white rounded-2xl border border-[#E8E0D5] hover:border-[#C5B8A8] p-4 space-y-3"
               >
                 <div className="flex items-center justify-between">
-                  <h3 className="font-cairo font-black text-base text-[#231710]">
-                    ☕ {origin.name}
+                  <h3 className="font-cairo font-bold text-base text-[#231710]">
+                    {origin.name}
                   </h3>
-                  <span className="bg-[#FAF6F0] text-[#C88A4B] text-xs font-black px-2.5 py-0.5 rounded-lg border border-[#E6DFD3] tabular-nums">
+                  <span className="bg-[#FAF6F0] text-[#9A6836] text-xs font-bold px-2.5 py-0.5 rounded-lg border border-[#E8E0D5] tabular-nums">
                     {origin.pricePerKg} ج/كجم
                   </span>
                 </div>
 
                 {/* Add by Grams */}
                 <div className="space-y-1">
-                  <span className="text-[11px] font-bold text-[#6E5D4F] block">
+                  <span className="text-[11px] font-medium text-[#6B5B4E] block">
                     إضافة بالجرام للكيس:
                   </span>
                   <div className="grid grid-cols-4 gap-1.5">
@@ -614,7 +614,7 @@ export default function PosCoffeeBlendPage({
                         key={g}
                         type="button"
                         onClick={() => handleAddBeanByGrams(origin, g)}
-                        className="bg-[#FAF6F0] hover:bg-[#231710] text-[#231710] hover:text-[#D4AF37] border border-[#E6DFD3] rounded-xl py-2 text-xs font-black tabular-nums cursor-pointer transition"
+                        className="bg-[#FAF6F0] hover:bg-[#231710] text-[#231710] hover:text-white border border-[#E8E0D5] rounded-xl py-2 text-xs font-bold tabular-nums cursor-pointer transition"
                       >
                         +{g} جم
                       </button>
@@ -624,7 +624,7 @@ export default function PosCoffeeBlendPage({
 
                 {/* Add by Money EGP */}
                 <div className="space-y-1">
-                  <span className="text-[11px] font-bold text-[#3B6E4C] block">
+                  <span className="text-[11px] font-medium text-[#9A6836] block">
                     إضافة بمبلغ بالجنيه للكيس:
                   </span>
                   <div className="grid grid-cols-4 gap-1.5">
@@ -633,7 +633,7 @@ export default function PosCoffeeBlendPage({
                         key={amt}
                         type="button"
                         onClick={() => handleAddBeanByEgp(origin, amt)}
-                        className="bg-[#3B6E4C]/10 hover:bg-[#3B6E4C] text-[#3B6E4C] hover:text-white border border-[#3B6E4C]/30 rounded-xl py-2 text-xs font-black tabular-nums cursor-pointer transition"
+                        className="bg-[#FAF6F0] hover:bg-[#231710] text-[#231710] hover:text-white border border-[#E8E0D5] rounded-xl py-2 text-xs font-bold tabular-nums cursor-pointer transition"
                       >
                         + بـ {amt} ج
                       </button>
@@ -650,11 +650,11 @@ export default function PosCoffeeBlendPage({
       {/* ON-DEMAND SELL-BY-AMOUNT MODAL FOR READY COFFEE                     */}
       {/* =================================================================== */}
       {amountModalCard && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-5 border-2 border-[#D4AF37] shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#E6DFD3] pb-3">
-              <h3 className="font-cairo font-black text-base text-[#231710]">
-                💵 بيع بمبلغ: {amountModalCard.name}
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 border border-[#E8E0D5] shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E8E0D5] pb-3">
+              <h3 className="font-cairo font-bold text-base text-[#231710]">
+                بيع بمبلغ: {amountModalCard.name}
               </h3>
               <button
                 type="button"
@@ -672,7 +672,7 @@ export default function PosCoffeeBlendPage({
                 step={5}
                 value={targetEgp}
                 onChange={(e) => setTargetEgp(Math.max(10, Number(e.target.value) || 0))}
-                className="w-full bg-[#FAF6F0] border-2 border-[#3B6E4C] rounded-2xl px-4 py-3 text-2xl font-black text-center text-[#231710] tabular-nums outline-none"
+                className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-2xl px-4 py-3 text-2xl font-bold text-center text-[#231710] tabular-nums outline-none"
               />
               <div className="grid grid-cols-5 gap-1.5">
                 {[30, 50, 100, 150, 200].map((amt) => (
@@ -680,10 +680,10 @@ export default function PosCoffeeBlendPage({
                     key={amt}
                     type="button"
                     onClick={() => setTargetEgp(amt)}
-                    className={`py-2 rounded-xl text-xs font-black tabular-nums cursor-pointer border ${
+                    className={`py-2 rounded-xl text-xs font-bold tabular-nums cursor-pointer border transition ${
                       targetEgp === amt
-                        ? 'bg-[#3B6E4C] text-white border-[#3B6E4C]'
-                        : 'bg-[#FAF6F0] text-[#231710] border-[#E6DFD3]'
+                        ? 'bg-[#231710] text-white border-[#231710]'
+                        : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]'
                     }`}
                   >
                     {amt} ج
@@ -692,9 +692,9 @@ export default function PosCoffeeBlendPage({
               </div>
             </div>
 
-            <div className="bg-[#231710] text-white rounded-2xl p-3.5 flex items-center justify-between">
-              <span className="text-xs text-[#D4AF37] font-bold">الوزن المقابل للمبلغ:</span>
-              <span className="font-cairo font-black text-lg text-[#D4AF37] tabular-nums">
+            <div className="bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] rounded-2xl p-3.5 flex items-center justify-between">
+              <span className="text-xs text-[#6B5B4E] font-medium">الوزن المقابل للمبلغ:</span>
+              <span className="font-cairo font-bold text-lg text-[#9A6836] tabular-nums">
                 {Math.max(
                   25,
                   Math.round(
@@ -709,7 +709,7 @@ export default function PosCoffeeBlendPage({
             <button
               type="button"
               onClick={handleConfirmAmountModal}
-              className="w-full bg-[#3B6E4C] hover:bg-[#2F5A3D] text-white font-cairo font-black text-sm py-3.5 rounded-2xl cursor-pointer shadow-md"
+              className="w-full bg-[#231710] hover:bg-[#3A271C] text-white font-cairo font-bold text-sm py-3.5 rounded-2xl cursor-pointer transition"
             >
               + إضافة للفاتورة ({targetEgp} ج.م)
             </button>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
   Bike,
@@ -51,6 +51,7 @@ export default function DeliveryRiderPage() {
   useEffect(() => {
     setIsAudioMutedState(isAudioMuted());
   }, []);
+
   const [stats, setStats] = useState({
     totalAssigned: 0,
     pendingDelivery: 0,
@@ -85,7 +86,25 @@ export default function DeliveryRiderPage() {
         return;
       }
       if (res.status === 403) {
-        // Redirection if another staff logged in
+        // Automatic redirection if another staff role is logged in
+        try {
+          const sessionRes = await fetch('/api/admin/login', { cache: 'no-store' });
+          if (sessionRes.ok) {
+            const sessionData = await sessionRes.json();
+            if (sessionData.role === 'cashier') {
+              window.location.replace('/pos');
+              return;
+            }
+            if (sessionData.role === 'supplier') {
+              window.location.replace('/supplier');
+              return;
+            }
+            if (sessionData.role === 'accountant') {
+              window.location.replace('/admin');
+              return;
+            }
+          }
+        } catch {}
         const data = await res.json().catch(() => ({}));
         setLoginError(data.error || 'عزل الأدوار: بوابة المندوب مخصصة لمناديب التوصيل فقط');
         setIsAuthenticated(false);
@@ -105,7 +124,7 @@ export default function DeliveryRiderPage() {
             playOrderAlertChime();
             setFeedback({
               type: 'success',
-              text: `🔔 تم إسناد طلب جديد لك: ${newlyAssigned[0].orderNumber} (العميل: ${newlyAssigned[0].customerName})`,
+              text: `تم إسناد طلب جديد لك: ${newlyAssigned[0].orderNumber} (العميل: ${newlyAssigned[0].customerName})`,
             });
           }
         }
@@ -164,9 +183,15 @@ export default function DeliveryRiderPage() {
           });
           await fetchRiderOrders();
         } else if (data.redirectTo) {
-          window.location.href = data.redirectTo;
+          window.location.replace(data.redirectTo);
+        } else if (data.role === 'cashier') {
+          window.location.replace('/pos');
+        } else if (data.role === 'supplier') {
+          window.location.replace('/supplier');
+        } else if (data.role === 'accountant') {
+          window.location.replace('/admin');
         } else {
-          setLoginError('عزل الأدوار: هذا الحساب غير مصرح له بالدخول كـ مندوب توصيل');
+          setLoginError('عزل الأدوار: هذا الحساب غير مصرح له بالدخول كبوابة مندوب توصيل');
         }
       }
     } catch {
@@ -210,8 +235,8 @@ export default function DeliveryRiderPage() {
           type: 'success',
           text:
             newStatus === 'delivered'
-              ? `✅ تم تأكيد تسليم الطلب #${order.orderNumber} وتحصيل المبلغ بنجاح!`
-              : `🛵 تم استلام الطلب #${order.orderNumber} وجاري التوصيل للعميل.`,
+              ? `تم تأكيد تسليم الطلب #${order.orderNumber} وتحصيل المبلغ بنجاح`
+              : `تم استلام الطلب #${order.orderNumber} وجاري التوصيل للعميل`,
         });
         await fetchRiderOrders();
       }
@@ -225,10 +250,10 @@ export default function DeliveryRiderPage() {
   // 1. Loading State
   if (isAuthenticated === null) {
     return (
-      <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center p-4" dir="rtl">
         <div className="text-center space-y-3">
-          <RefreshCw className="w-8 h-8 text-[#C88A4B] animate-spin mx-auto" />
-          <p className="font-cairo font-bold text-sm text-[#231710]">
+          <RefreshCw className="w-7 h-7 text-[#9A6836] animate-spin mx-auto" />
+          <p className="font-bold text-sm text-[#231710]">
             جاري تهيئة بوابة مندوب التوصيل — فرع بني مزار...
           </p>
         </div>
@@ -239,22 +264,22 @@ export default function DeliveryRiderPage() {
   // 2. Login Screen (Strictly AGENTS.md: Username & Password only)
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#FAF6F0] flex flex-col justify-center items-center p-4">
-        <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-[#D4AF37]/30 space-y-6">
+      <div className="min-h-screen bg-[#FAF6F0] flex flex-col justify-center items-center p-4" dir="rtl">
+        <div className="w-full max-w-md bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-[#E8E0D5] space-y-6">
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#231710] text-[#D4AF37] shadow-md mb-2">
-              <Bike className="w-7 h-7" />
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] mb-1">
+              <Bike className="w-6 h-6" />
             </div>
-            <h1 className="font-cairo font-black text-xl sm:text-2xl text-[#231710]">
+            <h1 className="font-bold text-xl text-[#231710]">
               محمصة حفصة للبن والمكسرات
             </h1>
-            <p className="font-cairo text-xs text-[#6E5D4F] font-bold">
+            <p className="text-xs text-[#6E5D4F] font-medium">
               بوابة مندوب التوصيل — فرع بني مزار (البندر ودورات القرى)
             </p>
           </div>
 
           {loginError && (
-            <div className="bg-[#B83B2B]/10 border border-[#B83B2B] text-[#B83B2B] p-3 rounded-2xl text-xs font-bold flex items-center gap-2">
+            <div className="bg-red-50 border border-red-200 text-[#B83B2B] p-3 rounded-xl text-xs font-medium flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{loginError}</span>
             </div>
@@ -262,7 +287,7 @@ export default function DeliveryRiderPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-black text-[#231710] mb-1.5">
+              <label className="block text-xs font-bold text-[#231710] mb-1.5">
                 اسم المستخدم
               </label>
               <input
@@ -271,13 +296,13 @@ export default function DeliveryRiderPage() {
                 value={usernameInput}
                 onChange={(e) => setUsernameInput(e.target.value)}
                 placeholder="أدخل اسم المستخدم"
-                className="w-full bg-[#FAF6F0] border border-[#E6DFD3] focus:border-[#C88A4B] rounded-2xl px-4 py-3 text-sm text-[#231710] focus:outline-none transition font-bold"
+                className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3.5 py-2.5 text-sm text-[#231710] focus:outline-none transition"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-black text-[#231710] mb-1.5">
+              <label className="block text-xs font-bold text-[#231710] mb-1.5">
                 كلمة المرور
               </label>
               <input
@@ -286,7 +311,7 @@ export default function DeliveryRiderPage() {
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
                 placeholder="أدخل كلمة المرور"
-                className="w-full bg-[#FAF6F0] border border-[#E6DFD3] focus:border-[#C88A4B] rounded-2xl px-4 py-3 text-sm text-[#231710] focus:outline-none transition font-bold"
+                className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3.5 py-2.5 text-sm text-[#231710] focus:outline-none transition"
                 required
               />
             </div>
@@ -294,7 +319,7 @@ export default function DeliveryRiderPage() {
             <button
               type="submit"
               disabled={loginLoading}
-              className="w-full bg-[#231710] hover:bg-[#3a261a] text-[#D4AF37] hover:text-white font-cairo font-black py-3.5 rounded-2xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer text-sm"
+              className="w-full bg-[#231710] hover:bg-[#3A271C] text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer text-sm disabled:opacity-50"
             >
               {loginLoading ? (
                 <>
@@ -310,12 +335,12 @@ export default function DeliveryRiderPage() {
             </button>
           </form>
 
-          <div className="pt-4 border-t border-[#E6DFD3] text-center">
+          <div className="pt-3 border-t border-[#E8E0D5] text-center">
             <Link
               href="/"
-              className="text-xs text-[#6E5D4F] hover:text-[#231710] font-bold transition"
+              className="text-xs text-[#6E5D4F] hover:text-[#231710] font-medium transition"
             >
-              ← العودة للمتجر الرئيسي
+              العودة للمتجر الرئيسي
             </Link>
           </div>
         </div>
@@ -325,25 +350,25 @@ export default function DeliveryRiderPage() {
 
   // 3. Authenticated Rider Portal
   return (
-    <div className="min-h-screen bg-[#FAF6F0] text-[#231710] pb-20">
+    <div className="min-h-screen bg-[#FAF6F0] text-[#231710] pb-20" dir="rtl">
       {/* Top Sticky Header */}
-      <header className="sticky top-0 z-30 bg-[#231710] text-[#FAF6F0] border-b-2 border-[#D4AF37]/40 px-4 py-3 shadow-md">
+      <header className="sticky top-0 z-30 bg-white text-[#231710] border-b border-[#E8E0D5] px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#D4AF37] text-[#231710] flex items-center justify-center font-black">
+            <div className="w-9 h-9 rounded-xl bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] flex items-center justify-center">
               <Bike className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-cairo font-black text-sm text-white">
-                  محمصة حفصة
+                <span className="font-bold text-sm text-[#231710]">
+                  محمصة حفصة — بوابة مندوب التوصيل
                 </span>
-                <span className="text-[10px] bg-[#D4AF37]/20 text-[#D4AF37] px-2 py-0.5 rounded-full font-bold">
+                <span className="text-[10px] bg-[#FAF6F0] text-[#6E5D4F] border border-[#E8E0D5] px-2 py-0.5 rounded-lg font-medium">
                   بني مزار
                 </span>
               </div>
-              <p className="text-[11px] text-[#FAF6F0]/70 font-bold truncate max-w-[170px] sm:max-w-none">
-                🛵 المندوب: {riderInfo?.displayName || riderInfo?.username || 'المندوب'}
+              <p className="text-xs text-[#6E5D4F] truncate max-w-[180px] sm:max-w-none">
+                المندوب: {riderInfo?.displayName || riderInfo?.username || 'المندوب'}
               </p>
             </div>
           </div>
@@ -356,16 +381,20 @@ export default function DeliveryRiderPage() {
                 setIsAudioMutedState(next);
               }}
               title={isAudioMutedState ? 'تفعيل جرس التنبيهات الصوتية' : 'كتم جرس التنبيهات الصوتية'}
-              className={`p-2 rounded-xl transition cursor-pointer flex items-center gap-1 ${isAudioMutedState ? 'bg-rose-500/25 text-rose-300' : 'bg-white/10 text-[#D4AF37] hover:bg-white/20'}`}
+              className={`p-2 rounded-xl border transition cursor-pointer flex items-center gap-1 ${
+                isAudioMutedState
+                  ? 'bg-red-50 text-[#B83B2B] border-red-200'
+                  : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5] hover:bg-[#EFE8DF]'
+              }`}
             >
-              {isAudioMutedState ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-[#D4AF37]" />}
+              {isAudioMutedState ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             </button>
             <button
               type="button"
               onClick={() => fetchRiderOrders()}
               disabled={loading}
               title="تحديث لحظي"
-              className="p-2 bg-white/10 hover:bg-white/20 text-[#D4AF37] rounded-xl transition cursor-pointer"
+              className="p-2 bg-[#FAF6F0] hover:bg-[#EFE8DF] text-[#231710] border border-[#E8E0D5] rounded-xl transition cursor-pointer"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
@@ -373,7 +402,7 @@ export default function DeliveryRiderPage() {
               type="button"
               onClick={handleLogout}
               title="تسجيل الخروج"
-              className="p-2 bg-[#B83B2B]/20 hover:bg-[#B83B2B]/40 text-red-200 rounded-xl transition cursor-pointer"
+              className="p-2 bg-[#FAF6F0] hover:bg-red-50 text-[#B83B2B] border border-[#E8E0D5] rounded-xl transition cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -386,10 +415,10 @@ export default function DeliveryRiderPage() {
         {/* Feedback Alert */}
         {feedback && (
           <div
-            className={`p-3 rounded-2xl text-xs font-black border flex items-center gap-2 ${
+            className={`p-3 rounded-xl text-xs font-bold border flex items-center gap-2 ${
               feedback.type === 'success'
-                ? 'bg-emerald-50 border-emerald-400 text-emerald-800'
-                : 'bg-red-50 border-red-400 text-red-800'
+                ? 'bg-emerald-50 border-emerald-200 text-[#3B6E4C]'
+                : 'bg-red-50 border-red-200 text-[#B83B2B]'
             }`}
           >
             {feedback.type === 'success' ? (
@@ -403,76 +432,70 @@ export default function DeliveryRiderPage() {
 
         {/* Live KPI Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          <div className="bg-white p-3 rounded-2xl border border-[#E6DFD3] shadow-xs space-y-1">
-            <span className="text-[11px] font-bold text-[#6E5D4F] flex items-center gap-1">
-              <Package className="w-3.5 h-3.5 text-[#C88A4B]" />
+          <div className="bg-white p-3.5 rounded-2xl border border-[#E8E0D5] space-y-1">
+            <span className="text-xs font-medium text-[#6E5D4F] flex items-center gap-1.5">
+              <Package className="w-3.5 h-3.5 text-[#9A6836]" />
               <span>إجمالي الطلبات</span>
             </span>
-            <div className="text-xl font-cairo font-black text-[#231710] tabular-nums">
+            <div className="text-xl font-bold text-[#231710] tabular-nums">
               {stats.totalAssigned}
             </div>
           </div>
 
-          <div className="bg-white p-3 rounded-2xl border border-[#E6DFD3] shadow-xs space-y-1">
-            <span className="text-[11px] font-bold text-[#6E5D4F] flex items-center gap-1">
+          <div className="bg-white p-3.5 rounded-2xl border border-[#E8E0D5] space-y-1">
+            <span className="text-xs font-medium text-[#6E5D4F] flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-amber-600" />
               <span>بانتظار التوصيل</span>
             </span>
-            <div className="text-xl font-cairo font-black text-amber-600 tabular-nums">
+            <div className="text-xl font-bold text-amber-700 tabular-nums">
               {stats.pendingDelivery}
             </div>
           </div>
 
-          <div className="bg-white p-3 rounded-2xl border border-[#E6DFD3] shadow-xs space-y-1">
-            <span className="text-[11px] font-bold text-[#6E5D4F] flex items-center gap-1">
+          <div className="bg-white p-3.5 rounded-2xl border border-[#E8E0D5] space-y-1">
+            <span className="text-xs font-medium text-[#6E5D4F] flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5 text-[#3B6E4C]" />
               <span>تم التسليم اليوم</span>
             </span>
-            <div className="text-xl font-cairo font-black text-[#3B6E4C] tabular-nums">
+            <div className="text-xl font-bold text-[#3B6E4C] tabular-nums">
               {stats.deliveredToday}
             </div>
           </div>
 
-          <div className="bg-white p-3 rounded-2xl border border-[#D4AF37]/40 bg-gradient-to-br from-white to-[#F3ECE1] shadow-xs space-y-1">
-            <span className="text-[11px] font-bold text-[#6E5D4F] flex items-center gap-1">
-              <DollarSign className="w-3.5 h-3.5 text-[#231710]" />
+          <div className="bg-white p-3.5 rounded-2xl border border-[#E8E0D5] space-y-1">
+            <span className="text-xs font-medium text-[#6E5D4F] flex items-center gap-1.5">
+              <DollarSign className="w-3.5 h-3.5 text-[#9A6836]" />
               <span>مطلوب تحصيله بالطريق</span>
             </span>
-            <div className="text-xl font-cairo font-black text-[#231710] tabular-nums">
-              {stats.totalCodToCollect} <span className="text-xs">ج.م</span>
+            <div className="text-xl font-bold text-[#231710] tabular-nums">
+              {stats.totalCodToCollect} <span className="text-xs font-medium">ج.م</span>
             </div>
           </div>
         </div>
 
         {/* Rider Cash Custody & Branch Handover Strip */}
-        <div
-          className={`p-3.5 rounded-2xl border flex flex-wrap items-center justify-between gap-3 ${
-            (stats.unsettledCodBalance || 0) > 0
-              ? 'bg-amber-50 border-amber-400 text-amber-950'
-              : 'bg-emerald-50/70 border-emerald-300 text-emerald-950'
-          }`}
-        >
+        <div className="bg-white p-3.5 rounded-2xl border border-[#E8E0D5] flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-0.5">
-            <div className="text-xs font-cairo font-black flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-[#C88A4B]" />
-              <span>ذمة عهدة التحصيل النقدي (COD Custody):</span>
+            <div className="text-xs font-bold text-[#231710] flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-[#9A6836]" />
+              <span>ذمة عهدة التحصيل النقدي (COD Custody)</span>
             </div>
-            <p className="text-[11px] font-bold text-[#6E5D4F]">
+            <p className="text-xs text-[#6E5D4F]">
               {(stats.unsettledCodBalance || 0) > 0
                 ? `لديك عهدة نقدية محصلة من ${stats.unsettledOrdersCount || 0} طلب بانتظار تسليمها لكاشير فرع بني مزار`
-                : 'ذمتك النقدية خالية ومسوّاة بالكامل مع درج كاشير الفرع ✅'}
+                : 'ذمتك النقدية خالية ومسوّاة بالكامل مع درج كاشير الفرع'}
             </p>
           </div>
-          <div className="flex items-center gap-3 tabular-nums">
-            <div className="bg-white px-3 py-1.5 rounded-xl border border-amber-300 text-right">
-              <span className="block text-[10px] font-bold text-[#6E5D4F]">عهدة مطلوبة للفرع</span>
-              <span className="font-cairo font-black text-sm text-[#B83B2B]">
+          <div className="flex items-center gap-2.5 tabular-nums">
+            <div className="bg-[#FAF6F0] px-3 py-1.5 rounded-xl border border-[#E8E0D5] text-right">
+              <span className="block text-[10px] text-[#6E5D4F]">عهدة مطلوبة للفرع</span>
+              <span className="font-bold text-sm text-[#B83B2B]">
                 {stats.unsettledCodBalance || 0} ج.م
               </span>
             </div>
-            <div className="bg-white px-3 py-1.5 rounded-xl border border-emerald-300 text-right">
-              <span className="block text-[10px] font-bold text-[#6E5D4F]">تم توريده للكاشير</span>
-              <span className="font-cairo font-black text-sm text-[#3B6E4C]">
+            <div className="bg-[#FAF6F0] px-3 py-1.5 rounded-xl border border-[#E8E0D5] text-right">
+              <span className="block text-[10px] text-[#6E5D4F]">تم توريده للكاشير</span>
+              <span className="font-bold text-sm text-[#3B6E4C]">
                 {stats.settledCodTotal || 0} ج.م
               </span>
             </div>
@@ -480,7 +503,7 @@ export default function DeliveryRiderPage() {
         </div>
 
         {/* Search & Filter Bar */}
-        <div className="bg-white p-3 rounded-2xl border border-[#E6DFD3] shadow-xs space-y-3">
+        <div className="bg-white p-3.5 rounded-2xl border border-[#E8E0D5] space-y-3">
           {/* Quick Search */}
           <div className="relative">
             <input
@@ -488,9 +511,9 @@ export default function DeliveryRiderPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="ابحث برقم الهاتف، اسم العميل، القرية، أو رقم الطلب..."
-              className="w-full bg-[#FAF6F0] border border-[#E6DFD3] focus:border-[#C88A4B] rounded-xl py-2 pr-9 pl-3 text-xs text-[#231710] placeholder-[#6E5D4F]/60 focus:outline-none font-bold"
+              className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl py-2 pr-9 pl-3 text-xs text-[#231710] placeholder-[#6E5D4F]/70 focus:outline-none"
             />
-            <Search className="w-4 h-4 text-[#C88A4B] absolute right-3 top-2.5" />
+            <Search className="w-4 h-4 text-[#6E5D4F] absolute right-3 top-2.5" />
           </div>
 
           {/* Filter Tabs */}
@@ -498,63 +521,63 @@ export default function DeliveryRiderPage() {
             <button
               type="button"
               onClick={() => setActiveTab('all')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-cairo font-black transition shrink-0 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer ${
                 activeTab === 'all'
-                  ? 'bg-[#231710] text-[#D4AF37]'
-                  : 'bg-[#FAF6F0] text-[#6E5D4F] hover:bg-[#E6DFD3]'
+                  ? 'bg-[#231710] text-white'
+                  : 'bg-[#FAF6F0] text-[#6E5D4F] border border-[#E8E0D5] hover:text-[#231710]'
               }`}
             >
-              📋 الكل ({stats.totalAssigned})
+              الكل ({stats.totalAssigned})
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('bandar_fast')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-cairo font-black transition shrink-0 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer ${
                 activeTab === 'bandar_fast'
-                  ? 'bg-[#C88A4B] text-white'
-                  : 'bg-[#FAF6F0] text-[#6E5D4F] hover:bg-[#E6DFD3]'
+                  ? 'bg-[#231710] text-white'
+                  : 'bg-[#FAF6F0] text-[#6E5D4F] border border-[#E8E0D5] hover:text-[#231710]'
               }`}
             >
-              ⚡ بندر بني مزار (فوري)
+              بندر بني مزار (فوري)
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('villages_scheduled')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-cairo font-black transition shrink-0 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer ${
                 activeTab === 'villages_scheduled'
-                  ? 'bg-[#3B6E4C] text-white'
-                  : 'bg-[#FAF6F0] text-[#6E5D4F] hover:bg-[#E6DFD3]'
+                  ? 'bg-[#231710] text-white'
+                  : 'bg-[#FAF6F0] text-[#6E5D4F] border border-[#E8E0D5] hover:text-[#231710]'
               }`}
             >
-              🌾 دورات قرى المركز
+              دورات قرى المركز
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('delivered')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-cairo font-black transition shrink-0 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 cursor-pointer ${
                 activeTab === 'delivered'
-                  ? 'bg-[#231710] text-emerald-300'
-                  : 'bg-[#FAF6F0] text-[#6E5D4F] hover:bg-[#E6DFD3]'
+                  ? 'bg-[#231710] text-white'
+                  : 'bg-[#FAF6F0] text-[#6E5D4F] border border-[#E8E0D5] hover:text-[#231710]'
               }`}
             >
-              ✅ المسلمة ({stats.deliveredToday})
+              المسلمة ({stats.deliveredToday})
             </button>
           </div>
         </div>
 
         {/* Orders List */}
         {orders.length === 0 ? (
-          <div className="bg-white rounded-3xl p-8 border border-[#E6DFD3] text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-[#FAF6F0] text-[#C88A4B] flex items-center justify-center mx-auto">
-              <Package className="w-6 h-6" />
+          <div className="bg-white rounded-2xl p-8 border border-[#E8E0D5] text-center space-y-2.5">
+            <div className="w-11 h-11 rounded-xl bg-[#FAF6F0] text-[#9A6836] border border-[#E8E0D5] flex items-center justify-center mx-auto">
+              <Package className="w-5 h-5" />
             </div>
-            <h3 className="font-cairo font-black text-base text-[#231710]">
+            <h3 className="font-bold text-base text-[#231710]">
               لا توجد طلبات توصيل في هذا التبويب حالياً
             </h3>
-            <p className="text-xs text-[#6E5D4F] font-bold">
+            <p className="text-xs text-[#6E5D4F]">
               سيتم إظهار طلبات البندر الفورية ودورات القرى فور إسنادها أو وصولها من الكاشير والإدارة.
             </p>
           </div>
@@ -574,31 +597,33 @@ export default function DeliveryRiderPage() {
               return (
                 <div
                   key={order.id}
-                  className={`bg-white rounded-3xl border shadow-xs overflow-hidden transition ${
+                  className={`bg-white rounded-2xl border overflow-hidden transition ${
                     isDelivered
-                      ? 'border-emerald-300 bg-emerald-50/20'
-                      : 'border-[#D4AF37]/40 hover:border-[#C88A4B]'
+                      ? 'border-emerald-200'
+                      : 'border-[#E8E0D5] hover:border-[#C5B8A8]'
                   }`}
                 >
                   {/* Card Top: Order Number, Badge & Time */}
                   <div className="p-3.5 sm:p-4 space-y-3">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div className="flex items-center gap-2">
-                        <span className="font-cairo font-black text-base text-[#231710]">
+                        <span className="font-bold text-base text-[#231710] tabular-nums">
                           #{order.orderNumber}
                         </span>
                         {isVillage ? (
-                          <span className="bg-[#3B6E4C]/15 text-[#3B6E4C] px-2.5 py-0.5 rounded-full text-[11px] font-black flex items-center gap-1">
-                            <Compass className="w-3 h-3" />
+                          <span className="bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] px-2.5 py-0.5 rounded-lg text-[11px] font-medium flex items-center gap-1">
+                            <Compass className="w-3 h-3 text-[#3B6E4C]" />
                             <span>
                               {order.villageName
-                                ? `قرية ${order.villageName}`
+                                ? order.villageName.startsWith('قرية')
+                                  ? order.villageName
+                                  : `قرية ${order.villageName}`
                                 : 'دورة قرى بني مزار'}
                             </span>
                           </span>
                         ) : (
-                          <span className="bg-[#C88A4B]/15 text-[#C88A4B] px-2.5 py-0.5 rounded-full text-[11px] font-black flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
+                          <span className="bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] px-2.5 py-0.5 rounded-lg text-[11px] font-medium flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-[#9A6836]" />
                             <span>بندر بني مزار (فوري)</span>
                           </span>
                         )}
@@ -606,49 +631,47 @@ export default function DeliveryRiderPage() {
 
                       {/* Status Tag */}
                       <span
-                        className={`text-[11px] font-black px-2.5 py-0.5 rounded-full ${
+                        className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
                           isDelivered
-                            ? 'bg-emerald-100 text-emerald-800'
+                            ? 'bg-emerald-50 text-[#3B6E4C] border-emerald-200'
                             : isShipped
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-amber-100 text-amber-800'
+                              ? 'bg-blue-50 text-blue-800 border-blue-200'
+                              : 'bg-amber-50 text-amber-800 border-amber-200'
                         }`}
                       >
                         {isDelivered
-                          ? '✅ تم التسليم'
+                          ? 'تم التسليم'
                           : isShipped
-                            ? '🛵 جاري التوصيل'
-                            : '🔥 جاهز للتحرك'}
+                            ? 'جاري التوصيل'
+                            : 'جاهز للتحرك'}
                       </span>
                     </div>
 
                     {/* Scheduled Slot if village */}
                     {order.deliverySlot && (
-                      <div className="bg-[#FAF6F0] rounded-xl px-3 py-1.5 border border-[#E6DFD3] text-[11px] font-bold text-[#6E5D4F] flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-[#C88A4B]" />
-                        <span>موعد الدورة: <strong>{order.deliverySlot}</strong></span>
+                      <div className="bg-[#FAF6F0] rounded-xl px-3 py-1.5 border border-[#E8E0D5] text-xs text-[#6E5D4F] flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-[#9A6836]" />
+                        <span>موعد الدورة: <strong className="text-[#231710]">{order.deliverySlot}</strong></span>
                       </div>
                     )}
 
                     {/* Customer Info & Direct Contacts */}
-                    <div className="bg-[#FAF6F0] rounded-2xl p-3 border border-[#E6DFD3] space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <div>
-                          <h4 className="font-cairo font-black text-sm text-[#231710]">
-                            {order.customerName}
-                          </h4>
-                          <p className="text-xs text-[#6E5D4F] font-bold flex items-center gap-1 mt-0.5">
-                            <MapPin className="w-3 h-3 text-[#C88A4B] shrink-0" />
-                            <span>{order.address}</span>
-                          </p>
-                        </div>
+                    <div className="bg-[#FAF6F0] rounded-xl p-3 border border-[#E8E0D5] space-y-2.5">
+                      <div>
+                        <h4 className="font-bold text-sm text-[#231710]">
+                          {order.customerName}
+                        </h4>
+                        <p className="text-xs text-[#6E5D4F] flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3 h-3 text-[#9A6836] shrink-0" />
+                          <span>{order.address}</span>
+                        </p>
                       </div>
 
                       {/* Mobile Fast Action Buttons (Call + WhatsApp) */}
-                      <div className="flex items-center gap-2 pt-1 border-t border-[#E6DFD3]">
+                      <div className="flex items-center gap-2 pt-2 border-t border-[#E8E0D5]">
                         <a
                           href={`tel:${order.customerPhone}`}
-                          className="flex-1 bg-[#3B6E4C] hover:bg-[#2f5a3d] text-white py-2 px-3 rounded-xl text-xs font-cairo font-black flex items-center justify-center gap-1.5 transition shadow-xs"
+                          className="flex-1 bg-[#231710] hover:bg-[#3A271C] text-white py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
                         >
                           <Phone className="w-3.5 h-3.5" />
                           <span>اتصال بالعميل</span>
@@ -658,16 +681,16 @@ export default function DeliveryRiderPage() {
                           href={`https://wa.me/${formatWhatsAppPhone(
                             order.customerPhone
                           )}?text=${encodeURIComponent(
-                            `السلام عليكم ورحمة الله يا ${order.customerName} 🌰\nمع حضرتك مندوب محمصة حفصة للبن والمكسرات بخصوص طلبك رقم #${order.orderNumber}.\nأنا في طريقي لحضرتك الآن إلى العنوان: ${order.address}.\nالمبلغ المطلوب: ${
+                            `السلام عليكم ورحمة الله يا ${order.customerName}\nمع حضرتك مندوب محمصة حفصة للبن والمكسرات بخصوص طلبك رقم #${order.orderNumber}.\nأنا في طريقي لحضرتك الآن إلى العنوان: ${order.address}.\nالمبلغ المطلوب: ${
                               isCod ? `${order.total} ج.م نقداً` : 'تم الدفع مسبقاً'
                             }`
                           )}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex-1 bg-[#25D366] hover:bg-[#1ebd5a] text-white py-2 px-3 rounded-xl text-xs font-cairo font-black flex items-center justify-center gap-1.5 transition shadow-xs"
+                          className="flex-1 bg-white hover:bg-[#EFE8DF] text-[#231710] border border-[#E8E0D5] py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
                         >
-                          <MessageCircle className="w-3.5 h-3.5" />
-                          <span>واتساب فوري</span>
+                          <MessageCircle className="w-3.5 h-3.5 text-[#3B6E4C]" />
+                          <span>مراسلة واتساب</span>
                         </a>
                       </div>
                     </div>
@@ -679,7 +702,7 @@ export default function DeliveryRiderPage() {
                         onClick={() =>
                           setExpandedOrderId(isExpanded ? null : order.id)
                         }
-                        className="w-full flex items-center justify-between text-xs font-bold text-[#6E5D4F] hover:text-[#231710] py-1 cursor-pointer"
+                        className="w-full flex items-center justify-between text-xs font-medium text-[#6E5D4F] hover:text-[#231710] py-1 cursor-pointer"
                       >
                         <span>
                           أصناف الطلب ({order.items?.length || 0} صنف)
@@ -692,22 +715,22 @@ export default function DeliveryRiderPage() {
                       </button>
 
                       {isExpanded && (
-                        <div className="mt-2 bg-[#FAF6F0] rounded-xl p-2.5 text-xs space-y-1.5 border border-[#E6DFD3]">
+                        <div className="mt-2 bg-[#FAF6F0] rounded-xl p-2.5 text-xs space-y-1.5 border border-[#E8E0D5]">
                           {order.items?.map((item, idx) => (
                             <div
                               key={idx}
-                              className="flex items-center justify-between text-[11px] font-bold"
+                              className="flex items-center justify-between text-xs"
                             >
-                              <span>
+                              <span className="text-[#231710] font-medium">
                                 {item.quantity}× {item.productName} ({item.weightLabel || `${item.unitPrice} ج.م`})
                               </span>
-                              <span className="text-[#C88A4B] font-black">
+                              <span className="text-[#231710] font-bold tabular-nums">
                                 {item.unitPrice * item.quantity} ج.م
                               </span>
                             </div>
                           ))}
                           {order.notes && (
-                            <div className="pt-1.5 border-t border-[#E6DFD3] text-[10px] text-[#B83B2B] font-black">
+                            <div className="pt-1.5 border-t border-[#E8E0D5] text-[11px] text-[#B83B2B] font-medium">
                               ملاحظات العميل: {order.notes}
                             </div>
                           )}
@@ -717,19 +740,19 @@ export default function DeliveryRiderPage() {
 
                     {/* Payment Status & COD Amount */}
                     <div
-                      className={`p-3 rounded-2xl border text-xs font-black flex items-center justify-between ${
+                      className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
                         isCod
-                          ? 'bg-amber-50 border-amber-300 text-amber-950'
-                          : 'bg-emerald-50 border-emerald-300 text-emerald-950'
+                          ? 'bg-amber-50/70 border-amber-200 text-[#231710]'
+                          : 'bg-emerald-50/70 border-emerald-200 text-[#231710]'
                       }`}
                     >
                       <div>
-                        <span>{isCod ? '💵 الدفع عند الاستلام (COD):' : '✅ طريقة الدفع:'}</span>
-                        <span className="block text-[11px] font-bold text-[#6E5D4F]">
+                        <span className="font-bold">{isCod ? 'الدفع عند الاستلام (COD)' : 'طريقة الدفع'}</span>
+                        <span className="block text-[11px] text-[#6E5D4F] mt-0.5">
                           {isCod ? 'يجب تحصيل المبلغ نقداً بالكامل' : 'مدفوع إلكترونياً — لا تُحصّل أي مبالغ'}
                         </span>
                       </div>
-                      <div className="text-base font-cairo font-black tabular-nums">
+                      <div className="text-base font-bold tabular-nums">
                         {order.total} ج.م
                       </div>
                     </div>
@@ -742,7 +765,7 @@ export default function DeliveryRiderPage() {
                             type="button"
                             disabled={actionLoadingId === order.id}
                             onClick={() => handleUpdateStatus(order, 'shipped')}
-                            className="flex-1 bg-[#C88A4B] hover:bg-[#b0753a] text-white py-3 rounded-2xl text-xs font-cairo font-black transition flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+                            className="flex-1 bg-[#231710] hover:bg-[#3A271C] text-white py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                           >
                             <Bike className="w-4 h-4" />
                             <span>استلام وبدء التحرك</span>
@@ -753,7 +776,7 @@ export default function DeliveryRiderPage() {
                           type="button"
                           disabled={actionLoadingId === order.id}
                           onClick={() => handleUpdateStatus(order, 'delivered')}
-                          className="flex-1 bg-[#3B6E4C] hover:bg-[#2f5a3d] text-white py-3 rounded-2xl text-xs font-cairo font-black transition flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+                          className="flex-1 bg-[#3B6E4C] hover:bg-[#2F5A3D] text-white py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                         >
                           <CheckCircle2 className="w-4 h-4" />
                           <span>
@@ -765,13 +788,13 @@ export default function DeliveryRiderPage() {
                       </div>
                     ) : (
                       <div className="space-y-1.5">
-                        <div className="bg-emerald-100 text-emerald-900 py-2.5 px-4 rounded-2xl text-xs font-black flex items-center justify-between">
+                        <div className="bg-emerald-50 border border-emerald-200 text-[#3B6E4C] py-2.5 px-3.5 rounded-xl text-xs font-bold flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            <CheckCircle2 className="w-4 h-4 text-[#3B6E4C]" />
                             <span>تم تسليم هذا الطلب بنجاح</span>
                           </div>
                           {order.deliveredAt && (
-                            <span className="text-[10px] font-bold tabular-nums">
+                            <span className="text-[11px] font-medium tabular-nums">
                               {new Date(order.deliveredAt).toLocaleTimeString('ar-EG', {
                                 hour: '2-digit',
                                 minute: '2-digit',
@@ -781,16 +804,16 @@ export default function DeliveryRiderPage() {
                         </div>
                         {isCod && (
                           <div
-                            className={`py-2 px-3 rounded-xl text-[11px] font-black flex items-center justify-between border ${
+                            className={`py-2 px-3 rounded-xl text-[11px] font-bold flex items-center justify-between border ${
                               order.riderCodSettled
-                                ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
-                                : 'bg-amber-50 border-amber-400 text-amber-950'
+                                ? 'bg-emerald-50/60 border-emerald-200 text-[#3B6E4C]'
+                                : 'bg-amber-50/70 border-amber-200 text-amber-900'
                             }`}
                           >
                             <span>
                               {order.riderCodSettled
-                                ? `✅ تم توريد العهدة لدرج الفرع (${order.riderCodSettledBy || 'الكاشير'})`
-                                : '⏳ عهدة محصلة بطرفك — سلمها لكاشير الفرع'}
+                                ? `تم توريد العهدة لدرج الفرع (${order.riderCodSettledBy || 'الكاشير'})`
+                                : 'عهدة محصلة بطرفك — سلمها لكاشير الفرع'}
                             </span>
                             <span className="tabular-nums">
                               {order.cashCollected ?? order.total} ج.م

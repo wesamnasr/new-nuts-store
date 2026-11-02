@@ -68,26 +68,23 @@ export default function SupplyInvoicesApprovalModule({
   return (
     <div className="space-y-4">
       {/* Header card with quick actions and stats */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 shadow-2xs space-y-3">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E8E0D5] space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center border border-amber-500/20">
-              <ClipboardList className="w-5 h-5 text-amber-600" />
+            <div className="w-10 h-10 rounded-xl bg-[#FAF6F0] text-[#9A6836] flex items-center justify-center border border-[#E8E0D5]">
+              <ClipboardList className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm sm:text-base font-black text-brand-950">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-sm sm:text-base font-bold text-[#231710]">
                   إدارة فواتير التوريد واعتماد الشحنات
                 </h2>
                 {pendingSupplyInvoicesCount > 0 && (
-                  <span className="bg-amber-500 text-brand-950 font-black text-[10.5px] px-2.5 py-0.5 rounded-full animate-pulse">
+                  <span className="bg-amber-100 text-amber-900 border border-amber-200 font-bold text-[10.5px] px-2.5 py-0.5 rounded-full">
                     {pendingSupplyInvoicesCount} بانتظار الاعتماد
                   </span>
                 )}
               </div>
-              <p className="hidden">
-                فحص ومراجعة فواتير التوريد الواردة من المورد، وتدقيق الأصناف والأسعار، واعتمادها لإضافة المخزون وتحديث التكلفة تلقائياً
-              </p>
             </div>
           </div>
 
@@ -101,71 +98,71 @@ export default function SupplyInvoicesApprovalModule({
                   csv
                 );
               }}
-              className="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-2xs"
+              className="bg-[#FAF6F0] hover:bg-[#F2ECE2] text-[#231710] border border-[#E8E0D5] px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <FileSpreadsheet className="w-3.5 h-3.5 text-[#6B5644]" />
               <span>تصدير كشف التوريد (CSV)</span>
             </button>
             <button
               type="button"
               onClick={() => fetchSupplyInvoices()}
               disabled={loadingSupplyInvoices}
-              className="bg-brand-50 hover:bg-brand-100 text-brand-800 border border-brand-200 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+              className="bg-[#FAF6F0] hover:bg-[#F2ECE2] text-[#231710] border border-[#E8E0D5] px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
             >
-              <RotateCcw className={`w-3.5 h-3.5 ${loadingSupplyInvoices ? 'animate-spin' : ''}`} />
+              <RotateCcw className={`w-3.5 h-3.5 text-[#6B5644] ${loadingSupplyInvoices ? 'animate-spin' : ''}`} />
               <span>تحديث الفواتير</span>
             </button>
             {canApprove && (
               <Link
                 href="/supplier"
                 target="_blank"
-                className="bg-amber-500 hover:bg-amber-400 text-brand-950 font-black px-3 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs"
+                className="bg-[#231710] hover:bg-[#3A271C] text-white font-bold px-3.5 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5"
               >
                 <Truck className="w-3.5 h-3.5" />
-                <span>فتح بوابة المورد ↗</span>
+                <span>فتح بوابة المورد</span>
               </Link>
             )}
           </div>
         </div>
 
         {/* KPI Metrics */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 border-t border-brand-100">
-          <div className="bg-brand-50/70 p-2.5 rounded-xl border border-brand-100">
-            <span className="text-[10px] font-bold text-brand-600 block">إجمالي الفواتير المسجلة</span>
-            <div className="flex items-baseline justify-between gap-2 mt-0.5">
-              <span className="text-base font-black text-brand-950">{effectiveSupplyInvoices.length} فاتورة</span>
-              <span className="text-xs font-black text-brand-700">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-[#E8E0D5]">
+          <div className="bg-[#FAF6F0] p-3 rounded-xl border border-[#E8E0D5]">
+            <span className="text-[11px] font-medium text-[#6B5644] block">إجمالي الفواتير المسجلة</span>
+            <div className="flex items-baseline justify-between gap-2 mt-1">
+              <span className="text-sm font-bold text-[#231710]">{effectiveSupplyInvoices.length} فاتورة</span>
+              <span className="text-xs font-bold text-[#4A3728]">
                 {totalAllAmount.toLocaleString('ar-EG')} ج.م
               </span>
             </div>
           </div>
-          <div className="bg-amber-50 p-2.5 rounded-xl border border-amber-200">
-            <span className="text-[10px] font-bold text-amber-700 block">فواتير معلقة (مستحقات قيد المراجعة)</span>
-            <div className="flex items-baseline justify-between gap-2 mt-0.5">
-              <span className="text-base font-black text-amber-800">{pendingSupplyInvoicesCount} فاتورة</span>
-              <span className="text-xs font-black text-amber-900">
+          <div className="bg-[#FAF6F0] p-3 rounded-xl border border-[#E8E0D5]">
+            <span className="text-[11px] font-medium text-[#6B5644] block">فواتير قيد المراجعة</span>
+            <div className="flex items-baseline justify-between gap-2 mt-1">
+              <span className="text-sm font-bold text-amber-800">{pendingSupplyInvoicesCount} فاتورة</span>
+              <span className="text-xs font-bold text-[#231710]">
                 {totalPendingAmount.toLocaleString('ar-EG')} ج.م
               </span>
             </div>
           </div>
-          <div className="bg-pistachio-50 p-2.5 rounded-xl border border-pistachio-200">
-            <span className="text-[10px] font-bold text-pistachio-700 block">فواتير معتمدة ومضافة للمخزون</span>
-            <div className="flex items-baseline justify-between gap-2 mt-0.5">
-              <span className="text-base font-black text-pistachio-800">
+          <div className="bg-[#FAF6F0] p-3 rounded-xl border border-[#E8E0D5]">
+            <span className="text-[11px] font-medium text-[#6B5644] block">فواتير معتمدة بالمخزون</span>
+            <div className="flex items-baseline justify-between gap-2 mt-1">
+              <span className="text-sm font-bold text-emerald-700">
                 {effectiveSupplyInvoices.filter((i) => i.status === 'approved').length} فاتورة
               </span>
-              <span className="text-xs font-black text-pistachio-900">
+              <span className="text-xs font-bold text-[#231710]">
                 {totalApprovedAmount.toLocaleString('ar-EG')} ج.م
               </span>
             </div>
           </div>
-          <div className="bg-red-50 p-2.5 rounded-xl border border-red-200">
-            <span className="text-[10px] font-bold text-red-700 block">فواتير مرفوضة</span>
-            <div className="flex items-baseline justify-between gap-2 mt-0.5">
-              <span className="text-base font-black text-red-800">
+          <div className="bg-[#FAF6F0] p-3 rounded-xl border border-[#E8E0D5]">
+            <span className="text-[11px] font-medium text-[#6B5644] block">فواتير مرفوضة</span>
+            <div className="flex items-baseline justify-between gap-2 mt-1">
+              <span className="text-sm font-bold text-red-700">
                 {effectiveSupplyInvoices.filter((i) => i.status === 'rejected').length} فاتورة
               </span>
-              <span className="text-xs font-black text-red-900">
+              <span className="text-xs font-bold text-[#231710]">
                 {totalRejectedAmount.toLocaleString('ar-EG')} ج.م
               </span>
             </div>
@@ -306,16 +303,16 @@ export default function SupplyInvoicesApprovalModule({
                         تفاصيل أصناف وكميات الشحنة ({inv.items.length} أصناف):
                       </h4>
                       {isPending && (
-                        <span className="text-[10.5px] text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200 font-bold">
-                          💡 المخزون الفعلي الحالي لن يتأثر إلا بعد الضغط على &quot;اعتماد الفاتورة&quot;
+                        <span className="text-[10.5px] text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200 font-bold">
+                          المخزون الفعلي الحالي لن يتأثر إلا بعد الضغط على &quot;اعتماد الفاتورة&quot;
                         </span>
                       )}
                     </div>
 
-                    <div className="overflow-x-auto rounded-xl border border-brand-200">
+                    <div className="overflow-x-auto rounded-xl border border-[#E8E0D5]">
                       <table className="w-full text-right border-collapse text-xs">
                         <thead>
-                          <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
+                          <tr className="bg-[#FAF6F0] text-[#231710] font-bold border-b border-[#E8E0D5]">
                             <th className="p-2.5">اسم الصنف</th>
                             <th className="p-2.5 text-center">الكمية الموردة (كجم)</th>
                             <th className="p-2.5 text-center">تكلفة الكيلو (ج.م)</th>
@@ -323,35 +320,35 @@ export default function SupplyInvoicesApprovalModule({
                             <th className="p-2.5 text-center">المخزون الحالي بالمتجر</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-brand-100">
+                        <tbody className="divide-y divide-[#F2ECE2]">
                           {inv.items.map((item: SupplyInvoiceItem, idx: number) => {
                             const prod = products.find((p) => p.id === item.productId);
                             const currentStock = typeof prod?.stockKg === 'number' ? prod.stockKg : 0;
                             return (
-                              <tr key={idx} className="hover:bg-brand-50/60">
+                              <tr key={idx} className="hover:bg-[#FAF6F0]/60">
                                 <td className="p-2.5">
-                                  <div className="font-bold text-brand-950">{item.productName}</div>
+                                  <div className="font-bold text-[#231710]">{item.productName}</div>
                                   {prod && (
-                                    <div className="text-[10px] text-brand-500 font-mono">
+                                    <div className="text-[10px] text-[#8A735E] font-mono">
                                       كود: {prod.slug}
                                     </div>
                                   )}
                                 </td>
-                                <td className="p-2.5 text-center font-black text-amber-900">
+                                <td className="p-2.5 text-center font-bold text-[#231710]">
                                   +{item.quantityKg} كجم
                                 </td>
-                                <td className="p-2.5 text-center font-black">
+                                <td className="p-2.5 text-center font-bold">
                                   {item.costPerKg} ج.م
                                 </td>
-                                <td className="p-2.5 text-center font-black text-pistachio-800">
+                                <td className="p-2.5 text-center font-bold text-emerald-700">
                                   {item.totalCost} ج.م
                                 </td>
                                 <td className="p-2.5 text-center font-mono">
-                                  <span className="bg-brand-100 text-brand-900 px-2 py-0.5 rounded font-bold">
+                                  <span className="bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] px-2 py-0.5 rounded font-bold">
                                     {currentStock} كجم
                                   </span>
                                   {isPending && (
-                                    <span className="text-[10px] text-pistachio-700 block font-bold mt-0.5">
+                                    <span className="text-[10px] text-emerald-700 block font-bold mt-0.5">
                                       → بعد الاعتماد: {Math.round((currentStock + item.quantityKg) * 1000) / 1000} كجم
                                     </span>
                                   )}
@@ -365,9 +362,9 @@ export default function SupplyInvoicesApprovalModule({
 
                     {/* Pending Action Box */}
                     {isPending && canApprove && (
-                      <div className="p-3.5 bg-amber-50/70 rounded-2xl border border-amber-200 space-y-3 mt-3">
+                      <div className="p-4 bg-[#FAF6F0] rounded-2xl border border-[#E8E0D5] space-y-3 mt-3">
                         <div>
-                          <label className="block text-[11px] font-black text-brand-950 mb-1">
+                          <label className="block text-[11px] font-bold text-[#231710] mb-1">
                             ملاحظات الإدارة عند المراجعة (اختياري):
                           </label>
                           <input
@@ -380,13 +377,13 @@ export default function SupplyInvoicesApprovalModule({
                               }))
                             }
                             placeholder="مثال: تم فحص الشحنة ومطابقة الأوزان على ميزان الفرع واعتمادها"
-                            className="w-full bg-white border border-brand-200 rounded-xl px-3 py-1.5 text-xs text-brand-950"
+                            className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs text-[#231710]"
                           />
                         </div>
 
                         <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                          <div className="text-[11px] text-brand-600 font-bold">
-                            ⚠️ بالضغط على اعتماد الفاتورة سيتم فورياً إضافة الكميات إلى مخزون الأصناف وتحديث تكلفة الكيلو.
+                          <div className="text-[11px] text-[#6B5644] font-medium">
+                            بالضغط على اعتماد الفاتورة سيتم فورياً إضافة الكميات إلى مخزون الأصناف وتحديث تكلفة الكيلو.
                           </div>
 
                           <div className="flex items-center gap-2">
@@ -394,7 +391,7 @@ export default function SupplyInvoicesApprovalModule({
                               type="button"
                               disabled={isActionLoading}
                               onClick={() => handleReviewSupplyInvoice(inv.id, 'rejected')}
-                              className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-300 font-extrabold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 disabled:opacity-50"
+                              className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 disabled:opacity-50"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                               <span>رفض الفاتورة</span>
@@ -404,7 +401,7 @@ export default function SupplyInvoicesApprovalModule({
                               type="button"
                               disabled={isActionLoading}
                               onClick={() => handleReviewSupplyInvoice(inv.id, 'approved')}
-                              className="bg-pistachio-700 hover:bg-pistachio-800 text-white font-black text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow disabled:opacity-50"
+                              className="bg-[#231710] hover:bg-[#3A271C] text-white font-bold text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5 disabled:opacity-50"
                             >
                               {isActionLoading ? (
                                 <RotateCcw className="w-3.5 h-3.5 animate-spin" />
@@ -418,8 +415,8 @@ export default function SupplyInvoicesApprovalModule({
                       </div>
                     )}
                     {isPending && !canApprove && (
-                      <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200 text-[11px] font-bold text-amber-900 mt-3">
-                        🔒 هذه الفاتورة قيد المراجعة — اعتماد الشحنات وإضافتها للمخزون الفعلي متاح لصلاحية الإدارة العامة.
+                      <div className="p-3 bg-[#FAF6F0] rounded-xl border border-[#E8E0D5] text-[11px] font-bold text-[#6B5644] mt-3">
+                        هذه الفاتورة قيد المراجعة — اعتماد الشحنات وإضافتها للمخزون الفعلي متاح لصلاحية الإدارة العامة.
                       </div>
                     )}
 

@@ -14,20 +14,17 @@ import {
   RefreshCw,
   LogOut,
   Search,
-  Filter,
   Layers,
-  ShieldCheck,
   Eye,
   EyeOff,
   FileText,
   ChevronDown,
   ChevronUp,
   DollarSign,
-  ArrowRight,
-  ExternalLink,
+  X,
 } from 'lucide-react';
-import { Product, Category, SupplyInvoice, SupplyInvoiceItem, AdminRole } from '@/types/store';
-import { getSafeImageUrl } from '@/lib/defaults';
+import { Product, Category, SupplyInvoice, AdminRole } from '@/types/store';
+import { formatCategoryName, getSafeImageUrl } from '@/lib/defaults';
 
 const ADMIN_SESSION_STORAGE_KEY = 'nuts_admin_session';
 
@@ -47,8 +44,7 @@ export default function DedicatedSupplierPortalPage() {
   const [supplierDisplayName, setSupplierDisplayName] = useState<string>('');
   const [token, setToken] = useState<string>('');
 
-  // Login form state
-  const [loginRole, setLoginRole] = useState<AdminRole>('supplier');
+  // Login form state (Strictly Username & Password only per AGENTS.md)
   const [loginUsername, setLoginUsername] = useState<string>('');
   const [loginPassword, setLoginPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -180,10 +176,10 @@ export default function DedicatedSupplierPortalPage() {
           );
 
           if (verifiedRole === 'super_admin' || verifiedRole === 'admin') {
-          window.location.href = '/admin';
-          return;
-        }
-        if (verifiedRole === 'cashier') {
+            window.location.replace('/admin');
+            return;
+          }
+          if (verifiedRole === 'cashier') {
             window.location.replace('/pos');
             return;
           }
@@ -191,10 +187,14 @@ export default function DedicatedSupplierPortalPage() {
             window.location.replace('/admin');
             return;
           }
+          if (verifiedRole === 'delivery_rider') {
+            window.location.replace('/rider');
+            return;
+          }
 
           setToken(activeToken);
           setUserRole(verifiedRole);
-          setUsername(data.username || 'supplier_arafat');
+          setUsername(data.username || '');
           if (data.displayName) setSupplierDisplayName(data.displayName);
           setIsAuthenticated(true);
 
@@ -251,15 +251,19 @@ export default function DedicatedSupplierPortalPage() {
         );
 
         if (verifiedRole === 'super_admin' || verifiedRole === 'admin') {
-          window.location.href = '/admin';
+          window.location.replace('/admin');
           return;
         }
         if (verifiedRole === 'cashier') {
-          window.location.href = '/pos';
+          window.location.replace('/pos');
           return;
         }
         if (verifiedRole === 'accountant') {
-          window.location.href = '/admin';
+          window.location.replace('/admin');
+          return;
+        }
+        if (verifiedRole === 'delivery_rider') {
+          window.location.replace('/rider');
           return;
         }
 
@@ -269,12 +273,12 @@ export default function DedicatedSupplierPortalPage() {
         if (data.displayName) setSupplierDisplayName(data.displayName);
         setIsAuthenticated(true);
 
-        showToast('تم تسجيل الدخول بنجاح إلى بوابة المورد ✅');
+        showToast('تم تسجيل الدخول بنجاح إلى بوابة المورد');
         await fetchData(activeToken);
       } else {
         setLoginError(data.error || 'فشل تسجيل الدخول: يرجى التحقق من اسم المستخدم وكلمة المرور');
       }
-    } catch (err: any) {
+    } catch {
       setLoginError('حدث خطأ في الاتصال بالخادم، يرجى المحاولة لاحقاً');
     } finally {
       setLoginLoading(false);
@@ -384,13 +388,13 @@ export default function DedicatedSupplierPortalPage() {
   };
 
   // Update row in draft invoice
-  const handleUpdateDraftRow = (index: number, field: keyof InvoiceDraftItem, value: any) => {
+  const handleUpdateDraftRow = (index: number, field: keyof InvoiceDraftItem, value: string | number) => {
     setDraftItems((prev) => {
       const updated = [...prev];
       const item = { ...updated[index] };
       if (field === 'productId') {
         const prod = products.find((p) => p.id === value);
-        item.productId = value;
+        item.productId = String(value);
         item.productName = prod?.name || item.productName;
         if (prod?.costPerKg) {
           item.costPerKg = prod.costPerKg;
@@ -450,7 +454,7 @@ export default function DedicatedSupplierPortalPage() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        showToast('تم إرسال فاتورة التوريد بنجاح! الفاتورة الآن قيد مراجعة واعتماد الإدارة 📦✅');
+        showToast('تم إرسال فاتورة التوريد بنجاح وهي الآن قيد مراجعة واعتماد الإدارة');
         setDraftItems([]);
         setDraftNotes('');
         setIsInvoiceModalOpen(false);
@@ -459,7 +463,7 @@ export default function DedicatedSupplierPortalPage() {
       } else {
         showToast(data.error || 'فشل في إرسال فاتورة التوريد', 'error');
       }
-    } catch (err: any) {
+    } catch {
       showToast('حدث خطأ في الاتصال بالخادم أثناء إرسال الفاتورة', 'error');
     } finally {
       setIsSubmittingInvoice(false);
@@ -471,73 +475,72 @@ export default function DedicatedSupplierPortalPage() {
   // ─────────────────────────────────────────────────────────────────────────────
   if (authChecking) {
     return (
-      <div className="min-h-screen bg-brand-950 flex flex-col items-center justify-center text-white p-4">
-        <div className="w-12 h-12 border-4 border-gold-400 border-t-transparent rounded-full animate-spin mb-4" />
-        <h2 className="text-base font-extrabold text-gold-300">جاري التحقق من هوية بوابة المورد المعزولة...</h2>
-        <p className="text-xs text-brand-400 mt-1">محمصة حفصة للبن والمكسرات — بني مزار</p>
+      <div className="min-h-screen bg-[#FAF6F0] flex flex-col items-center justify-center p-4" dir="rtl">
+        <RefreshCw className="w-7 h-7 text-[#9A6836] animate-spin mb-3" />
+        <h2 className="text-sm font-bold text-[#231710]">جاري التحقق من جلسة بوابة المورد...</h2>
+        <p className="text-xs text-[#6E5D4F] mt-1">محمصة حفصة للبن والمكسرات — فرع بني مزار</p>
       </div>
     );
   }
 
-  // Login view if unauthenticated
+  // Login view if unauthenticated (Strictly Username & Password only)
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-brand-950 via-brand-900 to-brand-950 flex flex-col justify-center items-center p-4">
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 sm:p-8 border border-gold-500/30 text-right space-y-6">
+      <div className="min-h-screen bg-[#FAF6F0] flex flex-col justify-center items-center p-4" dir="rtl">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm p-6 sm:p-8 border border-[#E8E0D5] text-right space-y-6">
           <div className="text-center space-y-2">
-            <div className="w-16 h-16 bg-amber-500/10 text-amber-600 rounded-2xl flex items-center justify-center mx-auto border border-amber-500/20 shadow-inner">
-              <Truck className="w-8 h-8 text-amber-600" />
+            <div className="w-12 h-12 bg-[#FAF6F0] text-[#231710] rounded-xl flex items-center justify-center mx-auto border border-[#E8E0D5]">
+              <Truck className="w-6 h-6 text-[#231710]" />
             </div>
-            <span className="inline-block bg-amber-100 text-amber-900 text-[11px] font-black px-3 py-0.5 rounded-full">
-              بوابة المورد والتوريدات المعزولة
-            </span>
-            <h1 className="text-xl sm:text-2xl font-black text-brand-950">
+            <h1 className="text-xl font-bold text-[#231710]">
               محمصة حفصة للبن والمكسرات
             </h1>
-            <p className="text-xs text-brand-600 leading-relaxed">
-              تسجيل دخول مخصص لموردي البن والمكسرات الخام لمتابعة النواقص وإرسال فواتير التوريد لاعتمادها من الإدارة.
+            <p className="text-xs text-[#6E5D4F] font-medium">
+              بوابة المورد والتوريدات — متابعة النواقص وإرسال فواتير التوريد
             </p>
           </div>
 
           {loginError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-3.5 rounded-2xl font-bold flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
+            <div className="bg-red-50 border border-red-200 text-[#B83B2B] text-xs p-3.5 rounded-xl font-medium flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-[#B83B2B] mt-0.5" />
               <span>{loginError}</span>
             </div>
           )}
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-black text-brand-950 mb-1.5">
-                اسم المستخدم (Username)
+              <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                اسم المستخدم
               </label>
               <input
                 type="text"
                 required
+                autoComplete="username"
                 value={loginUsername}
                 onChange={(e) => setLoginUsername(e.target.value)}
-                placeholder="أدخل اسم مستخدم المورد..."
-                className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-brand-900 focus:outline-none focus:border-brand-800"
+                placeholder="أدخل اسم المستخدم"
+                className="w-full bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm text-[#231710] focus:outline-none focus:border-[#231710] transition"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-black text-brand-950 mb-1.5">
-                كلمة المرور (Password)
+              <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                كلمة المرور
               </label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
+                  autoComplete="current-password"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="أدخل كلمة مرور المورد..."
-                  className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-brand-900 focus:outline-none focus:border-brand-800 pl-10"
+                  placeholder="أدخل كلمة المرور"
+                  className="w-full bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm text-[#231710] focus:outline-none focus:border-[#231710] transition pl-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-500 hover:text-brand-900 transition"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6E5D4F] hover:text-[#231710] transition"
                   title={showPassword ? 'إخفاء' : 'إظهار'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -548,7 +551,7 @@ export default function DedicatedSupplierPortalPage() {
             <button
               type="submit"
               disabled={loginLoading}
-              className="w-full bg-brand-900 hover:bg-brand-950 text-white font-black py-3 rounded-2xl text-xs transition flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+              className="w-full bg-[#231710] hover:bg-[#3A271C] text-white font-bold py-3 rounded-xl text-sm transition flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               {loginLoading ? (
                 <>
@@ -556,20 +559,14 @@ export default function DedicatedSupplierPortalPage() {
                   <span>جاري التحقق من بيانات الدخول...</span>
                 </>
               ) : (
-                <>
-                  <Truck className="w-4 h-4 text-gold-400" />
-                  <span>دخول إلى بوابة المورد</span>
-                </>
+                <span>تسجيل الدخول</span>
               )}
             </button>
           </form>
 
-          <div className="pt-2 border-t border-brand-100 flex items-center justify-between text-[11px] text-brand-600">
-            <Link href="/" className="hover:text-brand-950 font-bold transition flex items-center gap-1">
-              <span>← العودة للمتجر الرئيسي</span>
-            </Link>
-            <Link href="/admin" className="hover:text-brand-950 font-bold transition">
-              لوحة تحكم الإدارة
+          <div className="pt-3 border-t border-[#E8E0D5] text-center">
+            <Link href="/" className="text-xs text-[#6E5D4F] hover:text-[#231710] font-medium transition">
+              العودة للمتجر الرئيسي
             </Link>
           </div>
         </div>
@@ -581,43 +578,43 @@ export default function DedicatedSupplierPortalPage() {
   // RENDER: Authenticated Supplier Portal
   // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-brand-50/50 flex flex-col font-sans pb-16" dir="rtl">
+    <div className="min-h-screen bg-[#FAF6F0] text-[#231710] flex flex-col font-sans pb-16" dir="rtl">
       {/* Toast Notification */}
       {notification && (
         <div
-          className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-xl font-bold text-xs flex items-center gap-2.5 animate-bounce ${
+          className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl shadow-md font-bold text-xs flex items-center gap-2.5 ${
             notification.type === 'success'
-              ? 'bg-brand-950 text-gold-400 border border-gold-500/40'
-              : 'bg-red-900 text-white border border-red-500'
+              ? 'bg-[#231710] text-white border border-[#3A271C]'
+              : 'bg-[#B83B2B] text-white border border-red-800'
           }`}
         >
           {notification.type === 'success' ? (
-            <CheckCircle2 className="w-4 h-4 text-pistachio-400 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           ) : (
-            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+            <AlertTriangle className="w-4 h-4 text-red-200 shrink-0" />
           )}
           <span>{notification.message}</span>
         </div>
       )}
 
       {/* Main Top Header */}
-      <header className="bg-brand-950 text-white border-b border-brand-800 shadow-md sticky top-0 z-40">
+      <header className="bg-white text-[#231710] border-b border-[#E8E0D5] sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-500/20 text-amber-400 rounded-xl flex items-center justify-center border border-amber-500/30">
-              <Truck className="w-5 h-5 text-amber-400" />
+            <div className="w-10 h-10 bg-[#FAF6F0] text-[#231710] rounded-xl flex items-center justify-center border border-[#E8E0D5]">
+              <Truck className="w-5 h-5 text-[#231710]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-sm sm:text-base font-black text-white">
+                <h1 className="text-sm sm:text-base font-bold text-[#231710]">
                   محمصة حفصة — بوابة المورد والتوريدات
                 </h1>
-                <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full font-bold">
-                  {userRole === 'super_admin' ? '👑 أدمن كامل' : '📦 مورد معتمد'}
+                <span className="text-[11px] bg-[#FAF6F0] text-[#6E5D4F] border border-[#E8E0D5] px-2.5 py-0.5 rounded-lg font-medium">
+                  {userRole === 'super_admin' ? 'مدير النظام' : 'مورد معتمد'}
                 </span>
               </div>
-              <p className="text-[10.5px] text-brand-300">
-                شركة أرافت للاستيراد والتوريد الزراعي (فرع بني مزار)
+              <p className="text-xs text-[#6E5D4F]">
+                {supplierDisplayName || username || 'حساب المورد المعتمد'} — فرع بني مزار
               </p>
             </div>
           </div>
@@ -629,7 +626,7 @@ export default function DedicatedSupplierPortalPage() {
                 handleAddDraftRow();
                 setIsInvoiceModalOpen(true);
               }}
-              className="bg-gold-500 hover:bg-gold-400 text-brand-950 font-black text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow transition"
+              className="bg-[#231710] hover:bg-[#3A271C] text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">إنشاء فاتورة توريد جديدة</span>
@@ -639,7 +636,7 @@ export default function DedicatedSupplierPortalPage() {
             <button
               onClick={() => fetchData()}
               disabled={loadingData}
-              className="bg-brand-900 hover:bg-brand-800 text-brand-200 p-2 rounded-xl border border-brand-700 transition"
+              className="bg-[#FAF6F0] hover:bg-[#EFE8DF] text-[#231710] p-2 rounded-xl border border-[#E8E0D5] transition cursor-pointer"
               title="تحديث البيانات"
             >
               <RefreshCw className={`w-4 h-4 ${loadingData ? 'animate-spin' : ''}`} />
@@ -647,7 +644,7 @@ export default function DedicatedSupplierPortalPage() {
 
             <button
               onClick={handleLogout}
-              className="bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 p-2 rounded-xl transition"
+              className="bg-[#FAF6F0] hover:bg-red-50 text-[#B83B2B] border border-[#E8E0D5] p-2 rounded-xl transition cursor-pointer"
               title="تسجيل الخروج"
             >
               <LogOut className="w-4 h-4" />
@@ -660,51 +657,51 @@ export default function DedicatedSupplierPortalPage() {
       <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-white p-4 rounded-2xl border border-brand-200 shadow-2xs space-y-1">
-            <div className="flex items-center justify-between text-brand-600 text-xs font-bold">
+          <div className="bg-white p-4 rounded-2xl border border-[#E8E0D5] space-y-1">
+            <div className="flex items-center justify-between text-[#6E5D4F] text-xs font-medium">
               <span>إجمالي أصناف الكتالوج</span>
-              <Layers className="w-4 h-4 text-brand-500" />
+              <Layers className="w-4 h-4 text-[#9A6836]" />
             </div>
-            <div className="text-xl sm:text-2xl font-black text-brand-950">{kpiData.totalItems} صنف</div>
-            <div className="text-[10px] text-brand-500 font-bold">موزعة على {categories.length} أقسام</div>
+            <div className="text-xl sm:text-2xl font-bold text-[#231710] tabular-nums">{kpiData.totalItems} صنف</div>
+            <div className="text-[11px] text-[#6E5D4F]">موزعة على {categories.length} أقسام</div>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-brand-200 shadow-2xs space-y-1">
-            <div className="flex items-center justify-between text-pistachio-700 text-xs font-bold">
+          <div className="bg-white p-4 rounded-2xl border border-[#E8E0D5] space-y-1">
+            <div className="flex items-center justify-between text-[#6E5D4F] text-xs font-medium">
               <span>أصناف متوفرة</span>
-              <CheckCircle2 className="w-4 h-4 text-pistachio-600" />
+              <CheckCircle2 className="w-4 h-4 text-[#3B6E4C]" />
             </div>
-            <div className="text-xl sm:text-2xl font-black text-pistachio-800">{kpiData.inStockItems} صنف</div>
-            <div className="text-[10px] text-pistachio-600 font-bold">مخزون كافٍ للبيع</div>
+            <div className="text-xl sm:text-2xl font-bold text-[#3B6E4C] tabular-nums">{kpiData.inStockItems} صنف</div>
+            <div className="text-[11px] text-[#6E5D4F]">مخزون كافٍ للبيع</div>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-amber-200 bg-amber-50/30 shadow-2xs space-y-1">
-            <div className="flex items-center justify-between text-amber-700 text-xs font-bold">
+          <div className="bg-white p-4 rounded-2xl border border-[#E8E0D5] space-y-1">
+            <div className="flex items-center justify-between text-[#6E5D4F] text-xs font-medium">
               <span>تنبيهات النواقص</span>
               <AlertTriangle className="w-4 h-4 text-amber-600" />
             </div>
-            <div className="text-xl sm:text-2xl font-black text-amber-800">{kpiData.shortageItems} صنف</div>
-            <div className="text-[10px] text-amber-600 font-bold">أقل من 10 كجم أو نفد المخزون</div>
+            <div className="text-xl sm:text-2xl font-bold text-amber-700 tabular-nums">{kpiData.shortageItems} صنف</div>
+            <div className="text-[11px] text-[#6E5D4F]">أقل من 10 كجم أو نفد المخزون</div>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-brand-200 shadow-2xs space-y-1">
-            <div className="flex items-center justify-between text-brand-600 text-xs font-bold">
+          <div className="bg-white p-4 rounded-2xl border border-[#E8E0D5] space-y-1">
+            <div className="flex items-center justify-between text-[#6E5D4F] text-xs font-medium">
               <span>متوسط تكلفة الكيلو</span>
-              <DollarSign className="w-4 h-4 text-gold-600" />
+              <DollarSign className="w-4 h-4 text-[#9A6836]" />
             </div>
-            <div className="text-xl sm:text-2xl font-black text-brand-950">{kpiData.avgCost} ج.م</div>
-            <div className="text-[10px] text-brand-500 font-bold">تكلفة الجملة الفعلية</div>
+            <div className="text-xl sm:text-2xl font-bold text-[#231710] tabular-nums">{kpiData.avgCost} ج.م</div>
+            <div className="text-[11px] text-[#6E5D4F]">تكلفة الجملة الفعلية</div>
           </div>
         </div>
 
         {/* View Switcher Tabs */}
-        <div className="flex items-center gap-2 border-b border-brand-200 pb-2">
+        <div className="flex items-center gap-2 border-b border-[#E8E0D5] pb-3">
           <button
             onClick={() => setActiveTab('inventory')}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
               activeTab === 'inventory'
-                ? 'bg-brand-900 text-white shadow-sm'
-                : 'bg-white text-brand-700 border border-brand-200 hover:bg-brand-100/60'
+                ? 'bg-[#231710] text-white'
+                : 'bg-white text-[#6E5D4F] border border-[#E8E0D5] hover:text-[#231710]'
             }`}
           >
             <Package className="w-4 h-4" />
@@ -713,16 +710,16 @@ export default function DedicatedSupplierPortalPage() {
 
           <button
             onClick={() => setActiveTab('invoices')}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
               activeTab === 'invoices'
-                ? 'bg-brand-900 text-white shadow-sm'
-                : 'bg-white text-brand-700 border border-brand-200 hover:bg-brand-100/60'
+                ? 'bg-[#231710] text-white'
+                : 'bg-white text-[#6E5D4F] border border-[#E8E0D5] hover:text-[#231710]'
             }`}
           >
             <FileText className="w-4 h-4" />
             <span>سجل فواتير التوريد ({invoices.length})</span>
             {kpiData.pendingInvoices > 0 && (
-              <span className="bg-amber-500 text-brand-950 text-[10px] px-2 py-0.2 rounded-full font-bold">
+              <span className="bg-amber-100 text-amber-900 border border-amber-200 text-[10px] px-2 py-0.5 rounded-full font-bold">
                 {kpiData.pendingInvoices} معلقة
               </span>
             )}
@@ -735,50 +732,50 @@ export default function DedicatedSupplierPortalPage() {
         {activeTab === 'inventory' && (
           <div className="space-y-4">
             {/* Filter and Search Bar */}
-            <div className="bg-white p-4 rounded-2xl border border-brand-200 shadow-2xs space-y-3">
+            <div className="bg-white p-4 rounded-2xl border border-[#E8E0D5]">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="relative">
-                  <Search className="w-4 h-4 text-brand-400 absolute right-3 top-1/2 -translate-y-1/2" />
+                  <Search className="w-4 h-4 text-[#6E5D4F] absolute right-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="ابحث باسم الصنف أو الكود..."
-                    className="w-full bg-brand-50 border border-brand-200 rounded-xl pr-9 pl-3 py-2 text-xs font-bold text-brand-900 focus:outline-none focus:border-brand-800"
+                    className="w-full bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl pr-9 pl-3 py-2 text-xs font-medium text-[#231710] focus:outline-none focus:border-[#231710]"
                   />
                 </div>
 
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="bg-brand-50 border border-brand-200 rounded-xl px-3 py-2 text-xs font-bold text-brand-900 focus:outline-none focus:border-brand-800"
+                  className="bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs font-medium text-[#231710] focus:outline-none focus:border-[#231710]"
                 >
                   <option value="all">جميع الأقسام ({products.length} صنف)</option>
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name}
+                      {formatCategoryName(c.name)}
                     </option>
                   ))}
                 </select>
 
                 <select
                   value={stockStatusFilter}
-                  onChange={(e) => setStockStatusFilter(e.target.value as any)}
-                  className="bg-brand-50 border border-brand-200 rounded-xl px-3 py-2 text-xs font-bold text-brand-900 focus:outline-none focus:border-brand-800"
+                  onChange={(e) => setStockStatusFilter(e.target.value as 'all' | 'shortage' | 'in_stock')}
+                  className="bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs font-medium text-[#231710] focus:outline-none focus:border-[#231710]"
                 >
                   <option value="all">كل حالات المخزون</option>
-                  <option value="shortage">⚠️ النواقص فقط (≤ 10 كجم أو نفد)</option>
-                  <option value="in_stock">✓ المتوفر بكفاية</option>
+                  <option value="shortage">النواقص فقط (أقل من 10 كجم أو نفد)</option>
+                  <option value="in_stock">المتوفر بكفاية</option>
                 </select>
               </div>
             </div>
 
             {/* Inventory Table */}
-            <div className="bg-white rounded-2xl border border-brand-200 shadow-2xs overflow-hidden">
+            <div className="bg-white rounded-2xl border border-[#E8E0D5] overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-right border-collapse text-xs">
                   <thead>
-                    <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
+                    <tr className="bg-[#FAF6F0] text-[#231710] font-bold border-b border-[#E8E0D5]">
                       <th className="p-3 whitespace-nowrap">الصورة</th>
                       <th className="p-3 whitespace-nowrap">اسم الصنف والبيانات</th>
                       <th className="p-3 whitespace-nowrap">القسم</th>
@@ -788,10 +785,10 @@ export default function DedicatedSupplierPortalPage() {
                       <th className="p-3 whitespace-nowrap text-center">إجراء سريع</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-brand-100">
+                  <tbody className="divide-y divide-[#E8E0D5]">
                     {filteredProducts.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="p-8 text-center text-brand-500 font-bold">
+                        <td colSpan={7} className="p-8 text-center text-[#6E5D4F] font-medium">
                           لا توجد أصناف مطابقة للبحث والفلاتر المحددة.
                         </td>
                       </tr>
@@ -804,60 +801,60 @@ export default function DedicatedSupplierPortalPage() {
                         return (
                           <tr
                             key={product.id}
-                            className={`hover:bg-brand-50/70 transition ${
-                              isShortage ? 'bg-amber-50/30' : ''
+                            className={`hover:bg-[#FAF6F0]/70 transition ${
+                              isShortage ? 'bg-amber-50/20' : ''
                             }`}
                           >
                             <td className="p-3 whitespace-nowrap">
                               <img
                                 src={getSafeImageUrl(product.image)}
                                 alt={product.name}
-                                className="w-10 h-10 rounded-xl object-cover border border-brand-200 bg-brand-50"
+                                className="w-10 h-10 rounded-xl object-cover border border-[#E8E0D5] bg-[#FAF6F0]"
                               />
                             </td>
 
                             <td className="p-3">
-                              <div className="font-extrabold text-brand-950">{product.name}</div>
-                              <div className="text-[10px] text-brand-500 font-mono mt-0.5">
+                              <div className="font-bold text-[#231710]">{product.name}</div>
+                              <div className="text-[11px] text-[#6E5D4F] font-mono mt-0.5">
                                 كود: {product.slug}
                               </div>
                             </td>
 
                             <td className="p-3 whitespace-nowrap">
-                              <span className="text-[10.5px] bg-brand-100 text-brand-900 px-2.5 py-0.5 rounded-lg font-bold">
-                                {catObj?.name || product.categoryId}
+                              <span className="text-[11px] bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] px-2.5 py-0.5 rounded-lg font-medium">
+                                {catObj ? formatCategoryName(catObj.name) : product.categoryId}
                               </span>
                             </td>
 
                             <td className="p-3 whitespace-nowrap text-center">
                               <span
-                                className={`inline-block font-black text-xs px-2.5 py-1 rounded-lg ${
+                                className={`inline-block font-bold text-xs px-2.5 py-1 rounded-lg tabular-nums ${
                                   stockKg === 0
-                                    ? 'bg-red-100 text-red-800'
+                                    ? 'bg-red-50 text-[#B83B2B] border border-red-200'
                                     : stockKg <= 10
-                                    ? 'bg-amber-100 text-amber-900 font-extrabold'
-                                    : 'bg-pistachio-100 text-pistachio-900'
+                                    ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                                    : 'bg-emerald-50 text-[#3B6E4C] border border-emerald-200'
                                 }`}
                               >
                                 {stockKg} كجم
                               </span>
                             </td>
 
-                            <td className="p-3 whitespace-nowrap text-center font-black text-brand-900">
+                            <td className="p-3 whitespace-nowrap text-center font-bold text-[#231710] tabular-nums">
                               {product.costPerKg ? `${product.costPerKg} ج.م` : 'غير محدد'}
                             </td>
 
                             <td className="p-3 whitespace-nowrap text-center">
                               {stockKg === 0 ? (
-                                <span className="text-[10px] bg-red-100 text-red-800 px-2.5 py-0.5 rounded-full font-black">
+                                <span className="text-[11px] bg-red-50 text-[#B83B2B] border border-red-200 px-2.5 py-0.5 rounded-full font-bold">
                                   نفد المخزون
                                 </span>
                               ) : isShortage ? (
-                                <span className="text-[10px] bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full font-black">
+                                <span className="text-[11px] bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-0.5 rounded-full font-bold">
                                   نواقص (بحاجة توريد)
                                 </span>
                               ) : (
-                                <span className="text-[10px] bg-pistachio-100 text-pistachio-800 px-2.5 py-0.5 rounded-full font-bold">
+                                <span className="text-[11px] bg-emerald-50 text-[#3B6E4C] border border-emerald-200 px-2.5 py-0.5 rounded-full font-medium">
                                   متوفر
                                 </span>
                               )}
@@ -867,7 +864,7 @@ export default function DedicatedSupplierPortalPage() {
                               <button
                                 type="button"
                                 onClick={() => handleQuickAddProductToInvoice(product)}
-                                className="bg-amber-100 hover:bg-amber-200 text-amber-950 font-black text-[11px] px-3 py-1.5 rounded-xl transition flex items-center gap-1 mx-auto"
+                                className="bg-[#FAF6F0] hover:bg-[#EFE8DF] text-[#231710] border border-[#E8E0D5] font-bold text-xs px-3 py-1.5 rounded-xl transition flex items-center gap-1 mx-auto cursor-pointer"
                               >
                                 <Plus className="w-3.5 h-3.5" />
                                 <span>طلب توريد</span>
@@ -890,17 +887,17 @@ export default function DedicatedSupplierPortalPage() {
         {activeTab === 'invoices' && (
           <div className="space-y-4">
             {/* Filter buttons */}
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-brand-200 shadow-2xs">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-brand-600">تصفية حسب الحالة:</span>
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-[#E8E0D5]">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-[#6E5D4F]">تصفية حسب الحالة:</span>
                 {(['all', 'pending', 'approved', 'rejected'] as const).map((st) => (
                   <button
                     key={st}
                     onClick={() => setInvoiceStatusFilter(st)}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                       invoiceStatusFilter === st
-                        ? 'bg-brand-900 text-white'
-                        : 'bg-brand-50 text-brand-700 hover:bg-brand-100'
+                        ? 'bg-[#231710] text-white'
+                        : 'bg-[#FAF6F0] text-[#6E5D4F] border border-[#E8E0D5] hover:text-[#231710]'
                     }`}
                   >
                     {st === 'all' && `الكل (${invoices.length})`}
@@ -917,19 +914,19 @@ export default function DedicatedSupplierPortalPage() {
                   handleAddDraftRow();
                   setIsInvoiceModalOpen(true);
                 }}
-                className="bg-brand-900 hover:bg-brand-950 text-white font-black text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 transition shadow"
+                className="bg-[#231710] hover:bg-[#3A271C] text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
               >
-                <Plus className="w-4 h-4 text-gold-400" />
-                <span>+ إنشاء فاتورة توريد جديدة</span>
+                <Plus className="w-4 h-4" />
+                <span>إنشاء فاتورة توريد جديدة</span>
               </button>
             </div>
 
             {/* Invoices List */}
             {filteredInvoices.length === 0 ? (
-              <div className="bg-white p-12 text-center rounded-2xl border border-brand-200 shadow-2xs space-y-3">
-                <FileText className="w-12 h-12 text-brand-300 mx-auto" />
-                <h3 className="text-base font-black text-brand-950">لا توجد فواتير توريد مسجلة بهذه الحالة</h3>
-                <p className="text-xs text-brand-600 max-w-sm mx-auto">
+              <div className="bg-white p-12 text-center rounded-2xl border border-[#E8E0D5] space-y-3">
+                <FileText className="w-10 h-10 text-[#9A6836] mx-auto" />
+                <h3 className="text-base font-bold text-[#231710]">لا توجد فواتير توريد مسجلة بهذه الحالة</h3>
+                <p className="text-xs text-[#6E5D4F] max-w-sm mx-auto">
                   يمكنك إنشاء فاتورة توريد جديدة وإرسالها للإدارة لاعتمادها وتحديث كميات المخزون تلقائياً.
                 </p>
                 <button
@@ -938,7 +935,7 @@ export default function DedicatedSupplierPortalPage() {
                     handleAddDraftRow();
                     setIsInvoiceModalOpen(true);
                   }}
-                  className="bg-gold-500 hover:bg-gold-400 text-brand-950 font-black text-xs px-4 py-2 rounded-xl inline-flex items-center gap-1.5 shadow"
+                  className="bg-[#231710] hover:bg-[#3A271C] text-white font-bold text-xs px-4 py-2.5 rounded-xl inline-flex items-center gap-1.5 transition cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   <span>إنشاء فاتورة توريد الآن</span>
@@ -953,39 +950,39 @@ export default function DedicatedSupplierPortalPage() {
                   return (
                     <div
                       key={inv.id}
-                      className="bg-white rounded-2xl border border-brand-200 shadow-2xs overflow-hidden transition"
+                      className="bg-white rounded-2xl border border-[#E8E0D5] overflow-hidden transition"
                     >
                       {/* Summary Header */}
-                      <div className="p-4 flex flex-wrap items-center justify-between gap-3 bg-brand-50/40">
+                      <div className="p-4 flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-brand-950 text-gold-400 flex items-center justify-center font-mono font-black text-xs shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] flex items-center justify-center font-mono font-bold text-xs shrink-0">
                             SUP
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono font-black text-brand-950 text-sm">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-mono font-bold text-[#231710] text-sm">
                                 {inv.invoiceNumber}
                               </span>
                               {inv.status === 'pending' && (
-                                <span className="bg-amber-100 border border-amber-300 text-amber-900 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                <span className="bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
                                   <Clock className="w-3 h-3 text-amber-600" />
                                   <span>قيد مراجعة واعتماد الإدارة</span>
                                 </span>
                               )}
                               {inv.status === 'approved' && (
-                                <span className="bg-pistachio-100 border border-pistachio-300 text-pistachio-900 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                                  <CheckCircle2 className="w-3 h-3 text-pistachio-700" />
+                                <span className="bg-emerald-50 border border-emerald-200 text-[#3B6E4C] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3 text-[#3B6E4C]" />
                                   <span>معتمدة (تمت إضافة المخزون)</span>
                                 </span>
                               )}
                               {inv.status === 'rejected' && (
-                                <span className="bg-red-100 border border-red-300 text-red-900 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                                  <XCircle className="w-3 h-3 text-red-600" />
+                                <span className="bg-red-50 border border-red-200 text-[#B83B2B] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                  <XCircle className="w-3 h-3 text-[#B83B2B]" />
                                   <span>مرفوضة من الإدارة</span>
                                 </span>
                               )}
                             </div>
-                            <div className="text-[11px] text-brand-500 mt-0.5">
+                            <div className="text-[11px] text-[#6E5D4F] mt-0.5">
                               تاريخ الإنشاء: {new Date(inv.createdAt).toLocaleString('ar-EG')} • {inv.items.length} أصناف ({totalKg} كجم)
                             </div>
                           </div>
@@ -993,8 +990,8 @@ export default function DedicatedSupplierPortalPage() {
 
                         <div className="flex items-center gap-4">
                           <div className="text-left">
-                            <span className="text-[10px] text-brand-500 font-bold block">إجمالي الفاتورة</span>
-                            <span className="text-sm sm:text-base font-black text-pistachio-800">
+                            <span className="text-[11px] text-[#6E5D4F] block">إجمالي الفاتورة</span>
+                            <span className="text-sm sm:text-base font-bold text-[#231710] tabular-nums">
                               {inv.totalAmount.toLocaleString('ar-EG')} ج.م
                             </span>
                           </div>
@@ -1002,7 +999,7 @@ export default function DedicatedSupplierPortalPage() {
                           <button
                             type="button"
                             onClick={() => setExpandedInvoiceId(isExpanded ? null : inv.id)}
-                            className="bg-brand-100 hover:bg-brand-200 text-brand-900 p-2 rounded-xl transition"
+                            className="bg-[#FAF6F0] hover:bg-[#EFE8DF] text-[#231710] border border-[#E8E0D5] p-2 rounded-xl transition cursor-pointer"
                             title={isExpanded ? 'إخفاء التفاصيل' : 'عرض الأصناف'}
                           >
                             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -1012,19 +1009,19 @@ export default function DedicatedSupplierPortalPage() {
 
                       {/* Notes Section */}
                       {(inv.notes || inv.adminNotes) && (
-                        <div className="px-4 py-2.5 bg-brand-50/70 border-t border-brand-100 text-xs space-y-1">
+                        <div className="px-4 py-2.5 bg-[#FAF6F0] border-t border-[#E8E0D5] text-xs space-y-1.5">
                           {inv.notes && (
-                            <div className="text-brand-700">
-                              <span className="font-extrabold text-brand-950">ملاحظات المورد: </span>
+                            <div className="text-[#6E5D4F]">
+                              <span className="font-bold text-[#231710]">ملاحظات المورد: </span>
                               <span>{inv.notes}</span>
                             </div>
                           )}
                           {inv.adminNotes && (
-                            <div className="text-brand-900 bg-amber-50 p-2 rounded-xl border border-amber-200">
-                              <span className="font-black text-amber-950">ملاحظات مراجعة الإدارة: </span>
+                            <div className="text-[#231710] bg-white p-2.5 rounded-xl border border-[#E8E0D5]">
+                              <span className="font-bold text-[#231710]">ملاحظات مراجعة الإدارة: </span>
                               <span>{inv.adminNotes}</span>
                               {inv.reviewedAt && (
-                                <span className="text-[10px] text-brand-500 mr-2">
+                                <span className="text-[11px] text-[#6E5D4F] mr-2">
                                   (تاريخ المراجعة: {new Date(inv.reviewedAt).toLocaleString('ar-EG')})
                                 </span>
                               )}
@@ -1035,25 +1032,25 @@ export default function DedicatedSupplierPortalPage() {
 
                       {/* Expandable Line Items Table */}
                       {isExpanded && (
-                        <div className="p-4 border-t border-brand-200 bg-white">
-                          <h4 className="text-xs font-black text-brand-950 mb-2">أصناف الفاتورة بالتفصيل:</h4>
-                          <div className="overflow-x-auto rounded-xl border border-brand-200">
+                        <div className="p-4 border-t border-[#E8E0D5] bg-white">
+                          <h4 className="text-xs font-bold text-[#231710] mb-2.5">أصناف الفاتورة بالتفصيل:</h4>
+                          <div className="overflow-x-auto rounded-xl border border-[#E8E0D5]">
                             <table className="w-full text-right border-collapse text-xs">
                               <thead>
-                                <tr className="bg-brand-950 text-white font-extrabold border-b border-brand-800">
+                                <tr className="bg-[#FAF6F0] text-[#231710] font-bold border-b border-[#E8E0D5]">
                                   <th className="p-2.5">اسم الصنف</th>
                                   <th className="p-2.5 text-center">الكمية الموردة (كجم)</th>
                                   <th className="p-2.5 text-center">تكلفة الكيلو (ج.م)</th>
                                   <th className="p-2.5 text-center">إجمالي البند (ج.م)</th>
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-brand-100">
+                              <tbody className="divide-y divide-[#E8E0D5]">
                                 {inv.items.map((item, idx) => (
-                                  <tr key={idx} className="hover:bg-brand-50/60">
-                                    <td className="p-2.5 font-bold text-brand-950">{item.productName}</td>
-                                    <td className="p-2.5 text-center font-black">{item.quantityKg} كجم</td>
-                                    <td className="p-2.5 text-center font-black">{item.costPerKg} ج.م</td>
-                                    <td className="p-2.5 text-center font-black text-pistachio-800">
+                                  <tr key={idx} className="hover:bg-[#FAF6F0]/60">
+                                    <td className="p-2.5 font-bold text-[#231710]">{item.productName}</td>
+                                    <td className="p-2.5 text-center font-medium tabular-nums">{item.quantityKg} كجم</td>
+                                    <td className="p-2.5 text-center font-medium tabular-nums">{item.costPerKg} ج.م</td>
+                                    <td className="p-2.5 text-center font-bold text-[#231710] tabular-nums">
                                       {item.totalCost} ج.م
                                     </td>
                                   </tr>
@@ -1076,16 +1073,16 @@ export default function DedicatedSupplierPortalPage() {
       {/* MODAL: CREATE NEW SUPPLY INVOICE                                    */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       {isInvoiceModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-5 sm:p-7 shadow-2xl border border-gold-500/30 text-right space-y-5 my-8">
-            <div className="flex items-center justify-between border-b border-brand-100 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-5 sm:p-7 shadow-lg border border-[#E8E0D5] text-right space-y-5 my-8">
+            <div className="flex items-center justify-between border-b border-[#E8E0D5] pb-3.5">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
-                  <Plus className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-xl bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] flex items-center justify-center">
+                  <Plus className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-brand-950">إنشاء وإرسال فاتورة توريد جديدة</h3>
-                  <p className="text-[11px] text-brand-500">
+                  <h3 className="text-base font-bold text-[#231710]">إنشاء وإرسال فاتورة توريد جديدة</h3>
+                  <p className="text-xs text-[#6E5D4F]">
                     أضف الأصناف والكميات وأسعار التكلفة لإرسالها للإدارة
                   </p>
                 </div>
@@ -1093,9 +1090,9 @@ export default function DedicatedSupplierPortalPage() {
               <button
                 type="button"
                 onClick={() => setIsInvoiceModalOpen(false)}
-                className="text-brand-400 hover:text-brand-800 text-base font-black p-1"
+                className="text-[#6E5D4F] hover:text-[#231710] p-1.5 rounded-lg hover:bg-[#FAF6F0] transition cursor-pointer"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -1106,16 +1103,16 @@ export default function DedicatedSupplierPortalPage() {
                   return (
                     <div
                       key={index}
-                      className="bg-brand-50/80 p-3 rounded-2xl border border-brand-200 grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end"
+                      className="bg-[#FAF6F0] p-3.5 rounded-xl border border-[#E8E0D5] grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end"
                     >
                       <div className="sm:col-span-5">
-                        <label className="block text-[10.5px] font-bold text-brand-800 mb-1">
+                        <label className="block text-xs font-bold text-[#231710] mb-1">
                           الصنف *
                         </label>
                         <select
                           value={item.productId}
                           onChange={(e) => handleUpdateDraftRow(index, 'productId', e.target.value)}
-                          className="w-full bg-white border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-brand-950"
+                          className="w-full bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-2 text-xs font-medium text-[#231710] focus:outline-none focus:border-[#231710]"
                         >
                           {products.map((p) => (
                             <option key={p.id} value={p.id}>
@@ -1126,7 +1123,7 @@ export default function DedicatedSupplierPortalPage() {
                       </div>
 
                       <div className="sm:col-span-3">
-                        <label className="block text-[10.5px] font-bold text-brand-800 mb-1">
+                        <label className="block text-xs font-bold text-[#231710] mb-1">
                           الكمية (كجم) *
                         </label>
                         <input
@@ -1136,12 +1133,12 @@ export default function DedicatedSupplierPortalPage() {
                           required
                           value={item.quantityKg}
                           onChange={(e) => handleUpdateDraftRow(index, 'quantityKg', e.target.value)}
-                          className="w-full bg-white border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-black text-center text-brand-950"
+                          className="w-full bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-2 text-xs font-bold text-center text-[#231710] focus:outline-none focus:border-[#231710]"
                         />
                       </div>
 
                       <div className="sm:col-span-3">
-                        <label className="block text-[10.5px] font-bold text-brand-800 mb-1">
+                        <label className="block text-xs font-bold text-[#231710] mb-1">
                           سعر الكيلو (ج.م) *
                         </label>
                         <input
@@ -1151,7 +1148,7 @@ export default function DedicatedSupplierPortalPage() {
                           required
                           value={item.costPerKg}
                           onChange={(e) => handleUpdateDraftRow(index, 'costPerKg', e.target.value)}
-                          className="w-full bg-white border border-brand-200 rounded-xl px-2.5 py-1.5 text-xs font-black text-center text-brand-950"
+                          className="w-full bg-white border border-[#E8E0D5] rounded-xl px-2.5 py-2 text-xs font-bold text-center text-[#231710] focus:outline-none focus:border-[#231710]"
                         />
                       </div>
 
@@ -1159,14 +1156,14 @@ export default function DedicatedSupplierPortalPage() {
                         <button
                           type="button"
                           onClick={() => handleRemoveDraftRow(index)}
-                          className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition"
+                          className="p-2 text-[#B83B2B] hover:bg-red-50 rounded-xl transition cursor-pointer"
                           title="حذف هذا البند"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
 
-                      <div className="sm:col-span-12 text-left pt-1 border-t border-brand-200/50 text-[10.5px] font-black text-pistachio-800">
+                      <div className="sm:col-span-12 text-left pt-1.5 border-t border-[#E8E0D5] text-xs font-bold text-[#231710] tabular-nums">
                         إجمالي البند: {lineTotal.toLocaleString('ar-EG')} ج.م
                       </div>
                     </div>
@@ -1177,34 +1174,34 @@ export default function DedicatedSupplierPortalPage() {
               <button
                 type="button"
                 onClick={handleAddDraftRow}
-                className="w-full bg-brand-100 hover:bg-brand-200 text-brand-900 font-extrabold text-xs py-2 rounded-xl transition flex items-center justify-center gap-1.5 border border-dashed border-brand-300"
+                className="w-full bg-[#FAF6F0] hover:bg-[#EFE8DF] text-[#231710] font-bold text-xs py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 border border-dashed border-[#C5B8A8] cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                <span>+ إضافة صنف آخر للفاتورة</span>
+                <span>إضافة صنف آخر للفاتورة</span>
               </button>
 
               <div>
-                <label className="block text-[11px] font-bold text-brand-950 mb-1">
+                <label className="block text-xs font-bold text-[#231710] mb-1">
                   ملاحظات المورد وتفاصيل الشحنة (اختياري)
                 </label>
                 <textarea
                   rows={2}
                   value={draftNotes}
                   onChange={(e) => setDraftNotes(e.target.value)}
-                  placeholder="مثال: شحنة وارد تركيا الدفعة الثانية - تاريخ الوصول المتوقع غداً صباحاً"
-                  className="w-full bg-brand-50 border border-brand-200 rounded-xl px-3 py-2 text-xs text-brand-900"
+                  placeholder="مثال: شحنة الدفعة الثانية - تاريخ الوصول المتوقع غداً صباحاً"
+                  className="w-full bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs text-[#231710] focus:outline-none focus:border-[#231710]"
                 />
               </div>
 
-              <div className="p-3 bg-brand-950 text-white rounded-2xl flex items-center justify-between">
+              <div className="p-3.5 bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] rounded-xl flex items-center justify-between">
                 <div>
-                  <span className="text-[11px] text-brand-300 block">إجمالي قيمة الفاتورة</span>
-                  <span className="text-base sm:text-lg font-black text-gold-400">
+                  <span className="text-xs text-[#6E5D4F] block">إجمالي قيمة الفاتورة</span>
+                  <span className="text-base sm:text-lg font-bold text-[#231710] tabular-nums">
                     {draftTotalAmount.toLocaleString('ar-EG')} ج.م
                   </span>
                 </div>
-                <div className="text-left text-[11px] text-brand-300 font-bold">
-                  {draftItems.length} أصناف • حالة مبدئية: معلقة (pending)
+                <div className="text-left text-xs text-[#6E5D4F] font-medium">
+                  {draftItems.length} أصناف • بانتظار المراجعة
                 </div>
               </div>
 
@@ -1212,7 +1209,7 @@ export default function DedicatedSupplierPortalPage() {
                 <button
                   type="button"
                   onClick={() => setIsInvoiceModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-brand-700 bg-brand-100 hover:bg-brand-200 transition"
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#6E5D4F] bg-[#FAF6F0] hover:bg-[#EFE8DF] border border-[#E8E0D5] transition cursor-pointer"
                 >
                   إلغاء
                 </button>
@@ -1220,7 +1217,7 @@ export default function DedicatedSupplierPortalPage() {
                 <button
                   type="submit"
                   disabled={isSubmittingInvoice || draftItems.length === 0}
-                  className="bg-brand-900 hover:bg-brand-950 text-white font-black text-xs px-5 py-2.5 rounded-xl transition flex items-center gap-2 shadow disabled:opacity-50"
+                  className="bg-[#231710] hover:bg-[#3A271C] text-white font-bold text-xs px-5 py-2.5 rounded-xl transition flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmittingInvoice ? (
                     <>
@@ -1229,7 +1226,7 @@ export default function DedicatedSupplierPortalPage() {
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="w-4 h-4 text-gold-400" />
+                      <CheckCircle2 className="w-4 h-4" />
                       <span>إرسال الفاتورة للاعتماد</span>
                     </>
                   )}
