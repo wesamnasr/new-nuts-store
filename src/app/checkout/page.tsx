@@ -880,7 +880,7 @@ export default function CheckoutPage() {
                     <p className="font-bold text-[#231710]">
                       {paymentMethod === 'vodafone_cash'
                         ? `حوّل المبلغ إلى رقم فودافون كاش: ${
-                            settings?.vodafoneCashNumber || '01000000000'
+                            settings?.vodafoneCashNumber || '01107677672'
                           }`
                         : `حوّل المبلغ عبر InstaPay إلى عنوان: ${
                             settings?.instapayAddress || 'hafsa.roastery@instapay'

@@ -289,7 +289,7 @@ export default function SupermarketReceiptModal({
     ? order.items.reduce((sum, item) => sum + (item.quantity || 1), 0)
     : 0;
 
-  const storePhone = settings?.supportPhone || settings?.whatsappNumber || '01100699524';
+  const storePhone = settings?.supportPhone || settings?.whatsappNumber || '01107677672';
   const storeName = settings?.storeName || 'محمصة حفصة للبن والمكسرات';
   const storeAddress = settings?.address || 'مركز بني مزار — أمام مسجد الزراعيين مباشرة';
   const cityName = getCityName(settings);

@@ -142,10 +142,10 @@ export default function Footer() {
             <p className="flex items-center gap-2">
               <Phone className="w-4 h-4 text-[#9A6836] shrink-0" />
               <a
-                href={`tel:${settings?.supportPhone || '01100699524'}`}
+                href={`tel:${settings?.supportPhone || '01107677672'}`}
                 className="tabular-nums hover:text-[#9A6836] font-bold transition"
               >
-                {settings?.supportPhone || '01100699524'}
+                {settings?.supportPhone || '01107677672'}
               </a>
             </p>
             <p className="flex items-center gap-2">

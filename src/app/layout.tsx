@@ -76,7 +76,7 @@ const localBusinessSchema = {
     latitude: 28.5036,
     longitude: 30.8004,
   },
-  telephone: '+201100699524',
+  telephone: '+201107677672',
   openingHoursSpecification: [
     {
       '@type': 'OpeningHoursSpecification',

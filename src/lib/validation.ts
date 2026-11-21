@@ -88,9 +88,9 @@ export function validateEgyptianPhone(phone: string): EgyptianPhoneValidationRes
  * and strips non-digits (+, spaces, dashes).
  */
 export function formatWhatsAppPhone(phone?: string): string {
-  if (!phone || typeof phone !== 'string') return '201000000000';
+  if (!phone || typeof phone !== 'string') return '201107677672';
   const digits = normalizeArabicDigits(phone).replace(/\D/g, '');
-  if (!digits) return '201000000000';
+  if (!digits) return '201107677672';
   if (digits.startsWith('00')) {
     return digits.slice(2);
   }

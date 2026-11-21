@@ -156,7 +156,7 @@ export default function AboutPage() {
               </p>
               <p className="flex items-center gap-2.5 tabular-nums">
                 <Phone className="w-4 h-4 text-[#9A6836] shrink-0" />
-                <span>خدمة العملاء والطلبات: {settings?.supportPhone || '01100699524'}</span>
+                <span>خدمة العملاء والطلبات: {settings?.supportPhone || '01107677672'}</span>
               </p>
             </div>
 
