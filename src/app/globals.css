@@ -1,0 +1,752 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   GROUP 1: 3 LIGHT THEMES WITH DARK FONTS (ثيمات فاتحة بخطوط غامقة)
+   ========================================================================== */
+
+/* 1. كلاسيك المحامص والذواقة — عاجي دافئ وإسبريسو (Warm Calacatta Ivory #FAF6F0 & Deep Espresso #231710) */
+:root,
+[data-theme="royal_roastery"],
+[data-theme="levant_heritage"] {
+  --font-cairo: 'Cairo', 'Tajawal', 'Segoe UI', Tahoma, system-ui, -apple-system, sans-serif;
+  --font-tajawal: 'Tajawal', 'Cairo', 'Segoe UI', Tahoma, system-ui, -apple-system, sans-serif;
+  --brand-50: 250 246 240;   /* #FAF6F0 Warm Calacatta Ivory (Primary BG) */
+  --brand-100: 243 236 225;  /* #F3ECE1 Soft Almond Cream (Surface / Cards) */
+  --brand-200: 230 218 200;  /* #E6DAC8 Warm Almond Border */
+  --brand-300: 214 194 166;  /* #D6C2A6 Soft Oak Tint */
+  --brand-400: 200 138 75;   /* #C88A4B Warm Honey Oak (Secondary Warm) */
+  --brand-500: 200 138 75;   /* #C88A4B Warm Honey Oak */
+  --brand-600: 166 108 52;   /* #A66C34 Deep Oak */
+  --brand-700: 112 75 46;    /* #704B2E Roasted Cinnamon */
+  --brand-800: 66 44 30;     /* #422C1E Medium Roast */
+  --brand-900: 46 30 21;     /* #2E1E15 Dark Espresso */
+  --brand-950: 35 23 16;     /* #231710 Deep Espresso Roast (Primary Brand) */
+
+  --pistachio-50: 238 245 240;  /* #EEF5F0 Soft Pistachio Tint */
+  --pistachio-100: 212 232 218; /* #D4E8DA Light Pistachio */
+  --pistachio-500: 59 110 76;   /* #3B6E4C Pistachio Green (Success / Fresh) */
+  --pistachio-600: 47 90 61;    /* #2F5A3D Deep Pistachio */
+  --pistachio-700: 34 68 45;    /* #22442D Forest Pistachio */
+
+  --gold-400: 226 196 92;    /* #E2C45C Light Champagne Gold */
+  --gold-500: 212 175 55;    /* #D4AF37 Champagne Backlit Gold (Accent / Gold CTA) */
+  --gold-600: 200 138 75;    /* #C88A4B Warm Honey Oak */
+
+  --cherry-500: 184 59 43;   /* #B83B2B Coffee Cherry Red (Promo / Urgency) */
+
+  --surface-bg: #FAF7F2;
+  --surface-card: #FFFFFF;
+  --surface-card-alpha: rgba(255, 255, 255, 0.94);
+  --surface-input: #FFFFFF;
+  --text-strong: #231710;
+  --text-body: #5E4D40;
+  --text-accent: #9A6836;
+  --border-main: #E8DFD3;
+}
+
+/* 2. أزرق سماوي ملكي (فاتح • خط كحلي غامق) */
+[data-theme="modern_minimal"] {
+  --brand-50: 226 238 252;
+  --brand-100: 204 225 249;
+  --brand-200: 169 204 244;
+  --brand-300: 122 174 235;
+  --brand-400: 74 139 220;
+  --brand-500: 37 99 235;
+  --brand-600: 29 78 216;
+  --brand-700: 23 58 148;
+  --brand-800: 17 42 102;
+  --brand-900: 12 29 69;
+  --brand-950: 7 19 46;
+
+  --pistachio-50: 224 247 244;
+  --pistachio-100: 186 237 230;
+  --pistachio-500: 13 148 136;
+  --pistachio-600: 15 118 110;
+  --pistachio-700: 17 94 89;
+
+  --gold-400: 56 189 248;
+  --gold-500: 2 132 199;
+  --gold-600: 3 105 161;
+
+  --surface-bg: #e2eefc;
+  --surface-card: #f8fbff;
+  --surface-card-alpha: rgba(248, 251, 255, 0.95);
+  --surface-input: #eef5fd;
+  --text-strong: #07132e;
+  --text-body: #173a6a;
+  --text-accent: #1d4ed8;
+  --border-main: #a9ccf4;
+}
+
+/* ==========================================================================
+   GROUP 2: 3 DARK THEMES WITH LIGHT FONTS (ثيمات غامقة بخطوط فاتحة)
+   ========================================================================== */
+
+/* 4. الفحم الملكي والذهب (غامق • خط أبيض وذهبي فاتح) */
+[data-theme="midnight_obsidian"] {
+  --brand-50: 24 29 42;
+  --brand-100: 34 41 58;
+  --brand-200: 51 61 84;
+  --brand-300: 75 89 120;
+  --brand-400: 148 163 184;
+  --brand-500: 203 213 225;
+  --brand-600: 251 191 36;
+  --brand-700: 217 119 6;
+  --brand-800: 30 36 51;
+  --brand-900: 21 25 36;
+  --brand-950: 11 13 19;
+
+  --pistachio-50: 20 38 32;
+  --pistachio-100: 29 56 46;
+  --pistachio-500: 52 211 153;
+  --pistachio-600: 16 185 129;
+  --pistachio-700: 110 231 183;
+
+  --gold-400: 252 211 77;
+  --gold-500: 245 158 11;
+  --gold-600: 217 119 6;
+
+  --surface-bg: #0b0d13;
+  --surface-card: #151924;
+  --surface-card-alpha: rgba(21, 25, 36, 0.95);
+  --surface-input: #0f131c;
+  --text-strong: #f8fafc;
+  --text-body: #cbd5e1;
+  --text-accent: #fbbf24;
+  --border-main: rgba(251, 191, 36, 0.25);
+}
+
+/* 5. الزمرد الليلي العميق (غامق • خط نعناعي وعاجي فاتح) */
+[data-theme="emerald_palace"] {
+  --brand-50: 11 54 40;
+  --brand-100: 16 74 55;
+  --brand-200: 25 102 76;
+  --brand-300: 42 138 105;
+  --brand-400: 110 231 183;
+  --brand-500: 52 211 153;
+  --brand-600: 16 185 129;
+  --brand-700: 5 150 105;
+  --brand-800: 13 61 45;
+  --brand-900: 8 43 32;
+  --brand-950: 4 26 19;
+
+  --pistachio-50: 12 61 44;
+  --pistachio-100: 19 84 61;
+  --pistachio-500: 52 211 153;
+  --pistachio-600: 16 185 129;
+  --pistachio-700: 167 243 208;
+
+  --gold-400: 110 231 183;
+  --gold-500: 16 185 129;
+  --gold-600: 5 150 105;
+
+  --surface-bg: #041a13;
+  --surface-card: #092b20;
+  --surface-card-alpha: rgba(9, 43, 32, 0.95);
+  --surface-input: #062118;
+  --text-strong: #ecfdf5;
+  --text-body: #a7f3d0;
+  --text-accent: #34d399;
+  --border-main: rgba(52, 211, 153, 0.28);
+}
+
+/* 6. المخمل البنفسجي الملكي (غامق • خط لؤلؤي وكهرماني فاتح) */
+[data-theme="saffron_velvet"] {
+  --brand-50: 45 19 74;
+  --brand-100: 62 27 102;
+  --brand-200: 88 39 140;
+  --brand-300: 126 58 194;
+  --brand-400: 216 180 254;
+  --brand-500: 232 121 249;
+  --brand-600: 245 158 11;
+  --brand-700: 192 38 211;
+  --brand-800: 56 22 92;
+  --brand-900: 36 14 61;
+  --brand-950: 19 7 34;
+
+  --pistachio-50: 54 22 77;
+  --pistachio-100: 76 31 107;
+  --pistachio-500: 232 121 249;
+  --pistachio-600: 192 38 211;
+  --pistachio-700: 245 208 254;
+
+  --gold-400: 251 191 36;
+  --gold-500: 245 158 11;
+  --gold-600: 217 119 6;
+
+  --surface-bg: #130722;
+  --surface-card: #210e38;
+  --surface-card-alpha: rgba(33, 14, 56, 0.95);
+  --surface-input: #18092b;
+  --text-strong: #fdf4ff;
+  --text-body: #f5d0fe;
+  --text-accent: #fbbf24;
+  --border-main: rgba(232, 121, 249, 0.28);
+}
+
+:root,
+[data-theme] {
+  --theme-bg: var(--surface-bg);
+  --theme-surface: var(--surface-card);
+  --theme-surface-muted: rgb(var(--brand-100));
+  --theme-input: var(--surface-input);
+  --theme-text: var(--text-strong);
+  --theme-text-muted: var(--text-body);
+  --theme-accent: var(--text-accent);
+  --theme-border: var(--border-main);
+}
+
+.ds-table-wrap {
+  background-color: var(--theme-surface);
+  color: var(--theme-text);
+  border: 1px solid var(--theme-border);
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 2px 10px -4px rgba(0, 0, 0, 0.06);
+}
+
+.ds-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.ds-table-wrap thead th {
+  background-color: var(--theme-surface-muted);
+  color: var(--theme-text-muted);
+  border-bottom: 1px solid var(--theme-border);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 0.75rem 0.875rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ds-table-wrap tbody td {
+  border-bottom: 1px solid var(--theme-border);
+  padding: 0.75rem 0.875rem;
+  vertical-align: middle;
+}
+
+.ds-table-wrap tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ds-table-wrap tbody tr:hover {
+  background-color: rgb(var(--brand-100) / 0.45);
+}
+
+[data-mode="dark"] .ds-tone-positive {
+  color: #6ee7b7 !important;
+}
+[data-mode="dark"] .ds-tone-negative {
+  color: #fda4af !important;
+}
+[data-mode="dark"] .ds-tone-warning {
+  color: #fcd34d !important;
+}
+
+html {
+  font-size: 15px;
+  scroll-behavior: smooth;
+  overflow-x: clip;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (min-width: 640px) {
+  html {
+    font-size: 15.5px;
+  }
+}
+
+@media (min-width: 1280px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+body {
+  color: var(--text-strong);
+  background-color: var(--surface-bg);
+  min-height: 100vh;
+  max-width: 100vw;
+  overflow-x: clip;
+  line-height: 1.6;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* ==========================================================================
+   LIGHT THEMES ENFORCEMENT ([data-mode="light"])
+   Ensures all 3 Light Themes have clean white cards and crisp dark fonts
+   ========================================================================== */
+[data-mode="light"] body {
+  background-color: var(--surface-bg) !important;
+  color: var(--text-strong) !important;
+}
+
+[data-mode="light"] .bg-white {
+  background-color: var(--surface-card) !important;
+  color: var(--text-strong);
+}
+
+[data-mode="light"] .text-brand-950,
+[data-mode="light"] .text-brand-900 {
+  color: var(--text-strong);
+}
+
+[data-mode="light"] .text-brand-800,
+[data-mode="light"] .text-brand-700 {
+  color: var(--text-body);
+}
+
+/* Multi-Theme Dynamic Surface & Card Rules */
+[data-theme="modern_minimal"] .bg-\[\#FAF6F0\],
+[data-theme="modern_minimal"] .bg-\[\#FAF7F2\],
+[data-theme="emerald_palace"] .bg-\[\#FAF6F0\],
+[data-theme="emerald_palace"] .bg-\[\#FAF7F2\],
+[data-theme="saffron_velvet"] .bg-\[\#FAF6F0\],
+[data-theme="saffron_velvet"] .bg-\[\#FAF7F2\],
+[data-theme="midnight_obsidian"] .bg-\[\#FAF6F0\],
+[data-theme="midnight_obsidian"] .bg-\[\#FAF7F2\] { background-color: var(--surface-bg) !important; }
+[data-theme="modern_minimal"] .bg-\[\#F4EFE6\],
+[data-theme="modern_minimal"] .bg-\[\#F5EFE6\],
+[data-theme="modern_minimal"] .bg-\[\#F6F1EA\],
+[data-theme="emerald_palace"] .bg-\[\#F4EFE6\],
+[data-theme="emerald_palace"] .bg-\[\#F5EFE6\],
+[data-theme="emerald_palace"] .bg-\[\#F6F1EA\],
+[data-theme="saffron_velvet"] .bg-\[\#F4EFE6\],
+[data-theme="saffron_velvet"] .bg-\[\#F5EFE6\],
+[data-theme="saffron_velvet"] .bg-\[\#F6F1EA\],
+[data-theme="midnight_obsidian"] .bg-\[\#F4EFE6\],
+[data-theme="midnight_obsidian"] .bg-\[\#F5EFE6\],
+[data-theme="midnight_obsidian"] .bg-\[\#F6F1EA\] { background-color: rgb(var(--brand-100)) !important; }
+[data-theme="modern_minimal"] .theme-product-card,
+[data-theme="emerald_palace"] .theme-product-card,
+[data-theme="saffron_velvet"] .theme-product-card,
+[data-theme="midnight_obsidian"] .theme-product-card { background-color: var(--surface-card) !important; border-color: var(--border-main) !important; }
+[data-theme="modern_minimal"] .text-\[\#231710\],
+[data-theme="modern_minimal"] .text-\[\#261A13\],
+[data-theme="modern_minimal"] .text-\[\#2C1D14\],
+[data-theme="emerald_palace"] .text-\[\#231710\],
+[data-theme="emerald_palace"] .text-\[\#261A13\],
+[data-theme="emerald_palace"] .text-\[\#2C1D14\],
+[data-theme="saffron_velvet"] .text-\[\#231710\],
+[data-theme="saffron_velvet"] .text-\[\#261A13\],
+[data-theme="saffron_velvet"] .text-\[\#2C1D14\],
+[data-theme="midnight_obsidian"] .text-\[\#231710\],
+[data-theme="midnight_obsidian"] .text-\[\#261A13\],
+[data-theme="midnight_obsidian"] .text-\[\#2C1D14\] { color: var(--text-strong) !important; }
+[data-theme="modern_minimal"] .text-\[\#5C4A3D\],
+[data-theme="modern_minimal"] .text-\[\#5E4D40\],
+[data-theme="modern_minimal"] .text-\[\#6E5D4F\],
+[data-theme="modern_minimal"] .text-\[\#78685A\],
+[data-theme="emerald_palace"] .text-\[\#5C4A3D\],
+[data-theme="emerald_palace"] .text-\[\#5E4D40\],
+[data-theme="emerald_palace"] .text-\[\#6E5D4F\],
+[data-theme="emerald_palace"] .text-\[\#78685A\],
+[data-theme="saffron_velvet"] .text-\[\#5C4A3D\],
+[data-theme="saffron_velvet"] .text-\[\#5E4D40\],
+[data-theme="saffron_velvet"] .text-\[\#6E5D4F\],
+[data-theme="saffron_velvet"] .text-\[\#78685A\],
+[data-theme="midnight_obsidian"] .text-\[\#5C4A3D\],
+[data-theme="midnight_obsidian"] .text-\[\#5E4D40\],
+[data-theme="midnight_obsidian"] .text-\[\#6E5D4F\],
+[data-theme="midnight_obsidian"] .text-\[\#78685A\] { color: var(--text-body) !important; }
+[data-theme="modern_minimal"] .text-\[\#9A6836\],
+[data-theme="emerald_palace"] .text-\[\#9A6836\],
+[data-theme="saffron_velvet"] .text-\[\#9A6836\],
+[data-theme="midnight_obsidian"] .text-\[\#9A6836\] { color: var(--text-accent) !important; }
+[data-theme="modern_minimal"] .border-\[\#E8E0D5\],
+[data-theme="modern_minimal"] .border-\[\#E8DFD3\],
+[data-theme="modern_minimal"] .border-\[\#EAE0D3\],
+[data-theme="modern_minimal"] .border-\[\#EAE3DC\],
+[data-theme="modern_minimal"] .border-\[\#F0EAE0\],
+[data-theme="emerald_palace"] .border-\[\#E8E0D5\],
+[data-theme="emerald_palace"] .border-\[\#E8DFD3\],
+[data-theme="emerald_palace"] .border-\[\#EAE0D3\],
+[data-theme="emerald_palace"] .border-\[\#EAE3DC\],
+[data-theme="emerald_palace"] .border-\[\#F0EAE0\],
+[data-theme="saffron_velvet"] .border-\[\#E8E0D5\],
+[data-theme="saffron_velvet"] .border-\[\#E8DFD3\],
+[data-theme="saffron_velvet"] .border-\[\#EAE0D3\],
+[data-theme="saffron_velvet"] .border-\[\#EAE3DC\],
+[data-theme="saffron_velvet"] .border-\[\#F0EAE0\],
+[data-theme="midnight_obsidian"] .border-\[\#E8E0D5\],
+[data-theme="midnight_obsidian"] .border-\[\#E8DFD3\],
+[data-theme="midnight_obsidian"] .border-\[\#EAE0D3\],
+[data-theme="midnight_obsidian"] .border-\[\#EAE3DC\],
+[data-theme="midnight_obsidian"] .border-\[\#F0EAE0\] { border-color: var(--border-main) !important; }
+[data-theme="modern_minimal"] .bg-\[\#231710\],
+[data-theme="modern_minimal"] .bg-\[\#261A13\],
+[data-theme="modern_minimal"] .bg-\[\#2C1D14\] { background-color: rgb(var(--brand-600)) !important; color: #ffffff !important; }
+[data-mode="dark"] .bg-\[\#231710\],
+[data-mode="dark"] .bg-\[\#261A13\],
+[data-mode="dark"] .bg-\[\#2C1D14\] { background-color: rgb(var(--gold-500)) !important; color: #0b0d13 !important; }
+body,
+[data-theme="royal_roastery"],
+[data-theme="levant_heritage"] {
+  font-variant-numeric: tabular-nums;
+}
+
+.theme-product-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E8DFD3;
+  box-shadow: 0 4px 20px -8px rgba(35, 23, 16, 0.05);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.28s ease;
+}
+
+.theme-product-card:hover {
+  transform: translateY(-3px);
+  border-color: #D5C4AE;
+  box-shadow: 0 14px 32px -10px rgba(35, 23, 16, 0.11);
+}
+
+@keyframes storefrontDrawerIn {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes storefrontModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes storefrontDropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.storefront-drawer-enter {
+  animation: storefrontDrawerIn 0.24s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.storefront-modal-enter {
+  animation: storefrontModalIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.storefront-dropdown-enter {
+  animation: storefrontDropdownIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes marquee-rtl {
+  0% {
+    transform: translateX(-10%);
+  }
+  50% {
+    transform: translateX(10%);
+  }
+  100% {
+    transform: translateX(-10%);
+  }
+}
+
+@keyframes zain-marquee-scroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(50%);
+  }
+}
+
+.zain-marquee-track {
+  width: max-content;
+  animation: zain-marquee-scroll 28s linear infinite;
+}
+
+.zain-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+[data-mode="dark"] .text-\[\#222222\] {
+  color: var(--text-strong) !important;
+}
+
+[data-mode="dark"] .border-\[\#EAE3DC\] {
+  border-color: var(--border-main) !important;
+}
+
+.animate-promo-pulse {
+  animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ==========================================================================
+   DARK THEMES ENFORCEMENT ([data-mode="dark"])
+   Transforms all 3 Dark Themes into full dark mode with bright light fonts
+   ========================================================================== */
+[data-mode="dark"] body {
+  background-color: var(--surface-bg) !important;
+  color: var(--text-strong) !important;
+}
+
+[data-mode="dark"] .bg-white {
+  background-color: var(--surface-card) !important;
+  color: var(--text-strong) !important;
+}
+
+[data-mode="dark"] .bg-white\/95,
+[data-mode="dark"] .bg-white\/90 {
+  background-color: var(--surface-card-alpha) !important;
+  color: var(--text-strong) !important;
+}
+
+[data-mode="dark"] .text-brand-950,
+[data-mode="dark"] .text-brand-900 {
+  color: var(--text-strong) !important;
+}
+
+[data-mode="dark"] .text-brand-800,
+[data-mode="dark"] .text-brand-700 {
+  color: var(--text-body) !important;
+}
+
+[data-mode="dark"] .text-brand-600 {
+  color: var(--text-accent) !important;
+}
+
+/* Keep dark contrast text when placed directly inside bright gold/amber buttons */
+[data-mode="dark"] .bg-gold-500.text-brand-950,
+[data-mode="dark"] .bg-gold-400.text-brand-950,
+[data-mode="dark"] .from-gold-400.text-brand-950,
+[data-mode="dark"] .bg-amber-500.text-brand-950 {
+  color: #0b0d13 !important;
+}
+
+[data-mode="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+[data-mode="dark"] select,
+[data-mode="dark"] textarea {
+  background-color: var(--surface-input) !important;
+  color: var(--text-strong) !important;
+  border-color: var(--border-main) !important;
+}
+
+[data-mode="dark"] input::placeholder,
+[data-mode="dark"] textarea::placeholder {
+  color: var(--text-body) !important;
+  opacity: 0.65;
+}
+
+/* ==========================================================================
+   Border Radius Geometry Presets (rounded | sharp | pill)
+   ========================================================================== */
+[data-radius="sharp"] .rounded-3xl,
+[data-radius="sharp"] .rounded-2xl,
+[data-radius="sharp"] .rounded-xl {
+  border-radius: 0.2rem !important;
+}
+
+[data-radius="sharp"] .rounded-lg,
+[data-radius="sharp"] .rounded-md {
+  border-radius: 0.125rem !important;
+}
+
+[data-radius="pill"] .rounded-2xl {
+  border-radius: 1.65rem !important;
+}
+
+[data-radius="pill"] .rounded-xl {
+  border-radius: 1.25rem !important;
+}
+
+[data-radius="pill"] .rounded-lg {
+  border-radius: 1rem !important;
+}
+
+/* ==========================================================================
+   Card Style Presets (classic | editorial | soft_elevated)
+   ========================================================================== */
+[data-card-style="editorial"] .theme-product-card {
+  border-width: 2px !important;
+  border-color: var(--border-main) !important;
+  box-shadow: 4px 4px 0px 0px rgb(var(--brand-900) / 0.12) !important;
+}
+
+[data-card-style="editorial"] .theme-product-card:hover {
+  border-color: rgb(var(--gold-500)) !important;
+  box-shadow: 6px 6px 0px 0px rgb(var(--gold-500) / 0.25) !important;
+}
+
+[data-card-style="soft_elevated"] .theme-product-card {
+  border-color: var(--border-main) !important;
+  box-shadow: 0 10px 28px -6px rgba(0, 0, 0, 0.14), 0 4px 10px -4px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-card-style="soft_elevated"] .theme-product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 36px -8px rgba(0, 0, 0, 0.22), 0 6px 14px -4px rgb(var(--gold-500) / 0.2) !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(var(--brand-100));
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--brand-400));
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--brand-700));
+}
+
+/* Hide scrollbars for horizontal touch carousels/tabs on mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ==========================================================================
+   SUPERMARKET THERMAL RECEIPT (80mm Roll • Auto-Height by Products Only)
+   ========================================================================== */
+#supermarket-receipt-print-area {
+  width: 100%;
+  max-width: 74mm;
+  margin: 0 auto;
+  background: #ffffff;
+  color: #000000;
+  font-family: 'Tahoma', 'Arial', sans-serif;
+  font-size: 11px;
+  line-height: 1.25;
+  direction: rtl;
+}
+
+.sr-center {
+  text-align: center;
+}
+.sr-left {
+  text-align: left;
+}
+.sr-right {
+  text-align: right;
+}
+.sr-bold {
+  font-weight: 700;
+}
+.sr-black {
+  font-weight: 900;
+}
+.sr-divider {
+  border: 0;
+  border-top: 1px dashed #000000;
+  margin: 4px 0;
+}
+.sr-double-divider {
+  border: 0;
+  border-top: 2px solid #000000;
+  margin: 4px 0;
+}
+.sr-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px;
+  margin: 1.5px 0;
+}
+table.sr-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 3px 0;
+  font-size: 11px;
+}
+table.sr-table th {
+  border-top: 1px dashed #000000;
+  border-bottom: 1px dashed #000000;
+  padding: 2.5px 1px;
+  font-weight: 900;
+  text-align: right;
+  color: #000000;
+}
+table.sr-table td {
+  padding: 2.5px 1px;
+  vertical-align: top;
+  border-bottom: 1px dotted #cccccc;
+  color: #000000;
+}
+table.sr-table tr:last-child td {
+  border-bottom: none;
+}
+.sr-sub {
+  font-size: 11px;
+  line-height: 1.25;
+  margin-top: 1px;
+  color: #111111;
+}
+.sr-total-box {
+  border-top: 1.5px solid #000000;
+  border-bottom: 1.5px solid #000000;
+  padding: 3px 0;
+  margin: 4px 0;
+  font-size: 13px;
+  font-weight: 900;
+  color: #000000;
+}
+.sr-barcode {
+  font-family: monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-align: center;
+  margin: 4px 0 2px 0;
+  font-weight: 700;
+  color: #000000;
+}
+
+@page {
+  size: 80mm auto;
+  margin: 0mm;
+}
+
+@media print {
+  html,
+  body {
+    width: 80mm !important;
+    min-height: 0 !important;
+    height: fit-content !important;
+    max-height: fit-content !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: hidden !important;
+  }
+
+  header,
+  footer,
+  nav,
+  .no-print,
+  .print\:hidden {
+    display: none !important;
+  }
+}
+

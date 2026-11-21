@@ -1,0 +1,4198 @@
+{
+  "orders": [],
+  "coupons": [
+    {
+      "id": "coup-hafsa-open",
+      "code": "HAFSA25",
+      "value": 25,
+      "active": true,
+      "description": "هدية افتتاح محمصة حفصة ببني مزار: خصم 25 ج.م للطلبات فوق 200 ج.م",
+      "discountType": "fixed",
+      "minOrderAmount": 200
+    },
+    {
+      "id": "coup-hafsa-10",
+      "code": "HAFSA10",
+      "value": 10,
+      "active": true,
+      "description": "خصم 10% على جميع الطلبات فوق 350 ج.م",
+      "discountType": "percentage",
+      "minOrderAmount": 350
+    },
+    {
+      "id": "coup-welcome-50",
+      "code": "WELCOME50",
+      "value": 50,
+      "active": true,
+      "description": "خصم 50 ج.م للطلبات العائلية فوق 550 ج.م",
+      "discountType": "fixed",
+      "minOrderAmount": 550
+    }
+  ],
+  "products": [
+    {
+      "id": "prod-unit-arabic-coffee-tin",
+      "slug": "luxury-cardamom-coffee-tin",
+      "name": "علبة قهوة عربية فاخرة بالهيل والزعفران",
+      "subtitle": "علبة معدنية محكمة الإغلاق جاهزة للتحضير السريع والهدايا",
+      "categoryId": "cat-coffee-espresso",
+      "description": "خلطة قهوة عربية أصيلة محمصة بعناية مع الهيل الفاخر والزعفران داخل علبة معدنية أنيقة تحفظ النكهة والرائحة.",
+      "image": "/images/products/royal-mix.jpg",
+      "badge": "علبة هدايا",
+      "origin": "خلطة فاخرة",
+      "nutritionalHighlight": "منبه طبيعي غني بمضادات الأكسدة",
+      "caloriesPer100g": 120,
+      "proteinPer100g": "2 جم",
+      "sellingMode": "unit",
+      "unitLabel": "علبة",
+      "unitPrice": 240,
+      "unitCost": 160,
+      "pricePerKg": 240,
+      "costPerKg": 160,
+      "roastOptions": [],
+      "weights": [
+        {
+          "id": "u-1",
+          "label": "علبة معدنية فاخرة",
+          "unitsCount": 1,
+          "weightGrams": 1000,
+          "grams": 1000,
+          "price": 240,
+          "originalPrice": 275
+        }
+      ],
+      "inStock": true,
+      "featured": true,
+      "stockKg": 35,
+      "packagingCost": 5,
+      "showOnline": true,
+      "showInPos": true,
+      "rating": 4.9,
+      "reviewsCount": 3,
+      "reviews": [],
+      "gallery": [
+        "/images/products/pistachio.jpg",
+        "/images/products/cashew.jpg",
+        "/images/products/almond.jpg"
+      ],
+      "subCategoryName": "بن إسبريسو إيطالي وقهوة عربية",
+      "subCategory": "بن إسبريسو إيطالي وقهوة عربية",
+      "pluCode": 2901,
+      "barcode": "290001"
+    },
+    {
+      "id": "prod-unit-royal-honey-jar",
+      "slug": "royal-sidr-honey-jar-500g",
+      "name": "برطمان عسل سدر جبلي ملكي مختوم",
+      "subtitle": "يباع بالعبوة المختومة (500 جم صافي) مع عرض توفير للعبوتين",
+      "categoryId": "cat-honey-spices",
+      "description": "عسل سدر جبلي طبيعي 100% مفحوص مخبرياً ومعبأ في برطمان زجاجي محكم الإغلاق، مثال حي لنظام البيع بالقطعة والعبوة في البلوبرنت.",
+      "image": "/images/products/stuffed-dates.jpg",
+      "badge": "يباع بالعبوة",
+      "origin": "طبيعي نخب أول",
+      "nutritionalHighlight": "غني بالإنزيمات الطبيعية ومضادات الأكسدة",
+      "caloriesPer100g": 304,
+      "proteinPer100g": "0.4 جم",
+      "sellingMode": "unit",
+      "unitLabel": "برطمان",
+      "unitPrice": 320,
+      "unitCost": 215,
+      "pricePerKg": 320,
+      "costPerKg": 215,
+      "roastOptions": [],
+      "weights": [
+        {
+          "id": "u-1",
+          "label": "برطمان واحد (500 جم)",
+          "unitsCount": 1,
+          "weightGrams": 1000,
+          "grams": 1000,
+          "price": 320,
+          "originalPrice": 360
+        },
+        {
+          "id": "u-2",
+          "label": "عرض برطمانين توفير",
+          "unitsCount": 2,
+          "weightGrams": 2000,
+          "grams": 2000,
+          "price": 610,
+          "originalPrice": 720
+        }
+      ],
+      "inStock": true,
+      "featured": true,
+      "stockKg": 40,
+      "packagingCost": 5,
+      "showOnline": true,
+      "showInPos": true,
+      "rating": 5,
+      "reviewsCount": 4,
+      "reviews": [],
+      "gallery": [
+        "/images/products/apricots-prunes.jpg",
+        "/images/products/almond.jpg"
+      ],
+      "subCategoryName": "عسل سدر وموالح",
+      "subCategory": "عسل سدر وموالح",
+      "pluCode": 2902,
+      "barcode": "290002"
+    },
+    {
+      "id": "prod-pistachio-1",
+      "name": "فستق أمريكي جامبو محمص",
+      "slug": "jumbo-pistachio-usa",
+      "badge": "الأكثر مبيعاً",
+      "image": "/images/products/pistachio.jpg",
+      "origin": "أمريكي جامبو نخب أول",
+      "rating": 4.9,
+      "inStock": true,
+      "reviews": [
+        {
+          "id": "r1",
+          "date": "منذ يومين",
+          "rating": 5,
+          "comment": "الفستق طازج جداً ومقرمش ومفيش ولا حباية مقفولة، التغليف ممتاز بيحفظ الطراوة.",
+          "verified": true,
+          "customerName": "أحمد عبد الرحمن"
+        },
+        {
+          "id": "r2",
+          "date": "منذ أسبوع",
+          "rating": 5,
+          "comment": "أحسن محمصة جربتها أونلاين، التحميص بدون ملح طعمه طبيعي وتحفة.",
+          "verified": true,
+          "customerName": "نهى محمود"
+        }
+      ],
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "price": 105,
+          "weightGrams": 125,
+          "originalPrice": 120
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "price": 215,
+          "weightGrams": 250,
+          "originalPrice": 240
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "price": 420,
+          "weightGrams": 500,
+          "originalPrice": 470
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "price": 820,
+          "weightGrams": 1000,
+          "originalPrice": 920
+        }
+      ],
+      "featured": true,
+      "subtitle": "حبة كبيرة مفتوحة مقرمشة ونكهة غنية لا تقاوم • تحميص يومي",
+      "costPerKg": 640,
+      "showInPos": true,
+      "categoryId": "cat-luxury-nuts",
+      "pricePerKg": 820,
+      "showOnline": true,
+      "description": "فستق أمريكي جامبو نخب أول، يتم تحميصه يومياً بدرجة حرارة مدروسة للحفاظ على الزيوت الطبيعية والقرمشة المثالية. خالٍ من الحبات المغلقة ومفرز بعناية فائقة في محمصة حفصة.",
+      "reviewsCount": 128,
+      "roastOptions": [
+        "محمص مملح",
+        "محمص بدون ملح",
+        "نيء طبيعي"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "20 جم",
+      "caloriesPer100g": 562,
+      "subCategoryName": "فستق أمريكي جامبو",
+      "nutritionalHighlight": "غني بالبروتين النباتي ومضادات الأكسدة وفيتامين B6",
+      "gallery": [
+        "/images/products/royal-mix.jpg",
+        "/images/products/cashew.jpg"
+      ],
+      "subCategory": "فستق أمريكي جامبو",
+      "sellingMode": "weight",
+      "pluCode": 1,
+      "barcode": "200001"
+    },
+    {
+      "id": "prod-cashew-1",
+      "name": "كاجو جامبو ملكي (W180)",
+      "slug": "jumbo-vietnamese-cashew-w180",
+      "badge": "حجم جامبو ملكي",
+      "image": "/images/products/cashew.jpg",
+      "origin": "فيتنامي / هندي ملكي W180",
+      "rating": 4.9,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "price": 95,
+          "weightGrams": 125,
+          "originalPrice": 110
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "price": 195,
+          "weightGrams": 250,
+          "originalPrice": 220
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "price": 380,
+          "weightGrams": 500,
+          "originalPrice": 430
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "price": 740,
+          "weightGrams": 1000,
+          "originalPrice": 840
+        }
+      ],
+      "featured": true,
+      "subtitle": "أكبر مقاس حبة كاجو بقوام زبدي وقرمشة فاخرة",
+      "costPerKg": 570,
+      "showInPos": true,
+      "categoryId": "cat-luxury-nuts",
+      "pricePerKg": 740,
+      "showOnline": true,
+      "description": "كاجو جامبو مقاس W180 الملكي، محمص بعناية بالهواء الساخن بدون زيوت مهدرجة ليمنحك القرمشة الذهبية مع القوام الزبدي الغني.",
+      "reviewsCount": 145,
+      "roastOptions": [
+        "محمص مملح",
+        "محمص بدون ملح",
+        "مدخن بالتوابل",
+        "نيء طبيعي"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "18.2 جم",
+      "caloriesPer100g": 553,
+      "subCategoryName": "كاجو ملكي W180",
+      "nutritionalHighlight": "غني بالماغنسيوم والزنك والحديد لتعزيز المناعة والطاقة",
+      "gallery": [
+        "/images/products/royal-mix.jpg",
+        "/images/products/almond.jpg"
+      ],
+      "subCategory": "كاجو ملكي W180",
+      "sellingMode": "weight",
+      "pluCode": 2,
+      "barcode": "200002"
+    },
+    {
+      "id": "prod-hazelnut-1",
+      "name": "بندق تركي مقشر فاخر",
+      "slug": "turkish-hazelnut-peeled",
+      "badge": "محمص اليوم",
+      "image": "/images/products/hazelnut.jpg",
+      "origin": "تركي فاخر (غيرسون)",
+      "rating": 4.8,
+      "inStock": true,
+      "reviews": [
+        {
+          "id": "r3",
+          "date": "منذ 3 أيام",
+          "rating": 5,
+          "comment": "البندق التركي ريحته وطعمه يجننوا، واضح إنه لسه متحمص طازة.",
+          "verified": true,
+          "customerName": "مريم طارق"
+        }
+      ],
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "price": 90,
+          "weightGrams": 125,
+          "originalPrice": 105
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "price": 185,
+          "weightGrams": 250,
+          "originalPrice": 210
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "price": 360,
+          "weightGrams": 500,
+          "originalPrice": 400
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "price": 700,
+          "weightGrams": 1000,
+          "originalPrice": 780
+        }
+      ],
+      "featured": true,
+      "subtitle": "بندق غيرسون التركي الأصلي بحجم كبير وطعم غني",
+      "costPerKg": 540,
+      "showInPos": true,
+      "categoryId": "cat-luxury-nuts",
+      "pricePerKg": 700,
+      "showOnline": true,
+      "description": "بندق تركي مقشر من أجود مزارع البحر الأسود في تركيا، متاح محمص ذهبي مقرمش أو نيء طبيعي للحلويات والتناول الصحي اليومي.",
+      "reviewsCount": 94,
+      "roastOptions": [
+        "محمص بدون ملح",
+        "محمص مملح",
+        "نيء طبيعي"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "15 جم",
+      "caloriesPer100g": 628,
+      "subCategoryName": "بندق تركي مقشر",
+      "nutritionalHighlight": "مصدر ممتاز لفيتامين E والدهون الصحية للقلب والذاكرة",
+      "gallery": [
+        "/images/products/almond.jpg",
+        "/images/products/royal-mix.jpg"
+      ],
+      "subCategory": "بندق تركي مقشر",
+      "sellingMode": "weight",
+      "pluCode": 3,
+      "barcode": "200003"
+    },
+    {
+      "id": "prod-almond-1",
+      "name": "لوز كاليفورنيا ذهبي جامبو",
+      "slug": "california-golden-almonds",
+      "badge": "صحي للدايت",
+      "image": "/images/products/almond.jpg",
+      "origin": "كاليفورنيا - أمريكا",
+      "rating": 4.8,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "price": 75,
+          "weightGrams": 125,
+          "originalPrice": 90
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "price": 160,
+          "weightGrams": 250,
+          "originalPrice": 180
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "price": 310,
+          "weightGrams": 500,
+          "originalPrice": 350
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "price": 600,
+          "weightGrams": 1000,
+          "originalPrice": 680
+        }
+      ],
+      "featured": true,
+      "subtitle": "حبات لوز منتقاة بعناية غنية بالألياف والبروتين",
+      "costPerKg": 460,
+      "showInPos": true,
+      "categoryId": "cat-luxury-nuts",
+      "pricePerKg": 600,
+      "showOnline": true,
+      "description": "لوز أمريكي كاليفورنيا حبة كبيرة مقرمشة، مثالي كسناك صحي للرياضيين والدايت أو مع القهوة الصباحية من محمصة حفصة.",
+      "reviewsCount": 79,
+      "roastOptions": [
+        "محمص بدون ملح",
+        "محمص مملح",
+        "مدخن بالتوابل",
+        "نيء طبيعي"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "21.2 جم",
+      "caloriesPer100g": 579,
+      "subCategoryName": "لوز كاليفورنيا جامبو",
+      "nutritionalHighlight": "غني بالألياف وفيتامين E والكالسيوم والبروتين لبناء العضلات",
+      "gallery": [
+        "/images/products/royal-mix.jpg",
+        "/images/products/hazelnut.jpg"
+      ],
+      "subCategory": "لوز كاليفورنيا جامبو",
+      "sellingMode": "weight",
+      "pluCode": 4,
+      "barcode": "200004"
+    },
+    {
+      "id": "prod-walnut-1",
+      "name": "عين جمل تشيلي أنصاف (فراشة)",
+      "slug": "chilean-walnut-halves",
+      "badge": "غذاء الذكاء",
+      "image": "/images/products/walnut.jpg",
+      "origin": "تشيلي نخب أول (Extra Light)",
+      "rating": 4.9,
+      "inStock": true,
+      "reviews": [
+        {
+          "id": "r4",
+          "date": "منذ 5 أيام",
+          "rating": 5,
+          "comment": "عين الجمل لونه أبيض فاتح ومفيش فيه أي طعم مر نهائياً، جودة ممتازة.",
+          "verified": true,
+          "customerName": "د. كريم سامي"
+        }
+      ],
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "price": 80,
+          "weightGrams": 125,
+          "originalPrice": 95
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "price": 165,
+          "weightGrams": 250,
+          "originalPrice": 185
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "price": 320,
+          "weightGrams": 500,
+          "originalPrice": 360
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "price": 620,
+          "weightGrams": 1000,
+          "originalPrice": 700
+        }
+      ],
+      "featured": true,
+      "subtitle": "لون فاتح ذهبي وطعم كريمي بدون أي مرارة",
+      "costPerKg": 475,
+      "showInPos": true,
+      "categoryId": "cat-luxury-nuts",
+      "pricePerKg": 620,
+      "showOnline": true,
+      "description": "عين جمل تشيلي نخب أول (أنصاف كاملة فاتحة اللون)، يتميز بطعمه الحلو الكريمي وخلوه التام من المرارة. مثالي للتركيز وتقوية الذاكرة وللأطفال.",
+      "reviewsCount": 112,
+      "roastOptions": [
+        "نيء طبيعي",
+        "محمص بدون ملح"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "15.2 جم",
+      "caloriesPer100g": 654,
+      "subCategoryName": "عين جمل تشيلي",
+      "nutritionalHighlight": "أعلى مصدر نباتي لأحماض أوميجا-3 الداعمة لصحة الدماغ",
+      "gallery": [
+        "/images/products/energy-mix.jpg",
+        "/images/products/almond.jpg"
+      ],
+      "subCategory": "عين جمل تشيلي",
+      "sellingMode": "weight",
+      "pluCode": 5,
+      "barcode": "200005"
+    },
+    {
+      "id": "prod-pecan-macadamia-1",
+      "name": "بيكان أمريكي وماكاديميا ملكية",
+      "slug": "royal-pecan-and-macadamia",
+      "badge": "نخبة الـ VIP 👑",
+      "image": "/images/products/walnut.jpg",
+      "origin": "أمريكي / أسترالي نخب أول",
+      "rating": 5,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "grams": 125,
+          "label": "ثمن 125 جم",
+          "price": 120,
+          "weightGrams": 125,
+          "originalPrice": 135
+        },
+        {
+          "id": "w-250",
+          "grams": 250,
+          "label": "ربع 250 جم",
+          "price": 240,
+          "weightGrams": 250,
+          "originalPrice": 270
+        },
+        {
+          "id": "w-500",
+          "grams": 500,
+          "label": "نصف 500 جم",
+          "price": 480,
+          "weightGrams": 500,
+          "originalPrice": 540
+        },
+        {
+          "id": "w-1000",
+          "grams": 1000,
+          "label": "كيلو 1000 جم",
+          "price": 960,
+          "weightGrams": 1000,
+          "originalPrice": 1080
+        }
+      ],
+      "featured": false,
+      "subtitle": "قمة الفخامة في عالم المكسرات بقوام زبدي مقرمش",
+      "costPerKg": 750,
+      "showInPos": true,
+      "categoryId": "cat-luxury-nuts",
+      "pricePerKg": 960,
+      "showOnline": true,
+      "description": "تشكيلة النخبة من البيكان الأمريكي والماكاديميا الاسترالية المحمصة بعناية لعشاق المذاق الزبدي الفاخر.",
+      "reviewsCount": 42,
+      "roastOptions": [
+        "محمص بدون ملح",
+        "محمص مملح",
+        "نيء طبيعي"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "10 جم",
+      "caloriesPer100g": 690,
+      "subCategoryName": "بيكان وماكاديميا",
+      "nutritionalHighlight": "غني بالدهون الأحادية الصحية ومضادات الأكسدة الفائقة",
+      "gallery": [
+        "/images/products/energy-mix.jpg",
+        "/images/products/almond.jpg"
+      ],
+      "subCategory": "بيكان وماكاديميا",
+      "sellingMode": "weight",
+      "pluCode": 6,
+      "barcode": "200006"
+    },
+    {
+      "id": "prod-hafsa-vip-mix-1",
+      "name": "ميكس حفصة المشكل الفاخر (بدون لب أو سوداني)",
+      "slug": "hafsa-signature-vip-nuts-mix",
+      "badge": "خلطة حفصة الخاصة",
+      "image": "/images/products/royal-mix.jpg",
+      "origin": "تشكيلة ملكية مستوردة 100%",
+      "rating": 5,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "grams": 125,
+          "label": "ثمن 125 جم",
+          "price": 90,
+          "weightGrams": 125,
+          "originalPrice": 103
+        },
+        {
+          "id": "w-250",
+          "grams": 250,
+          "label": "ربع 250 جم",
+          "price": 180,
+          "weightGrams": 250,
+          "originalPrice": 205
+        },
+        {
+          "id": "w-500",
+          "grams": 500,
+          "label": "نصف 500 جم",
+          "price": 360,
+          "weightGrams": 500,
+          "originalPrice": 410
+        },
+        {
+          "id": "w-1000",
+          "grams": 1000,
+          "label": "كيلو 1000 جم",
+          "price": 720,
+          "weightGrams": 1000,
+          "originalPrice": 820
+        }
+      ],
+      "featured": true,
+      "subtitle": "خلطة متوازنة بالجرام: فستق + كاجو + بندق + لوز + عين جمل",
+      "costPerKg": 550,
+      "showInPos": true,
+      "categoryId": "cat-luxury-nuts",
+      "pricePerKg": 720,
+      "showOnline": true,
+      "description": "خلطة محمصة حفصة الشهيرة في بني مزار! 5 أصناف مكسرات مستوردة صافية بنسب متساوية تماماً وتحميص يومي طازج.",
+      "reviewsCount": 168,
+      "roastOptions": [
+        "محمص مملح",
+        "محمص بدون ملح",
+        "مدخن بالتوابل"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "19 جم",
+      "caloriesPer100g": 595,
+      "subCategoryName": "ميكس مكسرات حفصة VIP",
+      "nutritionalHighlight": "طاقة متكاملة وأوميجا 3 وبروتين عالي",
+      "gallery": [
+        "/images/products/pistachio.jpg",
+        "/images/products/cashew.jpg",
+        "/images/products/almond.jpg"
+      ],
+      "subCategory": "ميكس مكسرات حفصة VIP",
+      "sellingMode": "weight",
+      "pluCode": 7,
+      "barcode": "200007"
+    },
+    {
+      "id": "prod-super-seeds-1",
+      "name": "لب سوبر محمص طازج (حبة عريضة)",
+      "slug": "hot-roasted-super-seeds",
+      "badge": "ساخن من المحمصة 🔥",
+      "image": "/images/products/savory-snacks.jpg",
+      "origin": "مصري نخب أول (كفر الشيخ)",
+      "rating": 4.9,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "grams": 125,
+          "label": "ثمن 125 جم",
+          "price": 35,
+          "weightGrams": 125,
+          "originalPrice": 40
+        },
+        {
+          "id": "w-250",
+          "grams": 250,
+          "label": "ربع 250 جم",
+          "price": 70,
+          "weightGrams": 250,
+          "originalPrice": 80
+        },
+        {
+          "id": "w-500",
+          "grams": 500,
+          "label": "نصف 500 جم",
+          "price": 140,
+          "weightGrams": 500,
+          "originalPrice": 160
+        },
+        {
+          "id": "w-1000",
+          "grams": 1000,
+          "label": "كيلو 1000 جم",
+          "price": 280,
+          "weightGrams": 1000,
+          "originalPrice": 320
+        }
+      ],
+      "featured": true,
+      "subtitle": "لب سوبر نخب أول مملح خفيف ومقرمش من الفرن للشنطة",
+      "costPerKg": 205,
+      "showInPos": true,
+      "categoryId": "cat-snacks",
+      "pricePerKg": 280,
+      "showOnline": true,
+      "description": "لب سوبر حبة كبيرة مليانة، يتحمص يومياً في محمصة حفصة بملح خفيف متوازن ليضمن لك أحلى تسالي في السهرة بدون أي حبات فارغة.",
+      "reviewsCount": 210,
+      "roastOptions": [
+        "محمص مملح",
+        "محمص بدون ملح"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "24 جم",
+      "caloriesPer100g": 535,
+      "subCategoryName": "لب سوبر فاخر",
+      "nutritionalHighlight": "غني بالزنك والحديد والبروتين النباتي",
+      "gallery": [
+        "/images/products/royal-mix.jpg",
+        "/images/products/pistachio.jpg"
+      ],
+      "subCategory": "لب سوبر فاخر",
+      "sellingMode": "weight",
+      "pluCode": 8,
+      "barcode": "200008"
+    },
+    {
+      "id": "prod-pumpkin-seeds-1",
+      "name": "لب أبيض قرع جامبو (نخب A1)",
+      "slug": "jumbo-white-pumpkin-seeds-a1",
+      "badge": "فرز أول A1",
+      "image": "/images/products/savory-snacks.jpg",
+      "origin": "جامبو نخب أول",
+      "rating": 4.8,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "grams": 125,
+          "label": "ثمن 125 جم",
+          "price": 43,
+          "weightGrams": 125,
+          "originalPrice": 48
+        },
+        {
+          "id": "w-250",
+          "grams": 250,
+          "label": "ربع 250 جم",
+          "price": 85,
+          "weightGrams": 250,
+          "originalPrice": 95
+        },
+        {
+          "id": "w-500",
+          "grams": 500,
+          "label": "نصف 500 جم",
+          "price": 170,
+          "weightGrams": 500,
+          "originalPrice": 190
+        },
+        {
+          "id": "w-1000",
+          "grams": 1000,
+          "label": "كيلو 1000 جم",
+          "price": 340,
+          "weightGrams": 1000,
+          "originalPrice": 380
+        }
+      ],
+      "featured": true,
+      "subtitle": "لب أبيض عريض مقرمش وسهل التقشير • تحميص الهوا الساخن",
+      "costPerKg": 250,
+      "showInPos": true,
+      "categoryId": "cat-snacks",
+      "pricePerKg": 340,
+      "showOnline": true,
+      "description": "لب أبيض وقرع جامبو فرز أول A1، محمص على الهادي ليحافظ على لونه الأبيض وقرمشته المميزة.",
+      "reviewsCount": 132,
+      "roastOptions": [
+        "محمص مملح",
+        "محمص بدون ملح",
+        "نيء طبيعي"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "30 جم",
+      "caloriesPer100g": 559,
+      "subCategoryName": "لب قرع وأبيض A1",
+      "nutritionalHighlight": "أغنى مصدر طبيعي للماغنسيوم والزنك المفيد للمناعة",
+      "gallery": [
+        "/images/products/royal-mix.jpg",
+        "/images/products/pistachio.jpg"
+      ],
+      "subCategory": "لب قرع وأبيض A1",
+      "sellingMode": "weight",
+      "pluCode": 9,
+      "barcode": "200009"
+    },
+    {
+      "id": "prod-watermelon-wood-seeds-1",
+      "name": "لب خشب ولب بطيخ محمص مقرمش",
+      "slug": "roasted-wood-and-watermelon-seeds",
+      "badge": "طعم زمان الأصلي",
+      "image": "/images/products/savory-snacks.jpg",
+      "origin": "محمصة حفصة - بني مزار",
+      "rating": 4.8,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "grams": 125,
+          "label": "ثمن 125 جم",
+          "price": 28,
+          "weightGrams": 125,
+          "originalPrice": 33
+        },
+        {
+          "id": "w-250",
+          "grams": 250,
+          "label": "ربع 250 جم",
+          "price": 55,
+          "weightGrams": 250,
+          "originalPrice": 65
+        },
+        {
+          "id": "w-500",
+          "grams": 500,
+          "label": "نصف 500 جم",
+          "price": 110,
+          "weightGrams": 500,
+          "originalPrice": 130
+        },
+        {
+          "id": "w-1000",
+          "grams": 1000,
+          "label": "كيلو 1000 جم",
+          "price": 220,
+          "weightGrams": 1000,
+          "originalPrice": 260
+        }
+      ],
+      "featured": false,
+      "subtitle": "أصل التسالي المصرية الأصيلة بتحميصة حفصة الذهبية",
+      "costPerKg": 155,
+      "showInPos": true,
+      "categoryId": "cat-snacks",
+      "pricePerKg": 220,
+      "showOnline": true,
+      "description": "توليفة لب الخشب ولب البطيخ المحمص يومياً بنكهة زمان الأصلية وقرمشة تدوم بفضل التغليف الحراري.",
+      "reviewsCount": 84,
+      "roastOptions": [
+        "محمص مملح",
+        "محمص بدون ملح"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "21 جم",
+      "caloriesPer100g": 510,
+      "subCategoryName": "لب خشب ولب بطيخ",
+      "nutritionalHighlight": "خفيف ومغذي وغني بالمعادن الطبيعية",
+      "gallery": [
+        "/images/products/royal-mix.jpg",
+        "/images/products/pistachio.jpg"
+      ],
+      "subCategory": "لب خشب ولب بطيخ",
+      "sellingMode": "weight",
+      "pluCode": 10,
+      "barcode": "200010"
+    },
+    {
+      "id": "prod-palestinian-peanuts-1",
+      "name": "فول فلسطيني جامبو وفول سوداني حلواني",
+      "slug": "palestinian-and-halwani-peanuts",
+      "badge": "قرمشة مضمونة",
+      "image": "/images/products/savory-snacks.jpg",
+      "origin": "تحميص يومي طازج",
+      "rating": 4.9,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "grams": 125,
+          "label": "ثمن 125 جم",
+          "price": 23,
+          "weightGrams": 125,
+          "originalPrice": 26
+        },
+        {
+          "id": "w-250",
+          "grams": 250,
+          "label": "ربع 250 جم",
+          "price": 45,
+          "weightGrams": 250,
+          "originalPrice": 53
+        },
+        {
+          "id": "w-500",
+          "grams": 500,
+          "label": "نصف 500 جم",
+          "price": 90,
+          "weightGrams": 500,
+          "originalPrice": 105
+        },
+        {
+          "id": "w-1000",
+          "grams": 1000,
+          "label": "كيلو 1000 جم",
+          "price": 180,
+          "weightGrams": 1000,
+          "originalPrice": 210
+        }
+      ],
+      "featured": true,
+      "subtitle": "سوداني حلواني وفول فلسطيني مقرمش ومكرمل بالسمسم",
+      "costPerKg": 125,
+      "showInPos": true,
+      "categoryId": "cat-snacks",
+      "pricePerKg": 180,
+      "showOnline": true,
+      "description": "أفخر حبات الفول الفلسطيني الجامبو والفول السوداني الحلواني المحمص طازجاً بدون نقطة زيت.",
+      "reviewsCount": 156,
+      "roastOptions": [
+        "محمص مملح",
+        "محمص بدون ملح",
+        "مدخن بالتوابل"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "25.8 جم",
+      "caloriesPer100g": 567,
+      "subCategoryName": "فول سوداني وفلسطيني",
+      "nutritionalHighlight": "بروتين عالي وطاقة فورية للسهرة والرحلات",
+      "gallery": [
+        "/images/products/royal-mix.jpg",
+        "/images/products/pistachio.jpg"
+      ],
+      "subCategory": "فول سوداني وفلسطيني",
+      "sellingMode": "weight",
+      "pluCode": 11,
+      "barcode": "200011"
+    },
+    {
+      "id": "prod-crik-crak-1",
+      "name": "كريك كراك ومقرمشات حفصة الساخنة",
+      "slug": "crik-crak-and-crunchy-mix",
+      "badge": "معشوق السهرة 😋",
+      "image": "/images/products/savory-snacks.jpg",
+      "origin": "محمصة حفصة - تعبئة يومية",
+      "rating": 4.9,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "grams": 125,
+          "label": "ثمن 125 جم",
+          "price": 25,
+          "weightGrams": 125,
+          "originalPrice": 30
+        },
+        {
+          "id": "w-250",
+          "grams": 250,
+          "label": "ربع 250 جم",
+          "price": 50,
+          "weightGrams": 250,
+          "originalPrice": 60
+        },
+        {
+          "id": "w-500",
+          "grams": 500,
+          "label": "نصف 500 جم",
+          "price": 100,
+          "weightGrams": 500,
+          "originalPrice": 120
+        },
+        {
+          "id": "w-1000",
+          "grams": 1000,
+          "label": "كيلو 1000 جم",
+          "price": 200,
+          "weightGrams": 1000,
+          "originalPrice": 240
+        }
+      ],
+      "featured": true,
+      "subtitle": "كريك كراك + سوداني مغطى بالجبنة المتبلة والباربكيو والشطة والليمون",
+      "costPerKg": 135,
+      "showInPos": true,
+      "categoryId": "cat-snacks",
+      "pricePerKg": 200,
+      "showOnline": true,
+      "description": "معشوق الشباب والأطفال في بني مزار! كريك كراك طازج ومقرمشات مخبوزة بنكهات الجبنة والباربكيو والبيتزا.",
+      "reviewsCount": 190,
+      "roastOptions": [
+        "مدخن بالتوابل",
+        "محمص مملح"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "15 جم",
+      "caloriesPer100g": 470,
+      "subCategoryName": "كريك كراك ومقرمشات",
+      "nutritionalHighlight": "مخبوز ومقرمش بنكهات طبيعية شهية",
+      "gallery": [
+        "/images/products/royal-mix.jpg",
+        "/images/products/pistachio.jpg"
+      ],
+      "subCategory": "كريك كراك ومقرمشات",
+      "sellingMode": "weight",
+      "pluCode": 12,
+      "barcode": "200012"
+    },
+    {
+      "id": "prod-spanish-corn-1",
+      "name": "ذرة إسباني مقرمشة (جبنة وباربكيو)",
+      "slug": "crunchy-spanish-corn",
+      "badge": "هشة ومقرمشة",
+      "image": "/images/products/savory-snacks.jpg",
+      "origin": "إسباني مستورد",
+      "rating": 4.8,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "grams": 125,
+          "label": "ثمن 125 جم",
+          "price": 28,
+          "weightGrams": 125,
+          "originalPrice": 33
+        },
+        {
+          "id": "w-250",
+          "grams": 250,
+          "label": "ربع 250 جم",
+          "price": 55,
+          "weightGrams": 250,
+          "originalPrice": 65
+        },
+        {
+          "id": "w-500",
+          "grams": 500,
+          "label": "نصف 500 جم",
+          "price": 110,
+          "weightGrams": 500,
+          "originalPrice": 130
+        },
+        {
+          "id": "w-1000",
+          "grams": 1000,
+          "label": "كيلو 1000 جم",
+          "price": 220,
+          "weightGrams": 1000,
+          "originalPrice": 260
+        }
+      ],
+      "featured": false,
+      "subtitle": "ذرة إسباني هشة ومقرمشة جداً بدون صلابة",
+      "costPerKg": 150,
+      "showInPos": true,
+      "categoryId": "cat-snacks",
+      "pricePerKg": 220,
+      "showOnline": true,
+      "description": "ذرة إسباني مستوردة هشة ومقرمشة بتتبيلة الجبنة المتبلة والمدخن، تكمل أي بوكس سهرة.",
+      "reviewsCount": 95,
+      "roastOptions": [
+        "مدخن بالتوابل",
+        "محمص مملح"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "9 جم",
+      "caloriesPer100g": 440,
+      "subCategoryName": "ذرة إسباني مقرمشة",
+      "nutritionalHighlight": "ألياف طبيعية وقرمشة خفيفة",
+      "gallery": [
+        "/images/products/royal-mix.jpg",
+        "/images/products/pistachio.jpg"
+      ],
+      "subCategory": "ذرة إسباني مقرمشة",
+      "sellingMode": "weight",
+      "pluCode": 13,
+      "barcode": "200013"
+    },
+    {
+      "id": "prod-savory-mix-1",
+      "name": "ميكس تسالي ومقرمشات السهرة الفاخر",
+      "slug": "crunchy-cheese-smoked-snacks-mix",
+      "badge": "سناك العائلة",
+      "image": "/images/products/savory-snacks.jpg",
+      "origin": "تحميص يومي طازج",
+      "rating": 4.8,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "price": 28,
+          "weightGrams": 125,
+          "originalPrice": 35
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "price": 55,
+          "weightGrams": 250,
+          "originalPrice": 65
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "price": 110,
+          "weightGrams": 500,
+          "originalPrice": 130
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "price": 205,
+          "weightGrams": 1000,
+          "originalPrice": 245
+        }
+      ],
+      "featured": false,
+      "subtitle": "فول سوداني حلواني + ذرة أسباني مقرمشة + مقرمشات بالجبنة والباربكيو",
+      "costPerKg": 140,
+      "showInPos": true,
+      "categoryId": "cat-snacks",
+      "pricePerKg": 205,
+      "showOnline": true,
+      "description": "تشكيلة السهرة واللمات العائلية! تجمع بين السوداني الحلواني المحمص، الذرة الأسباني المقرمشة، الحمص، والمقرمشات المخبوزة بنكهات الجبنة والمدخن.",
+      "reviewsCount": 91,
+      "roastOptions": [
+        "محمص مملح",
+        "مدخن بالتوابل"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "14 جم",
+      "caloriesPer100g": 460,
+      "subCategoryName": "ميكس تسالي السهرة",
+      "nutritionalHighlight": "قرمشة طازجة محمصة بالهواء الساخن بأقل نسبة دهون",
+      "gallery": [
+        "/images/products/royal-mix.jpg",
+        "/images/products/pistachio.jpg"
+      ],
+      "subCategory": "ميكس تسالي السهرة",
+      "sellingMode": "weight",
+      "pluCode": 14,
+      "barcode": "200014"
+    },
+    {
+      "id": "prod-hafsa-turkish-coffee-1",
+      "name": "بن حفصة التركي بالتحويجة السرية (وش كثيف)",
+      "slug": "hafsa-signature-spiced-turkish-coffee",
+      "badge": "صوامع حفصة النحاسية ☕",
+      "image": "/images/products/hazelnut.jpg",
+      "origin": "توليفة حفصة (برازيلي + كولومبي + هندي)",
+      "rating": 5,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "grams": 125,
+          "label": "ثمن 125 جم",
+          "price": 70,
+          "weightGrams": 125,
+          "originalPrice": 80
+        },
+        {
+          "id": "w-250",
+          "grams": 250,
+          "label": "ربع 250 جم",
+          "price": 140,
+          "weightGrams": 250,
+          "originalPrice": 160
+        },
+        {
+          "id": "w-500",
+          "grams": 500,
+          "label": "نصف 500 جم",
+          "price": 280,
+          "weightGrams": 500,
+          "originalPrice": 320
+        },
+        {
+          "id": "w-1000",
+          "grams": 1000,
+          "label": "كيلو 1000 جم",
+          "price": 560,
+          "weightGrams": 1000,
+          "originalPrice": 640
+        }
+      ],
+      "featured": true,
+      "subtitle": "70% أرابيكا + 30% روبوستا مطحون طازج بالحبهان الأخضر والمستكة اليوناني",
+      "costPerKg": 410,
+      "showInPos": true,
+      "categoryId": "cat-coffee-espresso",
+      "pricePerKg": 560,
+      "showOnline": true,
+      "description": "توليفة صوامع حفصة النحاسية الأشهر في بني مزار! يجمع بين نعومة ورائحة الأرابيكا البرازيلي والكولومبي وقوة وش الروبوستا الهندي مع الحبهان الأخضر الجامبو والمستكة الأصلية.",
+      "reviewsCount": 312,
+      "roastOptions": [
+        "تحميص وسط محوج",
+        "تحميص غامق محوج",
+        "تحميص فاتح أشقر"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "1.2 جم",
+      "caloriesPer100g": 12,
+      "subCategoryName": "بن تركي محوج مخصوص",
+      "nutritionalHighlight": "غني بمضادات الأكسدة الطبيعية والزيوت العطرية المنشطة للتركيز",
+      "gallery": [
+        "/images/products/almond.jpg",
+        "/images/products/royal-mix.jpg"
+      ],
+      "subCategory": "بن تركي محوج مخصوص",
+      "sellingMode": "weight",
+      "pluCode": 15,
+      "barcode": "200015"
+    },
+    {
+      "id": "prod-brazilian-plain-coffee-1",
+      "name": "بن تركي سادة صافي (برازيلي سانتوس وكولومبي)",
+      "slug": "pure-brazilian-colombian-turkish-coffee",
+      "badge": "طحن طازج بالطلب",
+      "image": "/images/products/hazelnut.jpg",
+      "origin": "برازيلي سانتوس / كولومبي سوبريمو",
+      "rating": 4.9,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "grams": 125,
+          "label": "ثمن 125 جم",
+          "price": 63,
+          "weightGrams": 125,
+          "originalPrice": 70
+        },
+        {
+          "id": "w-250",
+          "grams": 250,
+          "label": "ربع 250 جم",
+          "price": 125,
+          "weightGrams": 250,
+          "originalPrice": 140
+        },
+        {
+          "id": "w-500",
+          "grams": 500,
+          "label": "نصف 500 جم",
+          "price": 250,
+          "weightGrams": 500,
+          "originalPrice": 280
+        },
+        {
+          "id": "w-1000",
+          "grams": 1000,
+          "label": "كيلو 1000 جم",
+          "price": 500,
+          "weightGrams": 1000,
+          "originalPrice": 560
+        }
+      ],
+      "featured": true,
+      "subtitle": "طعم البن الأصلي النقي بدرجات تحميص (فاتح / وسط / غامق)",
+      "costPerKg": 365,
+      "showInPos": true,
+      "categoryId": "cat-coffee-espresso",
+      "pricePerKg": 500,
+      "showOnline": true,
+      "description": "لعشاق فنجان القهوة السادة المضبوط! حبوب بن منتقاة تُحمص وتُطحن بالطلب قبل خروج الأوردر مباشرة.",
+      "reviewsCount": 174,
+      "roastOptions": [
+        "تحميص وسط سادة",
+        "تحميص فاتح أشقر",
+        "تحميص غامق محوج"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "1 جم",
+      "caloriesPer100g": 10,
+      "subCategoryName": "بن تركي سادة صافي",
+      "nutritionalHighlight": "نقي 100% ويعزز النشاط الذهني والبدني",
+      "gallery": [
+        "/images/products/almond.jpg",
+        "/images/products/royal-mix.jpg"
+      ],
+      "subCategory": "بن تركي سادة صافي",
+      "sellingMode": "weight",
+      "pluCode": 16,
+      "barcode": "200016"
+    },
+    {
+      "id": "prod-italian-espresso-1",
+      "name": "بن إسبريسو إيطالي وقهوة فرنساوي بالبندق",
+      "slug": "italian-espresso-and-french-hazelnut-coffee",
+      "badge": "ركن الإسبريسو ⚡",
+      "image": "/images/products/hazelnut.jpg",
+      "origin": "خلطة إيطالية فاخرة",
+      "rating": 4.9,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "grams": 125,
+          "label": "ثمن 125 جم",
+          "price": 73,
+          "weightGrams": 125,
+          "originalPrice": 81
+        },
+        {
+          "id": "w-250",
+          "grams": 250,
+          "label": "ربع 250 جم",
+          "price": 145,
+          "weightGrams": 250,
+          "originalPrice": 163
+        },
+        {
+          "id": "w-500",
+          "grams": 500,
+          "label": "نصف 500 جم",
+          "price": 290,
+          "weightGrams": 500,
+          "originalPrice": 325
+        },
+        {
+          "id": "w-1000",
+          "grams": 1000,
+          "label": "كيلو 1000 جم",
+          "price": 580,
+          "weightGrams": 1000,
+          "originalPrice": 650
+        }
+      ],
+      "featured": false,
+      "subtitle": "كريمة ذهبية كثيفة لماكينات الإسبريسو أو قهوة فرنساوي غنية بالبندق",
+      "costPerKg": 425,
+      "showInPos": true,
+      "categoryId": "cat-coffee-espresso",
+      "pricePerKg": 580,
+      "showOnline": true,
+      "description": "متوفر بطحنة إسبريسو احترافية أو حبوب كاملة (Whole Beans) أو قهوة فرنساوي بالبندق الطبيعي واللبن.",
+      "reviewsCount": 118,
+      "roastOptions": [
+        "تحميص وسط سادة",
+        "تشكيلة فاخرة"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "3 جم",
+      "caloriesPer100g": 45,
+      "subCategoryName": "بن إسبريسو وفرنساوي",
+      "nutritionalHighlight": "قوام كريمي غني ومذاق كافيهات احترافي في بيتك",
+      "gallery": [
+        "/images/products/almond.jpg",
+        "/images/products/royal-mix.jpg"
+      ],
+      "subCategory": "بن إسبريسو وفرنساوي",
+      "sellingMode": "weight",
+      "pluCode": 17,
+      "barcode": "200017"
+    },
+    {
+      "id": "prod-gummy-candy-1",
+      "name": "كاندي جيلي تركي وإسباني أصلي مشكل (بالوزن)",
+      "slug": "happiness-stand-dome-cups-candy",
+      "badge": "استاند السعادة 🍬",
+      "image": "/images/products/energy-mix.jpg",
+      "origin": "مستورد فاخر",
+      "rating": 4.9,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "weightGrams": 125,
+          "price": 40
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "weightGrams": 250,
+          "price": 75
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "weightGrams": 500,
+          "price": 150
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "weightGrams": 1000,
+          "price": 300,
+          "originalPrice": 330
+        }
+      ],
+      "featured": true,
+      "subtitle": "أشكال ونكهات فواكه إسباني وتركي طرية ومختارة بعناية",
+      "costPerKg": 198,
+      "showInPos": true,
+      "categoryId": "cat-choco-candy",
+      "pricePerKg": 300,
+      "showOnline": true,
+      "description": "استاند السعادة في محمصة حفصة! كوبايات القبة الشفافة (Dome Lid Cups) الجاهزة بـ 35 ج و 50 ج أو بالوزن، يعشقها الأطفال والشباب وتكمل أي أوردر سهرة.",
+      "reviewsCount": 240,
+      "roastOptions": [
+        "تشكيلة فاخرة"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "4 جم",
+      "caloriesPer100g": 340,
+      "subCategoryName": "كوبايات القبة والكاندي (Dome Cups)",
+      "nutritionalHighlight": "ألوان ونكهات فواكه طبيعية مبهجة للسهرة",
+      "gallery": [
+        "/images/products/walnut.jpg",
+        "/images/products/apricots-prunes.jpg"
+      ],
+      "subCategory": "كوبايات القبة والكاندي (Dome Cups)",
+      "sellingMode": "weight",
+      "pluCode": 18,
+      "barcode": "200018"
+    },
+    {
+      "id": "prod-imported-choco-1",
+      "name": "تشكيلة الشوكولاتات المستوردة الفاخرة",
+      "slug": "imported-chocolates-selection",
+      "badge": "مستورد أصلي 🍫",
+      "image": "/images/products/stuffed-dates.jpg",
+      "origin": "مستورد (أوروبي / خليجي)",
+      "rating": 4.9,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "grams": 125,
+          "label": "ثمن 125 جم",
+          "price": 60,
+          "weightGrams": 125,
+          "originalPrice": 68
+        },
+        {
+          "id": "w-250",
+          "grams": 250,
+          "label": "ربع 250 جم",
+          "price": 120,
+          "weightGrams": 250,
+          "originalPrice": 135
+        },
+        {
+          "id": "w-500",
+          "grams": 500,
+          "label": "نصف 500 جم",
+          "price": 240,
+          "weightGrams": 500,
+          "originalPrice": 270
+        },
+        {
+          "id": "w-1000",
+          "grams": 1000,
+          "label": "كيلو 1000 جم",
+          "price": 480,
+          "weightGrams": 1000,
+          "originalPrice": 540
+        }
+      ],
+      "featured": true,
+      "subtitle": "ميني سنيكرز، تويكس، باونتي، جالاكسي، وشوكولاتة بلجيكي وسويسري",
+      "costPerKg": 340,
+      "showInPos": true,
+      "categoryId": "cat-choco-candy",
+      "pricePerKg": 480,
+      "showOnline": true,
+      "description": "تشكيلة مختارة من أشهر الشوكولاتات المستوردة الأصلية المحفوظة في تكييف المحل بدرجة برودة مثالية.",
+      "reviewsCount": 162,
+      "roastOptions": [
+        "تشكيلة فاخرة"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "7 جم",
+      "caloriesPer100g": 520,
+      "subCategoryName": "شوكولاتات مستوردة",
+      "nutritionalHighlight": "كاكاو غني يمنح السعادة والطاقة الفورية",
+      "gallery": [
+        "/images/products/apricots-prunes.jpg",
+        "/images/products/almond.jpg"
+      ],
+      "subCategory": "شوكولاتات مستوردة",
+      "sellingMode": "weight",
+      "pluCode": 19,
+      "barcode": "200019"
+    },
+    {
+      "id": "prod-dragee-choco-1",
+      "name": "درابيه شوكولاتة باللوز والبندق المكرمل",
+      "slug": "golden-almond-hazelnut-dragee",
+      "badge": "ضيافة ملكية",
+      "image": "/images/products/stuffed-dates.jpg",
+      "origin": "صناعة فاخرة",
+      "rating": 4.8,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "grams": 125,
+          "label": "ثمن 125 جم",
+          "price": 53,
+          "weightGrams": 125,
+          "originalPrice": 60
+        },
+        {
+          "id": "w-250",
+          "grams": 250,
+          "label": "ربع 250 جم",
+          "price": 105,
+          "weightGrams": 250,
+          "originalPrice": 120
+        },
+        {
+          "id": "w-500",
+          "grams": 500,
+          "label": "نصف 500 جم",
+          "price": 210,
+          "weightGrams": 500,
+          "originalPrice": 240
+        },
+        {
+          "id": "w-1000",
+          "grams": 1000,
+          "label": "كيلو 1000 جم",
+          "price": 420,
+          "weightGrams": 1000,
+          "originalPrice": 480
+        }
+      ],
+      "featured": false,
+      "subtitle": "حبات بندق ولوز محمصة مغطاة بطبقة شوكولاتة بلجيكية غنية",
+      "costPerKg": 295,
+      "showInPos": true,
+      "categoryId": "cat-choco-candy",
+      "pricePerKg": 420,
+      "showOnline": true,
+      "description": "حبات كاملة من البندق التركي واللوز الذهبي مغلفة بالشوكولاتة الفاخرة والكرانشي الذهبي للضيافة الراقية.",
+      "reviewsCount": 89,
+      "roastOptions": [
+        "تشكيلة فاخرة"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "11 جم",
+      "caloriesPer100g": 545,
+      "subCategoryName": "درابيه بالمكسرات",
+      "nutritionalHighlight": "يجمع بين فوائد المكسرات ومذاق الشوكولاتة الغنية",
+      "gallery": [
+        "/images/products/apricots-prunes.jpg",
+        "/images/products/almond.jpg"
+      ],
+      "subCategory": "درابيه بالمكسرات",
+      "sellingMode": "weight",
+      "pluCode": 20,
+      "barcode": "200020"
+    },
+    {
+      "id": "prod-honey-nuts-jar-1",
+      "name": "برطمان عسل نحل طبيعي غارق بالمكسرات الملكية (خلية حفصة)",
+      "slug": "royal-honey-with-vip-nuts-jar",
+      "badge": "خلية العسل الملكي 🍯",
+      "image": "/images/products/apricots-prunes.jpg",
+      "origin": "مناحل طبيعية + مكسرات مستوردة",
+      "rating": 5,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "برطمان طاقة ميني (125 جم)",
+          "price": 65,
+          "weightGrams": 125,
+          "originalPrice": 80
+        },
+        {
+          "id": "w-250",
+          "label": "برطمان ربع كيلو (250 جم)",
+          "price": 115,
+          "weightGrams": 250,
+          "originalPrice": 135
+        },
+        {
+          "id": "w-500",
+          "label": "برطمان نصف كيلو (500 جم)",
+          "price": 220,
+          "weightGrams": 500,
+          "originalPrice": 255
+        },
+        {
+          "id": "w-1000",
+          "label": "برطمان كيلو عائلي (1000 جم)",
+          "price": 440,
+          "weightGrams": 1000,
+          "originalPrice": 500
+        }
+      ],
+      "featured": true,
+      "subtitle": "عسل سدر وموالح وبرسيم طبيعي 100% مع فستق وكاجو ولوز وعين جمل وبندق",
+      "costPerKg": 310,
+      "showInPos": true,
+      "categoryId": "cat-honey-spices",
+      "pricePerKg": 440,
+      "showOnline": true,
+      "description": "من قلب ديكور خلية النحل الخشبية في محمصة حفصة! عسل نحل طبيعي مفحوص ومضمون 100% مضاف إليه طبقة كثيفة من المكسرات المحمصة الطازجة للطاقة والمناعة.",
+      "reviewsCount": 147,
+      "roastOptions": [
+        "طازج طبيعي 100%",
+        "تشكيلة فاخرة"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "9 جم",
+      "caloriesPer100g": 380,
+      "subCategoryName": "برطمانات العسل بالمكسرات",
+      "nutritionalHighlight": "مقوي طبيعي شامل للمناعة والطاقة والتركيز للأطفال والكبار",
+      "gallery": [
+        "/images/products/stuffed-dates.jpg",
+        "/images/products/energy-mix.jpg"
+      ],
+      "subCategory": "برطمانات العسل بالمكسرات",
+      "sellingMode": "weight",
+      "pluCode": 21,
+      "barcode": "200021"
+    },
+    {
+      "id": "prod-royal-spices-1",
+      "name": "توابل استاند العطار النقية (حبهان وبن وتوابل محمصة)",
+      "slug": "pure-roastery-spices-and-cardamom",
+      "badge": "نقي 100% بالجرام",
+      "image": "/images/products/apricots-prunes.jpg",
+      "origin": "هندي / بلدي نخب أول",
+      "rating": 4.9,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "grams": 125,
+          "label": "ثمن 125 جم",
+          "price": 60,
+          "weightGrams": 125,
+          "originalPrice": 68
+        },
+        {
+          "id": "w-250",
+          "grams": 250,
+          "label": "ربع 250 جم",
+          "price": 120,
+          "weightGrams": 250,
+          "originalPrice": 135
+        },
+        {
+          "id": "w-500",
+          "grams": 500,
+          "label": "نصف 500 جم",
+          "price": 240,
+          "weightGrams": 500,
+          "originalPrice": 270
+        },
+        {
+          "id": "w-1000",
+          "grams": 1000,
+          "label": "كيلو 1000 جم",
+          "price": 480,
+          "weightGrams": 1000,
+          "originalPrice": 540
+        }
+      ],
+      "featured": false,
+      "subtitle": "حبهان أخضر جامبو، فلفل أسود، كمون بلدي، قرفة سيجار، وسبع بهارات مطحونة بالطلب",
+      "costPerKg": 340,
+      "showInPos": true,
+      "categoryId": "cat-honey-spices",
+      "pricePerKg": 480,
+      "showOnline": true,
+      "description": "توابل حصى ومطحونة طازجة في محمصة حفصة بدون أي إضافات أو شوائب، برائحة نفاذة تعيد لأكل البيت طعمه الأصلي.",
+      "reviewsCount": 78,
+      "roastOptions": [
+        "طازج طبيعي 100%"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "11 جم",
+      "caloriesPer100g": 310,
+      "subCategoryName": "توابل استاند العطار النقية",
+      "nutritionalHighlight": "زيوت طيارة طبيعية 100% محفوظة في عبوات محكمة",
+      "gallery": [
+        "/images/products/stuffed-dates.jpg",
+        "/images/products/energy-mix.jpg"
+      ],
+      "subCategory": "توابل استاند العطار النقية",
+      "sellingMode": "weight",
+      "pluCode": 22,
+      "barcode": "200022"
+    },
+    {
+      "id": "prod-dates-stuffed-1",
+      "name": "تمر مجدول ملكي محشو بالمكسرات الفاخرة",
+      "slug": "royal-medjool-dates-stuffed-nuts",
+      "badge": "ضيافة فاخرة",
+      "image": "/images/products/stuffed-dates.jpg",
+      "origin": "تمر مجدول ملكي + مكسرات مستوردة",
+      "rating": 4.9,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "price": 60,
+          "weightGrams": 125,
+          "originalPrice": 70
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "price": 120,
+          "weightGrams": 250,
+          "originalPrice": 140
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "price": 245,
+          "weightGrams": 500,
+          "originalPrice": 280
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "price": 460,
+          "weightGrams": 1000,
+          "originalPrice": 530
+        }
+      ],
+      "featured": false,
+      "subtitle": "حبات تمر مجدول جامبو محشوة باللوز والفستق والكاجو وعين الجمل",
+      "costPerKg": 330,
+      "showInPos": true,
+      "categoryId": "cat-honey-spices",
+      "pricePerKg": 460,
+      "showOnline": true,
+      "description": "تمر مجدول ملكي طري وفاخر، منزوع النوى ومحشو يدوياً بحبات كاملة من الفستق واللوز المحمص وعين الجمل والكاجو. مثالي مع القهوة العربية وكهدية راقية.",
+      "reviewsCount": 88,
+      "roastOptions": [
+        "تشكيلة فاخرة"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "8.5 جم",
+      "caloriesPer100g": 390,
+      "subCategoryName": "تمور ملكية محشوة",
+      "nutritionalHighlight": "غني بالحديد والبوتاسيوم والسكريات الطبيعية الصحية",
+      "gallery": [
+        "/images/products/apricots-prunes.jpg",
+        "/images/products/almond.jpg"
+      ],
+      "subCategory": "تمور ملكية محشوة",
+      "sellingMode": "weight",
+      "pluCode": 23,
+      "barcode": "200023"
+    },
+    {
+      "id": "prod-apricot-prunes-1",
+      "name": "مشمشية تركي جامبو وقراصيا فاخرة",
+      "slug": "turkish-dried-apricots-and-prunes",
+      "image": "/images/products/apricots-prunes.jpg",
+      "origin": "تركي مستورد نخب أول",
+      "rating": 4.7,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "price": 55,
+          "weightGrams": 125,
+          "originalPrice": 68
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "price": 115,
+          "weightGrams": 250,
+          "originalPrice": 135
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "price": 220,
+          "weightGrams": 500,
+          "originalPrice": 260
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "price": 420,
+          "weightGrams": 1000,
+          "originalPrice": 490
+        }
+      ],
+      "featured": false,
+      "subtitle": "فواكه مجففة طبيعية طرية وغنية بالفيتامينات",
+      "costPerKg": 300,
+      "showInPos": true,
+      "categoryId": "cat-honey-spices",
+      "pricePerKg": 420,
+      "showOnline": true,
+      "description": "مشمشية تركي مقاس جامبو رقم 1 مع قراصيا مستوردة منزوعة النوى، طرية جداً وبطعم طبيعي غني ومثالية للتناول المباشر أو الحلويات.",
+      "reviewsCount": 47,
+      "roastOptions": [
+        "نيء طبيعي"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "3.4 جم",
+      "caloriesPer100g": 241,
+      "subCategoryName": "فواكه مجففة مستوردة",
+      "nutritionalHighlight": "غنية بالحديد والألياف وفيتامين A",
+      "gallery": [
+        "/images/products/stuffed-dates.jpg",
+        "/images/products/energy-mix.jpg"
+      ],
+      "subCategory": "فواكه مجففة مستوردة",
+      "sellingMode": "weight",
+      "pluCode": 24,
+      "barcode": "200024"
+    },
+    {
+      "id": "prod-box-roqan-125",
+      "name": "بوكس لمة الخميس المقسم — روقان (4 خانات — 125 ج.م)",
+      "slug": "roqan-4-slots-evening-box-125",
+      "badge": "البطل البيعي 125 ج 🔥",
+      "image": "/images/products/royal-mix.jpg",
+      "origin": "استوديو بوكسات محمصة حفصة",
+      "rating": 5,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "بوكس روقان (4 خانات - 125 ج)",
+          "price": 125,
+          "weightGrams": 125,
+          "originalPrice": 150
+        },
+        {
+          "id": "w-250",
+          "label": "بوكس العيلة (6 خانات - 250 ج)",
+          "price": 250,
+          "weightGrams": 250,
+          "originalPrice": 295
+        },
+        {
+          "id": "w-500",
+          "label": "بوكس VIP الملكي (6 خانات - 450 ج)",
+          "price": 450,
+          "weightGrams": 500,
+          "originalPrice": 520
+        },
+        {
+          "id": "w-1000",
+          "label": "بوكسان عائليان للتوفير (12 خانة)",
+          "price": 480,
+          "weightGrams": 1000,
+          "originalPrice": 590
+        }
+      ],
+      "featured": true,
+      "subtitle": "البطل البيعي: 100جم مقرمشات + 100جم سوداني وفلسطيني + 80جم كاندي + 60جم مكسرات VIP",
+      "costPerKg": 350,
+      "showInPos": true,
+      "categoryId": "cat-mixed-boxes",
+      "pricePerKg": 500,
+      "showOnline": true,
+      "description": "البطل البيعي رقم 1 في بني مزار! بوكس مقسم إلى 4 خانات غنية ومتنوعة (مقرمشات وكريك + فول فلسطيني ومكرمل + كاندي وشوكولاتة + ميكس مكسرات VIP) بسعر 125 ج.م فقط.",
+      "reviewsCount": 380,
+      "roastOptions": [
+        "تشكيلة فاخرة",
+        "محمص مملح"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "16 جم",
+      "caloriesPer100g": 495,
+      "subCategoryName": "بوكس روقان 125 ج",
+      "nutritionalHighlight": "4 خانات تجمع الحلو والحادق والمكسرات في بوكس واحد محكم الغلق",
+      "gallery": [
+        "/images/products/pistachio.jpg",
+        "/images/products/cashew.jpg",
+        "/images/products/almond.jpg"
+      ],
+      "subCategory": "بوكس روقان 125 ج",
+      "sellingMode": "weight",
+      "pluCode": 25,
+      "barcode": "200025"
+    },
+    {
+      "id": "prod-box-family-250",
+      "name": "بوكس العيلة واللمة المقسم (6 خانات — 250 ج.م)",
+      "slug": "family-6-slots-gathering-box-250",
+      "badge": "بوكس العيلة 250 ج 👨‍👩‍👧‍👦",
+      "image": "/images/products/royal-mix.jpg",
+      "origin": "استوديو بوكسات محمصة حفصة",
+      "rating": 5,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "حجم ميني روقان (125 ج)",
+          "price": 125,
+          "weightGrams": 125,
+          "originalPrice": 150
+        },
+        {
+          "id": "w-250",
+          "label": "بوكس العيلة الرسمي (6 خانات - 250 ج)",
+          "price": 250,
+          "weightGrams": 250,
+          "originalPrice": 295
+        },
+        {
+          "id": "w-500",
+          "label": "بوكس العيلة مضاعف (500 ج)",
+          "price": 475,
+          "weightGrams": 500,
+          "originalPrice": 560
+        },
+        {
+          "id": "w-1000",
+          "label": "بوكس اللمة الجامبو (1000 جم)",
+          "price": 890,
+          "weightGrams": 1000,
+          "originalPrice": 1050
+        }
+      ],
+      "featured": true,
+      "subtitle": "يكفي 4 إلى 6 أفراد لسهرة كاملة: لب سوبر + كاجو ولوز + كريك + فول فلسطيني + شوكولاتة + كاندي",
+      "costPerKg": 350,
+      "showInPos": true,
+      "categoryId": "cat-mixed-boxes",
+      "pricePerKg": 500,
+      "showOnline": true,
+      "description": "مصمم خصيصاً لسهرات العيلة والصحاب في بني مزار! 6 خانات كبيرة متنوعة ترضي كل الأذواق وتوفر عليك شراء كل صنف لوحده.",
+      "reviewsCount": 295,
+      "roastOptions": [
+        "تشكيلة فاخرة",
+        "محمص مملح"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "17 جم",
+      "caloriesPer100g": 515,
+      "subCategoryName": "بوكس العيلة واللمة 250 ج",
+      "nutritionalHighlight": "تشكيلة عائلية متكاملة مغلفة حرارياً لحفظ القرمشة",
+      "gallery": [
+        "/images/products/pistachio.jpg",
+        "/images/products/cashew.jpg",
+        "/images/products/almond.jpg"
+      ],
+      "subCategory": "بوكس العيلة واللمة 250 ج",
+      "sellingMode": "weight",
+      "pluCode": 26,
+      "barcode": "200026"
+    },
+    {
+      "id": "prod-royal-mix-1",
+      "name": "بوكس الزيارات والهدايا الملكي VIP (6 خانات فاخرة — 450 ج.م)",
+      "slug": "royal-vip-mixed-nuts-box",
+      "badge": "بوكس هدايا VIP بـ 450 ج 👑",
+      "image": "/images/products/royal-mix.jpg",
+      "origin": "تشكيلة ملكية مستوردة 100%",
+      "rating": 5,
+      "inStock": true,
+      "reviews": [
+        {
+          "id": "r5",
+          "date": "منذ يوم",
+          "rating": 5,
+          "comment": "البوكس الملكي يشرف جداً في الضيافة والهدايا، النسب متساوية فعلاً وكل صنف أحلى من التاني.",
+          "verified": true,
+          "customerName": "مهندس طارق الشناوي"
+        }
+      ],
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "بوكس هدايا ميني (225 جم)",
+          "price": 185,
+          "weightGrams": 125,
+          "originalPrice": 220
+        },
+        {
+          "id": "w-250",
+          "label": "بوكس الزيارات الملكي VIP (6 خانات - 450 ج)",
+          "price": 450,
+          "weightGrams": 250,
+          "originalPrice": 520
+        },
+        {
+          "id": "w-500",
+          "label": "بوكس 500 جم (نصف كيلو مكسرات VIP)",
+          "price": 375,
+          "weightGrams": 500,
+          "originalPrice": 430
+        },
+        {
+          "id": "w-1000",
+          "label": "بوكس 1 كجم العائلي الملكي",
+          "price": 720,
+          "weightGrams": 1000,
+          "originalPrice": 840
+        }
+      ],
+      "featured": true,
+      "subtitle": "فستق + كاجو جامبو + بندق تركي + لوز كاليفورنيا + عين جمل + شوكولاتة فاخرة",
+      "costPerKg": 540,
+      "showInPos": true,
+      "categoryId": "cat-mixed-boxes",
+      "pricePerKg": 720,
+      "showOnline": true,
+      "description": "التشكيلة الملكية التي تشرفك في الزيارات والمناسبات والهدايا! 6 خانات من المكسرات المستوردة الصافية والشوكولاتة الفاخرة بتغليف ذهبي يحمل شعار محمصة حفصة.",
+      "reviewsCount": 214,
+      "roastOptions": [
+        "محمص مملح",
+        "محمص بدون ملح",
+        "نيء طبيعي",
+        "مدخن بالتوابل"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "19 جم",
+      "caloriesPer100g": 590,
+      "subCategoryName": "بوكس هدايا VIP 450 ج",
+      "nutritionalHighlight": "مزيج متكامل من الفيتامينات والمعادن والأوميجا 3 والطاقة",
+      "gallery": [
+        "/images/products/pistachio.jpg",
+        "/images/products/cashew.jpg",
+        "/images/products/almond.jpg"
+      ],
+      "subCategory": "بوكس هدايا VIP 450 ج",
+      "sellingMode": "weight",
+      "pluCode": 27,
+      "barcode": "200027"
+    },
+    {
+      "id": "prod-energy-mix-1",
+      "name": "بوكس الطاقة والرشاقة (مكسرات نيئة وفواكه مجففة)",
+      "slug": "healthy-fitness-mix-box",
+      "badge": "طبيعي 100%",
+      "image": "/images/products/energy-mix.jpg",
+      "origin": "تشكيلة صحية بدون ملح أو سكر مضاف",
+      "rating": 4.9,
+      "inStock": true,
+      "stockKg": 50,
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "price": 85,
+          "weightGrams": 125,
+          "originalPrice": 100
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "price": 165,
+          "weightGrams": 250,
+          "originalPrice": 190
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "price": 330,
+          "weightGrams": 500,
+          "originalPrice": 375
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "price": 630,
+          "weightGrams": 1000,
+          "originalPrice": 720
+        }
+      ],
+      "featured": false,
+      "subtitle": "عين جمل + لوز + كاجو + بندق + توت بري وزبيب ذهبي",
+      "costPerKg": 470,
+      "showInPos": true,
+      "categoryId": "cat-mixed-boxes",
+      "pricePerKg": 630,
+      "showOnline": true,
+      "description": "مصمم خصيصاً لمحبي الأكل الصحي والرياضيين والطلاب، يجمع بين المكسرات النيئة غير المملحة والفواكه المجففة الطبيعية لمنحك طاقة مستدامة وتركيز عالي طوال اليوم.",
+      "reviewsCount": 63,
+      "roastOptions": [
+        "نيء طبيعي",
+        "محمص بدون ملح"
+      ],
+      "packagingCost": 5,
+      "proteinPer100g": "16.5 جم",
+      "caloriesPer100g": 510,
+      "subCategoryName": "بوكس الطاقة والدايت",
+      "nutritionalHighlight": "طاقة فورية وألياف طبيعية بدون أي أملاح أو مواد حافظة",
+      "gallery": [
+        "/images/products/walnut.jpg",
+        "/images/products/apricots-prunes.jpg"
+      ],
+      "subCategory": "بوكس الطاقة والدايت",
+      "sellingMode": "weight",
+      "pluCode": 28,
+      "barcode": "200028"
+    },
+    {
+      "id": "prod-bar-turkish-coffee",
+      "slug": "bar-turkish-coffee-sand",
+      "name": "قهوة تركي طازة ع الرمل (سادة / محوج)",
+      "subtitle": "12 جم بن حفصة مطحون فور الطلب • وش كثيف ومزاج أصلي",
+      "categoryId": "cat-coffee-bar",
+      "subCategoryName": "قهوة تركي وفرنساوي",
+      "subCategory": "قهوة تركي وفرنساوي",
+      "description": "فنجان قهوة تركي يُحضّر طازجاً على الرمل من بن حفصة المطحون فورياً أمام عينك، متاح سادة أو محوج مخصوص أو دبل شوت.",
+      "image": "/images/branch/store-interior.jpg",
+      "gallery": [
+        "/images/products/hazelnut.jpg"
+      ],
+      "badge": "الأكثر طلباً في البار",
+      "origin": "محمصة حفصة — بني مزار",
+      "nutritionalHighlight": "يُحضّر طازجاً عند الطلب في ركن حفصة أمام مسجد الزراعيين",
+      "caloriesPer100g": 110,
+      "proteinPer100g": "3 جم",
+      "sellingMode": "unit",
+      "unitLabel": "كوب",
+      "unitPrice": 25,
+      "unitCost": 9.5,
+      "pricePerKg": 25,
+      "costPerKg": 9.5,
+      "packagingCost": 3,
+      "roastOptions": [
+        "سادة مظبوط",
+        "محوج مخصوص",
+        "وسط زيادة",
+        "غامق سادة"
+      ],
+      "weights": [
+        {
+          "id": "u-single",
+          "label": "فنجان سينجل (25 ج)",
+          "unitsCount": 1,
+          "weightGrams": 1000,
+          "grams": 1000,
+          "price": 25
+        },
+        {
+          "id": "u-double",
+          "label": "فنجان دبل (35 ج)",
+          "unitsCount": 1,
+          "weightGrams": 1000,
+          "grams": 1000,
+          "price": 35
+        }
+      ],
+      "stockKg": 300,
+      "showOnline": true,
+      "showInPos": true,
+      "inStock": true,
+      "featured": true,
+      "rating": 4.9,
+      "reviewsCount": 14,
+      "reviews": [],
+      "pluCode": 2903,
+      "barcode": "290003"
+    },
+    {
+      "id": "prod-bar-french-hazelnut",
+      "slug": "bar-french-hazelnut-coffee",
+      "name": "قهوة فرنساوي / بالبندق / شوكولاتة",
+      "subtitle": "14 جم بن فرنساوي طازج بالحليب الكريمي الغني",
+      "categoryId": "cat-coffee-bar",
+      "subCategoryName": "قهوة تركي وفرنساوي",
+      "subCategory": "قهوة تركي وفرنساوي",
+      "description": "قهوة فرنساوي ناعمة بالحليب الطازج أو بنكهة البندق المحمص أو الشوكولاتة البلجيكية، تُقدم ساخنة في كوب دبل وول حافظ للحرارة.",
+      "image": "/images/products/hazelnut.jpg",
+      "gallery": [
+        "/images/branch/store-interior.jpg"
+      ],
+      "badge": "طازج من البار",
+      "origin": "محمصة حفصة — بني مزار",
+      "nutritionalHighlight": "يُحضّر طازجاً عند الطلب في ركن حفصة أمام مسجد الزراعيين",
+      "caloriesPer100g": 110,
+      "proteinPer100g": "3 جم",
+      "sellingMode": "unit",
+      "unitLabel": "كوب",
+      "unitPrice": 35,
+      "unitCost": 13.5,
+      "pricePerKg": 35,
+      "costPerKg": 13.5,
+      "packagingCost": 3.5,
+      "roastOptions": [
+        "فرنساوي كلاسيك",
+        "بندق محمص",
+        "شوكولاتة غنية"
+      ],
+      "weights": [
+        {
+          "id": "u-1",
+          "label": "كوب واحدة",
+          "unitsCount": 1,
+          "weightGrams": 1000,
+          "grams": 1000,
+          "price": 35
+        }
+      ],
+      "stockKg": 250,
+      "showOnline": true,
+      "showInPos": true,
+      "inStock": true,
+      "featured": true,
+      "rating": 4.9,
+      "reviewsCount": 14,
+      "reviews": [],
+      "pluCode": 2904,
+      "barcode": "290004"
+    },
+    {
+      "id": "prod-bar-espresso",
+      "slug": "bar-italian-espresso",
+      "name": "إسبريسو إيطالي طازج (سينجل / دبل شوت)",
+      "subtitle": "18 جم بن إسبريسو إيطالي 100% بكريما ذهبية كثيفة",
+      "categoryId": "cat-coffee-bar",
+      "subCategoryName": "إسبريسو وأمريكانو",
+      "subCategory": "إسبريسو وأمريكانو",
+      "description": "شوت إسبريسو إيطالي مستخلص طازجاً من ماكينة البار الاحترافية داخل محمصة حفصة أمام مسجد الزراعيين.",
+      "image": "/images/branch/store-interior.jpg",
+      "gallery": [],
+      "badge": "تحميص إيطالي",
+      "origin": "محمصة حفصة — بني مزار",
+      "nutritionalHighlight": "يُحضّر طازجاً عند الطلب في ركن حفصة أمام مسجد الزراعيين",
+      "caloriesPer100g": 110,
+      "proteinPer100g": "3 جم",
+      "sellingMode": "unit",
+      "unitLabel": "كوب",
+      "unitPrice": 30,
+      "unitCost": 12,
+      "pricePerKg": 30,
+      "costPerKg": 12,
+      "packagingCost": 3,
+      "roastOptions": [
+        "سينجل شوت",
+        "دبل شوت"
+      ],
+      "weights": [
+        {
+          "id": "u-single",
+          "label": "سينجل شوت (30 ج)",
+          "unitsCount": 1,
+          "weightGrams": 1000,
+          "grams": 1000,
+          "price": 30
+        },
+        {
+          "id": "u-double",
+          "label": "دبل شوت (40 ج)",
+          "unitsCount": 1,
+          "weightGrams": 1000,
+          "grams": 1000,
+          "price": 40
+        }
+      ],
+      "stockKg": 250,
+      "showOnline": true,
+      "showInPos": true,
+      "inStock": true,
+      "featured": true,
+      "rating": 4.9,
+      "reviewsCount": 14,
+      "reviews": [],
+      "pluCode": 2905,
+      "barcode": "290005"
+    },
+    {
+      "id": "prod-bar-americano",
+      "slug": "bar-fresh-americano",
+      "name": "أمريكانو طازج (ساخن أو مثلج)",
+      "subtitle": "دبل إسبريسو نقي مخفف بمياه مفلترة لنكهة متوازنة",
+      "categoryId": "cat-coffee-bar",
+      "subCategoryName": "إسبريسو وأمريكانو",
+      "subCategory": "إسبريسو وأمريكانو",
+      "description": "مشروب الأمريكانو الكلاسيكي لمحبي القهوة الصافية الخفيفة بدون حليب، متاح ساخن أو آيس أمريكانو.",
+      "image": "/images/branch/store-interior.jpg",
+      "gallery": [],
+      "origin": "محمصة حفصة — بني مزار",
+      "nutritionalHighlight": "يُحضّر طازجاً عند الطلب في ركن حفصة أمام مسجد الزراعيين",
+      "caloriesPer100g": 110,
+      "proteinPer100g": "3 جم",
+      "sellingMode": "unit",
+      "unitLabel": "كوب",
+      "unitPrice": 35,
+      "unitCost": 13,
+      "pricePerKg": 35,
+      "costPerKg": 13,
+      "packagingCost": 3.5,
+      "roastOptions": [
+        "ساخن",
+        "آيس مثلج"
+      ],
+      "weights": [
+        {
+          "id": "u-1",
+          "label": "كوب واحدة",
+          "unitsCount": 1,
+          "weightGrams": 1000,
+          "grams": 1000,
+          "price": 35
+        }
+      ],
+      "stockKg": 200,
+      "showOnline": true,
+      "showInPos": true,
+      "inStock": true,
+      "featured": false,
+      "rating": 4.9,
+      "reviewsCount": 14,
+      "reviews": [],
+      "pluCode": 2906,
+      "barcode": "290006"
+    },
+    {
+      "id": "prod-bar-latte-cappuccino",
+      "slug": "bar-latte-cappuccino-flatwhite",
+      "name": "كابتشينو / لاتيه / فلات وايت",
+      "subtitle": "18 جم إسبريسو طازج + 180 مل حليب مبخر بفوم حريري",
+      "categoryId": "cat-coffee-bar",
+      "subCategoryName": "لاتيه وكابتشينو وموكا",
+      "subCategory": "لاتيه وكابتشينو وموكا",
+      "description": "توليفة الإسبريسو الغنية مع الحليب الطازج المبخر برغوة كريمية متوازنة — مثالي لصباح العمل وسهرات بني مزار.",
+      "image": "/images/branch/store-interior.jpg",
+      "gallery": [],
+      "badge": "الأعلى طلباً",
+      "origin": "محمصة حفصة — بني مزار",
+      "nutritionalHighlight": "يُحضّر طازجاً عند الطلب في ركن حفصة أمام مسجد الزراعيين",
+      "caloriesPer100g": 110,
+      "proteinPer100g": "3 جم",
+      "sellingMode": "unit",
+      "unitLabel": "كوب",
+      "unitPrice": 45,
+      "unitCost": 18,
+      "pricePerKg": 45,
+      "costPerKg": 18,
+      "packagingCost": 4,
+      "roastOptions": [
+        "لاتيه كلاسيك",
+        "كابتشينو",
+        "فلات وايت"
+      ],
+      "weights": [
+        {
+          "id": "u-1",
+          "label": "كوب واحدة",
+          "unitsCount": 1,
+          "weightGrams": 1000,
+          "grams": 1000,
+          "price": 45
+        }
+      ],
+      "stockKg": 220,
+      "showOnline": true,
+      "showInPos": true,
+      "inStock": true,
+      "featured": true,
+      "rating": 4.9,
+      "reviewsCount": 14,
+      "reviews": [],
+      "pluCode": 2907,
+      "barcode": "290007"
+    },
+    {
+      "id": "prod-bar-hot-mocha",
+      "slug": "bar-hot-mocha-chocolate",
+      "name": "موكا ساخن بالشوكولاتة البلجيكية",
+      "subtitle": "إسبريسو إيطالي + صوص شوكولاتة فاخر وحليب مبخر",
+      "categoryId": "cat-coffee-bar",
+      "subCategoryName": "لاتيه وكابتشينو وموكا",
+      "subCategory": "لاتيه وكابتشينو وموكا",
+      "description": "مزيج فاخر يجمع بين قوة الإسبريسو الإيطالي ونعومة الشوكولاتة الساخنة الغنية.",
+      "image": "/images/products/hazelnut.jpg",
+      "gallery": [],
+      "origin": "محمصة حفصة — بني مزار",
+      "nutritionalHighlight": "يُحضّر طازجاً عند الطلب في ركن حفصة أمام مسجد الزراعيين",
+      "caloriesPer100g": 110,
+      "proteinPer100g": "3 جم",
+      "sellingMode": "unit",
+      "unitLabel": "كوب",
+      "unitPrice": 50,
+      "unitCost": 21,
+      "pricePerKg": 50,
+      "costPerKg": 21,
+      "packagingCost": 4,
+      "roastOptions": [
+        "دارك موكا",
+        "وايت موكا"
+      ],
+      "weights": [
+        {
+          "id": "u-1",
+          "label": "كوب واحدة",
+          "unitsCount": 1,
+          "weightGrams": 1000,
+          "grams": 1000,
+          "price": 50
+        }
+      ],
+      "stockKg": 180,
+      "showOnline": true,
+      "showInPos": true,
+      "inStock": true,
+      "featured": false,
+      "rating": 4.9,
+      "reviewsCount": 14,
+      "reviews": [],
+      "pluCode": 2908,
+      "barcode": "290008"
+    },
+    {
+      "id": "prod-bar-iced-coffee",
+      "slug": "bar-iced-spanish-latte-mocha",
+      "name": "آيس سبانيش لاتيه / آيس موكا / فرابيه",
+      "subtitle": "إسبريسو بارد + حليب مكثف وصوص غني + ثلج في كوب شفاف فاخر",
+      "categoryId": "cat-coffee-bar",
+      "subCategoryName": "آيس كوفي وبارد",
+      "subCategory": "آيس كوفي وبارد",
+      "description": "مشروبات القهوة الباردة المنعشة بتحضير فوري في ركن حفصة — آيس سبانيش لاتيه أو آيس موكا أو آيس كراميل ماكياتو.",
+      "image": "/images/branch/store-interior.jpg",
+      "gallery": [],
+      "badge": "بارد ومنعش",
+      "origin": "محمصة حفصة — بني مزار",
+      "nutritionalHighlight": "يُحضّر طازجاً عند الطلب في ركن حفصة أمام مسجد الزراعيين",
+      "caloriesPer100g": 110,
+      "proteinPer100g": "3 جم",
+      "sellingMode": "unit",
+      "unitLabel": "كوب",
+      "unitPrice": 55,
+      "unitCost": 21.5,
+      "pricePerKg": 55,
+      "costPerKg": 21.5,
+      "packagingCost": 4.5,
+      "roastOptions": [
+        "آيس سبانيش لاتيه",
+        "آيس موكا",
+        "آيس كراميل لاتيه"
+      ],
+      "weights": [
+        {
+          "id": "u-1",
+          "label": "كوب واحدة",
+          "unitsCount": 1,
+          "weightGrams": 1000,
+          "grams": 1000,
+          "price": 55
+        }
+      ],
+      "stockKg": 220,
+      "showOnline": true,
+      "showInPos": true,
+      "inStock": true,
+      "featured": true,
+      "rating": 4.9,
+      "reviewsCount": 14,
+      "reviews": [],
+      "pluCode": 2909,
+      "barcode": "290009"
+    },
+    {
+      "id": "prod-cup-candy-35",
+      "slug": "quick-dome-cup-candy-35",
+      "name": "كوباية القبة السريعة — كاندي ومقرمشات (35 ج.م)",
+      "subtitle": "كوباية تسلية سريعة بغطاء قبة شفاف مليانة كاندي إسباني ومقرمشات",
+      "categoryId": "cat-quick-cups",
+      "subCategoryName": "كوبايات التسلية السريعة",
+      "subCategory": "كوبايات التسلية السريعة",
+      "description": "كوباية الماشية السريعة بسعر اقتصادي 35 ج.م تجمع أشهى نكهات الكاندي الإسباني والذرة المقرمشة والكريك كراك.",
+      "image": "/images/products/energy-mix.jpg",
+      "gallery": [],
+      "badge": "سريع 35 ج",
+      "origin": "محمصة حفصة — بني مزار",
+      "nutritionalHighlight": "يُحضّر طازجاً عند الطلب في ركن حفصة أمام مسجد الزراعيين",
+      "caloriesPer100g": 110,
+      "proteinPer100g": "3 جم",
+      "sellingMode": "unit",
+      "unitLabel": "كوباية",
+      "unitPrice": 35,
+      "unitCost": 20,
+      "pricePerKg": 35,
+      "costPerKg": 20,
+      "packagingCost": 3,
+      "roastOptions": [
+        "كاندي مشكل",
+        "كاندي + مقرمشات",
+        "مقرمشات وذرة إسباني"
+      ],
+      "weights": [
+        {
+          "id": "u-1",
+          "label": "كوباية واحدة",
+          "unitsCount": 1,
+          "weightGrams": 1000,
+          "grams": 1000,
+          "price": 35
+        }
+      ],
+      "stockKg": 150,
+      "showOnline": true,
+      "showInPos": true,
+      "inStock": true,
+      "featured": true,
+      "rating": 4.9,
+      "reviewsCount": 14,
+      "reviews": [],
+      "pluCode": 2910,
+      "barcode": "290010"
+    },
+    {
+      "id": "prod-cup-nuts-candy-50",
+      "slug": "quick-dome-cup-nuts-candy-50",
+      "name": "كوباية التسلية المميزة — مكسرات وكاندي (50 ج.م)",
+      "subtitle": "تشكيلة لذيذة من المقرمشات والكاندي مع كاجو ولوز محمص في كوباية قبة",
+      "categoryId": "cat-quick-cups",
+      "subCategoryName": "كوبايات التسلية السريعة",
+      "subCategory": "كوبايات التسلية السريعة",
+      "description": "كوباية حفصة المميزة للتسلية السريعة: مزيج متوازن من الكاجو واللوز المحمص مع الكاندي والمقرمشات.",
+      "image": "/images/products/royal-mix.jpg",
+      "gallery": [],
+      "badge": "الأكثر مبيعاً 50 ج",
+      "origin": "محمصة حفصة — بني مزار",
+      "nutritionalHighlight": "يُحضّر طازجاً عند الطلب في ركن حفصة أمام مسجد الزراعيين",
+      "caloriesPer100g": 110,
+      "proteinPer100g": "3 جم",
+      "sellingMode": "unit",
+      "unitLabel": "كوباية",
+      "unitPrice": 50,
+      "unitCost": 29,
+      "pricePerKg": 50,
+      "costPerKg": 29,
+      "packagingCost": 3,
+      "roastOptions": [
+        "مكسرات + كاندي",
+        "مكسرات + شوكولاتة درابيه"
+      ],
+      "weights": [
+        {
+          "id": "u-1",
+          "label": "كوباية واحدة",
+          "unitsCount": 1,
+          "weightGrams": 1000,
+          "grams": 1000,
+          "price": 50
+        }
+      ],
+      "stockKg": 150,
+      "showOnline": true,
+      "showInPos": true,
+      "inStock": true,
+      "featured": true,
+      "rating": 4.9,
+      "reviewsCount": 14,
+      "reviews": [],
+      "pluCode": 2911,
+      "barcode": "290011"
+    },
+    {
+      "id": "prod-cup-vip-jumbo-85",
+      "slug": "vip-jumbo-nuts-cup-85",
+      "name": "كوباية مكسرات VIP جامبو (100 جم صافي — 85 ج.م)",
+      "subtitle": "100 جم صافي كاجو وفستق ولوز وبندق وشوكولاتة درابيه بدون سوداني",
+      "categoryId": "cat-quick-cups",
+      "subCategoryName": "كوباية VIP جامبو",
+      "subCategory": "كوباية VIP جامبو",
+      "description": "كوباية الطاقة والمكسرات الفاخرة المعبأة بـ 100 جم صافي من الكاجو الجامبو والفستق واللوز والبندق.",
+      "image": "/images/products/pistachio.jpg",
+      "gallery": [],
+      "badge": "VIP جامبو",
+      "origin": "محمصة حفصة — بني مزار",
+      "nutritionalHighlight": "يُحضّر طازجاً عند الطلب في ركن حفصة أمام مسجد الزراعيين",
+      "caloriesPer100g": 110,
+      "proteinPer100g": "3 جم",
+      "sellingMode": "unit",
+      "unitLabel": "كوباية",
+      "unitPrice": 85,
+      "unitCost": 55.5,
+      "pricePerKg": 85,
+      "costPerKg": 55.5,
+      "packagingCost": 3.5,
+      "roastOptions": [
+        "محمص مملح",
+        "محمص بدون ملح",
+        "مكسرات + شوكولاتة"
+      ],
+      "weights": [
+        {
+          "id": "u-1",
+          "label": "كوباية واحدة",
+          "unitsCount": 1,
+          "weightGrams": 1000,
+          "grams": 1000,
+          "price": 85
+        }
+      ],
+      "stockKg": 100,
+      "showOnline": true,
+      "showInPos": true,
+      "inStock": true,
+      "featured": false,
+      "rating": 4.9,
+      "reviewsCount": 14,
+      "reviews": [],
+      "pluCode": 2912,
+      "barcode": "290012"
+    },
+    {
+      "id": "prod-fridge-cold-drinks",
+      "slug": "fridge-cold-drinks-choco",
+      "name": "منتجات الثلاجة السريعة (عصائر ومياه وشوكولاتة باردة)",
+      "subtitle": "مشروبات باردة وشوكولاتات ثلاجة جاهزة مع طلبك",
+      "categoryId": "cat-quick-cups",
+      "subCategoryName": "منتجات الثلاجة السريعة",
+      "subCategory": "منتجات الثلاجة السريعة",
+      "description": "تشكيلة منتجات الثلاجة السريعة من العصائر والمياه المعدنية والشوكولاتات الباردة لتكمل طلبك من محمصة حفصة.",
+      "image": "/images/products/apricots-prunes.jpg",
+      "gallery": [],
+      "origin": "محمصة حفصة — بني مزار",
+      "nutritionalHighlight": "يُحضّر طازجاً عند الطلب في ركن حفصة أمام مسجد الزراعيين",
+      "caloriesPer100g": 110,
+      "proteinPer100g": "3 جم",
+      "sellingMode": "unit",
+      "unitLabel": "قطعة",
+      "unitPrice": 25,
+      "unitCost": 18,
+      "pricePerKg": 25,
+      "costPerKg": 18,
+      "packagingCost": 0,
+      "roastOptions": [
+        "مياه معدنية",
+        "عصير طبيعي بارد",
+        "شوكولاتة ثلاجة"
+      ],
+      "weights": [
+        {
+          "id": "u-1",
+          "label": "قطعة واحدة",
+          "unitsCount": 1,
+          "weightGrams": 1000,
+          "grams": 1000,
+          "price": 25
+        }
+      ],
+      "stockKg": 250,
+      "showOnline": true,
+      "showInPos": true,
+      "inStock": true,
+      "featured": false,
+      "rating": 4.9,
+      "reviewsCount": 14,
+      "reviews": [],
+      "pluCode": 2913,
+      "barcode": "290013"
+    },
+    {
+      "id": "prod-pistachio-aleppo",
+      "slug": "aleppo-iranian-pistachio",
+      "name": "فستق حلبي وإيراني محمص فاخر",
+      "subtitle": "نكهة غنية وقرمشة فاخرة — نخب أول فرز ممتاز",
+      "categoryId": "cat-luxury-nuts",
+      "subCategoryName": "فستق جامبو وحلبي",
+      "subCategory": "فستق جامبو وحلبي",
+      "description": "فستق حلبي وإيراني محمص طازجاً في محمصة حفصة بدرجة تحميص مثالية تبرز نكهته الطبيعية الغنية.",
+      "image": "/images/products/pistachio.jpg",
+      "gallery": [],
+      "badge": "فاخر",
+      "origin": "حلبي / إيراني نخب أول",
+      "nutritionalHighlight": "محمص يومياً طازجاً في محمصة حفصة ببني مزار",
+      "caloriesPer100g": 560,
+      "proteinPer100g": "18 جم",
+      "sellingMode": "weight",
+      "roastOptions": [
+        "محمص مملح",
+        "محمص بالليمون",
+        "محمص بدون ملح"
+      ],
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "weightGrams": 125,
+          "price": 110
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "weightGrams": 250,
+          "price": 220
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "weightGrams": 500,
+          "price": 440
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "weightGrams": 1000,
+          "price": 880,
+          "originalPrice": 968
+        }
+      ],
+      "pricePerKg": 880,
+      "costPerKg": 748,
+      "packagingCost": 8,
+      "stockKg": 25,
+      "showOnline": true,
+      "showInPos": true,
+      "isSuperVipItem": true,
+      "inStock": true,
+      "featured": false,
+      "rating": 4.9,
+      "reviewsCount": 18,
+      "reviews": [],
+      "pluCode": 29,
+      "barcode": "200029"
+    },
+    {
+      "id": "prod-almond-raw",
+      "slug": "raw-california-almond",
+      "name": "لوز أمريكي نيء صلب صحي (بدون ملح)",
+      "subtitle": "اختيار الرياضيين والدايت — لوز كاليفورنيا نيء طبيعي 100%",
+      "categoryId": "cat-luxury-nuts",
+      "subCategoryName": "لوز كاليفورنيا محمص ونيء",
+      "subCategory": "لوز كاليفورنيا محمص ونيء",
+      "description": "لوز كاليفورنيا نيء غير محمص وغني بفيتامين E والدهون الصحية المفيدة للقلب والتركيز.",
+      "image": "/images/products/almond.jpg",
+      "gallery": [],
+      "badge": "صحي بدون ملح",
+      "origin": "كاليفورنيا — أمريكي",
+      "nutritionalHighlight": "محمص يومياً طازجاً في محمصة حفصة ببني مزار",
+      "caloriesPer100g": 560,
+      "proteinPer100g": "18 جم",
+      "sellingMode": "weight",
+      "roastOptions": [
+        "نيء طبيعي"
+      ],
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "weightGrams": 125,
+          "price": 70
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "weightGrams": 250,
+          "price": 135
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "weightGrams": 500,
+          "price": 270
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "weightGrams": 1000,
+          "price": 540,
+          "originalPrice": 594
+        }
+      ],
+      "pricePerKg": 540,
+      "costPerKg": 448,
+      "packagingCost": 8,
+      "stockKg": 35,
+      "showOnline": true,
+      "showInPos": true,
+      "isSuperVipItem": true,
+      "inStock": true,
+      "featured": false,
+      "rating": 4.9,
+      "reviewsCount": 18,
+      "reviews": [],
+      "pluCode": 30,
+      "barcode": "200030"
+    },
+    {
+      "id": "prod-cashew-smoked",
+      "slug": "smoked-cheese-cashew",
+      "name": "كاجو جامبو محمص بالجبنة ومدخن",
+      "subtitle": "كاجو فيتنامي W180 بتتبيلة الجبنة والتدخين الخاصة بمحمصة حفصة",
+      "categoryId": "cat-luxury-nuts",
+      "subCategoryName": "كاجو ملكي ومدخن",
+      "subCategory": "كاجو ملكي ومدخن",
+      "description": "كاجو جامبو فاخر محمص ومغطى بتتبيلة الجبنة الشيدر أو نكهة التدخين الخشبي الفاخرة.",
+      "image": "/images/products/cashew.jpg",
+      "gallery": [],
+      "badge": "تتبيلة خاصة",
+      "origin": "فيتنامي W180",
+      "nutritionalHighlight": "محمص يومياً طازجاً في محمصة حفصة ببني مزار",
+      "caloriesPer100g": 560,
+      "proteinPer100g": "18 جم",
+      "sellingMode": "weight",
+      "roastOptions": [
+        "مدخن بالتوابل",
+        "مدخن بالجبنة"
+      ],
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "weightGrams": 125,
+          "price": 90
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "weightGrams": 250,
+          "price": 185
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "weightGrams": 500,
+          "price": 365
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "weightGrams": 1000,
+          "price": 730,
+          "originalPrice": 803
+        }
+      ],
+      "pricePerKg": 730,
+      "costPerKg": 608,
+      "packagingCost": 8,
+      "stockKg": 30,
+      "showOnline": true,
+      "showInPos": true,
+      "isSuperVipItem": true,
+      "inStock": true,
+      "featured": false,
+      "rating": 4.9,
+      "reviewsCount": 18,
+      "reviews": [],
+      "pluCode": 31,
+      "barcode": "200031"
+    },
+    {
+      "id": "prod-macadamia-1",
+      "slug": "roasted-macadamia-nuts",
+      "name": "مكاديميا ملكية محمصة بالملح",
+      "subtitle": "أرقى أنواع المكسرات بقوام زبدي فاخر ونكهة استثنائية",
+      "categoryId": "cat-luxury-nuts",
+      "subCategoryName": "بيكان ومكاديميا",
+      "subCategory": "بيكان ومكاديميا",
+      "description": "مكاديميا أسترالية فاخرة محمصة بملح خفيف، غنية بالأوميجا والزيوت الطبيعية الصحية.",
+      "image": "/images/products/walnut.jpg",
+      "gallery": [],
+      "badge": "ملكي VIP",
+      "origin": "أسترالي نخب أول",
+      "nutritionalHighlight": "محمص يومياً طازجاً في محمصة حفصة ببني مزار",
+      "caloriesPer100g": 560,
+      "proteinPer100g": "18 جم",
+      "sellingMode": "weight",
+      "roastOptions": [
+        "محمص مملح",
+        "محمص بدون ملح",
+        "بقشرها"
+      ],
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "weightGrams": 125,
+          "price": 115
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "weightGrams": 250,
+          "price": 230
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "weightGrams": 500,
+          "price": 460
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "weightGrams": 1000,
+          "price": 920,
+          "originalPrice": 1012
+        }
+      ],
+      "pricePerKg": 920,
+      "costPerKg": 768,
+      "packagingCost": 8,
+      "stockKg": 15,
+      "showOnline": true,
+      "showInPos": true,
+      "isSuperVipItem": true,
+      "inStock": true,
+      "featured": false,
+      "rating": 4.9,
+      "reviewsCount": 18,
+      "reviews": [],
+      "pluCode": 32,
+      "barcode": "200032"
+    },
+    {
+      "id": "prod-pumpkin-peeled-1",
+      "slug": "peeled-green-pumpkin-seeds",
+      "name": "لب يقطين أخضر مقشر (بذر قرع صحي)",
+      "subtitle": "مقشر وجاهز للأكل أو السلطات — غني بالزنك والماغنسيوم",
+      "categoryId": "cat-snacks",
+      "subCategoryName": "لب قرع ويقطين مقشر",
+      "subCategory": "لب قرع ويقطين مقشر",
+      "description": "بذر يقطين أخضر مقشر طازج، خيار ممتاز للدايت والرياضيين والتسلية الصحية اليومية.",
+      "image": "/images/products/savory-snacks.jpg",
+      "gallery": [],
+      "badge": "صحي",
+      "origin": "نخب أول",
+      "nutritionalHighlight": "محمص يومياً طازجاً في محمصة حفصة ببني مزار",
+      "caloriesPer100g": 560,
+      "proteinPer100g": "18 جم",
+      "sellingMode": "weight",
+      "roastOptions": [
+        "محمص بدون ملح",
+        "محمص مملح",
+        "نيء طبيعي"
+      ],
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "weightGrams": 125,
+          "price": 50
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "weightGrams": 250,
+          "price": 100
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "weightGrams": 500,
+          "price": 200
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "weightGrams": 1000,
+          "price": 400,
+          "originalPrice": 440
+        }
+      ],
+      "pricePerKg": 400,
+      "costPerKg": 316,
+      "packagingCost": 6,
+      "stockKg": 30,
+      "showOnline": true,
+      "showInPos": true,
+      "isSuperVipItem": false,
+      "inStock": true,
+      "featured": false,
+      "rating": 4.9,
+      "reviewsCount": 18,
+      "reviews": [],
+      "pluCode": 33,
+      "barcode": "200033"
+    },
+    {
+      "id": "prod-sunflower-a1",
+      "slug": "sunflower-seeds-a1",
+      "name": "لب سوري (عباد) محمص A1 طازج",
+      "subtitle": "حبة طويلة ممتلئة وتحميص ساخن يومياً بقرمشة مثالية",
+      "categoryId": "cat-snacks",
+      "subCategoryName": "لب سوري محمص A1",
+      "subCategory": "لب سوري محمص A1",
+      "description": "لب سوري عباد درجة أولى A1 محمص يومياً بدرجة ملح مضبوطة لتسالي العائلة والسهرات.",
+      "image": "/images/products/savory-snacks.jpg",
+      "gallery": [],
+      "badge": "الأكثر مبيعاً",
+      "origin": "سوري A1",
+      "nutritionalHighlight": "محمص يومياً طازجاً في محمصة حفصة ببني مزار",
+      "caloriesPer100g": 560,
+      "proteinPer100g": "18 جم",
+      "sellingMode": "weight",
+      "roastOptions": [
+        "محمص مملح",
+        "محمص بدون ملح",
+        "ملح خفيف"
+      ],
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "weightGrams": 125,
+          "price": 20
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "weightGrams": 250,
+          "price": 40
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "weightGrams": 500,
+          "price": 80
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "weightGrams": 1000,
+          "price": 160,
+          "originalPrice": 176
+        }
+      ],
+      "pricePerKg": 160,
+      "costPerKg": 116,
+      "packagingCost": 6,
+      "stockKg": 120,
+      "showOnline": true,
+      "showInPos": true,
+      "isSuperVipItem": false,
+      "inStock": true,
+      "featured": true,
+      "rating": 4.9,
+      "reviewsCount": 18,
+      "reviews": [],
+      "pluCode": 34,
+      "barcode": "200034"
+    },
+    {
+      "id": "prod-peanuts-shell-1",
+      "slug": "ismailia-peanuts-in-shell",
+      "name": "فول سوداني إسماعيلاوي بقشره محمص",
+      "subtitle": "تحميص ساخن يومياً بطعم إسماعيلاوي أصلي مقرمش",
+      "categoryId": "cat-snacks",
+      "subCategoryName": "فول سوداني وفلسطيني",
+      "subCategory": "فول سوداني وفلسطيني",
+      "description": "فول سوداني إسماعيلاوي فاخر بقشره محمص طازجاً في محمصة حفصة ببني مزار.",
+      "image": "/images/products/savory-snacks.jpg",
+      "gallery": [],
+      "origin": "إسماعيلاوي فرز أول",
+      "nutritionalHighlight": "محمص يومياً طازجاً في محمصة حفصة ببني مزار",
+      "caloriesPer100g": 560,
+      "proteinPer100g": "18 جم",
+      "sellingMode": "weight",
+      "roastOptions": [
+        "محمص سادة",
+        "محمص مملح"
+      ],
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "weightGrams": 125,
+          "price": 15
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "weightGrams": 250,
+          "price": 35
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "weightGrams": 500,
+          "price": 65
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "weightGrams": 1000,
+          "price": 130,
+          "originalPrice": 143
+        }
+      ],
+      "pricePerKg": 130,
+      "costPerKg": 90,
+      "packagingCost": 5,
+      "stockKg": 90,
+      "showOnline": true,
+      "showInPos": true,
+      "isSuperVipItem": false,
+      "inStock": true,
+      "featured": false,
+      "rating": 4.9,
+      "reviewsCount": 18,
+      "reviews": [],
+      "pluCode": 35,
+      "barcode": "200035"
+    },
+    {
+      "id": "prod-chinese-snacks-1",
+      "slug": "chinese-malaysian-mini-rice-snacks",
+      "name": "مقرمشات صيني وماليزي وميني رايس مشكلة",
+      "subtitle": "تشكيلة مقرمشات آسيوية ملونة ومقرمشة بطعم لذيذ للسهرات",
+      "categoryId": "cat-snacks",
+      "subCategoryName": "مقرمشات ومقرميل",
+      "subCategory": "مقرمشات ومقرميل",
+      "description": "خليط مقرمشات صيني وماليزي وميني رايس طازجة ومقرمشة بتوابل خفيفة تناسب كل الأعمار.",
+      "image": "/images/products/savory-snacks.jpg",
+      "gallery": [],
+      "origin": "مستورد نخب أول",
+      "nutritionalHighlight": "محمص يومياً طازجاً في محمصة حفصة ببني مزار",
+      "caloriesPer100g": 560,
+      "proteinPer100g": "18 جم",
+      "sellingMode": "weight",
+      "roastOptions": [
+        "تشكيلة فاخرة",
+        "باربيكيو وجبنة",
+        "شطة وليمون"
+      ],
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "weightGrams": 125,
+          "price": 30
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "weightGrams": 250,
+          "price": 60
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "weightGrams": 500,
+          "price": 120
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "weightGrams": 1000,
+          "price": 240,
+          "originalPrice": 264
+        }
+      ],
+      "pricePerKg": 240,
+      "costPerKg": 166,
+      "packagingCost": 6,
+      "stockKg": 70,
+      "showOnline": true,
+      "showInPos": true,
+      "isSuperVipItem": false,
+      "inStock": true,
+      "featured": false,
+      "rating": 4.9,
+      "reviewsCount": 18,
+      "reviews": [],
+      "pluCode": 36,
+      "barcode": "200036"
+    },
+    {
+      "id": "prod-caramelized-nuts-1",
+      "slug": "caramelized-sesame-honey-nuts",
+      "name": "المقرميل: سوداني ولوز وكاجو مكرمل بالسمسم والعسل",
+      "subtitle": "قرمشة الكراميل الذهبي مع السمسم المحمص وعسل النحل الطبيعي",
+      "categoryId": "cat-snacks",
+      "subCategoryName": "مقرمشات ومقرميل",
+      "subCategory": "مقرمشات ومقرميل",
+      "description": "سوداني ولوز وكاجو مكرمل بالسمسم والعسل، تحلية مقرمشة مثالية بجانب القهوة وفي سهرات الخميس.",
+      "image": "/images/products/energy-mix.jpg",
+      "gallery": [],
+      "badge": "محمص يومياً",
+      "origin": "تحضير محمصة حفصة",
+      "nutritionalHighlight": "محمص يومياً طازجاً في محمصة حفصة ببني مزار",
+      "caloriesPer100g": 560,
+      "proteinPer100g": "18 جم",
+      "sellingMode": "weight",
+      "roastOptions": [
+        "مكرمل بالسمسم والعسل",
+        "سوداني مكرمل فقط"
+      ],
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "weightGrams": 125,
+          "price": 30
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "weightGrams": 250,
+          "price": 60
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "weightGrams": 500,
+          "price": 120
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "weightGrams": 1000,
+          "price": 240,
+          "originalPrice": 264
+        }
+      ],
+      "pricePerKg": 240,
+      "costPerKg": 158,
+      "packagingCost": 8,
+      "stockKg": 60,
+      "showOnline": true,
+      "showInPos": true,
+      "isSuperVipItem": false,
+      "inStock": true,
+      "featured": false,
+      "rating": 4.9,
+      "reviewsCount": 18,
+      "reviews": [],
+      "pluCode": 37,
+      "barcode": "200037"
+    },
+    {
+      "id": "prod-coffee-double-vip",
+      "slug": "hafsa-coffee-double-vip",
+      "name": "بن حفصة محوج سوبر دوبل VIP",
+      "subtitle": "تحويجة ملكية غنية بالحبهان الجامبو والمستكة وزر الورد • طحن فوري",
+      "categoryId": "cat-coffee-espresso",
+      "subCategoryName": "بن محوج سوبر دوبل VIP",
+      "subCategory": "بن محوج سوبر دوبل VIP",
+      "description": "أعلى درجات البن المحوج في محمصة حفصة — حبوب برازيلي وكولومبي منتقاة بتحويجة ملكية دبل حبهان ومستكة تُطحن أمام عينك.",
+      "image": "/images/products/hazelnut.jpg",
+      "gallery": [],
+      "badge": "محوج بحبهان جامبو",
+      "origin": "توليفة حفصة الملكية",
+      "nutritionalHighlight": "محمص يومياً طازجاً في محمصة حفصة ببني مزار",
+      "caloriesPer100g": 560,
+      "proteinPer100g": "18 جم",
+      "sellingMode": "weight",
+      "roastOptions": [
+        "تحميص وسط محوج",
+        "تحميص فاتح أشقر",
+        "تحميص غامق محوج"
+      ],
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "weightGrams": 125,
+          "price": 80
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "weightGrams": 250,
+          "price": 155
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "weightGrams": 500,
+          "price": 310
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "weightGrams": 1000,
+          "price": 620,
+          "originalPrice": 682
+        }
+      ],
+      "pricePerKg": 620,
+      "costPerKg": 442,
+      "packagingCost": 12,
+      "stockKg": 45,
+      "showOnline": true,
+      "showInPos": true,
+      "isSuperVipItem": false,
+      "inStock": true,
+      "featured": true,
+      "rating": 4.9,
+      "reviewsCount": 18,
+      "reviews": [],
+      "pluCode": 38,
+      "barcode": "200038"
+    },
+    {
+      "id": "prod-coffee-french-choco",
+      "slug": "hafsa-french-hazelnut-choco-coffee",
+      "name": "بن فرنساوي بالبندق والشوكولاتة",
+      "subtitle": "قوام كريمي ناعم بقطع البندق المحمص ونكهة الشوكولاتة الفاخرة",
+      "categoryId": "cat-coffee-espresso",
+      "subCategoryName": "بن فرنساوي وبندق",
+      "subCategory": "بن فرنساوي وبندق",
+      "description": "خلطة البن الفرنساوي الخاصة بمحمصة حفصة، جاهزة للتحضير بالحليب أو الماء برغوة غنية ورائحة لا تُقاوم.",
+      "image": "/images/products/hazelnut.jpg",
+      "gallery": [],
+      "origin": "توليفة محمصة حفصة",
+      "nutritionalHighlight": "محمص يومياً طازجاً في محمصة حفصة ببني مزار",
+      "caloriesPer100g": 560,
+      "proteinPer100g": "18 جم",
+      "sellingMode": "weight",
+      "roastOptions": [
+        "بندق محمص",
+        "فرنساوي سادة",
+        "شوكولاتة بلجيكي"
+      ],
+      "weights": [
+        {
+          "id": "w-125",
+          "label": "ثمن 125 جم",
+          "weightGrams": 125,
+          "price": 65
+        },
+        {
+          "id": "w-250",
+          "label": "ربع 250 جم",
+          "weightGrams": 250,
+          "price": 130
+        },
+        {
+          "id": "w-500",
+          "label": "نصف 500 جم",
+          "weightGrams": 500,
+          "price": 260
+        },
+        {
+          "id": "w-1000",
+          "label": "كيلو 1000 جم",
+          "weightGrams": 1000,
+          "price": 520,
+          "originalPrice": 572
+        }
+      ],
+      "pricePerKg": 520,
+      "costPerKg": 372,
+      "packagingCost": 12,
+      "stockKg": 40,
+      "showOnline": true,
+      "showInPos": true,
+      "isSuperVipItem": false,
+      "inStock": true,
+      "featured": false,
+      "rating": 4.9,
+      "reviewsCount": 18,
+      "reviews": [],
+      "pluCode": 39,
+      "barcode": "200039"
+    },
+    {
+      "id": "prod-spice-jar-unit",
+      "slug": "attar-stand-pure-spices-jar",
+      "name": "برطمان توابل استاند العطار النقية (فلفل / كمون / بهارات / حبهان)",
+      "subtitle": "برطمان محكم الإغلاق من توابل محمصة حفصة المطحونة طازجة بدون إضافات",
+      "categoryId": "cat-honey-spices",
+      "subCategoryName": "استاند العطار النقي",
+      "subCategory": "استاند العطار النقي",
+      "description": "برطمانات توابل نقية 100% من استاند العطار بمحمصة حفصة — فلفل أسود، كمون بلدي، سبع بهارات، أو حبهان فاخر.",
+      "image": "/images/products/stuffed-dates.jpg",
+      "gallery": [],
+      "badge": "نقي 100%",
+      "origin": "محمصة حفصة — بني مزار",
+      "nutritionalHighlight": "يُحضّر طازجاً عند الطلب في ركن حفصة أمام مسجد الزراعيين",
+      "caloriesPer100g": 110,
+      "proteinPer100g": "3 جم",
+      "sellingMode": "unit",
+      "unitLabel": "برطمان",
+      "unitPrice": 80,
+      "unitCost": 52,
+      "pricePerKg": 80,
+      "costPerKg": 52,
+      "packagingCost": 7,
+      "roastOptions": [
+        "فلفل أسود مطحون",
+        "كمون بلدي",
+        "سبع بهارات حفصة",
+        "حبهان جامبو"
+      ],
+      "weights": [
+        {
+          "id": "u-1",
+          "label": "برطمان واحدة",
+          "unitsCount": 1,
+          "weightGrams": 1000,
+          "grams": 1000,
+          "price": 80
+        }
+      ],
+      "stockKg": 120,
+      "showOnline": true,
+      "showInPos": true,
+      "inStock": true,
+      "featured": false,
+      "rating": 4.9,
+      "reviewsCount": 14,
+      "reviews": [],
+      "pluCode": 2914,
+      "barcode": "290014"
+    },
+    {
+      "id": "prod-box-occasions-gift",
+      "slug": "hafsa-occasions-gift-box",
+      "name": "بوكس هدايا المناسبات الفاخر (ابعت هديتك في نفس اليوم)",
+      "subtitle": "بوكس مكسرات VIP + عسل بالمكسرات + شوكولاتة وكاندي بتغليف فاخر وكارت إهداء",
+      "categoryId": "cat-mixed-boxes",
+      "subCategoryName": "بوكس هدايا المناسبات",
+      "subCategory": "بوكس هدايا المناسبات",
+      "description": "هدية متكاملة للزيارات والمناسبات والمغتربين ببني مزار: تغليف فاخر بشريط ذهبي مع كارت إهداء مكتوب باسم المرسل وتوصيل مفاجأة للباب في نفس اليوم.",
+      "image": "/images/products/royal-mix.jpg",
+      "gallery": [
+        "/images/products/pistachio.jpg",
+        "/images/products/stuffed-dates.jpg"
+      ],
+      "badge": "هدايا المناسبات",
+      "origin": "محمصة حفصة — بني مزار",
+      "nutritionalHighlight": "يُحضّر طازجاً عند الطلب في ركن حفصة أمام مسجد الزراعيين",
+      "caloriesPer100g": 110,
+      "proteinPer100g": "3 جم",
+      "sellingMode": "unit",
+      "unitLabel": "بوكس هدية",
+      "unitPrice": 390,
+      "unitCost": 260,
+      "pricePerKg": 390,
+      "costPerKg": 260,
+      "packagingCost": 20,
+      "roastOptions": [
+        "تغليف ذهبي + كارت إهداء",
+        "تغليف مناسبات خاص"
+      ],
+      "weights": [
+        {
+          "id": "u-1",
+          "label": "بوكس هدية واحدة",
+          "unitsCount": 1,
+          "weightGrams": 1000,
+          "grams": 1000,
+          "price": 390
+        }
+      ],
+      "stockKg": 40,
+      "showOnline": true,
+      "showInPos": true,
+      "inStock": true,
+      "featured": true,
+      "rating": 4.9,
+      "reviewsCount": 14,
+      "reviews": [],
+      "pluCode": 2915,
+      "barcode": "290015"
+    }
+  ],
+  "settings": {
+    "address": "مركز بني مزار — أمام مسجد الزراعيين مباشرة",
+    "tagline": "أصل التحميصة ومزاج القهوة الفاخر — بني مزار (أمام مسجد الزراعيين)",
+    "storeName": "محمصة حفصة للبن والمكسرات",
+    "metaPixelId": "",
+    "pageContent": {
+      "showAnnouncementBar": true,
+      "headerSubtitle": "بني مزار — أمام مسجد الزراعيين • تحميص يومي طازج",
+      "logoEmoji": "",
+      "heroBadge": "محمصة حفصة — بني مزار • تحميص وتعبئة يومية 100%",
+      "heroTitlePrefix": "أصل التحميصة ومزاج القهوة الفاخر..",
+      "heroTitleHighlight": "الآن في قلب بني مزار",
+      "heroTitleSuffix": "أمام مسجد الزراعيين",
+      "heroDescription": "24 عين مكسرات وتسالي محمصة يومياً، 4 صوامع بن طازج وركن قهوة وإسبريسو، بوكسات السهرة المقسمة، وتوصيل فوري 30 دقيقة للبندر ودورتين يومياً للقرى.",
+      "heroImage": "/images/products/royal-mix.jpg",
+      "heroPrimaryCtaText": "صمّم بوكس السهرة (125 ج)",
+      "heroSecondaryCtaText": "اعمل توليفة قهوتك",
+      "heroBoxesCtaText": "تصفح المتجر",
+      "heroFeaturedProductId": "prod-box-roqan-125",
+      "heroFeaturedBadge": "الأكثر طلباً في بني مزار",
+      "heroFeaturedTitle": "بوكس لمة الخميس المقسم (4 خانات)",
+      "heroFeaturedSubtitle": "4 خانات مختارة بعناية — 125 ج.م",
+      "heroStats": [
+        {
+          "label": "توصيل بندر بني مزار",
+          "value": "30 دقيقة"
+        },
+        {
+          "label": "محفظة حفصة VIP",
+          "value": "5% كاش باك"
+        },
+        {
+          "label": "تحميص وطحن يومي",
+          "value": "طازج 100%"
+        }
+      ],
+      "showCustomBoxBanner": true,
+      "customBoxBannerBadge": "استوديو حفصة للبوكسات",
+      "customBoxBannerTitle": "صمّم بوكس السهرة واللمة على ذوقك",
+      "customBoxBannerDesc": "اختر حجم البوكس (4 أو 6 خانات) واملأ كل خانة بأصنافك المفضلة من بنك المكسرات والتسالي والكاندي.",
+      "customBoxBannerPills": [
+        "بوكس لمة الخميس 4 خانات (125 ج.م)",
+        "بوكس العيلة 6 خانات (250 ج.م)",
+        "بوكس هدايا VIP (450 ج.م)"
+      ],
+      "customBoxBannerCta": "ابدأ تصميم بوكسك الآن",
+      "showMixedBoxesSection": true,
+      "mixedBoxesBadge": "الأكثر مبيعاً في بني مزار",
+      "mixedBoxesTitle": "بوكسات السهرة واللمة المقسمة",
+      "mixedBoxesDesc": "",
+      "mixedBoxesGiftNote": "5% كاش باك فوري في محفظة حفصة VIP للفواتير فوق 150 ج.م",
+      "showCouponsSection": true,
+      "couponsBannerBadge": "عروض حفصة الخاطفة",
+      "couponsBannerTitle": "باقات التوفير وعروض الافتتاح",
+      "showTrustSection": true,
+      "trustSectionSubheading": "لماذا محمصة حفصة ببني مزار؟",
+      "trustSectionTitle": "حفصة.. طزاجة تُرى ورائحة لا تُنسى",
+      "trustFeatures": [
+        {
+          "id": "tf-1",
+          "icon": "🔥",
+          "title": "تحميص يومي طازج",
+          "description": "تعبئة حرارية تحفظ القرمشة والنكهة."
+        },
+        {
+          "id": "tf-2",
+          "icon": "⚡",
+          "title": "توصيل سريع 30 دقيقة",
+          "description": "تغطية فورية للبندر ودورتان يومياً للقرى."
+        },
+        {
+          "id": "tf-3",
+          "icon": "👑",
+          "title": "كاش باك 5% VIP",
+          "description": "رصيد نقدي فوري برقم موبايلك."
+        },
+        {
+          "id": "tf-4",
+          "icon": "⚖️",
+          "title": "ميزان إلكتروني دقيق",
+          "description": "نفس دقة وسعر المحل بالجرام."
+        }
+      ],
+      "customBoxPageBadge": "بوكسات السهرة",
+      "customBoxPageTitle": "صمّم بوكس السهرة بنفسك",
+      "customBoxPageDesc": "",
+      "trackOrderPageBadge": "🛵 متابعة الطلب",
+      "trackOrderPageTitle": "تتبع حالة طلبك",
+      "trackOrderPageDesc": "",
+      "checkoutPageTitle": "إتمام الطلب السريع",
+      "checkoutPageDesc": "",
+      "enableCod": true,
+      "enableInstapay": true,
+      "enableVodafoneCash": true,
+      "enableVipWallet": true,
+      "footerDescription": "محمصة حفصة للبن والمكسرات — مركز بني مزار (أمام مسجد الزراعيين مباشرة). مكسرات فاخرة، بن طازج، ركن قهوة وإسبريسو، وبوكسات السهرة.",
+      "footerFeatures": [
+        {
+          "id": "ff-1",
+          "icon": "Sparkles",
+          "title": "طحن وتحميص بالطلب",
+          "description": "بن طازج ومكسرات محمصة يومياً."
+        },
+        {
+          "id": "ff-2",
+          "icon": "ShieldCheck",
+          "title": "محفظة ولاء VIP",
+          "description": "5% كاش باك فوري برقم موبايلك."
+        },
+        {
+          "id": "ff-3",
+          "icon": "Truck",
+          "title": "توصيل سريع",
+          "description": "تغطية سريعة للمدينة والضواحي والمحافظات."
+        }
+      ],
+      "showFloatingWhatsapp": true,
+      "floatingWhatsappText": "اطلب عبر واتساب حفصة",
+      "floatingWhatsappMessage": "مرحباً محمصة حفصة (بني مزار)، أرغب في الطلب السريع أو الاستفسار عن الأصناف.",
+      "flashDealsTitle": "عروض حفصة الخاطفة وباقات التوفير",
+      "flashDealsSubtitle": "باقات مدروسة بعناية لسهرات بني مزار والزيارات مع كاش باك 5%",
+      "coffeeBlenderBannerTitle": "صمّم بوكس السهرة أو ركّب توليفة قهوتك بالجرام من صوامع حفصة",
+      "coffeeBlenderBannerDescription": "اختار نوع البن ودرجة التحميص والتحويجة والطحنة ونطحنها لك طازة قدام عينك — مع شحن مجاني للطلبات فوق 300 ج.م."
+    },
+    "themeConfig": {
+      "themeId": "royal_roastery",
+      "heroLayout": "split",
+      "navbarStyle": "classic",
+      "cardStyle": "classic",
+      "borderRadius": "rounded",
+      "showThemeSwitcher": false
+    },
+    "supportPhone": "01100699524",
+    "workingHours": "يومياً من 9 صباحاً حتى 2 بعد منتصف الليل (والموقع يعمل 24 ساعة)",
+    "adminPassword": "Hafsa@Admin2026",
+    "adminUsername": "admin_hafsa",
+    "googleMapsUrl": "https://maps.google.com/?q=28.5036,30.8004",
+    "tiktokPixelId": "",
+    "whatsappNumber": "201100699524",
+    "cashierPassword": "Cash#Pos2026",
+    "cashierUsername": "cashier_pos",
+    "instapayAddress": "hafsa.roastery@instapay",
+    "announcementText": "محمصة حفصة ببني مزار (أمام مسجد الزراعيين) • توصيل فوري 30 دقيقة للبندر ودورتين للقرى • 5% كاش باك VIP",
+    "supplierPassword": "Sup#Arafat2026",
+    "supplierUsername": "supplier_arafat",
+    "accountantPassword": "Acc#Fin2026",
+    "accountantUsername": "accountant_fin",
+    "vipCashbackPercent": 5,
+    "vodafoneCashNumber": "01100699524",
+    "freeShippingThreshold": 300,
+    "villageMinOrderAmount": 200,
+    "vipMinOrderForCashback": 150,
+    "riderUsername": "rider_delivery",
+    "riderPassword": "Rider#Hafsa2026",
+    "cityName": "بني مزار",
+    "currencySymbol": "ج.م",
+    "orderPrefix": "HFS",
+    "featureFlags": {
+      "enableCoffeeBlender": true,
+      "blenderModuleLabel": "اعمل توليفة قهوتك",
+      "enableCustomBoxes": true,
+      "boxesModuleLabel": "صمّم بوكسك",
+      "enableWeightScale": true,
+      "enableVillageBatches": true,
+      "enableVipWallet": true
+    },
+    "bandarZones": [
+      "محيط مسجد الزراعيين والشارع الرئيسي",
+      "شرق المحطة وطريق البحر",
+      "شارع بورسعيد وشارع الإعدادية بنات",
+      "شارع صيدلية مكة وموقف صندفا",
+      "شارع الجمهورية ووسط البندر",
+      "غرب المحطة وحي السلام والتقسيم الجديد"
+    ],
+    "villageZones": [
+      "القيس",
+      "صندفا",
+      "بني علي",
+      "شلقام",
+      "أبشاق",
+      "طمبو",
+      "الجندية",
+      "الحسينية وقرى شرق وغرب المركز"
+    ],
+    "deliveryBatches": [
+      "دورة الظهيرة (2:00 ظهراً) — للحجز قبل 1:30 ظهراً",
+      "دورة المساء (8:00 مساءً) — للحجز قبل 7:30 مساءً"
+    ],
+    "enableTax": false,
+    "taxRatePercent": 14,
+    "taxPricingMode": "inclusive",
+    "enableCreditSales": false,
+    "creditSalesRequireApproval": true,
+    "posRegisters": [
+      {
+        "id": "reg-1",
+        "name": "ماكينة كاشير 1 (الرئيسية)",
+        "active": true
+      },
+      {
+        "id": "reg-2",
+        "name": "ماكينة كاشير 2 (الفرعية)",
+        "active": true
+      }
+    ],
+    "minOrderVillages": 200
+  },
+  "posShifts": [],
+  "categories": [
+    {
+      "id": "cat-luxury-nuts",
+      "icon": "Nut",
+      "name": "بنك المكسرات الفاخرة",
+      "slug": "luxury-nuts",
+      "image": "/images/products/pistachio.jpg",
+      "description": "فستق أمريكي وحلبي، كاجو W180 ومدخن، لوز كاليفورنيا، عين جمل تشيلي، بندق تركي، بيكان ومكاديميا، وميكس حفصة المشكل",
+      "subCategories": [
+        "فستق جامبو وحلبي",
+        "كاجو ملكي ومدخن",
+        "لوز كاليفورنيا محمص ونيء",
+        "عين جمل تشيلي",
+        "بندق تركي",
+        "بيكان ومكاديميا",
+        "ميكسات حفصة VIP"
+      ]
+    },
+    {
+      "id": "cat-coffee-bar",
+      "icon": "Coffee",
+      "name": "ركن القهوة والبار",
+      "slug": "coffee-bar",
+      "image": "/images/branch/store-interior.jpg",
+      "description": "قهوة تركي طازة ع الرمل، إسبريسو إيطالي، فرنساوي وبندق، لاتيه وكابتشينو، وآيس سبانيش لاتيه للتوصيل الفوري في بندر بني مزار",
+      "subCategories": [
+        "قهوة تركي وفرنساوي",
+        "إسبريسو وأمريكانو",
+        "لاتيه وكابتشينو وموكا",
+        "آيس كوفي وبارد"
+      ]
+    },
+    {
+      "id": "cat-snacks",
+      "icon": "Sparkles",
+      "name": "محمصة اللب والتسالي",
+      "slug": "snacks",
+      "image": "/images/products/savory-snacks.jpg",
+      "description": "لب سوبر، لب قرع جامبو، لب يقطين مقشر، لب سوري A1، لب خشب، فول سوداني وفلسطيني، كريك كراك، ذرة إسباني، ومقرميل",
+      "subCategories": [
+        "لب سوبر وخشب",
+        "لب قرع ويقطين مقشر",
+        "لب سوري محمص A1",
+        "فول سوداني وفلسطيني",
+        "كريك كراك وذرة إسباني",
+        "مقرمشات ومقرميل"
+      ]
+    },
+    {
+      "id": "cat-coffee-espresso",
+      "icon": "Coffee",
+      "name": "صوامع البن والمحمصة",
+      "slug": "coffee-espresso",
+      "image": "/images/products/hazelnut.jpg",
+      "description": "بن حفصة التركي السادة والمحوج المخصوص وسوبر دوبل VIP، بن فرنساوي بالبندق والشوكولاتة، وإسبريسو إيطالي يُطحن أمام عينك",
+      "subCategories": [
+        "بن تركي سادة",
+        "بن حفصة المحوج المخصوص",
+        "بن محوج سوبر دوبل VIP",
+        "بن فرنساوي وبندق",
+        "بن إسبريسو إيطالي وقهوة عربية"
+      ]
+    },
+    {
+      "id": "cat-quick-cups",
+      "icon": "Sparkles",
+      "name": "كوبايات التسلية السريعة",
+      "slug": "quick-cups",
+      "image": "/images/products/energy-mix.jpg",
+      "description": "كوبايات قبة شفافة جاهزة للماشية (كاندي ومكسرات بـ 35 ج و50 ج، وكوباية VIP جامبو بـ 85 ج) ومنتجات الثلاجة السريعة",
+      "subCategories": [
+        "كوبايات التسلية السريعة",
+        "كوباية VIP جامبو",
+        "منتجات الثلاجة السريعة"
+      ]
+    },
+    {
+      "id": "cat-choco-candy",
+      "icon": "Candy",
+      "name": "استاند الشوكولاتات والكاندي",
+      "slug": "choco-candy",
+      "image": "/images/products/hazelnut.jpg",
+      "description": "كاندي جيلي تركي وإسباني أصلي بالوزن، شوكولاتات مستوردة فاخرة، ودرابيه شوكولاتة باللوز والبندق المكرمل",
+      "subCategories": [
+        "كاندي جيلي تركي وإسباني",
+        "شوكولاتات مستوردة",
+        "درابيه بالمكسرات"
+      ]
+    },
+    {
+      "id": "cat-honey-spices",
+      "icon": "Droplets",
+      "name": "خلية العسل والتمور والعطار",
+      "slug": "honey-spices",
+      "image": "/images/products/stuffed-dates.jpg",
+      "description": "عسل نحل طبيعي (سدر، موالح، بالمكسرات الملكية)، تمور مجدولة محشوة وفواكه مجففة، وبرطمانات توابل استاند العطار النقية",
+      "subCategories": [
+        "عسل نحل بالمكسرات",
+        "عسل سدر وموالح",
+        "تمور وفواكه مجففة",
+        "استاند العطار النقي"
+      ]
+    },
+    {
+      "id": "cat-mixed-boxes",
+      "icon": "Gift",
+      "name": "بوكسات السهرة والهدايا",
+      "slug": "mixed-boxes",
+      "image": "/images/products/royal-mix.jpg",
+      "description": "بوكس لمة الخميس الاقتصادي 4 خانات (125 ج)، بوكس العيلة 6 خانات (250 ج)، بوكس هدايا المناسبات، وبوكس VIP الملكي (450 ج)",
+      "subCategories": [
+        "بوكس لمة الخميس 125 ج",
+        "بوكس العيلة 250 ج",
+        "بوكس هدايا المناسبات",
+        "بوكس VIP الملكي 450 ج"
+      ]
+    }
+  ],
+  "promotions": [
+    {
+      "id": "promo-opening-coffee-1",
+      "badge": "عرض صباحك قهوة",
+      "image": "/images/branch/store-interior.jpg",
+      "items": [
+        {
+          "quantity": 1,
+          "unitCost": 18,
+          "productId": "prod-bar-latte-cappuccino",
+          "productName": "كابتشينو / لاتيه طازج من البار",
+          "weightGrams": 1000,
+          "weightLabel": "كوب",
+          "unitRetailPrice": 45
+        },
+        {
+          "quantity": 1,
+          "unitCost": 20,
+          "productId": "prod-cup-candy-35",
+          "productName": "كوباية القبة السريعة — كاندي ومقرمشات",
+          "weightGrams": 1000,
+          "weightLabel": "كوباية",
+          "unitRetailPrice": 35
+        }
+      ],
+      "title": "باقة صباحك قهوة (لاتيه أو إسبريسو + كوباية تسلية)",
+      "active": true,
+      "endsAt": "2026-12-31T21:59:59.000Z",
+      "subtitle": "كوب قهوة طازج من بار حفصة + كوباية كاندي ومقرمشات لتنشيط صباحك في بني مزار",
+      "isVipOnly": false,
+      "promoPrice": 65,
+      "isProfitSafe": true,
+      "netProfitEgp": 22,
+      "totalRawCost": 38,
+      "packagingCost": 5,
+      "originalRetailPrice": 80,
+      "profitMarginPercent": 33.8,
+      "minSafeMarginPercent": 18
+    },
+    {
+      "id": "promo-thursday-roqan-1",
+      "badge": "الأكثر طلباً لسهرات الخميس",
+      "image": "/images/products/royal-mix.jpg",
+      "items": [
+        {
+          "quantity": 1,
+          "unitCost": 83,
+          "productId": "prod-box-roqan-125",
+          "productName": "بوكس لمة الخميس المقسم (4 خانات)",
+          "weightGrams": 340,
+          "weightLabel": "بوكس 4 خانات",
+          "unitRetailPrice": 125
+        },
+        {
+          "quantity": 1,
+          "unitCost": 51,
+          "productId": "prod-hafsa-turkish-coffee-1",
+          "productName": "بن حفصة التركي بالتحويجة السرية",
+          "weightGrams": 125,
+          "weightLabel": "ثمن 125 جم",
+          "unitRetailPrice": 70
+        },
+        {
+          "quantity": 1,
+          "unitCost": 20,
+          "productId": "prod-cup-candy-35",
+          "productName": "كوباية القبة السريعة (35 ج.م)",
+          "weightGrams": 1000,
+          "weightLabel": "كوباية قبة",
+          "unitRetailPrice": 35
+        }
+      ],
+      "title": "عرض لمة الخميس والمزاج السريع",
+      "active": true,
+      "endsAt": "2026-12-31T21:59:59.000Z",
+      "subtitle": "بوكس لمة الخميس 4 خانات + ثمن بن حفصة المحوج طازج + كوباية كاندي قبة",
+      "isVipOnly": false,
+      "promoPrice": 199,
+      "isProfitSafe": true,
+      "netProfitEgp": 39,
+      "totalRawCost": 154,
+      "packagingCost": 6,
+      "originalRetailPrice": 230,
+      "profitMarginPercent": 19.6,
+      "minSafeMarginPercent": 18
+    },
+    {
+      "id": "promo-vip-hafsa-1",
+      "badge": "حصري لأعضاء حفصة VIP",
+      "image": "/images/products/stuffed-dates.jpg",
+      "items": [
+        {
+          "quantity": 1,
+          "unitCost": 310,
+          "productId": "prod-royal-mix-1",
+          "productName": "بوكس الزيارات والهدايا الملكي VIP",
+          "weightGrams": 600,
+          "weightLabel": "بوكس VIP 6 خانات",
+          "unitRetailPrice": 450
+        },
+        {
+          "quantity": 1,
+          "unitCost": 78,
+          "productId": "prod-honey-nuts-jar-1",
+          "productName": "برطمان عسل نحل بالمكسرات الملكية (خلية حفصة)",
+          "weightGrams": 250,
+          "weightLabel": "برطمان ربع كيلو",
+          "unitRetailPrice": 115
+        },
+        {
+          "quantity": 1,
+          "unitCost": 102,
+          "productId": "prod-hafsa-turkish-coffee-1",
+          "productName": "بن حفصة التركي بالتحويجة السرية",
+          "weightGrams": 250,
+          "weightLabel": "ربع 250 جم",
+          "unitRetailPrice": 140
+        }
+      ],
+      "title": "باقة نادي حفصة VIP للضيافة الملكية",
+      "active": true,
+      "endsAt": "2026-12-31T21:59:59.000Z",
+      "subtitle": "بوكس هدايا VIP (6 خانات) + برطمان عسل خلية حفصة بالمكسرات + ربع بن محوج ملكي",
+      "isVipOnly": true,
+      "promoPrice": 625,
+      "isProfitSafe": true,
+      "netProfitEgp": 115,
+      "totalRawCost": 490,
+      "packagingCost": 20,
+      "originalRetailPrice": 705,
+      "profitMarginPercent": 18.4,
+      "minSafeMarginPercent": 18
+    }
+  ],
+  "vipMembers": [],
+  "posExpenses": [],
+  "shippingRates": [
+    {
+      "id": "ship-bandar",
+      "price": 20,
+      "zoneType": "bandar",
+      "governorate": "بندر بني مزار (توصيل فوري 30 - 45 دقيقة)",
+      "estimatedDays": "خلال 30 - 45 دقيقة",
+      "minOrderAmount": 0
+    },
+    {
+      "id": "ship-villages",
+      "price": 25,
+      "zoneType": "village",
+      "governorate": "قرى مركز بني مزار (القيس، صندفا، بني علي، شلقام، أبشاق، طمبو، الجندية...)",
+      "estimatedDays": "دورة 2:00 ظهراً أو دورة 8:00 مساءً",
+      "minOrderAmount": 200
+    },
+    {
+      "id": "ship-pickup",
+      "price": 0,
+      "zoneType": "pickup",
+      "governorate": "استلام سريع من المحل (بني مزار - أمام مسجد الزراعيين)",
+      "estimatedDays": "جاهز فوراً بدون انتظار",
+      "minOrderAmount": 0
+    },
+    {
+      "id": "ship-minya",
+      "price": 45,
+      "zoneType": "governorate",
+      "governorate": "مراكز محافظة المنيا الأخرى (مطاي، مغاغة، سمالوط، المنيا)",
+      "estimatedDays": "نفس اليوم أو خلال 24 ساعة",
+      "minOrderAmount": 250
+    },
+    {
+      "id": "ship-1",
+      "price": 50,
+      "zoneType": "governorate",
+      "governorate": "القاهرة والجيزة",
+      "estimatedDays": "خلال 24 ساعة"
+    },
+    {
+      "id": "ship-2",
+      "price": 60,
+      "zoneType": "governorate",
+      "governorate": "الإسكندرية",
+      "estimatedDays": "1 - 2 يوم عمل"
+    }
+  ],
+  "supplyInvoices": [],
+  "flashPromotions": [
+    {
+      "id": "promo-opening-coffee-1",
+      "badge": "عرض صباحك قهوة",
+      "image": "/images/branch/store-interior.jpg",
+      "items": [
+        {
+          "quantity": 1,
+          "unitCost": 18,
+          "productId": "prod-bar-latte-cappuccino",
+          "productName": "كابتشينو / لاتيه طازج من البار",
+          "weightGrams": 1000,
+          "weightLabel": "كوب",
+          "unitRetailPrice": 45
+        },
+        {
+          "quantity": 1,
+          "unitCost": 20,
+          "productId": "prod-cup-candy-35",
+          "productName": "كوباية القبة السريعة — كاندي ومقرمشات",
+          "weightGrams": 1000,
+          "weightLabel": "كوباية",
+          "unitRetailPrice": 35
+        }
+      ],
+      "title": "باقة صباحك قهوة (لاتيه أو إسبريسو + كوباية تسلية)",
+      "active": true,
+      "endsAt": "2026-12-31T21:59:59.000Z",
+      "subtitle": "كوب قهوة طازج من بار حفصة + كوباية كاندي ومقرمشات لتنشيط صباحك في بني مزار",
+      "isVipOnly": false,
+      "promoPrice": 65,
+      "isProfitSafe": true,
+      "netProfitEgp": 22,
+      "totalRawCost": 38,
+      "packagingCost": 5,
+      "originalRetailPrice": 80,
+      "profitMarginPercent": 33.8,
+      "minSafeMarginPercent": 18
+    },
+    {
+      "id": "promo-thursday-roqan-1",
+      "badge": "الأكثر طلباً لسهرات الخميس",
+      "image": "/images/products/royal-mix.jpg",
+      "items": [
+        {
+          "quantity": 1,
+          "unitCost": 83,
+          "productId": "prod-box-roqan-125",
+          "productName": "بوكس لمة الخميس المقسم (4 خانات)",
+          "weightGrams": 340,
+          "weightLabel": "بوكس 4 خانات",
+          "unitRetailPrice": 125
+        },
+        {
+          "quantity": 1,
+          "unitCost": 51,
+          "productId": "prod-hafsa-turkish-coffee-1",
+          "productName": "بن حفصة التركي بالتحويجة السرية",
+          "weightGrams": 125,
+          "weightLabel": "ثمن 125 جم",
+          "unitRetailPrice": 70
+        },
+        {
+          "quantity": 1,
+          "unitCost": 20,
+          "productId": "prod-cup-candy-35",
+          "productName": "كوباية القبة السريعة (35 ج.م)",
+          "weightGrams": 1000,
+          "weightLabel": "كوباية قبة",
+          "unitRetailPrice": 35
+        }
+      ],
+      "title": "عرض لمة الخميس والمزاج السريع",
+      "active": true,
+      "endsAt": "2026-12-31T21:59:59.000Z",
+      "subtitle": "بوكس لمة الخميس 4 خانات + ثمن بن حفصة المحوج طازج + كوباية كاندي قبة",
+      "isVipOnly": false,
+      "promoPrice": 199,
+      "isProfitSafe": true,
+      "netProfitEgp": 39,
+      "totalRawCost": 154,
+      "packagingCost": 6,
+      "originalRetailPrice": 230,
+      "profitMarginPercent": 19.6,
+      "minSafeMarginPercent": 18
+    },
+    {
+      "id": "promo-vip-hafsa-1",
+      "badge": "حصري لأعضاء حفصة VIP",
+      "image": "/images/products/stuffed-dates.jpg",
+      "items": [
+        {
+          "quantity": 1,
+          "unitCost": 310,
+          "productId": "prod-royal-mix-1",
+          "productName": "بوكس الزيارات والهدايا الملكي VIP",
+          "weightGrams": 600,
+          "weightLabel": "بوكس VIP 6 خانات",
+          "unitRetailPrice": 450
+        },
+        {
+          "quantity": 1,
+          "unitCost": 78,
+          "productId": "prod-honey-nuts-jar-1",
+          "productName": "برطمان عسل نحل بالمكسرات الملكية (خلية حفصة)",
+          "weightGrams": 250,
+          "weightLabel": "برطمان ربع كيلو",
+          "unitRetailPrice": 115
+        },
+        {
+          "quantity": 1,
+          "unitCost": 102,
+          "productId": "prod-hafsa-turkish-coffee-1",
+          "productName": "بن حفصة التركي بالتحويجة السرية",
+          "weightGrams": 250,
+          "weightLabel": "ربع 250 جم",
+          "unitRetailPrice": 140
+        }
+      ],
+      "title": "باقة نادي حفصة VIP للضيافة الملكية",
+      "active": true,
+      "endsAt": "2026-12-31T21:59:59.000Z",
+      "subtitle": "بوكس هدايا VIP (6 خانات) + برطمان عسل خلية حفصة بالمكسرات + ربع بن محوج ملكي",
+      "isVipOnly": true,
+      "promoPrice": 625,
+      "isProfitSafe": true,
+      "netProfitEgp": 115,
+      "totalRawCost": 490,
+      "packagingCost": 20,
+      "originalRetailPrice": 705,
+      "profitMarginPercent": 18.4,
+      "minSafeMarginPercent": 18
+    }
+  ],
+  "staffAccounts": [
+    {
+      "id": "staff-primary-super_admin",
+      "username": "admin_hafsa",
+      "passwordHash": "scrypt$d00b5ad2ad9f320dcbbf9690352435f2$ba08789d852b565d476e1a28325f3ba88f72169875a5c412d29b268f934f74ca8d6815a6640b90066b6c415d76bc7658a6c7ba7807e1b643b1878af0cf7a6395",
+      "role": "super_admin",
+      "displayName": "إدارة إدارة المتجر (المدير العام)",
+      "active": true,
+      "isPrimary": true,
+      "settingsFingerprint": "4bbb76198d3fcb7762044e9a",
+      "createdAt": "2026-10-30T13:20:23.569Z",
+      "updatedAt": "2026-10-30T13:20:23.569Z",
+      "lastLoginAt": "2026-11-14T13:04:56.186Z"
+    },
+    {
+      "id": "staff-primary-accountant",
+      "username": "accountant_fin",
+      "passwordHash": "scrypt$e90d938b17c1723bc6895939741dc9e2$cf162bdc30730da7bf1bd23f1f71cdf81ad21fa4fbc542a677320fa8434fcfe9234d35ab59d52fdb215cba516b8b3db89ec42ec0feef24137647317180e377db",
+      "role": "accountant",
+      "displayName": "المحاسب المالي الرئيسي",
+      "active": true,
+      "isPrimary": true,
+      "settingsFingerprint": "bde204c3e00159f9432ea29f",
+      "createdAt": "2026-10-30T13:20:23.569Z",
+      "updatedAt": "2026-10-30T13:20:23.569Z",
+      "lastLoginAt": "2026-10-30T13:20:24.526Z"
+    },
+    {
+      "id": "staff-primary-cashier",
+      "username": "cashier_pos",
+      "passwordHash": "scrypt$baf21ba6f0664265c4ee5d429d762a02$bc1d8797b7e232ae78f01e5bad00986e3026eefb9b3d882d22caeafff68e61aaf597b6dde0b63e6a40d041226e0ad7d3b0bcbdf4d4e881619ce748d73fa6cb41",
+      "role": "cashier",
+      "displayName": "كاشير صالة الفرع الرئيسي (أساسي)",
+      "active": true,
+      "isPrimary": true,
+      "settingsFingerprint": "3bfc4805554aabbc1bc7cf87",
+      "createdAt": "2026-10-30T13:20:23.569Z",
+      "updatedAt": "2026-10-30T13:20:23.569Z",
+      "lastLoginAt": "2026-10-30T13:20:24.262Z"
+    },
+    {
+      "id": "staff-primary-supplier",
+      "username": "supplier_arafat",
+      "passwordHash": "scrypt$432260743ba70014b39ef8f166f42755$29f7945f8d7ba67e54734906dedfcb4636ea5a136d886bddf25e92d95d221da0e0ec24bd2213d978a6ae052707281b553a91fa2e59fcf6a6c7b3ed082c3c5ccb",
+      "role": "supplier",
+      "displayName": "مسؤول التوريد والمخزون الرئيسي",
+      "active": true,
+      "isPrimary": true,
+      "settingsFingerprint": "65bb0309a6b6991e736a7fbe",
+      "createdAt": "2026-10-30T13:20:23.569Z",
+      "updatedAt": "2026-10-30T13:20:23.569Z",
+      "lastLoginAt": "2026-10-30T13:20:23.996Z"
+    },
+    {
+      "id": "staff-primary-delivery_rider",
+      "username": "rider_delivery",
+      "passwordHash": "scrypt$82e8583a09f720e1beeab272958687d9$cd911ab23ff4e131d258918c732fdce7ce951e3d355226bfbca9021fecd76b3ec6879efd6ae37a3ffca8b284238b0e583eff9ee60493544f069c5b1506c590c6",
+      "role": "delivery_rider",
+      "displayName": "مندوب التوصيل الرئيسي (الفرع الرئيسي)",
+      "active": true,
+      "isPrimary": true,
+      "settingsFingerprint": "697991cc02f215252502ec42",
+      "createdAt": "2026-10-30T13:20:23.569Z",
+      "updatedAt": "2026-10-30T13:20:23.569Z"
+    }
+  ],
+  "posReturns": [],
+  "supplierPayments": [],
+  "supplyReturns": [],
+  "treasuryTransactions": [],
+  "inventoryAdjustments": [],
+  "auditLogs": [],
+  "isSeeded": true
+}

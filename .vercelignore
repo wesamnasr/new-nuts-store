@@ -1,0 +1,10 @@
+node_modules
+.next
+.agents
+.git
+.npm-cache
+package-lock.json
+*.log
+scripts
+test_*.mjs
+stress_*.mjs
