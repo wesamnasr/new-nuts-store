@@ -12,13 +12,13 @@
   "icons": [
     {
       "src": "/images/brand/hafsa-sticker-gold.png",
-      "sizes": "413x413",
+      "sizes": "400x400",
       "type": "image/png",
       "purpose": "any"
     },
     {
       "src": "/images/brand/hafsa-sticker-gold-512.png",
-      "sizes": "650x650",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
