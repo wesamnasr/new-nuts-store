@@ -117,11 +117,7 @@ export async function POST(request: NextRequest) {
       role?: SystemRole;
     };
 
-    const allowDemoQuickEntry = process.env.MIZAN_ALLOW_DEMO_QUICK_ENTRY === '1';
-    const isQuickDemoHeader =
-      allowDemoQuickEntry && request.headers.get('x-demo-quick-entry') === '1';
     const rawUsername = typeof username === 'string' ? username.trim() : '';
-    const rawPassword = typeof password === 'string' ? password.trim() : '';
     const rateKey = getRateLimitKey(clientIp, rawUsername.toLowerCase());
 
     const existingFailure = loginFailuresMap.get(rateKey);
@@ -134,47 +130,6 @@ export async function POST(request: NextRequest) {
           { status: 429 }
         );
       }
-    }
-
-    if (isQuickDemoHeader && rawUsername === '' && rawPassword === '') {
-      const db = await getDbAsync();
-      loginFailuresMap.delete(rateKey);
-
-      const adminRole: AdminRole = 'super_admin';
-      const configuredPassword = getRolePasswordFromSettings(db.settings, 'super_admin');
-      const matchedUsername = getRoleUsernameFromSettings(db.settings, 'super_admin');
-      const primaryAcc = (db.staffAccounts || []).find(
-        (acc) => acc.isPrimary && normalizeAdminRole(acc.role) === 'super_admin'
-      );
-
-      const session = generateAdminToken(configuredPassword);
-      const rolePermissions = getResolvedRolePermissions(db.settings);
-
-      const response = NextResponse.json({
-        success: true,
-        token: session.token,
-        expiresAt: session.expiresAt,
-        role: adminRole,
-        staffId: primaryAcc?.id,
-        username: matchedUsername,
-        displayName: primaryAcc?.displayName || matchedUsername,
-        redirectTo: '/admin',
-        unifiedDashboard: '/admin',
-        permissions: getPermissionsForRole(adminRole, rolePermissions),
-        rolePermissions,
-      });
-
-      response.cookies.set({
-        name: 'admin_session',
-        value: session.token,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 24 * 60 * 60,
-      });
-
-      return response;
     }
 
     if (!password || typeof password !== 'string' || password.trim() === '') {

@@ -907,11 +907,12 @@ export default function HafsaPosCashierPage() {
     const clientOrderId = `pos-ord-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
     const saveOfflineFallback = () => {
-      const offlineOrderNumber = `POS-OFF-${Math.floor(1000 + Math.random() * 9000)}`;
+      const isWhatsappOffline = posOrderType === 'whatsapp_online';
+      const offlineOrderNumber = `${isWhatsappOffline ? 'WA-OFF-' : 'POS-OFF-'}${Math.floor(1000 + Math.random() * 9000)}`;
       const offlineOrder: Order = {
         id: clientOrderId,
         orderNumber: offlineOrderNumber,
-        orderSource: 'pos',
+        orderSource: isWhatsappOffline ? 'online' : 'pos',
         posOrderType,
         chairNumber: posOrderType === 'glass_bar_dine_in' ? chairNumber : undefined,
         registerId: selectedRegisterId,
@@ -921,9 +922,16 @@ export default function HafsaPosCashierPage() {
         customerName: customerName.trim() || 'عميل الفرع المباشر',
         customerPhone: customerPhone.trim() || '01000000000',
         governorate: `${cityName} — الفرع الرئيسي`,
-        address: deliveryAddress.trim() || 'استلام فوري من كاشير المحل',
+        address:
+          deliveryAddress.trim() ||
+          (isWhatsappOffline
+            ? `طلب واتساب / سوشيال أونلاين — ${cityName}`
+            : 'استلام فوري من كاشير المحل'),
         notes: invoiceNotes.trim() ? `[أوفلاين] ${invoiceNotes.trim()}` : '[أوفلاين]',
-        deliveryMethod: posOrderType === 'phone_delivery' ? 'bandar_fast' : 'store_pickup',
+        deliveryMethod:
+          posOrderType === 'phone_delivery' || isWhatsappOffline
+            ? 'bandar_fast'
+            : 'store_pickup',
         items: [...posItems],
         subtotal: posSubtotal,
         shippingCost: posShipping,
@@ -964,6 +972,7 @@ export default function HafsaPosCashierPage() {
       setCashTenderedInput('');
       setInvoiceNotes('');
       setUseVipWallet(false);
+      setPosOrderType('counter_takeaway');
       showToast(
         `وضع الطوارئ (أوفلاين): تم حفظ الفاتورة ${offlineOrderNumber} محلياً وجاهزة للطباعة`,
         `سيتم ترحيل الفاتورة تلقائياً عند عودة الاتصال بالإنترنت`
@@ -1028,6 +1037,7 @@ export default function HafsaPosCashierPage() {
         setCashTenderedInput('');
         setInvoiceNotes('');
         setUseVipWallet(false);
+        setPosOrderType('counter_takeaway');
         showToast(
           `تم إصدار الفاتورة ${data.order.orderNumber} بنجاح`,
           `الإجمالي: ${data.order.total} ج.م • الباقي للعميل: ${data.order.changeDue || 0} ج.م`
@@ -1259,7 +1269,8 @@ export default function HafsaPosCashierPage() {
   const handleOpenNewShift = async (
     cashierName: string,
     shiftPeriod: 'الوردية الصباحية' | 'الوردية المسائية' | 'وردية اليوم الكامل',
-    openingCash: number
+    openingCash: number,
+    cupsOpeningCount?: number
   ) => {
     setPosLoading(true);
     try {
@@ -1274,6 +1285,7 @@ export default function HafsaPosCashierPage() {
           cashierName,
           shiftPeriod,
           openingCash,
+          cupsOpeningCount,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -1288,7 +1300,11 @@ export default function HafsaPosCashierPage() {
     }
   };
 
-  const handleCloseShift = async (actualClosingCash: number, notes?: string) => {
+  const handleCloseShift = async (
+    actualClosingCash: number,
+    notes?: string,
+    cupsActualRemaining?: number
+  ) => {
     setPosLoading(true);
     try {
       // Guard: auto-sync any queued emergency offline invoices BEFORE closing the shift
@@ -1314,6 +1330,7 @@ export default function HafsaPosCashierPage() {
           shiftId: activeShift?.id,
           actualClosingCash,
           notes,
+          cupsActualRemaining,
         }),
       });
       const data = await res.json().catch(() => ({}));

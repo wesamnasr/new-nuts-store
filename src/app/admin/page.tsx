@@ -7630,7 +7630,7 @@ export default function AdminDashboardPage() {
                           const posUrl =
                             typeof window !== 'undefined'
                               ? `${window.location.origin}/pos`
-                              : 'http://localhost:3000/pos';
+                              : 'https://hafsahnuts.com/pos';
                           const batContent = [
                             '@echo off',
                             'chcp 65001 >nul',

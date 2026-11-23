@@ -278,13 +278,15 @@ export default function PosInvoicesTablePage({
 
     const rows = filteredOrders.map((o) => {
       const orderTypeLabel =
-        o.orderSource === 'pos' || o.orderNumber.startsWith('POS-')
-          ? o.posOrderType === 'glass_bar_dine_in'
-            ? `البار الزجاجي (كرسي ${o.chairNumber || 1})`
-            : o.posOrderType === 'phone_delivery'
-              ? 'دليفري تليفون'
-              : 'كاونتر مباشر'
-          : 'طلب موقع أونلاين';
+        o.posOrderType === 'whatsapp_online' || o.orderNumber.startsWith('WA-')
+          ? 'طلب أونلاين (واتساب)'
+          : o.orderSource === 'pos' || o.orderNumber.startsWith('POS-')
+            ? o.posOrderType === 'glass_bar_dine_in'
+              ? `البار الزجاجي (كرسي ${o.chairNumber || 1})`
+              : o.posOrderType === 'phone_delivery'
+                ? 'دليفري تليفون'
+                : 'كاونتر مباشر'
+            : 'طلب موقع أونلاين';
 
       const pmLabel =
         o.paymentMethod === 'cod'
@@ -668,13 +670,16 @@ export default function PosInvoicesTablePage({
                   const isPos =
                     ord.orderSource === 'pos' || ord.orderNumber.startsWith('POS-');
 
-                  const orderTypeBadge = isPos
-                    ? ord.posOrderType === 'glass_bar_dine_in'
-                      ? `البار (كرسي ${ord.chairNumber || 1})`
-                      : ord.posOrderType === 'phone_delivery'
-                        ? 'دليفري سريع'
-                        : 'بيع كاونتر'
-                    : 'طلب أونلاين';
+                  const orderTypeBadge =
+                    ord.posOrderType === 'whatsapp_online' || ord.orderNumber.startsWith('WA-')
+                      ? 'طلب أونلاين (واتساب)'
+                      : isPos
+                        ? ord.posOrderType === 'glass_bar_dine_in'
+                          ? `البار (كرسي ${ord.chairNumber || 1})`
+                          : ord.posOrderType === 'phone_delivery'
+                            ? 'دليفري سريع'
+                            : 'بيع كاونتر'
+                        : 'طلب أونلاين';
 
                   const pmBadge =
                     ord.paymentMethod === 'cod'

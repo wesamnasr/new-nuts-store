@@ -27,9 +27,14 @@ interface PosShiftSummaryPageProps {
   onOpenNewShift: (
     cashierName: string,
     shiftPeriod: 'الوردية الصباحية' | 'الوردية المسائية' | 'وردية اليوم الكامل',
-    openingCash: number
+    openingCash: number,
+    cupsOpeningCount?: number
   ) => Promise<void>;
-  onCloseShift: (actualClosingCash: number, notes?: string) => Promise<void>;
+  onCloseShift: (
+    actualClosingCash: number,
+    notes?: string,
+    cupsActualRemaining?: number
+  ) => Promise<void>;
   onAddExpense: (
     title: string,
     amount: number,
@@ -67,9 +72,15 @@ export default function PosShiftSummaryPage({
     'الوردية الصباحية' | 'الوردية المسائية' | 'وردية اليوم الكامل'
   >('الوردية المسائية');
   const [newShiftOpeningCash, setNewShiftOpeningCash] = useState<number>(1000);
+  const [newShiftCupsOpening, setNewShiftCupsOpening] = useState<number>(0);
 
   const [closingActualCash, setClosingActualCash] = useState<number>(
     activeShift?.expectedCashInDrawer ?? 1000
+  );
+  const [closingActualCups, setClosingActualCups] = useState<number | ''>(() =>
+    activeShift && ((activeShift.cupsOpeningCount || 0) > 0 || (activeShift.cupsSoldCount || 0) > 0)
+      ? Math.max(0, (activeShift.cupsOpeningCount || 0) - (activeShift.cupsSoldCount || 0))
+      : ''
   );
   const [closingNotes, setClosingNotes] = useState<string>('');
 
@@ -82,8 +93,24 @@ export default function PosShiftSummaryPage({
   React.useEffect(() => {
     if (activeShift) {
       setClosingActualCash(activeShift.expectedCashInDrawer);
+      if ((activeShift.cupsOpeningCount || 0) > 0 || (activeShift.cupsSoldCount || 0) > 0) {
+        setClosingActualCups(
+          Math.max(0, (activeShift.cupsOpeningCount || 0) - (activeShift.cupsSoldCount || 0))
+        );
+      } else {
+        setClosingActualCups('');
+      }
+    } else {
+      setClosingActualCups('');
     }
   }, [activeShift]);
+
+  const isCupsTracked = Boolean(
+    activeShift && ((activeShift.cupsOpeningCount || 0) > 0 || (activeShift.cupsSoldCount || 0) > 0)
+  );
+  const expectedClosingCups = activeShift
+    ? Math.max(0, (activeShift.cupsOpeningCount || 0) - (activeShift.cupsSoldCount || 0))
+    : 0;
 
   const categoryLabelMap: Record<PosExpense['category'], string> = {
     packaging: 'أكياس وتغليف واستيكرات',
@@ -324,6 +351,14 @@ export default function PosShiftSummaryPage({
                   +{activeShift.vipCashbackIssuedTotal || 0} ج.م
                 </strong>
               </span>
+              {isCupsTracked && (
+                <span>
+                  عدّاد الأكواب:{' '}
+                  <strong className="text-[#231710]">
+                    بداية {activeShift.cupsOpeningCount || 0} • مباع {activeShift.cupsSoldCount || 0} • متبقي متوقع {expectedClosingCups}
+                  </strong>
+                </span>
+              )}
             </div>
             <span className="text-[#6B5B4E]">
               وقت فتح الوردية: {new Date(activeShift.openedAt).toLocaleString('ar-EG')}
@@ -347,7 +382,11 @@ export default function PosShiftSummaryPage({
         <form
           onSubmit={async (e) => {
             e.preventDefault();
-            await onCloseShift(closingActualCash, closingNotes);
+            await onCloseShift(
+              closingActualCash,
+              closingNotes,
+              closingActualCups === '' ? undefined : Number(closingActualCups)
+            );
             setClosingNotes('');
           }}
           className="bg-white rounded-2xl p-5 border border-[#E8E0D5] flex flex-col justify-between space-y-3"
@@ -407,6 +446,59 @@ export default function PosShiftSummaryPage({
               </div>
             )}
 
+            {isCupsTracked && (
+              <div className="bg-[#FAF6F0] rounded-xl p-3 border border-[#E8E0D5] space-y-2">
+                <div className="flex items-center justify-between text-[11px] text-[#6B5B4E] tabular-nums">
+                  <span>بداية: {activeShift?.cupsOpeningCount || 0}</span>
+                  <span>مباع: {activeShift?.cupsSoldCount || 0}</span>
+                  <span className="font-bold text-[#231710]">المتوقع: {expectedClosingCups}</span>
+                </div>
+                <div>
+                  <label className="text-xs font-bold block mb-1 text-[#231710]">
+                    الأكواب الفارغة المتبقية فعلياً (جرد بار القهوة):
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={closingActualCups}
+                    onChange={(e) =>
+                      setClosingActualCups(
+                        e.target.value === ''
+                          ? ''
+                          : Math.max(0, Math.round(Number(e.target.value) || 0))
+                      )
+                    }
+                    className="w-full bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-sm font-bold tabular-nums outline-none"
+                  />
+                </div>
+                {closingActualCups !== '' && (
+                  <div
+                    className={`p-2 rounded-lg text-[11px] font-bold flex items-center justify-between tabular-nums border ${
+                      Number(closingActualCups) - expectedClosingCups === 0
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                        : Number(closingActualCups) - expectedClosingCups > 0
+                          ? 'bg-amber-50 border-amber-200 text-amber-900'
+                          : 'bg-red-50 border-red-200 text-[#B83B2B]'
+                    }`}
+                  >
+                    <span>
+                      {Number(closingActualCups) - expectedClosingCups === 0
+                        ? 'عدّاد الأكواب مطابق 100%'
+                        : Number(closingActualCups) - expectedClosingCups > 0
+                          ? 'زيادة في عدّاد الأكواب:'
+                          : 'عجز أكواب فارغة:'}
+                    </span>
+                    <span className="font-cairo font-bold">
+                      {Number(closingActualCups) - expectedClosingCups > 0
+                        ? `+${Number(closingActualCups) - expectedClosingCups}`
+                        : Number(closingActualCups) - expectedClosingCups}{' '}
+                      كوب
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
             <input
               type="text"
               value={closingNotes}
@@ -429,7 +521,13 @@ export default function PosShiftSummaryPage({
         <form
           onSubmit={async (e) => {
             e.preventDefault();
-            await onOpenNewShift(newShiftCashier, newShiftPeriod, newShiftOpeningCash);
+            await onOpenNewShift(
+              newShiftCashier,
+              newShiftPeriod,
+              newShiftOpeningCash,
+              newShiftCupsOpening > 0 ? newShiftCupsOpening : undefined
+            );
+            setNewShiftCupsOpening(0);
           }}
           className="bg-white rounded-2xl p-5 border border-[#E8E0D5] flex flex-col justify-between space-y-3"
         >
@@ -478,6 +576,22 @@ export default function PosShiftSummaryPage({
                   className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs font-bold tabular-nums outline-none"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold block mb-1 text-[#231710]">
+                عهدة الأكواب الفارغة أول الوردية (اختياري لبار القهوة):
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={newShiftCupsOpening}
+                onChange={(e) =>
+                  setNewShiftCupsOpening(Math.max(0, Math.round(Number(e.target.value) || 0)))
+                }
+                placeholder="مثال: 150"
+                className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs font-bold tabular-nums outline-none"
+              />
             </div>
           </div>
 
@@ -672,6 +786,11 @@ export default function PosShiftSummaryPage({
                           >
                             الفرق: {sh.cashDifference || 0} ج
                           </span>
+                          {sh.cupsActualRemaining !== undefined && (
+                            <span className="block text-[11px] text-[#6B5B4E]">
+                              أكواب: {sh.cupsActualRemaining} (فرق {sh.cupsDifference || 0})
+                            </span>
+                          )}
                         </div>
                       ) : (
                         <span className="text-[11px] text-[#6B5B4E]">قيد العمل</span>

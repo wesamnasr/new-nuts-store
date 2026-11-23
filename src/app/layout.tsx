@@ -16,7 +16,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://hafsahnuts.com'),
   title: 'محمصة حفصة للبن والمكسرات | بني مزار — أمام مسجد الزراعيين | HAFSA ROASTERY',
   description:
     'أصل التحميصة ومزاج القهوة الفاخر في قلب بني مزار (أمام مسجد الزراعيين مباشرة) — مكسرات VIP محمصة يومياً، بن تركي وإسبريسو طازج، كوبايات تسلية وبوكسات السهرة، وتوصيل فوري للبندر وقرى المركز مع 5% كاش باك VIP.',
@@ -43,6 +43,7 @@ export const metadata: Metadata = {
     title: 'محمصة حفصة للبن والمكسرات | بني مزار — HAFSA ROASTERY',
     description:
       'تحميص يومي طازج أمام مسجد الزراعيين ببني مزار — اطلب مكسراتك، توليفة قهوتك، مشروبات البار، أو صمّم بوكس السهرة بتوصيل فوري 30 دقيقة وكاش باك 5%.',
+    url: 'https://hafsahnuts.com',
     locale: 'ar_EG',
     type: 'website',
     images: [
@@ -61,6 +62,7 @@ const localBusinessSchema = {
   '@type': 'Store',
   name: 'محمصة حفصة للبن والمكسرات — بني مزار',
   alternateName: 'HAFSA ROASTERY — Bani Mazar',
+  url: 'https://hafsahnuts.com',
   image: '/images/brand/hafsa-logo-main.png',
   description:
     'محمصة حفصة للبن والمكسرات بمركز بني مزار (أمام مسجد الزراعيين مباشرة): 24 عين مكسرات وتسالي طازجة، ركن القهوة والإسبريسو، بوكسات السهرة والهدايا، وتوصيل فوري لبندر وقرى بني مزار.',

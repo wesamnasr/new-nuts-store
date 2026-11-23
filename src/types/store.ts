@@ -278,7 +278,11 @@ export interface PosReturnRecord {
 
 export type DeliveryMethodType = 'bandar_fast' | 'villages_scheduled' | 'store_pickup';
 
-export type PosOrderType = 'counter_takeaway' | 'glass_bar_dine_in' | 'phone_delivery';
+export type PosOrderType =
+  | 'counter_takeaway'
+  | 'glass_bar_dine_in'
+  | 'phone_delivery'
+  | 'whatsapp_online';
 
 export interface Order {
   id: string;
@@ -808,6 +812,11 @@ export interface PosShift {
   totalRevenue: number;
   totalRawCost: number;
   totalNetProfit: number;
+  cupsOpeningCount?: number;
+  cupsSoldCount?: number;
+  cupsExpectedRemaining?: number;
+  cupsActualRemaining?: number;
+  cupsDifference?: number;
   treasuryTransferred?: boolean;
   startTime?: string;
   openedAt: string;

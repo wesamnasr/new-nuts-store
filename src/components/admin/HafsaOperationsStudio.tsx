@@ -722,9 +722,9 @@ export default function HafsaOperationsStudio({
               },
               {
                 title: '3. مطبوع على أكياس وبوكسات حفصة',
-                subtitle: 'اطلب بوكس السهرة أو أعد الطلب من البيت ليصلك في بني مزار خلال 30 دقيقة',
-                route: '/build-box',
-                codeLabel: 'HAFSA-QR-CUSTOM-BOX',
+                subtitle: 'الكود الرسمي المطبوع على الشنط (الصفحة الرئيسية أو /build-box) — اطلب من البيت ليصلك في بني مزار خلال 30 دقيقة',
+                route: '/',
+                codeLabel: 'HAFSA-QR-BAG-OFFICIAL',
               },
             ].map((qr, i) => (
               <div
@@ -742,8 +742,8 @@ export default function HafsaOperationsStudio({
                   </span>
                 </div>
                 <p className="text-[11px] text-[#6B5644] leading-relaxed">{qr.subtitle}</p>
-                <div className="text-[11px] font-mono text-[#9A6836]">
-                  الرابط: {qr.route}
+                <div className="text-[11px] font-mono text-[#9A6836] break-all" dir="ltr">
+                  {`https://hafsahnuts.com${qr.route}`}
                 </div>
               </div>
             ))}

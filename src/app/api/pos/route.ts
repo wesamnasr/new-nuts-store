@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getDbAsync, withDbTransaction } from '@/lib/db';
 import {
   CartItem,
+  FlashPromotion,
   InventoryAdjustment,
   Order,
   OrderStatus,
@@ -126,6 +127,52 @@ function sanitizeShiftForCashier(shift: PosShift | null): PosShift | null {
   delete (copy as any).totalRawCost;
   delete (copy as any).totalNetProfit;
   return copy;
+}
+
+function isCupProduct(prod?: Product): boolean {
+  if (!prod) return false;
+  return (
+    prod.categoryId === 'cat-coffee-bar' ||
+    prod.categoryId === 'cat-quick-cups' ||
+    prod.unitLabel === 'كوب' ||
+    prod.unitLabel === 'كوباية'
+  );
+}
+
+function countCupsSoldInItems(
+  items: CartItem[],
+  products: Product[],
+  promotions: FlashPromotion[]
+): number {
+  let count = 0;
+  for (const item of items || []) {
+    const qty = Math.max(1, Math.floor(Number(item.quantity) || 1));
+    if (
+      (item.isFlashPromo && item.flashPromoId) ||
+      (typeof item.productId === 'string' && item.productId.startsWith('flash-promo-'))
+    ) {
+      const promoId =
+        item.flashPromoId ||
+        (typeof item.productId === 'string'
+          ? item.productId.replace('flash-promo-', '')
+          : '');
+      const matchedPromo = (promotions || []).find((p) => p.id === promoId);
+      if (matchedPromo && Array.isArray(matchedPromo.items)) {
+        for (const pi of matchedPromo.items) {
+          const piProd = products.find((p) => p.id === pi.productId);
+          if (isCupProduct(piProd)) {
+            count += qty * Math.max(1, Math.floor(Number(pi.quantity) || 1));
+          }
+        }
+        continue;
+      }
+    }
+    const prod = products.find((p) => p.id === item.productId);
+    if (isCupProduct(prod)) {
+      count += qty;
+    }
+  }
+  return count;
 }
 
 export async function GET(request: Request) {
@@ -335,6 +382,7 @@ export async function POST(request: Request) {
         }
 
         const shiftNum = 101 + db.posShifts.length;
+        const cupsOpeningCount = Math.max(0, Math.round(Number(body.cupsOpeningCount) || 0));
         const newShift: PosShift = {
           id: `shift-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
           shiftNumber: `SHIFT-${shiftNum}`,
@@ -366,6 +414,9 @@ export async function POST(request: Request) {
           totalRevenue: 0,
           totalRawCost: 0,
           totalNetProfit: 0,
+          cupsOpeningCount,
+          cupsSoldCount: 0,
+          cupsExpectedRemaining: cupsOpeningCount,
           startTime,
           openedAt,
           notes: body.notes?.trim() || undefined,
@@ -380,8 +431,10 @@ export async function POST(request: Request) {
           actorRole: auth.role || 'cashier',
           targetType: 'pos_shift',
           targetId: newShift.id,
-          summary: `فتح وردية ${newShift.shiftNumber} على «${registerName}» بعهدة افتتاحية ${openingCash} ج.م`,
-          afterValue: { shiftNumber: newShift.shiftNumber, registerId, openingCash },
+          summary: `فتح وردية ${newShift.shiftNumber} على «${registerName}» بعهدة افتتاحية ${openingCash} ج.م${
+            cupsOpeningCount > 0 ? ` | عهدة الأكواب: ${cupsOpeningCount}` : ''
+          }`,
+          afterValue: { shiftNumber: newShift.shiftNumber, registerId, openingCash, cupsOpeningCount },
         });
 
         const openShifts = db.posShifts.filter((s) => s.status === 'open');
@@ -427,6 +480,20 @@ export async function POST(request: Request) {
         activeShift.cashDifference = variance;
         if (body.notes) {
           activeShift.notes = body.notes.trim();
+        }
+
+        const cupsOpening = activeShift.cupsOpeningCount || 0;
+        const cupsSold = activeShift.cupsSoldCount || 0;
+        const cupsExpected = Math.max(0, cupsOpening - cupsSold);
+        activeShift.cupsExpectedRemaining = cupsExpected;
+        if (
+          body.cupsActualRemaining !== undefined &&
+          body.cupsActualRemaining !== null &&
+          body.cupsActualRemaining !== ''
+        ) {
+          const cupsActual = Math.max(0, Math.round(Number(body.cupsActualRemaining) || 0));
+          activeShift.cupsActualRemaining = cupsActual;
+          activeShift.cupsDifference = cupsActual - cupsExpected;
         }
 
         // Automatic Treasury Settlement on Shift Close
@@ -497,12 +564,25 @@ export async function POST(request: Request) {
           actorRole: auth.role || 'cashier',
           targetType: 'pos_shift',
           targetId: activeShift.id,
-          summary: `تقفيل وردية #${activeShift.shiftNumber} — المتوقع: ${expectedCash} ج.م | الفعلي المورّد للخزينة: ${actualCash} ج.م | الفارق: ${variance} ج.م`,
+          summary: `تقفيل وردية #${activeShift.shiftNumber} — المتوقع: ${expectedCash} ج.م | الفعلي المورّد للخزينة: ${actualCash} ج.م | الفارق: ${variance} ج.م${
+            cupsOpening > 0 || cupsSold > 0
+              ? ` | الأكواب (بداية ${cupsOpening} / مباع ${cupsSold} / متوقع ${cupsExpected}${
+                  activeShift.cupsActualRemaining !== undefined
+                    ? ` / فعلي ${activeShift.cupsActualRemaining} / فرق ${activeShift.cupsDifference || 0}`
+                    : ''
+                })`
+              : ''
+          }`,
           afterValue: {
             shiftNumber: activeShift.shiftNumber,
             expectedCash,
             actualCash,
             variance,
+            cupsOpeningCount: cupsOpening,
+            cupsSoldCount: cupsSold,
+            cupsExpectedRemaining: cupsExpected,
+            cupsActualRemaining: activeShift.cupsActualRemaining,
+            cupsDifference: activeShift.cupsDifference,
           },
         });
 
@@ -1177,7 +1257,14 @@ export async function POST(request: Request) {
         );
 
         for (const inv of incomingInvoices) {
-          const orderNumber = inv.orderNumber || `POS-OFF-${Math.floor(1000 + Math.random() * 9000)}`;
+          const isWhatsappOffline = inv.posOrderType === 'whatsapp_online';
+          const rawOrderNum = inv.orderNumber
+            ? String(inv.orderNumber)
+            : `${isWhatsappOffline ? 'WA-OFF-' : 'POS-OFF-'}${Math.floor(1000 + Math.random() * 9000)}`;
+          const orderNumber =
+            isWhatsappOffline && rawOrderNum.startsWith('POS-')
+              ? rawOrderNum.replace(/^POS-/, 'WA-')
+              : rawOrderNum;
           // Deduplicate: check if order already exists
           const existing = db.orders.find((o) => o.orderNumber === orderNumber || o.id === inv.id);
           if (existing) {
@@ -1218,7 +1305,7 @@ export async function POST(request: Request) {
           const newOrder: Order = {
             id: inv.id || `pos-ord-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
             orderNumber,
-            orderSource: 'pos',
+            orderSource: isWhatsappOffline ? 'online' : 'pos',
             posOrderType: inv.posOrderType || 'counter_takeaway',
             chairNumber: inv.chairNumber,
             registerId: inv.registerId || activeShift?.registerId || 'reg-1',
@@ -1229,9 +1316,16 @@ export async function POST(request: Request) {
             customerName: inv.customerName || 'عميل الفرع المباشر',
             customerPhone: inv.customerPhone || '01000000000',
             governorate: db.settings.cityName || 'الفرع الرئيسي',
-            address: inv.address || 'استلام فوري من كاشير الفرع',
+            address:
+              inv.address ||
+              (isWhatsappOffline
+                ? `طلب واتساب / سوشيال أونلاين — ${db.settings.cityName || 'بني مزار'}`
+                : 'استلام فوري من كاشير الفرع'),
             notes: inv.notes ? `[مزامنة طوارئ أوفلاين] ${inv.notes}` : '[مزامنة طوارئ أوفلاين]',
-            deliveryMethod: inv.posOrderType === 'phone_delivery' ? 'bandar_fast' : 'store_pickup',
+            deliveryMethod:
+              inv.posOrderType === 'phone_delivery' || isWhatsappOffline
+                ? 'bandar_fast'
+                : 'store_pickup',
             items: verifiedItems,
             subtotal: inv.subtotal || subtotal,
             shippingCost: inv.shippingCost || 0,
@@ -1280,6 +1374,18 @@ export async function POST(request: Request) {
 
           // Update active shift
           if (activeShift) {
+            const soldCupsOffline = countCupsSoldInItems(
+              verifiedItems,
+              db.products,
+              db.promotions || db.flashPromotions || []
+            );
+            if (soldCupsOffline > 0) {
+              activeShift.cupsSoldCount = (activeShift.cupsSoldCount || 0) + soldCupsOffline;
+              activeShift.cupsExpectedRemaining = Math.max(
+                0,
+                (activeShift.cupsOpeningCount || 0) - activeShift.cupsSoldCount
+              );
+            }
             activeShift.ordersCount += 1;
             activeShift.totalRevenue += finalTotal;
             activeShift.totalRawCost += rawCostTotal;
@@ -1553,12 +1659,16 @@ export async function POST(request: Request) {
         : [];
 
       // Optional Customer & VIP Wallet + Credit Sales Integration
+      const posOrderType: PosOrderType = body.posOrderType || 'counter_takeaway';
+      const isWhatsappOnline = posOrderType === 'whatsapp_online';
       let customerPhone = (body.customerPhone || '').trim();
       let customerName = (body.customerName || 'عميل الفرع المباشر').trim();
       let vipWalletRedeemed = 0;
       let vipCashbackEarned = 0;
       let updatedVipMember: VipMember | null = null;
-      const orderNumber = `POS-${Math.floor(1000 + Math.random() * 9000)}`;
+      const orderNumber = isWhatsappOnline
+        ? `WA-${Math.floor(1000 + Math.random() * 9000)}`
+        : `POS-${Math.floor(1000 + Math.random() * 9000)}`;
 
       const phoneCheck = customerPhone ? validateEgyptianPhone(customerPhone) : null;
       if (phoneCheck?.isValid) {
@@ -1778,7 +1888,6 @@ export async function POST(request: Request) {
         : finalTotal;
       const netProfitEgp = Math.round(netRevenueExTax - shippingCost - rawCostTotal);
 
-      const posOrderType: PosOrderType = body.posOrderType || 'counter_takeaway';
       const chairNumber = body.chairNumber ? (Number(body.chairNumber) as 1 | 2 | 3 | 4) : undefined;
       const activeShift = resolveActiveShift(
         db.posShifts,
@@ -1800,9 +1909,11 @@ export async function POST(request: Request) {
       const addressLabel =
         posOrderType === 'glass_bar_dine_in'
           ? `داخل صالة الفرع — طاولة/كرسي رقم ${chairNumber || 1}`
-          : posOrderType === 'phone_delivery'
-            ? body.address || `توصيل دليفري سريع — ${db.settings.cityName || 'المدينة'}`
-            : 'استلام فوري من كاشير الفرع';
+          : posOrderType === 'whatsapp_online'
+            ? body.address?.trim() || `طلب واتساب / سوشيال أونلاين — ${db.settings.cityName || 'بني مزار'}`
+            : posOrderType === 'phone_delivery'
+              ? body.address || `توصيل دليفري سريع — ${db.settings.cityName || 'المدينة'}`
+              : 'استلام فوري من كاشير الفرع';
 
       if (
         db.settings.requireElectronicPaymentRef &&
@@ -1818,7 +1929,7 @@ export async function POST(request: Request) {
       const createdOrder: Order = {
         id: cleanClientOrderId || `pos-ord-${Date.now()}`,
         orderNumber,
-        orderSource: 'pos',
+        orderSource: isWhatsappOnline ? 'online' : 'pos',
         posOrderType,
         chairNumber,
         registerId: activeShift?.registerId || body.registerId || 'reg-1',
@@ -1836,7 +1947,10 @@ export async function POST(request: Request) {
         governorate: db.settings.cityName || 'الفرع الرئيسي',
         address: addressLabel,
         notes: body.notes?.trim() || undefined,
-        deliveryMethod: posOrderType === 'phone_delivery' ? 'bandar_fast' : 'store_pickup',
+        deliveryMethod:
+          posOrderType === 'phone_delivery' || isWhatsappOnline
+            ? 'bandar_fast'
+            : 'store_pickup',
         items: verifiedItems,
         subtotal,
         shippingCost,
@@ -1955,6 +2069,18 @@ export async function POST(request: Request) {
 
       // Update Active Shift Metrics (Supports Single Tender, Credit & Split Payments)
       if (activeShift) {
+        const soldCups = countCupsSoldInItems(
+          verifiedItems,
+          db.products,
+          db.promotions || db.flashPromotions || []
+        );
+        if (soldCups > 0) {
+          activeShift.cupsSoldCount = (activeShift.cupsSoldCount || 0) + soldCups;
+          activeShift.cupsExpectedRemaining = Math.max(
+            0,
+            (activeShift.cupsOpeningCount || 0) - activeShift.cupsSoldCount
+          );
+        }
         activeShift.ordersCount += 1;
         activeShift.totalRevenue += finalTotal;
         activeShift.totalRawCost += rawCostTotal;

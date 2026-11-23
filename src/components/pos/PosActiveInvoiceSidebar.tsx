@@ -509,19 +509,55 @@ export default function PosActiveInvoiceSidebar({
             </span>
           </div>
 
+          {/* Fast Channel Switcher: Walk-in Branch Sale vs WhatsApp/Social Online Order */}
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                if (posOrderType === 'whatsapp_online') {
+                  setPosOrderType('counter_takeaway');
+                }
+              }}
+              className={`min-h-[34px] py-1.5 px-2 rounded-xl text-[11px] font-cairo font-bold border transition cursor-pointer ${
+                posOrderType !== 'whatsapp_online'
+                  ? 'bg-[#231710] text-white border-[#231710]'
+                  : 'bg-[#FAF6F0] text-[#6B5B4E] border-[#E8E0D5] hover:border-[#231710]'
+              }`}
+            >
+              بيع فرع
+            </button>
+            <button
+              type="button"
+              onClick={() => setPosOrderType('whatsapp_online')}
+              className={`min-h-[34px] py-1.5 px-2 rounded-xl text-[11px] font-cairo font-bold border transition cursor-pointer ${
+                posOrderType === 'whatsapp_online'
+                  ? 'bg-[#3B6E4C] text-white border-[#3B6E4C] shadow-xs'
+                  : 'bg-emerald-50/70 text-[#3B6E4C] border-emerald-200 hover:bg-emerald-50'
+              }`}
+            >
+              طلب أونلاين (واتساب)
+            </button>
+          </div>
+
           {/* 1-Click Instant Cash Sale ("3-Click Sale" Step 3) */}
           <button
             type="button"
             disabled={posItems.length === 0 || posLoading}
             onClick={() => {
-              setPosOrderType('counter_takeaway');
+              if (posOrderType !== 'whatsapp_online') {
+                setPosOrderType('counter_takeaway');
+              }
               setPaymentMethod('cod');
               onCompleteInvoice('cod');
             }}
             className="w-full min-h-[44px] bg-[#3B6E4C] hover:bg-[#2f5a3d] disabled:opacity-40 text-white font-cairo font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
           >
             <Zap className="w-4 h-4 shrink-0" />
-            <span>تحصيل كاش فوري ({posNetTotal} ج.م)</span>
+            <span>
+              {posOrderType === 'whatsapp_online'
+                ? `تأكيد طلب واتساب كاش (${posNetTotal} ج.م)`
+                : `تحصيل كاش فوري (${posNetTotal} ج.م)`}
+            </span>
           </button>
 
           {/* Other Payment Methods & Checkout Modal */}
@@ -668,16 +704,17 @@ export default function PosActiveInvoiceSidebar({
 
               {showAdvancedCheckout && (
                 <div className="p-3.5 space-y-3.5 border-t border-[#E8E0D5] bg-white">
-                  {/* Order Type (Counter / Glass Bar / Delivery) */}
+                  {/* Order Type (Counter / Glass Bar / Delivery / WhatsApp Online) */}
                   <div className="space-y-1.5">
                     <label className="block text-xs font-cairo font-bold text-[#231710]">
                       نوع الطلب:
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
                         { id: 'counter_takeaway' as PosOrderType, label: 'كاونتر مباشر' },
                         { id: 'glass_bar_dine_in' as PosOrderType, label: 'البار (4 كراسي)' },
                         { id: 'phone_delivery' as PosOrderType, label: 'دليفري (+20ج)' },
+                        { id: 'whatsapp_online' as PosOrderType, label: 'أونلاين (واتساب)' },
                       ].map((t) => (
                         <button
                           key={t.id}
@@ -685,7 +722,9 @@ export default function PosActiveInvoiceSidebar({
                           onClick={() => setPosOrderType(t.id)}
                           className={`min-h-[40px] py-2 px-2 rounded-xl text-xs font-cairo font-bold border transition cursor-pointer ${
                             posOrderType === t.id
-                              ? 'bg-[#231710] text-white border-[#231710]'
+                              ? t.id === 'whatsapp_online'
+                                ? 'bg-[#3B6E4C] text-white border-[#3B6E4C]'
+                                : 'bg-[#231710] text-white border-[#231710]'
                               : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]'
                           }`}
                         >
@@ -716,12 +755,16 @@ export default function PosActiveInvoiceSidebar({
                       </div>
                     )}
 
-                    {posOrderType === 'phone_delivery' && (
+                    {(posOrderType === 'phone_delivery' || posOrderType === 'whatsapp_online') && (
                       <input
                         type="text"
                         value={deliveryAddress}
                         onChange={(e) => setDeliveryAddress(e.target.value)}
-                        placeholder="أدخل عنوان التوصيل بالتفصيل..."
+                        placeholder={
+                          posOrderType === 'whatsapp_online'
+                            ? 'عنوان طلب الواتساب أو اسم العميل / الصفحة (اختياري)...'
+                            : 'أدخل عنوان التوصيل بالتفصيل...'
+                        }
                         className="w-full min-h-[40px] bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs font-medium outline-none"
                       />
                     )}

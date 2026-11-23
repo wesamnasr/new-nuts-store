@@ -506,6 +506,42 @@ export default function SupermarketReceiptModal({
                     <span>النقدية بالدرج:</span>
                     <span>{shift.expectedCashInDrawer} ج.م</span>
                   </div>
+                  {((shift.cupsOpeningCount || 0) > 0 || (shift.cupsSoldCount || 0) > 0) && (
+                    <div className="text-[11px] border border-dashed border-black/40 rounded p-1 my-1 space-y-0.5">
+                      <div className="sr-bold">جرد عدّاد الأكواب الفارغة (بار القهوة):</div>
+                      <div className="sr-row">
+                        <span>عهدة الأكواب أول الوردية:</span>
+                        <span>{shift.cupsOpeningCount || 0}</span>
+                      </div>
+                      <div className="sr-row">
+                        <span>الأكواب المباعة على الكاشير:</span>
+                        <span>-{shift.cupsSoldCount || 0}</span>
+                      </div>
+                      <div className="sr-row sr-bold">
+                        <span>الأكواب المتوقعة المتبقية:</span>
+                        <span>
+                          {shift.cupsExpectedRemaining ??
+                            Math.max(0, (shift.cupsOpeningCount || 0) - (shift.cupsSoldCount || 0))}
+                        </span>
+                      </div>
+                      {shift.cupsActualRemaining !== undefined && (
+                        <>
+                          <div className="sr-row">
+                            <span>الجرد الفعلي للأكواب:</span>
+                            <span className="sr-bold">{shift.cupsActualRemaining}</span>
+                          </div>
+                          <div className="sr-row sr-black">
+                            <span>فارق الأكواب:</span>
+                            <span>
+                              {(shift.cupsDifference || 0) > 0
+                                ? `+${shift.cupsDifference}`
+                                : shift.cupsDifference || 0}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                   {showProfit && typeof shift.totalNetProfit === 'number' && (
                     <div className="sr-row sr-bold">
                       <span>صافي الربح الفعلي:</span>
@@ -812,7 +848,7 @@ export default function SupermarketReceiptModal({
                     />
                   </div>
 
-                  {isTaxReceipt && (
+                  {isTaxReceipt ? (
                     <div className="my-1.5 flex flex-col items-center">
                       <QrCodeSvg
                         value={buildTaxReceiptQrValue(order, settings)}
@@ -824,10 +860,18 @@ export default function SupermarketReceiptModal({
                         }
                       />
                     </div>
+                  ) : (
+                    <div className="my-1.5 flex flex-col items-center">
+                      <QrCodeSvg
+                        value="https://hafsahnuts.com"
+                        size={72}
+                        caption="امسح الكود للطلب الأونلاين — hafsahnuts.com"
+                      />
+                    </div>
                   )}
 
                   <div className="sr-center text-[11px] sr-bold mt-1">
-                    اطلب أونلاين وخد 5% كاش باك في محفظتك!
+                    اطلب أونلاين من hafsahnuts.com وخد 5% كاش باك في محفظتك!
                   </div>
                   <div className="sr-center text-[10px] mt-0.5">
                     شكراً لتسوقكم من {storeName} • نتشرف بخدمتكم دائماً

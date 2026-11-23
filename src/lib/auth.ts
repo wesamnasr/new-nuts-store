@@ -40,10 +40,15 @@ export {
 };
 
 const SESSION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+const CONFIGURED_SESSION_SECRET =
+  process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_JWT_SECRET;
+if (process.env.NODE_ENV === 'production' && !CONFIGURED_SESSION_SECRET) {
+  console.warn(
+    '[Hafsa Security] ADMIN_SESSION_SECRET is not set in production; using fallback signing salt. Please set ADMIN_SESSION_SECRET in Vercel environment variables.'
+  );
+}
 const SECRET_SALT =
-  process.env.ADMIN_SESSION_SECRET ||
-  process.env.ADMIN_JWT_SECRET ||
-  'golden-oasis-admin-secret-salt-v1';
+  CONFIGURED_SESSION_SECRET || 'golden-oasis-admin-secret-salt-v1';
 
 export interface StaffTokenMeta {
   staffId?: string;
