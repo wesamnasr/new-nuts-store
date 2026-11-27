@@ -388,12 +388,21 @@ export function buildRelationalSyncStatements(
   const stmts: SqlStatementSpec[] = [];
   const serializedFull = JSON.stringify(db);
 
-  // 1. Authoritative snapshot & version guard in store_state
+  // 1. Authoritative snapshot & ACID optimistic version guard in store_state.
+  // If another concurrent transaction incremented `version`, casting the conflict sentinel
+  // to integer aborts and rolls back the ENTIRE transaction batch atomically (zero partial writes).
   if (typeof expectedVersion === 'number' && expectedVersion > 0) {
     stmts.push({
-      text: `UPDATE store_state
-             SET data = $1::jsonb, version = $2, updated_at = NOW()
-             WHERE id = 'main' AND version = $3`,
+      text: `WITH updated AS (
+               UPDATE store_state
+               SET data = $1::jsonb, version = $2, updated_at = NOW()
+               WHERE id = 'main' AND version = $3
+               RETURNING version
+             )
+             SELECT CASE
+               WHEN EXISTS (SELECT 1 FROM updated) THEN 1
+               ELSE (('HAFSA_VERSION_CONFLICT_' || $3::text)::int)
+             END AS version_guard`,
       values: [serializedFull, nextVersion, expectedVersion],
     });
   } else {
@@ -1033,9 +1042,10 @@ export async function executeAtomicPostgresTransaction<T>(
     }
   }
 
-  // Fast Serverless Default: HTTP atomic batch transaction with optimistic version lock (up to 3 retries)
+  // Fast Serverless Default: HTTP atomic batch transaction with ACID optimistic version lock (up to 6 retries with jitter)
   const sql = neon(pgUrl);
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  const MAX_OPTIMISTIC_ATTEMPTS = 6;
+  for (let attempt = 1; attempt <= MAX_OPTIMISTIC_ATTEMPTS; attempt++) {
     let rows: Record<string, any>[];
     try {
       rows = await sql`SELECT data, version FROM store_state WHERE id = 'main' LIMIT 1`;
@@ -1083,27 +1093,29 @@ export async function executeAtomicPostgresTransaction<T>(
       baselineDb
     );
 
-    let txResults;
     try {
-      txResults = await sql.transaction(
+      await sql.transaction(
         (txn) => stmts.map((s) => txn.query(s.text, s.values)),
         { fullResults: true }
       );
-    } catch (commitErr) {
-      if (isMissingRelationError(commitErr) && attempt < 3) {
+      return { result, committedDb: normalizedNext };
+    } catch (commitErr: any) {
+      const errMsg = String(commitErr?.message || commitErr || '');
+      if (errMsg.includes('HAFSA_VERSION_CONFLICT_')) {
+        if (attempt < MAX_OPTIMISTIC_ATTEMPTS) {
+          const jitterMs = 25 + Math.floor(Math.random() * 65) * attempt;
+          await new Promise((resolve) => setTimeout(resolve, jitterMs));
+          continue; // Entire SQL transaction was cleanly rolled back; re-read & retry
+        }
+        throw new Error('النظام مزدحم حالياً بالطلبات المتزامنة، يرجى إعادة المحاولة خلال لحظة');
+      }
+      if (isMissingRelationError(commitErr) && attempt < MAX_OPTIMISTIC_ATTEMPTS) {
         globalThis.__newNutsRelationalSchemaReady = false;
         await ensurePostgresSchema();
         continue;
       }
       throw commitErr;
     }
-
-    const firstRowCount = (txResults?.[0] as { rowCount?: number } | undefined)?.rowCount ?? 1;
-    if (currentVersion > 0 && firstRowCount === 0 && attempt < 3) {
-      continue; // Concurrent update changed version; retry cleanly
-    }
-
-    return { result, committedDb: normalizedNext };
   }
 
   throw new Error('Failed to commit optimistic Postgres transaction after retries');

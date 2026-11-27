@@ -147,7 +147,7 @@ export default function HafsaPosCashierPage() {
     'all_pos' | 'counter_takeaway' | 'glass_bar_dine_in' | 'phone_delivery' | 'online' | 'all'
   >('all_pos');
   const [onlineDeliveryFilter, setOnlineDeliveryFilter] = useState<
-    'all' | 'bandar_fast' | 'villages_scheduled' | 'store_pickup'
+    'all' | 'bandar_fast' | 'villages_scheduled' | 'governorate_shipping' | 'store_pickup'
   >('all');
 
   useBrowserUrlSync((params) => {
@@ -184,7 +184,7 @@ export default function HafsaPosCashierPage() {
     } else if (
       pg === 'online_orders' &&
       sub &&
-      ['all', 'bandar_fast', 'villages_scheduled', 'store_pickup'].includes(sub)
+      ['all', 'bandar_fast', 'villages_scheduled', 'governorate_shipping', 'store_pickup'].includes(sub)
     ) {
       setOnlineDeliveryFilter(sub as any);
     } else if (!pg || pg === 'direct_sales') {

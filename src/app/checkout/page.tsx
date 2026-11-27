@@ -15,6 +15,8 @@ import {
   Upload,
   X,
   Image as ImageIcon,
+  Globe2,
+  Warehouse,
 } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 import {
@@ -34,6 +36,13 @@ import {
 import { calculateVipCashback } from '@/lib/pricing';
 import { calculateOrderTaxBreakdown } from '@/lib/tax';
 import SupermarketReceiptModal from '@/components/SupermarketReceiptModal';
+import {
+  getFreeShippingThresholdForMethod,
+  getFulfillmentHubLabel,
+  getGovernorateShippingRates,
+  resolveOrderFulfillmentHub,
+} from '@/lib/egypt-shipping';
+import { readBrowserCookie } from '@/components/MarketingPixels';
 
 async function compressReceiptImageToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -91,8 +100,13 @@ export default function CheckoutPage() {
   const bandarZones = useMemo(() => getResolvedBandarZones(settings), [settings]);
   const villageZones = useMemo(() => getResolvedVillageZones(settings), [settings]);
   const deliveryBatches = useMemo(() => getResolvedDeliveryBatches(settings), [settings]);
+  const governorateRates = useMemo(
+    () => getGovernorateShippingRates(storeData?.shippingRates),
+    [storeData?.shippingRates]
+  );
 
   const freeShippingThreshold = settings?.freeShippingThreshold || 300;
+  const governoratesFreeThreshold = getFreeShippingThresholdForMethod('governorate_shipping', settings);
   const minOrderVillages = settings?.minOrderVillages || 200;
 
   // 1. Customer fields
@@ -100,8 +114,11 @@ export default function CheckoutPage() {
   const [customerPhone, setCustomerPhone] = useState(activeVipMember?.phone || '');
   const [customerAltPhone] = useState('');
 
-  // 2. Dynamic Regional Delivery Method Selector
-  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethodType>('bandar_fast');
+  // 2. Dynamic Regional + All-Egypt Delivery Method Selector
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethodType>('governorate_shipping');
+  const [selectedGovernorate, setSelectedGovernorate] = useState<string>(
+    governorateRates[0]?.governorate || 'القاهرة'
+  );
   const [bandarZone, setBandarZone] = useState<string>(bandarZones[0] || '');
   const [villageName, setVillageName] = useState<string>(villageZones[0] || '');
   const [deliveryBatchSlot, setDeliveryBatchSlot] = useState<string>(
@@ -109,6 +126,15 @@ export default function CheckoutPage() {
   );
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    if (
+      governorateRates.length > 0 &&
+      !governorateRates.some((r) => r.governorate === selectedGovernorate)
+    ) {
+      setSelectedGovernorate(governorateRates[0].governorate);
+    }
+  }, [governorateRates, selectedGovernorate]);
 
   // Sync zone defaults when store settings finish loading
   useEffect(() => {
@@ -157,10 +183,25 @@ export default function CheckoutPage() {
     }
   }, [customerPhone, setActiveVipPhone, featureFlags.enableVipWallet]);
 
+  const selectedGovRate = useMemo(
+    () =>
+      governorateRates.find((r) => r.governorate === selectedGovernorate) ||
+      governorateRates[0],
+    [governorateRates, selectedGovernorate]
+  );
+
+  const activeFreeShippingThreshold = getFreeShippingThresholdForMethod(
+    deliveryMethod,
+    settings
+  );
+
   // Calculate shipping cost based on deliveryMethod
   const shippingCost = useMemo(() => {
     if (deliveryMethod === 'store_pickup') return 0;
-    if (cartSubtotal >= freeShippingThreshold) return 0;
+    if (cartSubtotal >= activeFreeShippingThreshold) return 0;
+    if (deliveryMethod === 'governorate_shipping') {
+      return selectedGovRate?.price ?? 65;
+    }
     if (deliveryMethod === 'bandar_fast') {
       return settings?.bandarShippingCost ?? 20;
     }
@@ -168,7 +209,23 @@ export default function CheckoutPage() {
       return settings?.villagesShippingCost ?? 25;
     }
     return 20;
-  }, [deliveryMethod, cartSubtotal, freeShippingThreshold, settings]);
+  }, [
+    deliveryMethod,
+    cartSubtotal,
+    activeFreeShippingThreshold,
+    selectedGovRate?.price,
+    settings,
+  ]);
+
+  const resolvedHub = useMemo(
+    () =>
+      resolveOrderFulfillmentHub(
+        deliveryMethod,
+        deliveryMethod === 'governorate_shipping' ? selectedGovernorate : cityName,
+        storeData?.shippingRates
+      ),
+    [deliveryMethod, selectedGovernorate, cityName, storeData?.shippingRates]
+  );
 
   const taxBreakdown = useMemo(
     () =>
@@ -241,9 +298,11 @@ export default function CheckoutPage() {
     const deliveryDesc =
       order.deliveryMethod === 'store_pickup'
         ? `استلام سريع من الفرع (${storeAddress})`
-        : order.deliveryMethod === 'villages_scheduled'
-          ? `توصيل مجدول (${order.villageName || ''} — ${order.deliveryBatchSlot || ''})`
-          : `توصيل محلي سريع (${order.governorate})`;
+        : order.deliveryMethod === 'governorate_shipping'
+          ? `شحن محافظات (${order.governorate}) — ${getFulfillmentHubLabel(order.fulfillmentHub)}`
+          : order.deliveryMethod === 'villages_scheduled'
+            ? `توصيل مجدول (${order.villageName || ''} — ${order.deliveryBatchSlot || ''})`
+            : `توصيل محلي سريع (${order.governorate})`;
 
     const payDesc =
       order.paymentMethod === 'cod'
@@ -333,9 +392,13 @@ export default function CheckoutPage() {
     const resolvedGovernorate =
       deliveryMethod === 'store_pickup'
         ? `${cityName} - استلام من الفرع`
-        : deliveryMethod === 'villages_scheduled'
-          ? `مناطق مجدولة (${cityName}) - ${villageName}`
-          : `${cityName} - ${bandarZone}`;
+        : deliveryMethod === 'governorate_shipping'
+          ? selectedGovernorate
+          : deliveryMethod === 'villages_scheduled'
+            ? `مناطق مجدولة (${cityName}) - ${villageName}`
+            : `${cityName} - ${bandarZone}`;
+
+    const metaEventId = `hfs-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
     setSubmitting(true);
     try {
@@ -373,6 +436,10 @@ export default function CheckoutPage() {
             paymentMethod === 'instapay' || paymentMethod === 'vodafone_cash'
               ? paymentReceiptImage || undefined
               : undefined,
+          metaEventId,
+          fbp: readBrowserCookie('_fbp'),
+          fbc: readBrowserCookie('_fbc'),
+          eventSourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,
         }),
       });
 
@@ -382,11 +449,18 @@ export default function CheckoutPage() {
       }
 
       setCompletedOrder(data.order);
-      trackPixelEvent('Purchase', {
-        orderNumber: data.order.orderNumber,
-        value: data.order.total,
-        currency: 'EGP',
-      });
+      trackPixelEvent(
+        'Purchase',
+        {
+          orderNumber: data.order.orderNumber,
+          value: data.order.total,
+          currency: 'EGP',
+          content_ids: cart.map((i) => i.productId),
+          content_type: 'product',
+          num_items: cart.reduce((s, i) => s + i.quantity, 0),
+        },
+        { eventID: data.order.metaEventId || metaEventId }
+      );
 
       try {
         if (typeof window !== 'undefined' && data.order?.orderNumber) {
@@ -637,6 +711,28 @@ export default function CheckoutPage() {
                   <div className="grid grid-cols-1 gap-2.5">
                     <button
                       type="button"
+                      onClick={() => setDeliveryMethod('governorate_shipping')}
+                      className={`min-h-[44px] p-3.5 rounded-xl border text-right transition cursor-pointer flex items-center justify-between gap-3 ${
+                        deliveryMethod === 'governorate_shipping'
+                          ? 'bg-[#231710] text-[#FAF6F0] border-[#231710]'
+                          : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Globe2 className="w-4 h-4 shrink-0" />
+                        <span className="font-cairo text-xs sm:text-sm font-bold">
+                          شحن لجميع محافظات مصر (مخزن أكتوبر + مخزن المنيا)
+                        </span>
+                      </div>
+                      <span className="font-cairo text-xs font-bold shrink-0 tabular-nums">
+                        {cartSubtotal >= governoratesFreeThreshold
+                          ? 'مجاني'
+                          : `${selectedGovRate?.price ?? 65} ${currency}`}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={() => setDeliveryMethod('bandar_fast')}
                       className={`min-h-[44px] p-3.5 rounded-xl border text-right transition cursor-pointer flex items-center justify-between gap-3 ${
                         deliveryMethod === 'bandar_fast'
@@ -702,6 +798,31 @@ export default function CheckoutPage() {
                     </button>
                   </div>
                 </div>
+
+                {deliveryMethod === 'governorate_shipping' && governorateRates.length > 0 && (
+                  <div className="pt-2 border-t border-[#F0EAE0] space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-xs font-bold text-[#231710]">
+                        اختر المحافظة (27 محافظة):
+                      </label>
+                      <span className="text-[11px] font-bold text-[#3B6E4C] inline-flex items-center gap-1">
+                        <Warehouse className="w-3.5 h-3.5" />
+                        <span>{getFulfillmentHubLabel(resolvedHub)}</span>
+                      </span>
+                    </div>
+                    <select
+                      value={selectedGovernorate}
+                      onChange={(e) => setSelectedGovernorate(e.target.value)}
+                      className="w-full min-h-[44px] bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-3 py-2.5 text-xs font-bold text-[#231710]"
+                    >
+                      {governorateRates.map((rate) => (
+                        <option key={rate.id} value={rate.governorate}>
+                          {rate.governorate} — {rate.price} {currency} ({rate.estimatedDays})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {deliveryMethod === 'bandar_fast' && bandarZones.length > 0 && (
                   <div className="pt-2 border-t border-[#F0EAE0]">
@@ -1020,7 +1141,15 @@ export default function CheckoutPage() {
                   <span className="font-bold text-[#231710]">{cartSubtotal} {currency}</span>
                 </div>
                 <div className="flex justify-between text-[#6E5D4F]">
-                  <span>خدمة التوصيل ({deliveryMethod === 'store_pickup' ? 'استلام فرع' : cityName})</span>
+                  <span>
+                    خدمة التوصيل (
+                    {deliveryMethod === 'store_pickup'
+                      ? 'استلام فرع'
+                      : deliveryMethod === 'governorate_shipping'
+                        ? selectedGovernorate
+                        : cityName}
+                    )
+                  </span>
                   <span className="font-bold text-[#231710]">
                     {shippingCost === 0 ? 'مجاني' : `${shippingCost} ${currency}`}
                   </span>

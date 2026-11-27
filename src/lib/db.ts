@@ -278,6 +278,9 @@ export function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
     if (typeof parsed.settings.villageMinOrderAmount !== 'number') {
       parsed.settings.villageMinOrderAmount = 200;
     }
+    if (typeof parsed.settings.governoratesFreeShippingThreshold !== 'number') {
+      parsed.settings.governoratesFreeShippingThreshold = 650;
+    }
     if (typeof parsed.settings.enableTax !== 'boolean') {
       parsed.settings.enableTax = false;
     }

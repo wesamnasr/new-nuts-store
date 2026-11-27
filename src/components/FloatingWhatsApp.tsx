@@ -42,11 +42,12 @@ export default function FloatingWhatsApp() {
   )}`;
 
   const hasStickyCart = cartCount > 0 && !pathname?.startsWith('/checkout');
+  const isProductLanding = Boolean(pathname?.startsWith('/product/'));
 
   return (
     <div
       className={`fixed left-4 ${
-        hasStickyCart ? 'bottom-[132px] sm:bottom-[76px]' : 'bottom-[72px]'
+        hasStickyCart || isProductLanding ? 'bottom-[132px] sm:bottom-[84px]' : 'bottom-[72px]'
       } lg:bottom-6 z-40 flex items-center gap-2.5 group print:hidden transition-all duration-200`}
     >
       <a

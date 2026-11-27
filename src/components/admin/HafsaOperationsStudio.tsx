@@ -221,8 +221,10 @@ export default function HafsaOperationsStudio({
     await onUpdateStorePayload({ promotions: updated }, 'تم حذف العرض الترويجي');
   };
 
-  // 4. Eng. Wesam's Marketing & Bani Mazar Logistics Settings
+  // 4. Eng. Wesam's Marketing & Egypt-Wide Logistics Settings
   const [metaPixel, setMetaPixel] = useState(settings?.metaPixelId || '');
+  const [metaCapiToken, setMetaCapiToken] = useState(settings?.metaCapiAccessToken || '');
+  const [metaCapiTestCode, setMetaCapiTestCode] = useState(settings?.metaCapiTestEventCode || '');
   const [tiktokPixel, setTiktokPixel] = useState(
     settings?.tiktokPixelId || ''
   );
@@ -238,6 +240,9 @@ export default function HafsaOperationsStudio({
   const [freeThreshold, setFreeThreshold] = useState<number>(
     settings?.freeShippingThreshold || 300
   );
+  const [governoratesFreeThreshold, setGovernoratesFreeThreshold] = useState<number>(
+    settings?.governoratesFreeShippingThreshold || 650
+  );
 
   const handleSaveWesamSettings = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -247,14 +252,17 @@ export default function HafsaOperationsStudio({
         settings: {
           ...settings,
           metaPixelId: metaPixel.trim(),
+          metaCapiAccessToken: metaCapiToken.trim(),
+          metaCapiTestEventCode: metaCapiTestCode.trim(),
           tiktokPixelId: tiktokPixel.trim(),
           minOrderVillages: Number(minOrderVillages) || 200,
           bandarShippingCost: Number(bandarShipping) || 20,
           villagesShippingCost: Number(villagesShipping) || 25,
           freeShippingThreshold: Number(freeThreshold) || 300,
+          governoratesFreeShippingThreshold: Number(governoratesFreeThreshold) || 650,
         },
       },
-      'تم حفظ إعدادات التسويق والتوصيل المحلي بنجاح'
+      'تم حفظ إعدادات التسويق (Meta Pixel & CAPI) والتوصيل بنجاح'
     );
   };
 
@@ -763,6 +771,31 @@ export default function HafsaOperationsStudio({
                 type="text"
                 value={metaPixel}
                 onChange={(e) => setMetaPixel(e.target.value)}
+                placeholder="مثال: 123456789012345"
+                className="w-full bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs font-mono font-medium outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-extrabold block mb-1">
+                رمز Meta Conversions API (تتبع السيرفر CAPI):
+              </label>
+              <input
+                type="password"
+                value={metaCapiToken}
+                onChange={(e) => setMetaCapiToken(e.target.value)}
+                placeholder="EAA... (اختياري لرفع دقة تتبع فيسبوك)"
+                className="w-full bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs font-mono font-medium outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold block mb-1 text-[#231710]">
+                كود اختبار Meta CAPI (اختياري):
+              </label>
+              <input
+                type="text"
+                value={metaCapiTestCode}
+                onChange={(e) => setMetaCapiTestCode(e.target.value)}
+                placeholder="مثال: TEST12345 (اتركه فارغاً وقت الإعلان)"
                 className="w-full bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs font-mono font-medium outline-none"
               />
             </div>
@@ -818,6 +851,17 @@ export default function HafsaOperationsStudio({
                 type="number"
                 value={freeThreshold}
                 onChange={(e) => setFreeThreshold(Number(e.target.value))}
+                className="w-full bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs font-bold outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold block mb-1 text-[#231710]">
+                حد الشحن المجاني لشحن المحافظات (ج.م):
+              </label>
+              <input
+                type="number"
+                value={governoratesFreeThreshold}
+                onChange={(e) => setGovernoratesFreeThreshold(Number(e.target.value))}
                 className="w-full bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs font-bold outline-none"
               />
             </div>

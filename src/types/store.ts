@@ -134,12 +134,15 @@ export interface Category {
   subCategories?: string[];
 }
 
+export type FulfillmentHub = 'bani_mazar' | 'cairo_october';
+
 export interface ShippingRate {
   id: string;
   governorate: string;
   price: number;
   estimatedDays: string;
   zoneType?: 'bandar' | 'village' | 'pickup' | 'governorate';
+  fulfillmentHub?: FulfillmentHub;
   minOrderAmount?: number;
 }
 
@@ -276,7 +279,11 @@ export interface PosReturnRecord {
   createdAt: string;
 }
 
-export type DeliveryMethodType = 'bandar_fast' | 'villages_scheduled' | 'store_pickup';
+export type DeliveryMethodType =
+  | 'bandar_fast'
+  | 'villages_scheduled'
+  | 'governorate_shipping'
+  | 'store_pickup';
 
 export type PosOrderType =
   | 'counter_takeaway'
@@ -304,6 +311,8 @@ export interface Order {
   address: string;
   notes?: string;
   deliveryMethod?: DeliveryMethodType;
+  fulfillmentHub?: FulfillmentHub; // Automatic warehouse routing: bani_mazar vs cairo_october
+  metaEventId?: string;            // Deduplication event_id shared between Meta Pixel & Conversions API
   villageName?: string;
   deliverySlot?: string;      // "دورة الساعة 2:00 ظهراً" | "دورة الساعة 8:00 مساءً"
   deliveryBatchSlot?: string; // Alias for deliverySlot
@@ -698,6 +707,7 @@ export interface StoreSettings {
   whatsappNumber: string;
   supportPhone: string;
   freeShippingThreshold: number;
+  governoratesFreeShippingThreshold?: number; // Nationwide Egypt free shipping threshold (e.g. 650 EGP)
   vipCashbackPercent?: number;       // 5% cashback
   vipCashbackPercentage?: number;    // Alias for vipCashbackPercent
   vipMinOrderForCashback?: number;   // 150 EGP
@@ -711,6 +721,8 @@ export interface StoreSettings {
   workingHours: string;
   googleMapsUrl?: string;
   metaPixelId?: string;
+  metaCapiAccessToken?: string;
+  metaCapiTestEventCode?: string;
   tiktokPixelId?: string;
   adminUsername?: string;
   adminPassword?: string;

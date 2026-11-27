@@ -1,4 +1,4 @@
-import { Product } from '@/types/store';
+import { DatabaseSchema, Product } from '@/types/store';
 import { getDb } from '@/lib/db';
 
 /**
@@ -27,7 +27,10 @@ export function normalizeArabicText(text: string): string {
  * Resolves a product by slug, ID, or normalized Arabic name.
  * Safe against URL-encoding and returns undefined for unknown slugs.
  */
-export function resolveProductBySlug(rawSlug: string): Product | undefined {
+export function resolveProductBySlug(
+  rawSlug: string,
+  dbOverride?: DatabaseSchema
+): Product | undefined {
   if (!rawSlug) return undefined;
 
   let decodedSlug = rawSlug;
@@ -37,7 +40,7 @@ export function resolveProductBySlug(rawSlug: string): Product | undefined {
     decodedSlug = rawSlug.trim();
   }
 
-  const db = getDb();
+  const db = dbOverride || getDb();
   const products = db.products || [];
   const normalizedQuery = normalizeArabicText(decodedSlug);
 
@@ -83,8 +86,12 @@ export function resolveProductBySlug(rawSlug: string): Product | undefined {
  * Returns related products sharing the same categoryId,
  * supplemented by other top-rated products if fewer than limit.
  */
-export function getRelatedProducts(product: Product, limit = 4): Product[] {
-  const db = getDb();
+export function getRelatedProducts(
+  product: Product,
+  limit = 4,
+  dbOverride?: DatabaseSchema
+): Product[] {
+  const db = dbOverride || getDb();
   const allProducts = db.products || [];
 
   // Filter in-stock products in the same category (excluding current)

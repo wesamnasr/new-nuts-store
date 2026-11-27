@@ -27,6 +27,12 @@ import { calculateOrderCogs, roundCurrency } from '@/lib/financials';
 import { verifyVipPin, validateVipPinFormat, hashVipPin } from '@/lib/vip-pin';
 import { sendStoreTelegramAlert, type LowStockAlertItem } from '@/lib/telegram';
 import { calculateOrderTaxBreakdown, generateEtaReceiptUuid } from '@/lib/tax';
+import {
+  findGovernorateRate,
+  getFreeShippingThresholdForMethod,
+  resolveOrderFulfillmentHub,
+} from '@/lib/egypt-shipping';
+import { sendMetaCapiPurchase } from '@/lib/meta-capi';
 
 export const dynamic = 'force-dynamic';
 
@@ -550,29 +556,41 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 6. Server-side shipping calculation
-    const freeShippingThreshold = db.settings.freeShippingThreshold || 300;
+    // 6. Server-side shipping calculation & dual-warehouse fulfillment hub routing
+    const effectiveFreeShippingThreshold = getFreeShippingThresholdForMethod(
+      deliveryMethod,
+      db.settings
+    );
     let serverShippingCost = 0;
 
     if (deliveryMethod === 'store_pickup') {
       serverShippingCost = 0;
     } else if (deliveryMethod === 'bandar_fast') {
       serverShippingCost =
-        serverSubtotal >= freeShippingThreshold ? 0 : (db.settings.bandarShippingCost ?? 20);
+        serverSubtotal >= effectiveFreeShippingThreshold ? 0 : (db.settings.bandarShippingCost ?? 20);
     } else if (deliveryMethod === 'villages_scheduled') {
       serverShippingCost =
-        serverSubtotal >= freeShippingThreshold ? 0 : (db.settings.villagesShippingCost ?? 25);
+        serverSubtotal >= effectiveFreeShippingThreshold ? 0 : (db.settings.villagesShippingCost ?? 25);
+    } else if (deliveryMethod === 'governorate_shipping') {
+      if (serverSubtotal < effectiveFreeShippingThreshold) {
+        const matchedGov = findGovernorateRate(body.governorate, db.shippingRates);
+        serverShippingCost = matchedGov ? matchedGov.price : 65;
+      }
     } else {
       // Legacy governorate fallback
-      if (serverSubtotal < freeShippingThreshold) {
-        const matchedShipping = db.shippingRates.find(
-          (r) => r.governorate === body.governorate
-        );
+      if (serverSubtotal < effectiveFreeShippingThreshold) {
+        const matchedShipping = findGovernorateRate(body.governorate, db.shippingRates);
         serverShippingCost = matchedShipping
           ? matchedShipping.price
-          : Number(body.shippingCost) || 50;
+          : Number(body.shippingCost) || 55;
       }
     }
+
+    const fulfillmentHub = resolveOrderFulfillmentHub(
+      deliveryMethod,
+      body.governorate,
+      db.shippingRates
+    );
 
     // 6.5 Optional Egyptian VAT breakdown (enabled only when db.settings.enableTax === true)
     const taxBreakdown = calculateOrderTaxBreakdown(
@@ -713,6 +731,11 @@ export async function POST(request: NextRequest) {
       : undefined;
 
     // 8. Persist order
+    const metaEventId =
+      typeof body.metaEventId === 'string' && body.metaEventId.trim()
+        ? body.metaEventId.trim().slice(0, 80)
+        : `hfs-${orderNumber}-${Date.now()}`;
+
     const newOrder: Order = {
       id: `ord-${Date.now()}`,
       orderNumber,
@@ -721,6 +744,8 @@ export async function POST(request: NextRequest) {
       customerAltPhone: normalizedAltPhone,
       governorate: String(body.governorate || db.settings.cityName || 'المدينة الرئيسية').trim(),
       deliveryMethod,
+      fulfillmentHub,
+      metaEventId,
       villageName: body.villageName ? String(body.villageName).trim() : undefined,
       deliveryBatchSlot: body.deliveryBatchSlot ? String(body.deliveryBatchSlot).trim() : undefined,
       address: String(body.address || '').trim(),
@@ -814,6 +839,22 @@ export async function POST(request: NextRequest) {
     sendStoreTelegramAlert(db.settings, 'new_order', newOrder).catch((e) =>
       console.error('Telegram notification error:', e)
     );
+
+    // Server-side Meta Conversions API (CAPI) Purchase event (non-blocking, deduplicated via metaEventId)
+    const forwardedFor = request.headers.get('x-forwarded-for') || '';
+    const clientIp = forwardedFor.split(',')[0]?.trim() || request.headers.get('x-real-ip') || undefined;
+    const clientUa = request.headers.get('user-agent') || undefined;
+    const refererUrl = request.headers.get('referer') || process.env.NEXT_PUBLIC_SITE_URL || 'https://hafsahnuts.com';
+    sendMetaCapiPurchase(db.settings, newOrder, {
+      eventId: metaEventId,
+      eventSourceUrl: typeof body.eventSourceUrl === 'string' && body.eventSourceUrl.trim()
+        ? body.eventSourceUrl.trim()
+        : refererUrl,
+      clientIpAddress: clientIp,
+      clientUserAgent: clientUa,
+      fbp: typeof body.fbp === 'string' && body.fbp.trim() ? body.fbp.trim() : undefined,
+      fbc: typeof body.fbc === 'string' && body.fbc.trim() ? body.fbc.trim() : undefined,
+    }).catch((e) => console.error('Meta CAPI Purchase error:', e));
 
     if (crossedLowStockAlerts.length > 0) {
       sendStoreTelegramAlert(db.settings, 'low_stock', {

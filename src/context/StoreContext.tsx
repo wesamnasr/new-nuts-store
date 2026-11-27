@@ -91,7 +91,11 @@ interface StoreContextType {
   setSelectedProductModal: (product: Product | null) => void;
   toasts: ToastMessage[];
   showToast: (title: string, subtitle?: string, showCartButton?: boolean) => void;
-  trackPixelEvent: (eventName: string, details?: string | Record<string, any>) => void;
+  trackPixelEvent: (
+    eventName: string,
+    details?: string | Record<string, any>,
+    options?: { eventID?: string }
+  ) => void;
   pixelEvents: PixelEventLog[];
 }
 
@@ -102,7 +106,7 @@ const VIP_PHONE_STORAGE_KEY = 'hafsa_vip_phone_v1';
 const PIXEL_LOG_STORAGE_KEY = 'hafsa_pixel_events_v1';
 const THEME_OVERRIDE_KEY = 'new_nuts_theme_override_v1';
 const PUBLIC_STORE_CACHE_KEY = 'new_nuts_public_cache_v1';
-const FOCUS_FETCH_COOLDOWN_MS = 15000;
+const FOCUS_FETCH_COOLDOWN_MS = 120000;
 export const STORE_SYNC_STORAGE_KEY = 'new_nuts_store_sync_v1';
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
@@ -171,7 +175,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const trackPixelEvent = useCallback(
-    (eventName: string, details: string | Record<string, any> = '') => {
+    (
+      eventName: string,
+      details: string | Record<string, any> = '',
+      options?: { eventID?: string }
+    ) => {
       const detailsStr =
         typeof details === 'string' ? details : JSON.stringify(details);
       const logItem: PixelEventLog = {
@@ -192,11 +200,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== 'undefined') {
         try {
           const w = window as any;
+          const payload = typeof details === 'object' ? details : { details };
           if (typeof w.fbq === 'function') {
-            w.fbq('track', eventName, typeof details === 'object' ? details : { details });
+            if (options?.eventID) {
+              w.fbq('track', eventName, payload, { eventID: options.eventID });
+            } else {
+              w.fbq('track', eventName, payload);
+            }
           }
           if (typeof w.ttq?.track === 'function') {
-            w.ttq.track(eventName, typeof details === 'object' ? details : { details });
+            w.ttq.track(eventName, payload);
           }
         } catch {}
       }
@@ -241,7 +254,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           headers['Authorization'] = `Bearer ${savedToken}`;
           headers['x-admin-token'] = savedToken;
         }
-        const res = await fetch('/api/store', { cache: 'no-store', headers });
+        const res = await fetch('/api/store', {
+          cache: hasStaffToken ? 'no-store' : 'default',
+          headers,
+        });
         if (res.ok) {
           const data: DatabaseSchema = await res.json();
           setStoreData(data);
@@ -454,7 +470,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         },
       ];
     });
-    trackPixelEvent('AddToCart', `${product.name} (${weight.label}) - ${weight.price * quantity} ج.م`);
+    trackPixelEvent('AddToCart', {
+      value: weight.price * quantity,
+      currency: 'EGP',
+      content_ids: [product.id],
+      content_name: product.name,
+      content_type: 'product',
+      num_items: quantity,
+    });
     showToast(`تمت إضافة "${product.name}" إلى السلة`, `${weight.label} • ${roast}`, true);
   };
 

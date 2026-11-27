@@ -18,6 +18,7 @@ import { CartItem, Order, OrderStatus } from '@/types/store';
 import { formatWhatsAppPhone } from '@/lib/validation';
 import { StickerPreviewData } from '@/components/SupermarketReceiptModal';
 import { useStore } from '@/context/StoreContext';
+import { getFulfillmentHubLabel } from '@/lib/egypt-shipping';
 
 interface PosOnlineOrdersPageProps {
   onlineQueueOrders: Order[];
@@ -26,9 +27,9 @@ interface PosOnlineOrdersPageProps {
   onPrintSticker: (sticker: StickerPreviewData) => void;
   onRefresh: () => void;
   playCashierBeep: (freq?: number, duration?: number) => void;
-  deliveryFilter?: 'all' | 'bandar_fast' | 'villages_scheduled' | 'store_pickup';
+  deliveryFilter?: 'all' | 'bandar_fast' | 'villages_scheduled' | 'governorate_shipping' | 'store_pickup';
   onChangeDeliveryFilter?: (
-    filter: 'all' | 'bandar_fast' | 'villages_scheduled' | 'store_pickup'
+    filter: 'all' | 'bandar_fast' | 'villages_scheduled' | 'governorate_shipping' | 'store_pickup'
   ) => void;
   availableRiders?: Array<{ id: string; displayName?: string; username?: string }>;
   onAssignRider?: (orderId: string, riderId: string, riderName: string) => Promise<void>;
@@ -54,11 +55,11 @@ export default function PosOnlineOrdersPage({
   const currency = storeData?.settings?.currencySymbol || 'ج.م';
   const [viewMode, setViewMode] = useState<'kanban' | 'grid'>('kanban');
   const [internalDeliveryFilter, setInternalDeliveryFilter] = useState<
-    'all' | 'bandar_fast' | 'villages_scheduled' | 'store_pickup'
+    'all' | 'bandar_fast' | 'villages_scheduled' | 'governorate_shipping' | 'store_pickup'
   >('all');
   const deliveryFilter = externalDeliveryFilter ?? internalDeliveryFilter;
   const setDeliveryFilter = (
-    val: 'all' | 'bandar_fast' | 'villages_scheduled' | 'store_pickup'
+    val: 'all' | 'bandar_fast' | 'villages_scheduled' | 'governorate_shipping' | 'store_pickup'
   ) => {
     setInternalDeliveryFilter(val);
     onChangeDeliveryFilter?.(val);
@@ -190,9 +191,11 @@ export default function PosOnlineOrdersPage({
     const dmLabel =
       ord.deliveryMethod === 'store_pickup' || ord.address?.includes('استلام')
         ? 'استلام من الفرع (Click & Collect)'
-        : ord.deliveryMethod === 'villages_scheduled' || ord.deliverySlot
-          ? `دورة قرى (${ord.deliverySlot || 'مجدول'})`
-          : `دليفري ${cityName} الفوري`;
+        : ord.deliveryMethod === 'governorate_shipping'
+          ? `شحن محافظات (${ord.governorate}) • ${getFulfillmentHubLabel(ord.fulfillmentHub)}`
+          : ord.deliveryMethod === 'villages_scheduled' || ord.deliverySlot
+            ? `دورة قرى (${ord.deliverySlot || 'مجدول'})`
+            : `دليفري ${cityName} الفوري`;
 
     const pmLabel =
       ord.paymentMethod === 'cod'
@@ -565,6 +568,7 @@ export default function PosOnlineOrdersPage({
           <div className="flex flex-wrap items-center gap-1.5">
             {[
               { id: 'all', label: 'كل طرق التوصيل' },
+              { id: 'governorate_shipping', label: 'شحن المحافظات (مخزن أكتوبر / المنيا)' },
               { id: 'bandar_fast', label: `توصيل ${cityName} الفوري` },
               { id: 'villages_scheduled', label: 'دورات الضواحي والقرى المجدولة' },
               { id: 'store_pickup', label: 'استلام من الفرع الرئيسي' },

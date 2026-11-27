@@ -9,6 +9,7 @@
  */
 
 import type { Order, PosShift, StoreSettings, SupplyInvoice, InventoryAdjustment } from '@/types/store';
+import { getFulfillmentHubLabel } from '@/lib/egypt-shipping';
 
 export interface TelegramNotificationResult {
   success: boolean;
@@ -133,7 +134,11 @@ export function formatOrderTelegramMessage(
       ? `🛵 توصيل فوري داخل ${escapeTelegramHtml(cityName)}`
       : order.deliveryMethod === 'villages_scheduled'
       ? `🚚 دورة توصيل مجدولة (${escapeTelegramHtml(order.villageName || 'المناطق الفرعية')} - ${escapeTelegramHtml(order.deliverySlot || 'دورة مجدولة')})`
+      : order.deliveryMethod === 'governorate_shipping'
+      ? `📦 شحن محافظات (${escapeTelegramHtml(order.governorate)})`
       : '🏪 استلام فوري من الفرع';
+
+  const hubLabel = getFulfillmentHubLabel(order.fulfillmentHub);
 
   const paymentLabel =
     order.paymentMethod === 'cod'
@@ -181,6 +186,7 @@ export function formatOrderTelegramMessage(
 📞 <b>رقم الهاتف:</b> <code>${escapeTelegramHtml(order.customerPhone)}</code>
 📍 <b>العنوان:</b> ${escapeTelegramHtml(order.address || cityName)}
 🚚 <b>نوع الاستلام:</b> ${deliveryLabel}
+🏭 <b>مخزن التجهيز:</b> ${escapeTelegramHtml(hubLabel)}
 ${order.notes ? `📝 <b>ملاحظات:</b> <i>${escapeTelegramHtml(order.notes)}</i>\n` : ''}
 📋 <b>الأصناف المطلوبة (${order.items?.length || 0}):</b>
 ${itemsFormatted}${extraText}

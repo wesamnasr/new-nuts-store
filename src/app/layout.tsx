@@ -7,6 +7,7 @@ import CartDrawer from '@/components/CartDrawer';
 import ProductModal from '@/components/ProductModal';
 import FloatingWhatsApp from '@/components/FloatingWhatsApp';
 import StickyCartBar from '@/components/StickyCartBar';
+import MarketingPixels from '@/components/MarketingPixels';
 import Footer from '@/components/Footer';
 
 export const viewport: Viewport = {
@@ -190,6 +191,7 @@ export default function RootLayout({
         className="font-tajawal min-h-screen flex flex-col antialiased"
       >
         <StoreProvider>
+          <MarketingPixels />
           <ThemeController />
           <Navbar />
           <main className="flex-1">{children}</main>

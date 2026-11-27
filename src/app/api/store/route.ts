@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getDbAsync, withDbTransaction } from '@/lib/db';
 import {
   verifyAdminRequest,
@@ -19,12 +20,23 @@ export async function GET(request: NextRequest) {
   if (request) {
     const auth = verifyAdminRequest(request);
     if (auth.isAuthenticated && auth.role) {
-      return NextResponse.json(sanitizeStoreDataForRole(db, auth.role));
+      return NextResponse.json(sanitizeStoreDataForRole(db, auth.role), {
+        headers: {
+          'Cache-Control': 'private, no-store, max-age=0',
+          Vary: 'Authorization, Cookie',
+        },
+      });
     }
   }
 
-  // Public visitors get sanitized data without passwords, staff directory, wholesale costs, or orders
-  return NextResponse.json(sanitizePublicStoreData(db));
+  // Public visitors get sanitized data cached briefly at the Edge CDN (30s fresh, 5m SWR)
+  // so high-traffic Facebook ad bursts don't hammer Postgres on every page view.
+  return NextResponse.json(sanitizePublicStoreData(db), {
+    headers: {
+      'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=300',
+      Vary: 'Authorization, Cookie',
+    },
+  });
 }
 
 export async function PUT(request: NextRequest) {
@@ -398,6 +410,15 @@ export async function PUT(request: NextRequest) {
       }
 
       db.staffAccounts = preservedStaffAccounts;
+
+      // Refresh ISR product, catalog, and homepage caches immediately after Admin edits
+      try {
+        revalidatePath('/', 'layout');
+        revalidatePath('/shop');
+        revalidatePath('/product/[slug]', 'page');
+      } catch {
+        // Ignore revalidate errors outside Next request lifecycle
+      }
 
       const response = NextResponse.json(sanitizeStoreDataForRole(db, role));
 

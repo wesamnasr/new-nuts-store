@@ -58,6 +58,10 @@ import FilterToolbar from '@/components/ui/FilterToolbar';
 import DataTableShell from '@/components/ui/DataTableShell';
 import { downloadScalePluCsv } from '@/lib/scale-plu';
 import {
+  getGovernorateShippingRates,
+  inferFulfillmentHubFromGovernorate,
+} from '@/lib/egypt-shipping';
+import {
   DateRangePreset,
   FinancialDateRangeFilter,
   filterItemsByDateRange,
@@ -5760,30 +5764,81 @@ export default function AdminDashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Add Governorate & Free Shipping Threshold */}
               <div className="space-y-4">
-                <div className="bg-white p-4 rounded-2xl border border-brand-200 space-y-2.5 shadow-2xs">
+                <div className="bg-white p-4 rounded-2xl border border-brand-200 space-y-3 shadow-2xs">
                   <h3 className="text-xs sm:text-sm font-black text-brand-950">
                     حد الشحن المجاني التلقائي
                   </h3>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      defaultValue={settings.freeShippingThreshold}
-                      onBlur={(e) => {
-                        const val = Number(e.target.value);
-                        if (val !== settings.freeShippingThreshold) {
-                          updateStorePayload(
-                            { settings: { ...settings, freeShippingThreshold: val } },
-                            'تم تحديث حد الشحن المجاني'
-                          );
-                        }
-                      }}
-                      className="w-full bg-brand-50 border border-brand-300 rounded-xl px-3 py-1.5 text-xs font-black"
-                    />
-                    <span className="text-xs font-bold shrink-0">ج.م</span>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-brand-700 mb-1">
+                        محلي (بندر وقرى بني مزار):
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          defaultValue={settings.freeShippingThreshold}
+                          onBlur={(e) => {
+                            const val = Number(e.target.value);
+                            if (val !== settings.freeShippingThreshold) {
+                              updateStorePayload(
+                                { settings: { ...settings, freeShippingThreshold: val } },
+                                'تم تحديث حد الشحن المجاني المحلي'
+                              );
+                            }
+                          }}
+                          className="w-full bg-brand-50 border border-brand-300 rounded-xl px-3 py-1.5 text-xs font-black"
+                        />
+                        <span className="text-xs font-bold shrink-0">ج.م</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-brand-700 mb-1">
+                        شحن المحافظات (كل مصر):
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          defaultValue={settings.governoratesFreeShippingThreshold ?? 650}
+                          onBlur={(e) => {
+                            const val = Number(e.target.value);
+                            if (val !== (settings.governoratesFreeShippingThreshold ?? 650)) {
+                              updateStorePayload(
+                                { settings: { ...settings, governoratesFreeShippingThreshold: val } },
+                                'تم تحديث حد الشحن المجاني للمحافظات'
+                              );
+                            }
+                          }}
+                          className="w-full bg-brand-50 border border-brand-300 rounded-xl px-3 py-1.5 text-xs font-black"
+                        />
+                        <span className="text-xs font-bold shrink-0">ج.م</span>
+                      </div>
+                    </div>
                   </div>
                   <p className="text-[11px] text-brand-600">
-                    أي طلب يتجاوز هذا المبلغ يحصل تلقائياً على شحن مجاني (0 ج.م).
+                    يتم تفعيل الشحن المجاني تلقائياً عند تجاوز الحد المخصص لكل نطاق (محلي أو محافظات).
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const localNonGov = shippingRates.filter(
+                        (r) =>
+                          r.zoneType === 'bandar' ||
+                          r.zoneType === 'village' ||
+                          r.zoneType === 'pickup' ||
+                          r.governorate.includes('بندر بني مزار') ||
+                          r.governorate.includes('قرى مركز بني مزار') ||
+                          r.governorate.includes('استلام سريع')
+                      );
+                      const all27 = getGovernorateShippingRates(shippingRates);
+                      updateStorePayload(
+                        { shippingRates: [...localNonGov, ...all27] },
+                        'تم تجهيز جدول الـ 27 محافظة مع التوجيه التلقائي لمخزن أكتوبر ومخزن بني مزار'
+                      );
+                    }}
+                    className="w-full bg-[#231710] hover:bg-[#3A271C] text-[#FAF6F0] font-bold py-2 px-3 rounded-xl text-[11px] transition cursor-pointer"
+                  >
+                    تجهيز جميع محافظات مصر (27 محافظة • مخزنين)
+                  </button>
                 </div>
 
                 <form
@@ -5908,6 +5963,7 @@ export default function AdminDashboardPage() {
                       <tr className="bg-[#FAF6F0] text-[#231710] font-bold border-b border-[#E8E0D5]">
                         <th className="p-2.5 whitespace-nowrap">#</th>
                         <th className="p-2.5">المحافظة / منطقة التوصيل</th>
+                        <th className="p-2.5 whitespace-nowrap">مخزن التجهيز</th>
                         <th className="p-2.5">مدة التوصيل المتوقعة</th>
                         <th className="p-2.5 whitespace-nowrap">سعر الشحن (ج.م)</th>
                         <th className="p-2.5 whitespace-nowrap text-center">الطلبات</th>
@@ -5942,6 +5998,31 @@ export default function AdminDashboardPage() {
                                 }}
                                 className="w-full bg-brand-50 border border-brand-200 rounded-lg px-2.5 py-1 text-xs font-extrabold text-brand-950"
                               />
+                            </td>
+                            <td className="p-2.5 whitespace-nowrap">
+                              <select
+                                value={
+                                  rate.fulfillmentHub ||
+                                  inferFulfillmentHubFromGovernorate(rate.governorate)
+                                }
+                                onChange={(e) => {
+                                  if (realIdx !== -1) {
+                                    const updated = [...shippingRates];
+                                    updated[realIdx] = {
+                                      ...rate,
+                                      fulfillmentHub: e.target.value as 'bani_mazar' | 'cairo_october',
+                                    };
+                                    updateStorePayload(
+                                      { shippingRates: updated },
+                                      'تم تحديث مخزن التجهيز للمحافظة'
+                                    );
+                                  }
+                                }}
+                                className="bg-brand-50 border border-brand-200 rounded-lg px-2 py-1 text-[11px] font-bold text-brand-900"
+                              >
+                                <option value="cairo_october">مخزن القاهرة (٦ أكتوبر)</option>
+                                <option value="bani_mazar">مخزن بني مزار (المنيا)</option>
+                              </select>
                             </td>
                             <td className="p-2.5 min-w-[140px]">
                               <input

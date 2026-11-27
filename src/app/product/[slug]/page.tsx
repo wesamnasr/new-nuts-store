@@ -11,6 +11,7 @@ interface ProductPageProps {
 }
 
 export const dynamicParams = true;
+export const revalidate = 60;
 
 /**
  * Generate Static Params for build-time pre-rendering on the single canonical /product/[slug] route
@@ -33,7 +34,7 @@ export async function generateMetadata({
   const db = await getDbAsync();
   const storeName = db.settings?.storeName || 'محمصة حفصة للبن والمكسرات';
   const currency = db.settings?.currencySymbol || 'ج.م';
-  const product = resolveProductBySlug(slug);
+  const product = resolveProductBySlug(slug, db);
 
   if (!product) {
     return {
@@ -47,8 +48,9 @@ export async function generateMetadata({
   const minPrice = Math.min(...product.weights.map((w) => w.price));
   const description = `${product.name} - ${product.subtitle}. ${product.description.slice(
     0,
-    140
-  )}... المنشأ: ${product.origin}. السعر يبدأ من ${minPrice} ${currency}. متوفر الآن عبر ${storeName}.`;
+    130
+  )}... السعر يبدأ من ${minPrice} ${currency} • شحن لجميع محافظات مصر والدفع عند الاستلام.`;
+  const heroImageUrl = getSafeImageUrl(product.image);
 
   return {
     title,
@@ -65,24 +67,26 @@ export async function generateMetadata({
       url: `/product/${product.slug || product.id}`,
       images: [
         {
-          url: getSafeImageUrl(product.image),
-          width: 900,
-          height: 600,
+          url: heroImageUrl,
+          width: 1200,
+          height: 630,
           alt: product.name,
         },
-        ...(product.gallery || []).map((imgUrl) => ({
-          url: getSafeImageUrl(imgUrl),
-          width: 900,
-          height: 600,
-          alt: `${product.name} - صورة إضافية`,
-        })),
       ],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: [getSafeImageUrl(product.image)],
+      images: [heroImageUrl],
+    },
+    other: {
+      'product:price:amount': String(minPrice),
+      'product:price:currency': 'EGP',
+      'product:availability': product.inStock ? 'in stock' : 'out of stock',
+      'product:condition': 'new',
+      'product:brand': storeName,
+      'product:retailer_item_id': product.id,
     },
   };
 }
@@ -90,15 +94,16 @@ export async function generateMetadata({
 export default async function ProductDetailPage({ params }: ProductPageProps) {
   const { slug } = await params;
   const db = await getDbAsync();
-  const product = resolveProductBySlug(slug);
+  const product = resolveProductBySlug(slug, db);
 
   if (!product) {
     notFound();
   }
 
   const category = db.categories.find((c) => c.id === product.categoryId);
-  const relatedProducts = getRelatedProducts(product, 4);
+  const relatedProducts = getRelatedProducts(product, 4, db);
   const minPrice = Math.min(...product.weights.map((w) => w.price));
+  const writtenReviews = Array.isArray(product.reviews) ? product.reviews : [];
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -129,20 +134,16 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
         name: db.settings?.storeName || 'محمصة حفصة للبن والمكسرات',
       },
     },
-    ...(product.reviewsCount > 0
+    ...(writtenReviews.length > 0
       ? {
           aggregateRating: {
             '@type': 'AggregateRating',
             ratingValue: product.rating,
-            reviewCount: product.reviewsCount,
+            reviewCount: writtenReviews.length,
             bestRating: 5,
             worstRating: 1,
           },
-        }
-      : {}),
-    ...(product.reviews && product.reviews.length > 0
-      ? {
-          review: product.reviews.slice(0, 5).map((r) => ({
+          review: writtenReviews.slice(0, 5).map((r) => ({
             '@type': 'Review',
             author: {
               '@type': 'Person',

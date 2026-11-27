@@ -119,9 +119,9 @@ export default function ProductAutoSlideshow({
 
   return (
     <div className="space-y-3 select-none">
-      {/* Main Studio Frame (4:5 portrait on mobile, square on desktop) */}
+      {/* Main Studio Frame (4:3 above-the-fold friendly on mobile, square on desktop) */}
       <div
-        className="relative rounded-2xl overflow-hidden bg-white border border-[#E8DFD3] aspect-[4/5] sm:aspect-square shadow-[0_6px_24px_-12px_rgba(35,23,16,0.08)] group"
+        className="relative rounded-2xl overflow-hidden bg-white border border-[#E8DFD3] aspect-[4/3] sm:aspect-square shadow-[0_6px_24px_-12px_rgba(35,23,16,0.08)] group"
         onMouseEnter={() => setIsHoverPaused(true)}
         onMouseLeave={() => setIsHoverPaused(false)}
         onTouchStart={handleTouchStart}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Star,
@@ -60,11 +60,12 @@ export default function ProductDetailClient({
   category,
   relatedProducts,
 }: ProductDetailClientProps) {
-  const { addToCart, showToast, refreshStore, storeData, cartCount } = useStore();
+  const { addToCart, showToast, refreshStore, storeData, cartCount, trackPixelEvent } = useStore();
   const currency = getCurrencySymbol(storeData?.settings);
   const directOrderNameRef = useRef<HTMLInputElement | null>(null);
+  const trackedViewContentIdRef = useRef<string | null>(null);
 
-  // Local state for product reviews and rating metrics
+  // Local state for product reviews and rating metrics (synced with live storeData updates)
   const [product, setProduct] = useState<Product>(initialProduct);
   const unitMode = isUnitProduct(product);
   const showNutritionSection =
@@ -76,8 +77,26 @@ export default function ProductDetailClient({
     initialProduct.rating
   );
   const [reviewsCount, setReviewsCount] = useState<number>(
-    initialProduct.reviewsCount
+    (initialProduct.reviews || []).length
   );
+
+  // Sync live product pricing, stock, gallery, and written reviews once client storeData hydrates
+  useEffect(() => {
+    if (!storeData?.products) return;
+    const fresh = storeData.products.find((p) => p.id === initialProduct.id);
+    if (!fresh) return;
+    setProduct(fresh);
+    const freshReviews = Array.isArray(fresh.reviews) ? fresh.reviews : [];
+    setReviews(freshReviews);
+    setReviewsCount(freshReviews.length);
+    if (freshReviews.length > 0) {
+      const avg =
+        freshReviews.reduce((sum, r) => sum + (Number(r.rating) || 5), 0) / freshReviews.length;
+      setAverageRating(Math.round(avg * 10) / 10);
+    } else {
+      setAverageRating(fresh.rating || 5);
+    }
+  }, [storeData?.products, initialProduct.id]);
 
   // Slideshow index state
   const [selectedSlideIndex, setSelectedSlideIndex] = useState<number | undefined>(
@@ -154,6 +173,28 @@ export default function ProductDetailClient({
   const [quantity, setQuantity] = useState<number>(1);
   const [workerNotes, setWorkerNotes] = useState<string>('');
   const [justAdded, setJustAdded] = useState<boolean>(false);
+
+  // Keep selectedWeight synced if admin updated variant prices live
+  useEffect(() => {
+    if (!availableWeights.length) return;
+    const matched = availableWeights.find((w) => w.id === selectedWeight?.id);
+    if (matched && matched.price !== selectedWeight.price) {
+      setSelectedWeight(matched);
+    }
+  }, [availableWeights, selectedWeight]);
+
+  // Fire Meta / TikTok ViewContent standard event once per product page load
+  useEffect(() => {
+    if (!product?.id || trackedViewContentIdRef.current === product.id) return;
+    trackedViewContentIdRef.current = product.id;
+    trackPixelEvent('ViewContent', {
+      content_ids: [product.id],
+      content_name: product.name,
+      content_type: 'product',
+      value: selectedWeight?.price || product.weights?.[0]?.price || 0,
+      currency: 'EGP',
+    });
+  }, [product?.id, product?.name, product?.weights, selectedWeight?.price, trackPixelEvent]);
 
   // Review Form States
   const [formRating, setFormRating] = useState<number>(5);
@@ -347,17 +388,17 @@ export default function ProductDetailClient({
               <div className="rounded-xl border border-[#E8DFD3] bg-white p-2.5 space-y-1 shadow-2xs">
                 <Sparkles className="w-4 h-4 text-[#9A6836] mx-auto" />
                 <div className="text-[11px] font-bold text-[#261A13]">طازج يومياً</div>
-                <div className="text-[10px] text-[#6E5D4F]">تعبئة عند الطلب</div>
+                <div className="text-[10px] text-[#6E5D4F]">تحميص وتعبئة للطلب</div>
               </div>
               <div className="rounded-xl border border-[#E8DFD3] bg-white p-2.5 space-y-1 shadow-2xs">
                 <Truck className="w-4 h-4 text-[#9A6836] mx-auto" />
-                <div className="text-[11px] font-bold text-[#261A13]">توصيل سريع</div>
-                <div className="text-[10px] text-[#6E5D4F]">لباب البيت</div>
+                <div className="text-[11px] font-bold text-[#261A13]">شحن لكل مصر</div>
+                <div className="text-[10px] text-[#6E5D4F]">مخزن أكتوبر + المنيا</div>
               </div>
               <div className="rounded-xl border border-[#E8DFD3] bg-white p-2.5 space-y-1 shadow-2xs">
                 <ShieldCheck className="w-4 h-4 text-[#3B6E4C] mx-auto" />
-                <div className="text-[11px] font-bold text-[#261A13]">ضمان الجودة</div>
-                <div className="text-[10px] text-[#6E5D4F]">دفع عند الاستلام</div>
+                <div className="text-[11px] font-bold text-[#261A13]">دفع عند الاستلام</div>
+                <div className="text-[10px] text-[#6E5D4F]">ضمان القرمشة والجودة</div>
               </div>
             </div>
           </div>
@@ -456,6 +497,14 @@ export default function ProductDetailClient({
                 <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2">
                   {availableWeights.map((w) => {
                     const isSelected = selectedWeight.id === w.id;
+                    const gramsVal = w.weightGrams || w.grams || 0;
+                    const packTag = !unitMode
+                      ? gramsVal === 500
+                        ? 'الأكثر طلباً'
+                        : gramsVal === 1000
+                          ? 'أفضل توفير'
+                          : null
+                      : null;
                     return (
                       <button
                         key={w.id}
@@ -464,12 +513,25 @@ export default function ProductDetailClient({
                           setSelectedWeight(w);
                           updateUrlQueryParams({ weight: w.id });
                         }}
-                        className={`py-2.5 px-2 rounded-xl border text-center transition-all duration-200 cursor-pointer tabular-nums ${
+                        className={`relative py-2.5 px-2 rounded-xl border text-center transition-all duration-200 cursor-pointer tabular-nums ${
                           isSelected
                             ? 'bg-[#2C1D14] text-[#FAF7F2] border-[#2C1D14] shadow-xs'
-                            : 'bg-[#FAF7F2] text-[#261A13] border-[#E8DFD3] hover:border-[#C88A4B] hover:bg-white'
+                            : packTag
+                              ? 'bg-[#FFFDF9] text-[#261A13] border-[#D9B67E] hover:border-[#9A6836] hover:bg-white'
+                              : 'bg-[#FAF7F2] text-[#261A13] border-[#E8DFD3] hover:border-[#C88A4B] hover:bg-white'
                         }`}
                       >
+                        {packTag && (
+                          <span
+                            className={`absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-2xs ${
+                              gramsVal === 1000
+                                ? 'bg-[#3B6E4C] text-white'
+                                : 'bg-[#D99B26] text-[#231710]'
+                            }`}
+                          >
+                            {packTag}
+                          </span>
+                        )}
                         <div className="text-xs font-extrabold">{w.label}</div>
                         <div
                           className={`text-xs font-bold mt-0.5 ${
@@ -612,6 +674,7 @@ export default function ProductDetailClient({
               selectedRoast={selectedRoast}
               quantity={quantity}
               workerNotes={workerNotes}
+              relatedProducts={relatedProducts}
               nameInputRef={directOrderNameRef}
             />
           </div>
