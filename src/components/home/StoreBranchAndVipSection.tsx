@@ -7,6 +7,7 @@ import { useStore } from '@/context/StoreContext';
 import {
   getCurrencySymbol,
   getResolvedFeatureFlags,
+  getSafeImageUrl,
 } from '@/lib/defaults';
 
 export default function StoreBranchAndVipSection() {
@@ -89,7 +90,7 @@ export default function StoreBranchAndVipSection() {
             </div>
             <div className="w-full sm:w-28 h-24 sm:h-28 rounded-2xl overflow-hidden border border-[#E8DFD3] shrink-0 bg-[#FAF7F2]">
               <img
-                src="/images/branch/store-exterior.jpg"
+                src={getSafeImageUrl('/images/branch/store-exterior.jpg')}
                 alt="واجهة محمصة حفصة — بني مزار أمام مسجد الزراعيين"
                 loading="lazy"
                 className="w-full h-full object-cover"

@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getDbAsync } from '@/lib/db';
-import { getSafeImageUrl } from '@/lib/defaults';
+import { getOgSafeImageUrl, getSafeImageUrl } from '@/lib/defaults';
 import { resolveProductBySlug, getRelatedProducts } from '@/lib/slugs';
 import ProductDetailClient from '@/components/product/ProductDetailClient';
 
@@ -50,7 +50,7 @@ export async function generateMetadata({
     0,
     130
   )}... السعر يبدأ من ${minPrice} ${currency} • شحن لجميع محافظات مصر والدفع عند الاستلام.`;
-  const heroImageUrl = getSafeImageUrl(product.image);
+  const heroImageUrl = getOgSafeImageUrl(product.image);
 
   return {
     title,

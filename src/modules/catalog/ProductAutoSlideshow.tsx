@@ -136,6 +136,8 @@ export default function ProductAutoSlideshow({
               src={imgUrl}
               alt={`${productName} - صورة ${idx + 1}`}
               loading={idx === 0 ? 'eager' : 'lazy'}
+              fetchPriority={idx === 0 ? 'high' : 'auto'}
+              decoding="async"
               className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out ${
                 isCurrent
                   ? 'opacity-100 scale-100 z-10'

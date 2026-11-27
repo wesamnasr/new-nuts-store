@@ -17,6 +17,7 @@ import {
   getCurrencySymbol,
   getResolvedFeatureFlags,
   getResolvedPageContent,
+  getSafeImageUrl,
   stripUiEmojis,
 } from '@/lib/defaults';
 import { formatWhatsAppPhone } from '@/lib/validation';
@@ -252,7 +253,7 @@ export default function Navbar() {
                   }`}
                 >
                   <img
-                    src="/images/brand/hafsa-sticker-gold.png"
+                    src={getSafeImageUrl('/images/brand/hafsa-sticker-gold.png')}
                     alt={storeName}
                     width={44}
                     height={44}

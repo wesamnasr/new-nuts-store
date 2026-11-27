@@ -13,6 +13,7 @@ import {
   Truck,
 } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
+import type { StoreSettings } from '@/types/store';
 import {
   getResolvedFeatureFlags,
   getResolvedPageContent,
@@ -30,9 +31,13 @@ interface BannerSlide {
   secondaryCta: { label: string; href: string };
 }
 
-export default function HeroSection() {
+export default function HeroSection({
+  initialSettings,
+}: {
+  initialSettings?: StoreSettings;
+} = {}) {
   const { storeData } = useStore();
-  const settings = storeData?.settings;
+  const settings = storeData?.settings || initialSettings;
   const pageContent = getResolvedPageContent(settings);
   const featureFlags = getResolvedFeatureFlags(settings);
   const storeName = settings?.storeName || 'محمصة حفصة للبن والمكسرات';
@@ -164,6 +169,8 @@ export default function HeroSection() {
                 src={slide.image}
                 alt={`${storeName} - ${slide.title}`}
                 loading={idx === 0 ? 'eager' : 'lazy'}
+                fetchPriority={idx === 0 ? 'high' : 'auto'}
+                decoding="async"
                 className={`w-full h-full object-cover object-center transition-transform duration-1000 ease-out ${
                   isCurrent ? 'scale-100' : 'scale-[1.04]'
                 }`}

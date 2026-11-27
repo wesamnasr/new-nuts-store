@@ -405,7 +405,29 @@ export const DEFAULT_PAGE_CONTENT: StorePageContent = {
 
 export const DEFAULT_PRODUCT_IMAGE = '/images/products/royal-mix.jpg';
 
+export const WEBP_ENHANCED_LOCAL_IMAGES: Record<string, string> = {
+  '/images/branch/store-exterior.jpg': '/images/branch/store-exterior.webp',
+  '/images/branch/store-interior.jpg': '/images/branch/store-interior.webp',
+  '/images/products/almond.jpg': '/images/products/almond.webp',
+  '/images/products/apricots-prunes.jpg': '/images/products/apricots-prunes.webp',
+  '/images/products/cashew.jpg': '/images/products/cashew.webp',
+  '/images/products/energy-mix.jpg': '/images/products/energy-mix.webp',
+  '/images/products/hazelnut.jpg': '/images/products/hazelnut.webp',
+  '/images/products/pistachio.jpg': '/images/products/pistachio.webp',
+  '/images/products/royal-mix.jpg': '/images/products/royal-mix.webp',
+  '/images/products/savory-snacks.jpg': '/images/products/savory-snacks.webp',
+  '/images/products/stuffed-dates.jpg': '/images/products/stuffed-dates.webp',
+  '/images/products/walnut.jpg': '/images/products/walnut.webp',
+  '/images/brand/hafsa-logo-main.png': '/images/brand/hafsa-logo-main.webp',
+  '/images/brand/hafsa-sticker-gold.png': '/images/brand/hafsa-sticker-gold.webp',
+};
+
 export function getSafeImageUrl(url?: string | null, fallback: string = DEFAULT_PRODUCT_IMAGE): string {
+  const resolved = typeof url === 'string' && url.trim().length > 0 ? url.trim() : fallback;
+  return WEBP_ENHANCED_LOCAL_IMAGES[resolved] || resolved;
+}
+
+export function getOgSafeImageUrl(url?: string | null, fallback: string = DEFAULT_PRODUCT_IMAGE): string {
   if (typeof url === 'string' && url.trim().length > 0) {
     return url.trim();
   }
