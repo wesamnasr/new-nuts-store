@@ -33,22 +33,9 @@ import {
   resolveOrderFulfillmentHub,
 } from '@/lib/egypt-shipping';
 import { sendMetaCapiPurchase } from '@/lib/meta-capi';
+import { stripOrderCosts } from '@/lib/order-sanitize';
 
 export const dynamic = 'force-dynamic';
-
-function stripOrderCosts(order: Order): Order {
-  const copy = { ...order };
-  delete copy.rawCostTotal;
-  delete copy.netProfitEgp;
-  if (Array.isArray(copy.items)) {
-    copy.items = copy.items.map((item) => {
-      const itemCopy = { ...item };
-      delete itemCopy.rawCostEgp;
-      return itemCopy;
-    });
-  }
-  return copy;
-}
 
 function depleteProductStock(product: Product, consumedKg: number, crossedAlerts?: LowStockAlertItem[]) {
   const prevStockKg = typeof product.stockKg === 'number' ? product.stockKg : 50;

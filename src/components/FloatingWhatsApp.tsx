@@ -5,16 +5,16 @@ import { usePathname } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
 import { getResolvedPageContent, stripUiEmojis } from '@/lib/defaults';
 import { formatWhatsAppPhone } from '@/lib/validation';
-import { useAdLandingMode } from '@/lib/ad-mode';
+import { useIsProductLanding } from '@/lib/ad-mode';
 
 export default function FloatingWhatsApp() {
-  const { storeData, isCartOpen, cartCount, selectedProductModal } = useStore();
+  const { storeData, isCartOpen, cartCount } = useStore();
   const pathname = usePathname();
-  const isAdMode = useAdLandingMode();
+  const isProductLanding = useIsProductLanding();
 
   if (
+    isProductLanding ||
     isCartOpen ||
-    Boolean(selectedProductModal) ||
     pathname?.startsWith('/admin') ||
     pathname?.startsWith('/pos') ||
     pathname?.startsWith('/cashier') ||
@@ -44,17 +44,12 @@ export default function FloatingWhatsApp() {
   )}`;
 
   const hasStickyCart = cartCount > 0 && !pathname?.startsWith('/checkout');
-  const isProductLanding = Boolean(pathname?.startsWith('/product/'));
 
   return (
     <div
-      className={`fixed left-4 ${
-        isAdMode
-          ? 'bottom-[76px]'
-          : hasStickyCart || isProductLanding
-            ? 'bottom-[132px] sm:bottom-[84px]'
-            : 'bottom-[72px]'
-      } lg:bottom-6 z-40 flex items-center gap-2.5 group print:hidden transition-all duration-200`}
+      className={`fixed left-3 sm:left-4 bottom-[62px] lg:bottom-5 z-40 ${
+        hasStickyCart ? 'hidden lg:flex' : 'flex'
+      } items-center gap-2.5 group print:hidden transition-all duration-200`}
     >
       <a
         href={whatsappUrl}
@@ -62,7 +57,7 @@ export default function FloatingWhatsApp() {
         rel="noreferrer"
         aria-label={tooltipText}
         title={tooltipText}
-        className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#59ce72] hover:bg-[#4dbf65] text-white shadow-[0_6px_20px_rgba(89,206,114,0.34)] flex items-center justify-center transition-transform duration-200 hover:scale-105 active:scale-95"
+        className="relative w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-[#59ce72] hover:bg-[#4dbf65] text-white shadow-[0_6px_20px_rgba(89,206,114,0.34)] flex items-center justify-center transition-transform duration-200 hover:scale-105 active:scale-95"
       >
         {/* Crisp Official WhatsApp Icon */}
         <svg

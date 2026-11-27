@@ -146,10 +146,10 @@ export default function HeroSection({
   };
 
   return (
-    <section className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-3 sm:pt-5 space-y-4">
+    <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-2.5 sm:pt-5 space-y-3 sm:space-y-4">
       {/* Harmonious Rounded Hero Showcase Frame */}
       <div
-        className="relative w-full min-h-[360px] sm:min-h-[440px] lg:min-h-[490px] rounded-2xl sm:rounded-3xl overflow-hidden bg-[#231710] shadow-[0_18px_45px_-16px_rgba(35,23,16,0.18)]"
+        className="relative w-full min-h-[245px] sm:min-h-[420px] lg:min-h-[460px] rounded-2xl sm:rounded-3xl overflow-hidden bg-[#231710] shadow-[0_18px_45px_-16px_rgba(35,23,16,0.18)]"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onTouchStart={handleTouchStart}
@@ -182,33 +182,33 @@ export default function HeroSection({
         })}
 
         {/* Slide Content */}
-        <div className="relative z-20 px-5 sm:px-10 lg:px-14 h-full min-h-[360px] sm:min-h-[440px] lg:min-h-[490px] flex items-center py-10 sm:py-14">
-          <div className="max-w-2xl space-y-4 sm:space-y-5 text-right text-[#FAF7F2]">
-            <div className="inline-flex items-center gap-2 bg-white/14 backdrop-blur-md text-[#F4D393] border border-white/20 px-3.5 py-1.5 rounded-full text-[11px] sm:text-xs font-cairo font-bold">
-              <Sparkles className="w-3.5 h-3.5 shrink-0 text-[#E5B869]" />
+        <div className="relative z-20 px-4 sm:px-10 lg:px-14 h-full min-h-[245px] sm:min-h-[420px] lg:min-h-[460px] flex items-center py-6 sm:py-12">
+          <div className="max-w-2xl space-y-2.5 sm:space-y-4 text-right text-[#FAF7F2]">
+            <div className="inline-flex items-center gap-1.5 bg-white/14 backdrop-blur-md text-[#F4D393] border border-white/20 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-cairo font-bold">
+              <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-[#E5B869]" />
               <span>{stripUiEmojis(current.badge)}</span>
             </div>
 
-            <h1 className="font-cairo text-2xl sm:text-3xl lg:text-[38px] font-black leading-[1.45] sm:leading-[1.4] text-[#FAF7F2]">
+            <h1 className="font-cairo text-lg sm:text-3xl lg:text-[36px] font-black leading-[1.4] sm:leading-[1.38] text-[#FAF7F2]">
               {stripUiEmojis(current.title)}
             </h1>
 
-            <p className="text-xs sm:text-base text-[#FAF7F2]/85 leading-relaxed max-w-xl font-normal">
+            <p className="text-[11px] sm:text-base text-[#FAF7F2]/85 leading-relaxed max-w-xl font-normal line-clamp-2 sm:line-clamp-none">
               {stripUiEmojis(current.subtitle)}
             </p>
 
-            <div className="flex flex-wrap items-center gap-3 pt-2">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-1">
               <Link
                 href={current.primaryCta.href}
-                className="min-h-[46px] bg-[#E5B869] hover:bg-[#DBA954] text-[#231710] font-cairo font-black text-xs sm:text-sm px-6 py-3 rounded-xl sm:rounded-2xl flex items-center gap-2 shadow-sm transition-all duration-200 active:scale-[0.98]"
+                className="min-h-[40px] sm:min-h-[46px] bg-[#E5B869] hover:bg-[#DBA954] text-[#231710] font-cairo font-black text-xs sm:text-sm px-4 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl flex items-center gap-1.5 shadow-sm transition-all duration-200 active:scale-[0.98]"
               >
                 <span>{stripUiEmojis(current.primaryCta.label)}</span>
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </Link>
 
               <Link
                 href={current.secondaryCta.href}
-                className="min-h-[46px] bg-white/12 hover:bg-white/22 backdrop-blur-md text-[#FAF7F2] border border-white/25 font-cairo font-bold text-xs sm:text-sm px-5 py-3 rounded-xl sm:rounded-2xl flex items-center gap-2 transition-all duration-200"
+                className="min-h-[40px] sm:min-h-[46px] bg-white/12 hover:bg-white/22 backdrop-blur-md text-[#FAF7F2] border border-white/25 font-cairo font-bold text-xs sm:text-sm px-3.5 sm:px-5 py-2 sm:py-3 rounded-xl sm:rounded-2xl flex items-center gap-1.5 transition-all duration-200"
               >
                 <span>{stripUiEmojis(current.secondaryCta.label)}</span>
               </Link>
@@ -258,59 +258,59 @@ export default function HeroSection({
       </div>
 
       {/* Calm Elevated Trust & Value Highlights Bar */}
-      <div className="bg-white rounded-2xl border border-[#E8DFD3] px-4 sm:px-6 py-4 shadow-[0_4px_20px_-10px_rgba(35,23,16,0.06)] grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 text-xs">
-        <div className="flex items-center gap-3">
-          <span className="w-10 h-10 rounded-xl bg-[#F6F1EA] border border-[#EAE0D3] text-[#9A6836] flex items-center justify-center shrink-0">
-            <Flame className="w-4 h-4" />
+      <div className="bg-white rounded-2xl border border-[#E8DFD3] px-3 sm:px-6 py-3 sm:py-4 shadow-[0_4px_20px_-10px_rgba(35,23,16,0.06)] grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 text-[11px] sm:text-xs">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#F6F1EA] border border-[#EAE0D3] text-[#9A6836] flex items-center justify-center shrink-0">
+            <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </span>
           <div>
             <div className="font-cairo font-extrabold text-[#261A13]">
               تحميص طازج يومياً
             </div>
-            <div className="text-[11px] text-[#6E5D4F]">
+            <div className="text-[10px] sm:text-[11px] text-[#6E5D4F]">
               قرمشة مثالية وتعبئة فورية
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="w-10 h-10 rounded-xl bg-[#F6F1EA] border border-[#EAE0D3] text-[#9A6836] flex items-center justify-center shrink-0">
-            <Scale className="w-4 h-4" />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#F6F1EA] border border-[#EAE0D3] text-[#9A6836] flex items-center justify-center shrink-0">
+            <Scale className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </span>
           <div>
             <div className="font-cairo font-extrabold text-[#261A13]">
               جميع الأوزان والكميات
             </div>
-            <div className="text-[11px] text-[#6E5D4F]">
-              ١٢٥ جم • ٢٥٠ جم • ٥٠٠ جم • ١ كجم
+            <div className="text-[10px] sm:text-[11px] text-[#6E5D4F]">
+              من ربع كيلو حتى ٢ كيلو
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="w-10 h-10 rounded-xl bg-[#F6F1EA] border border-[#EAE0D3] text-[#9A6836] flex items-center justify-center shrink-0">
-            <Truck className="w-4 h-4" />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#F6F1EA] border border-[#EAE0D3] text-[#9A6836] flex items-center justify-center shrink-0">
+            <Truck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </span>
           <div>
             <div className="font-cairo font-extrabold text-[#261A13]">
               توصيل سريع لباب البيت
             </div>
-            <div className="text-[11px] text-[#6E5D4F]">
+            <div className="text-[10px] sm:text-[11px] text-[#6E5D4F]">
               شحن محلي وجميع المحافظات
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="w-10 h-10 rounded-xl bg-[#EEF5F0] border border-[#D4E8DA] text-[#3B6E4C] flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-4 h-4" />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#EEF5F0] border border-[#D4E8DA] text-[#15803D] flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </span>
           <div>
             <div className="font-cairo font-extrabold text-[#261A13]">
               الدفع عند الاستلام
             </div>
-            <div className="text-[11px] text-[#6E5D4F]">
-              أو فودافون كاش وإنستا باي
+            <div className="text-[10px] sm:text-[11px] text-[#6E5D4F]">
+              ومعاينة قبل الدفع
             </div>
           </div>
         </div>

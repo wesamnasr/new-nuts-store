@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withDbTransaction } from '@/lib/db';
-import { CartItem, Order, Product } from '@/types/store';
+import { CartItem, Product } from '@/types/store';
 import { validateEgyptianPhone } from '@/lib/validation';
 import {
   calculateVipCashback,
@@ -11,24 +11,11 @@ import { getSafeImageUrl } from '@/lib/defaults';
 import { calculateOrderTaxBreakdown } from '@/lib/tax';
 import { calculateOrderCogs, roundCurrency } from '@/lib/financials';
 import { sendStoreTelegramAlert, type LowStockAlertItem } from '@/lib/telegram';
+import { stripOrderCosts } from '@/lib/order-sanitize';
 
 export const dynamic = 'force-dynamic';
 
 const UPSELL_WINDOW_MS = 15 * 60 * 1000;
-
-function stripOrderCosts(order: Order): Order {
-  const copy: Order = { ...order };
-  delete copy.rawCostTotal;
-  delete copy.netProfitEgp;
-  if (Array.isArray(copy.items)) {
-    copy.items = copy.items.map((item) => {
-      const itemCopy = { ...item };
-      delete itemCopy.rawCostEgp;
-      return itemCopy;
-    });
-  }
-  return copy;
-}
 
 function depleteStockAtomic(
   product: Product,

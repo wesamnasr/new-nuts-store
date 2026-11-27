@@ -22,27 +22,27 @@ export function ProductComparisonCard({ product }: { product: Product }) {
   if (!rows.length) return null;
 
   return (
-    <section className="bg-white rounded-2xl border border-[#E8DFD3] p-5 sm:p-6 space-y-4 shadow-[0_6px_24px_-12px_rgba(35,23,16,0.06)]">
+    <section className="bg-white rounded-2xl border border-[#E8DFD3] p-3.5 sm:p-6 space-y-3 sm:space-y-4 shadow-[0_6px_24px_-12px_rgba(35,23,16,0.06)]">
       <div className="space-y-1">
-        <span className="inline-block text-[11px] font-extrabold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2.5 py-0.5 rounded-full">
+        <span className="inline-block text-[10px] sm:text-[11px] font-extrabold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2.5 py-0.5 rounded-full">
           مقارنة صريحة قبل ما تشتري
         </span>
-        <h2 className="font-cairo text-base sm:text-xl font-extrabold text-[#261A13]">
+        <h2 className="font-cairo text-sm sm:text-xl font-extrabold text-[#261A13]">
           ليه {product.name} من محمصة حفصة غير العادي؟
         </h2>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-right border-collapse text-xs sm:text-sm">
+        <table className="w-full text-right border-collapse text-[11px] sm:text-sm">
           <thead>
             <tr className="border-b border-[#E8DFD3]">
-              <th className="py-2.5 px-3 font-cairo font-bold text-[#6E5D4F] w-[26%]">
+              <th className="py-2 px-2 sm:py-2.5 sm:px-3 font-cairo font-bold text-[#6E5D4F] w-[26%]">
                 المقارنة
               </th>
-              <th className="py-2.5 px-3 font-cairo font-extrabold text-[#15803D] bg-[#F0FDF4]/80 rounded-tr-xl w-[39%]">
+              <th className="py-2 px-2 sm:py-2.5 sm:px-3 font-cairo font-extrabold text-[#15803D] bg-[#F0FDF4]/80 rounded-tr-xl w-[39%]">
                 محمصة حفصة
               </th>
-              <th className="py-2.5 px-3 font-cairo font-bold text-[#8A7968] bg-[#FAF7F2] rounded-tl-xl w-[35%]">
+              <th className="py-2 px-2 sm:py-2.5 sm:px-3 font-cairo font-bold text-[#8A7968] bg-[#FAF7F2] rounded-tl-xl w-[35%]">
                 السوق العادي
               </th>
             </tr>
@@ -50,18 +50,18 @@ export function ProductComparisonCard({ product }: { product: Product }) {
           <tbody className="divide-y divide-[#F0EAE0]">
             {rows.map((row, idx) => (
               <tr key={idx}>
-                <td className="py-3 px-3 font-bold text-[#261A13] align-top">
+                <td className="py-2 px-2 sm:py-3 sm:px-3 font-bold text-[#261A13] align-top">
                   {row.feature}
                 </td>
-                <td className="py-3 px-3 bg-[#F0FDF4]/55 text-[#14532D] font-bold align-top">
-                  <div className="flex items-start gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-[#15803D] shrink-0 mt-0.5" />
+                <td className="py-2 px-2 sm:py-3 sm:px-3 bg-[#F0FDF4]/55 text-[#14532D] font-bold align-top">
+                  <div className="flex items-start gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#15803D] shrink-0 mt-0.5" />
                     <span>{row.hafsa}</span>
                   </div>
                 </td>
-                <td className="py-3 px-3 bg-[#FAF7F2]/60 text-[#7A6B5D] align-top">
-                  <div className="flex items-start gap-1.5">
-                    <XCircle className="w-4 h-4 text-[#C26A5A] shrink-0 mt-0.5" />
+                <td className="py-2 px-2 sm:py-3 sm:px-3 bg-[#FAF7F2]/60 text-[#7A6B5D] align-top">
+                  <div className="flex items-start gap-1">
+                    <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#C26A5A] shrink-0 mt-0.5" />
                     <span>{row.others}</span>
                   </div>
                 </td>
@@ -89,21 +89,21 @@ export function CustomerProofGallery({
   }
 
   return (
-    <section className="bg-white rounded-2xl border border-[#E8DFD3] p-5 sm:p-6 space-y-4 shadow-[0_6px_24px_-12px_rgba(35,23,16,0.06)]">
+    <section className="bg-white rounded-2xl border border-[#E8DFD3] p-3.5 sm:p-6 space-y-3 sm:space-y-4 shadow-[0_6px_24px_-12px_rgba(35,23,16,0.06)]">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="space-y-0.5">
-          <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#9A6836] bg-[#FAF7F2] border border-[#E8DFD3] px-2.5 py-0.5 rounded-full">
+          <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-extrabold text-[#9A6836] bg-[#FAF7F2] border border-[#E8DFD3] px-2.5 py-0.5 rounded-full">
             <Camera className="w-3.5 h-3.5" />
             <span>صور ورسائل حقيقية من عملائنا</span>
           </span>
-          <h2 className="font-cairo text-base sm:text-xl font-extrabold text-[#261A13]">
+          <h2 className="font-cairo text-sm sm:text-xl font-extrabold text-[#261A13]">
             تجارب ناس جربت {productName} وطلبت تاني
           </h2>
         </div>
-        <span className="text-[11px] text-[#6E5D4F]">اضغط على أي صورة للتكبير</span>
+        <span className="text-[10px] sm:text-[11px] text-[#6E5D4F]">اضغط على أي صورة للتكبير</span>
       </div>
 
-      <div className="flex items-stretch gap-3 overflow-x-auto no-scrollbar pb-1">
+      <div className="flex items-stretch gap-2.5 sm:gap-3 overflow-x-auto no-scrollbar pb-1">
         {cleanImages.map((imgUrl, idx) => {
           const safeSrc = getSafeImageUrl(imgUrl);
           return (
@@ -111,7 +111,7 @@ export function CustomerProofGallery({
               key={`${imgUrl}-${idx}`}
               type="button"
               onClick={() => setZoomedImg(safeSrc)}
-              className="group relative w-44 sm:w-52 aspect-[3/4] rounded-2xl overflow-hidden border border-[#E8DFD3] bg-[#FAF7F2] shrink-0 cursor-pointer shadow-2xs hover:border-[#9A6836] transition"
+              className="group relative w-36 sm:w-52 aspect-[3/4] rounded-2xl overflow-hidden border border-[#E8DFD3] bg-[#FAF7F2] shrink-0 cursor-pointer shadow-2xs hover:border-[#9A6836] transition"
             >
               <img
                 src={safeSrc}
@@ -169,13 +169,13 @@ export function ProductFaqAccordion({
   if (!faqs.length) return null;
 
   return (
-    <section className="bg-white rounded-2xl border border-[#E8DFD3] p-5 sm:p-6 space-y-4 shadow-[0_6px_24px_-12px_rgba(35,23,16,0.06)]">
+    <section className="bg-white rounded-2xl border border-[#E8DFD3] p-3.5 sm:p-6 space-y-3 sm:space-y-4 shadow-[0_6px_24px_-12px_rgba(35,23,16,0.06)]">
       <div className="space-y-0.5">
-        <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#9A6836] bg-[#FAF7F2] border border-[#E8DFD3] px-2.5 py-0.5 rounded-full">
+        <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-extrabold text-[#9A6836] bg-[#FAF7F2] border border-[#E8DFD3] px-2.5 py-0.5 rounded-full">
           <HelpCircle className="w-3.5 h-3.5" />
           <span>أسئلة بتيجي على بال كل عميل</span>
         </span>
-        <h2 className="font-cairo text-base sm:text-xl font-extrabold text-[#261A13]">
+        <h2 className="font-cairo text-sm sm:text-xl font-extrabold text-[#261A13]">
           كل اللي محتاج تطمن منه قبل ما تطلب
         </h2>
       </div>
@@ -189,7 +189,7 @@ export function ProductFaqAccordion({
                 type="button"
                 onClick={() => setOpenIndex(isOpen ? null : idx)}
                 aria-expanded={isOpen}
-                className="w-full px-4 py-3.5 text-right flex items-center justify-between gap-3 cursor-pointer hover:bg-[#FAF7F2] transition"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3.5 text-right flex items-center justify-between gap-2.5 cursor-pointer hover:bg-[#FAF7F2] transition"
               >
                 <span className="font-cairo text-xs sm:text-sm font-extrabold text-[#261A13]">
                   {faq.question}
@@ -201,7 +201,7 @@ export function ProductFaqAccordion({
                 />
               </button>
               {isOpen && (
-                <div className="px-4 pb-4 text-xs sm:text-sm text-[#5E4D40] leading-relaxed">
+                <div className="px-3 sm:px-4 pb-3 sm:pb-4 text-[11px] sm:text-sm text-[#5E4D40] leading-relaxed">
                   {faq.answer}
                 </div>
               )}

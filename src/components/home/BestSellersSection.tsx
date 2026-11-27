@@ -61,21 +61,21 @@ export default function BestSellersSection({
   return (
     <section
       id="best-sellers"
-      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6"
+      className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-4 sm:space-y-6"
     >
       {/* Centered Section Heading */}
-      <div className="text-center space-y-1.5">
-        <h2 className="font-cairo text-xl sm:text-2xl lg:text-[28px] font-black text-[#261A13]">
+      <div className="text-center space-y-1">
+        <h2 className="font-cairo text-lg sm:text-2xl lg:text-[28px] font-black text-[#261A13]">
           المكسرات والأكثر مبيعاً
         </h2>
-        <p className="text-xs sm:text-sm text-[#6E5D4F]">
-          اختر الوزن المناسب لك مباشرة من ثمن كيلو حتى كيلو كامل بأعلى جودة تحميص
+        <p className="text-[11px] sm:text-sm text-[#6E5D4F]">
+          اختر الوزن المناسب لك مباشرة أو اطلب الصنف بضغطة واحدة
         </p>
-        <div className="w-14 h-1 bg-gradient-to-r from-[#9A6836] to-[#E5B869] rounded-full mx-auto pt-0.5" />
+        <div className="w-12 h-1 bg-gradient-to-r from-[#9A6836] to-[#E5B869] rounded-full mx-auto pt-0.5" />
       </div>
 
       {/* Centered Filter Pills */}
-      <div className="flex items-center justify-start sm:justify-center gap-2 overflow-x-auto no-scrollbar pb-1">
+      <div className="flex items-center justify-start sm:justify-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-1">
         {FILTER_TABS.map((tab) => {
           const href = buildUrlWithParams('/', {
             category: tab.id === 'all' ? null : tab.id,
@@ -92,7 +92,7 @@ export default function BestSellersSection({
                   category: tab.id === 'all' ? null : tab.id,
                 });
               }}
-              className={`px-4 py-2 rounded-full text-xs font-cairo font-extrabold whitespace-nowrap transition-all duration-200 cursor-pointer ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-cairo font-extrabold whitespace-nowrap transition-all duration-200 cursor-pointer ${
                 isActive
                   ? 'bg-[#2C1D14] text-[#FAF7F2] shadow-xs'
                   : 'bg-white text-[#5E4D40] border border-[#E8DFD3] hover:text-[#261A13] hover:border-[#C88A4B]'
@@ -105,7 +105,7 @@ export default function BestSellersSection({
       </div>
 
       {/* Responsive 2-Col Mobile / 3-Col Tablet / 4-Col Desktop Product Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-5">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
         {displayedProducts.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}

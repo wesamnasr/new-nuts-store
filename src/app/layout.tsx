@@ -4,7 +4,6 @@ import { StoreProvider } from '@/context/StoreContext';
 import ThemeController from '@/components/ThemeController';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
-import ProductModal from '@/components/ProductModal';
 import FloatingWhatsApp from '@/components/FloatingWhatsApp';
 import StickyCartBar from '@/components/StickyCartBar';
 import MarketingPixels from '@/components/MarketingPixels';
@@ -120,6 +119,21 @@ export default function RootLayout({
             __html: `
               try {
                 if (typeof window !== 'undefined') {
+                  // Instant zero-flash compact operational scale (-20%) for all ERP/POS staff routes
+                  var p = window.location.pathname || '';
+                  if (
+                    p === '/admin' || p.indexOf('/admin/') === 0 ||
+                    p === '/pos' || p.indexOf('/pos/') === 0 ||
+                    p === '/cashier' || p.indexOf('/cashier/') === 0 ||
+                    p === '/supplier' || p.indexOf('/supplier/') === 0 ||
+                    p === '/accountant' || p.indexOf('/accountant/') === 0 ||
+                    p === '/rider' || p.indexOf('/rider/') === 0
+                  ) {
+                    document.documentElement.setAttribute('data-ops-density', 'compact');
+                  } else {
+                    document.documentElement.removeAttribute('data-ops-density');
+                  }
+
                   // Non-render-blocking async font enhancement after initial paint
                   window.addEventListener('load', function() {
                     if (navigator.onLine === false) return;
@@ -196,7 +210,6 @@ export default function RootLayout({
           <Navbar />
           <main className="flex-1">{children}</main>
           <CartDrawer />
-          <ProductModal />
           <StickyCartBar />
           <FloatingWhatsApp />
           <Footer />

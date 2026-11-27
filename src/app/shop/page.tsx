@@ -88,11 +88,11 @@ function ShopCatalogContent() {
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#261A13] pb-16">
       {/* Compact Page Header */}
-      <div className="bg-white border-b border-[#E8DFD3] py-5 sm:py-6 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-white border-b border-[#E8DFD3] py-3.5 sm:py-6 px-3 sm:px-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
           <div className="space-y-0.5">
-            <span className="text-xs font-bold text-[#9A6836]">كتالوج المتجر</span>
-            <h1 className="font-cairo text-xl sm:text-2xl font-bold text-[#261A13]">
+            <span className="text-[11px] sm:text-xs font-bold text-[#9A6836]">كتالوج المتجر</span>
+            <h1 className="font-cairo text-lg sm:text-2xl font-bold text-[#261A13]">
               جميع الأصناف الطازجة ({filteredProducts.length})
             </h1>
           </div>
@@ -100,16 +100,16 @@ function ShopCatalogContent() {
           <div className="flex flex-wrap items-center gap-2 shrink-0">
             <Link
               href="/build-box"
-              className="min-h-[44px] bg-[#FAF7F2] hover:bg-[#F3ECE2] text-[#261A13] border border-[#E8DFD3] font-cairo font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 transition"
+              className="min-h-[38px] sm:min-h-[44px] bg-[#FAF7F2] hover:bg-[#F3ECE2] text-[#261A13] border border-[#E8DFD3] font-cairo font-bold text-[11px] sm:text-xs px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl flex items-center gap-1.5 transition"
             >
-              <Gift className="w-4 h-4 text-[#9A6836]" />
+              <Gift className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#9A6836]" />
               <span>بوكس السهرة</span>
             </Link>
             <Link
               href="/coffee-blender"
-              className="min-h-[44px] bg-[#FAF7F2] hover:bg-[#F3ECE2] text-[#261A13] border border-[#E8DFD3] font-cairo font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 transition"
+              className="min-h-[38px] sm:min-h-[44px] bg-[#FAF7F2] hover:bg-[#F3ECE2] text-[#261A13] border border-[#E8DFD3] font-cairo font-bold text-[11px] sm:text-xs px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl flex items-center gap-1.5 transition"
             >
-              <Coffee className="w-4 h-4 text-[#9A6836]" />
+              <Coffee className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#9A6836]" />
               <span>معمل توليفة البن</span>
             </Link>
           </div>
@@ -118,10 +118,10 @@ function ShopCatalogContent() {
 
       {/* Sticky Main Category Tabs */}
       <div
-        style={{ top: 'var(--navbar-height, 68px)' }}
+        style={{ top: 'var(--navbar-height, 56px)' }}
         className="sticky z-30 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E8DFD3]"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar">
           <a
             href="/shop"
             onClick={(e) => {
@@ -131,7 +131,7 @@ function ShopCatalogContent() {
               setShowAllSubCats(false);
               updateUrlQueryParams({ cat: null, category: null, sub: null });
             }}
-            className={`min-h-[40px] inline-flex items-center px-4 py-2 rounded-xl text-xs font-cairo font-bold whitespace-nowrap transition-all duration-200 cursor-pointer ${
+            className={`min-h-[34px] sm:min-h-[40px] inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-cairo font-bold whitespace-nowrap transition-all duration-200 cursor-pointer ${
               selectedCategory === 'all'
                 ? 'bg-[#2C1D14] text-[#FAF7F2] shadow-2xs'
                 : 'bg-white text-[#5E4D40] border border-[#E8DFD3] hover:text-[#261A13] hover:border-[#C88A4B]'
@@ -159,14 +159,14 @@ function ShopCatalogContent() {
                   setShowAllSubCats(false);
                   updateUrlQueryParams({ cat: cat.id, category: null, sub: null });
                 }}
-                className={`min-h-[40px] px-4 py-2 rounded-xl text-xs font-cairo font-bold whitespace-nowrap transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+                className={`min-h-[34px] sm:min-h-[40px] px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-cairo font-bold whitespace-nowrap transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
                   isSelected
                     ? 'bg-[#2C1D14] text-[#FAF7F2] shadow-2xs'
                     : 'bg-white text-[#5E4D40] border border-[#E8DFD3] hover:text-[#261A13] hover:border-[#C88A4B]'
                 }`}
               >
                 <span>{cleanCatName}</span>
-                <span className="text-[11px] opacity-75 tabular-nums">({count})</span>
+                <span className="text-[10px] sm:text-[11px] opacity-75 tabular-nums">({count})</span>
               </a>
             );
           })}
@@ -174,7 +174,7 @@ function ShopCatalogContent() {
       </div>
 
       {/* Search, Sub-category Pills & Sort Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-5 space-y-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-5 space-y-3 sm:space-y-4">
         <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between bg-white p-3 sm:p-3.5 rounded-2xl border border-[#E8DFD3] shadow-[0_4px_16px_-10px_rgba(35,23,16,0.05)]">
           <div className="relative flex-1">
             <input
@@ -297,7 +297,7 @@ function ShopCatalogContent() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
             {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}

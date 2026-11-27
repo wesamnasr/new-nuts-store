@@ -372,7 +372,7 @@ export default function ProductAutoSlideshow({
               type="button"
               onClick={() => goToIndex(activeIndex - 1, true)}
               aria-label="الشريحة السابقة"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/90 hover:bg-[#261A13] text-[#261A13] hover:text-[#FAF7F2] border border-[#E8DFD3] shadow-sm flex items-center justify-center transition cursor-pointer"
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/90 hover:bg-[#261A13] text-[#261A13] hover:text-[#FAF7F2] border border-[#E8DFD3] shadow-sm flex items-center justify-center transition cursor-pointer"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -380,7 +380,7 @@ export default function ProductAutoSlideshow({
               type="button"
               onClick={() => goToIndex(activeIndex + 1, true)}
               aria-label="الشريحة التالية"
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/90 hover:bg-[#261A13] text-[#261A13] hover:text-[#FAF7F2] border border-[#E8DFD3] shadow-sm flex items-center justify-center transition cursor-pointer"
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/90 hover:bg-[#261A13] text-[#261A13] hover:text-[#FAF7F2] border border-[#E8DFD3] shadow-sm flex items-center justify-center transition cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -450,7 +450,7 @@ export default function ProductAutoSlideshow({
                     key={`thumb-video-${idx}`}
                     type="button"
                     onClick={() => goToIndex(idx, true)}
-                    className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer bg-[#231710] ${
+                    className={`relative w-14 h-14 sm:w-18 sm:h-18 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer bg-[#231710] ${
                       isSelected
                         ? 'border-[#15803D] ring-2 ring-[#15803D]/25 scale-[1.02]'
                         : 'border-[#E8DFD3] opacity-85 hover:opacity-100 hover:border-[#15803D]'
@@ -480,7 +480,7 @@ export default function ProductAutoSlideshow({
                   key={`thumb-${item.src}-${idx}`}
                   type="button"
                   onClick={() => goToIndex(idx, true)}
-                  className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
+                  className={`relative w-14 h-14 sm:w-18 sm:h-18 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
                     isSelected
                       ? 'border-[#9A6836] ring-2 ring-[#9A6836]/20 scale-[1.02]'
                       : 'border-[#E8DFD3] opacity-70 hover:opacity-100 hover:border-[#C88A4B]'

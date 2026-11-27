@@ -64,12 +64,13 @@ export default function SpecialOffersAndBoxesSection({
   );
 
   const discountedProducts = useMemo(() => {
-    const withDiscount = onlineProducts.filter((p) =>
-      p.weights?.some(
-        (w) => Boolean(w.originalPrice && w.originalPrice > w.price)
+    return onlineProducts
+      .filter((p) =>
+        p.weights?.some(
+          (w) => Boolean(w.originalPrice && w.originalPrice > w.price)
+        )
       )
-    );
-    return (withDiscount.length >= 4 ? withDiscount : onlineProducts).slice(0, 4);
+      .slice(0, 4);
   }, [onlineProducts]);
 
   const handleQuickAddBox = (size: PartitionedBoxSize) => {
@@ -84,25 +85,25 @@ export default function SpecialOffersAndBoxesSection({
   };
 
   return (
-    <div id="special-offers" className="space-y-14 sm:space-y-16 scroll-mt-24">
-      {/* 1. Harmonious "العروض والخصومات" 4-Column Product Grid */}
+    <div id="special-offers" className="space-y-8 sm:space-y-14 scroll-mt-24">
+      {/* 1. Harmonious "العروض والخصومات" 4-Column Product Grid (Discounted Items Only — No Duplication) */}
       {discountedProducts.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-4 sm:space-y-6">
           <div className="text-center space-y-1.5">
-            <div className="inline-flex items-center gap-1.5 bg-[#FDF2F0] text-[#B84A39] border border-[#F2D6D0] px-3 py-1 rounded-full text-xs font-cairo font-extrabold">
+            <div className="inline-flex items-center gap-1.5 bg-[#FDF2F0] text-[#B84A39] border border-[#F2D6D0] px-3 py-1 rounded-full text-[11px] sm:text-xs font-cairo font-extrabold">
               <Percent className="w-3.5 h-3.5" />
               <span>تخفيضات حصرية</span>
             </div>
-            <h2 className="font-cairo text-xl sm:text-2xl lg:text-[28px] font-black text-[#261A13]">
+            <h2 className="font-cairo text-lg sm:text-2xl lg:text-[28px] font-black text-[#261A13]">
               العروض والخصومات
             </h2>
-            <p className="text-xs sm:text-sm text-[#6E5D4F]">
-              أقوى العروض اليومية على المكسرات المختارة مع الاحتفاظ بكافة الأوزان والكميات
+            <p className="text-[11px] sm:text-sm text-[#6E5D4F]">
+              أقوى العروض اليومية على المكسرات المختارة
             </p>
-            <div className="w-14 h-1 bg-gradient-to-r from-[#9A6836] to-[#E5B869] rounded-full mx-auto pt-0.5" />
+            <div className="w-12 h-1 bg-gradient-to-r from-[#9A6836] to-[#E5B869] rounded-full mx-auto pt-0.5" />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-5">
             {discountedProducts.map((prod) => (
               <ProductCard key={prod.id} product={prod} />
             ))}
@@ -112,7 +113,7 @@ export default function SpecialOffersAndBoxesSection({
 
       {/* 2. Active Bundle Offers */}
       {promotions.length > 0 && pageContent.showFlashDealsSection !== false && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-4 sm:space-y-6">
           <div className="text-center space-y-1.5">
             <h2 className="font-cairo text-xl sm:text-2xl font-black text-[#261A13]">
               {pageContent.flashDealsTitle || 'باقات التوفير العائلية'}
@@ -204,7 +205,7 @@ export default function SpecialOffersAndBoxesSection({
 
       {/* 3. Partitioned Gift Boxes Section */}
       {featureFlags.enableCustomBoxes && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-4 sm:space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
             <div>
               <h2 className="font-cairo text-xl sm:text-2xl font-black text-[#261A13]">

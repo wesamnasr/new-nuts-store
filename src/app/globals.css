@@ -249,7 +249,7 @@
 }
 
 html {
-  font-size: 15px;
+  font-size: 13.5px;
   scroll-behavior: smooth;
   overflow-x: clip;
   -webkit-tap-highlight-color: transparent;
@@ -257,7 +257,7 @@ html {
 
 @media (min-width: 640px) {
   html {
-    font-size: 15.5px;
+    font-size: 15px;
   }
 }
 
@@ -265,6 +265,96 @@ html {
   html {
     font-size: 16px;
   }
+}
+
+/* ==========================================================================
+   COMPACT OPERATIONAL ERP MODE (-20% SCALE across Web & Desktop Staff Areas)
+   Applies cleanly to /admin, /pos, /cashier, /supplier, /accountant, /rider
+   Scales all rem-based layout, spacing, icons, sidebars, cards & typography
+   by 20%, plus matching compact overrides for fixed-px controls & data tables.
+   ========================================================================== */
+html[data-ops-density="compact"] {
+  font-size: 11px;
+}
+
+@media (min-width: 640px) {
+  html[data-ops-density="compact"] {
+    font-size: 12px;
+  }
+}
+
+@media (min-width: 1280px) {
+  html[data-ops-density="compact"] {
+    font-size: 12.8px;
+  }
+}
+
+html[data-ops-density="compact"] body {
+  line-height: 1.45;
+}
+
+html[data-ops-density="compact"] .min-h-\[48px\] {
+  min-height: 38px;
+}
+html[data-ops-density="compact"] .min-h-\[44px\] {
+  min-height: 35px;
+}
+html[data-ops-density="compact"] .min-h-\[42px\] {
+  min-height: 34px;
+}
+html[data-ops-density="compact"] .min-h-\[40px\] {
+  min-height: 32px;
+}
+html[data-ops-density="compact"] .min-h-\[38px\] {
+  min-height: 30px;
+}
+html[data-ops-density="compact"] .min-h-\[36px\] {
+  min-height: 29px;
+}
+html[data-ops-density="compact"] .min-h-\[34px\] {
+  min-height: 27px;
+}
+html[data-ops-density="compact"] .min-h-\[32px\] {
+  min-height: 26px;
+}
+
+@media (min-width: 640px) {
+  html[data-ops-density="compact"] .sm\:min-h-\[44px\] {
+    min-height: 35px;
+  }
+}
+
+html[data-ops-density="compact"] .min-w-\[44px\] {
+  min-width: 35px;
+}
+html[data-ops-density="compact"] .min-w-\[40px\] {
+  min-width: 32px;
+}
+html[data-ops-density="compact"] .min-w-\[38px\] {
+  min-width: 30px;
+}
+html[data-ops-density="compact"] .min-w-\[32px\] {
+  min-width: 26px;
+}
+html[data-ops-density="compact"] .min-w-\[210px\] {
+  min-width: 168px;
+}
+html[data-ops-density="compact"] .min-w-\[180px\] {
+  min-width: 144px;
+}
+
+html[data-ops-density="compact"] .text-\[11px\] {
+  font-size: 9.5px;
+  line-height: 1.35;
+}
+
+html[data-ops-density="compact"] .ds-table-wrap thead th {
+  font-size: 9.5px;
+  padding: 0.5rem 0.65rem;
+}
+
+html[data-ops-density="compact"] .ds-table-wrap tbody td {
+  padding: 0.5rem 0.65rem;
 }
 
 body {
@@ -728,6 +818,11 @@ table.sr-table tr:last-child td {
 }
 
 @media print {
+  html,
+  html[data-ops-density="compact"] {
+    font-size: 16px !important;
+  }
+
   html,
   body {
     width: 80mm !important;

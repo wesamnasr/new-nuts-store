@@ -64,10 +64,8 @@ interface DirectProductOrderFormProps {
   selectedWeight: WeightVariant;
   selectedRoast: RoastOption;
   quantity: number;
-  workerNotes?: string;
   relatedProducts?: Product[];
   nameInputRef?: React.RefObject<HTMLInputElement | null>;
-  isAdMode?: boolean;
 }
 
 const QUICK_CUSTOMER_STORAGE_KEY = 'mizan_quick_customer_v1';
@@ -77,10 +75,8 @@ export default function DirectProductOrderForm({
   selectedWeight,
   selectedRoast,
   quantity,
-  workerNotes,
   relatedProducts = [],
   nameInputRef,
-  isAdMode = false,
 }: DirectProductOrderFormProps) {
   const {
     storeData,
@@ -138,9 +134,8 @@ export default function DirectProductOrderForm({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
   const initiatedCheckoutRef = useRef(false);
-  const [hasManualDeliverySelect, setHasManualDeliverySelect] = useState(false);
-  const [showLocalOptionsInAdMode, setShowLocalOptionsInAdMode] = useState(false);
-  const [showElectronicPaymentInAdMode, setShowElectronicPaymentInAdMode] = useState(false);
+  const [showLocalDeliveryOptions, setShowLocalDeliveryOptions] = useState(false);
+  const [showElectronicPaymentOptions, setShowElectronicPaymentOptions] = useState(false);
   const [dispatchCutoffText, setDispatchCutoffText] = useState(
     'طلبك بيتجهز ويتحمص طازج ويخرج من أقرب مخزن ليك (أكتوبر أو بني مزار)'
   );
@@ -169,12 +164,6 @@ export default function DirectProductOrderForm({
       // Fallback already set
     }
   }, []);
-
-  useEffect(() => {
-    if (isAdMode && !hasManualDeliverySelect) {
-      setDeliveryMethod('governorate_shipping');
-    }
-  }, [isAdMode, hasManualDeliverySelect]);
 
   // Pick one clean complementary in-stock product as an optional 1-click bump
   const bumpCandidate = useMemo(() => {
@@ -321,9 +310,8 @@ export default function DirectProductOrderForm({
       roastOption: selectedRoast || '',
       unitPrice: selectedWeight.price,
       quantity: Math.max(1, quantity),
-      workerNotes: workerNotes?.trim() || undefined,
     };
-  }, [product, selectedWeight, selectedRoast, quantity, workerNotes]);
+  }, [product, selectedWeight, selectedRoast, quantity]);
 
   const bumpCartItem: CartItem | null = useMemo(() => {
     if (!includeOrderBump || !bumpCandidate) return null;
@@ -593,9 +581,7 @@ export default function DirectProductOrderForm({
           deliveryBatchSlot:
             deliveryMethod === 'villages_scheduled' ? selectedBatchSlot : undefined,
           address: resolvedAddress,
-          notes: workerNotes?.trim()
-            ? `طلب سريع مباشر من صفحة المنتج • ${workerNotes.trim()}`
-            : 'طلب سريع مباشر من صفحة المنتج',
+          notes: 'طلب سريع مباشر من صفحة المنتج',
           paymentMethod,
           paymentReference: paymentReference.trim() || undefined,
           couponCode:
@@ -873,43 +859,43 @@ export default function DirectProductOrderForm({
   return (
     <div
       id="direct-order-box"
-      className="rounded-2xl border border-[#E8DFD3] bg-white p-4 sm:p-6 space-y-4 shadow-[0_6px_24px_-12px_rgba(35,23,16,0.08)]"
+      className="rounded-2xl border border-[#E8DFD3] bg-white p-3.5 sm:p-5 space-y-3 sm:space-y-3.5 shadow-[0_6px_24px_-12px_rgba(35,23,16,0.08)]"
     >
       {/* Header Banner */}
-      <div className="space-y-2.5 border-b border-[#F0EAE0] pb-3.5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="space-y-2 border-b border-[#F0EAE0] pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-1.5">
           <div className="space-y-0.5">
-            <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#8C5828] bg-[#FBF3E4] border border-[#EBD8B8] px-2.5 py-0.5 rounded-full">
-              <Zap className="w-3.5 h-3.5 fill-[#D99B26] text-[#9A6836]" />
+            <div className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-extrabold text-[#8C5828] bg-[#FBF3E4] border border-[#EBD8B8] px-2 py-0.5 rounded-full">
+              <Zap className="w-3 h-3 fill-[#D99B26] text-[#9A6836]" />
               <span>طلب سريع في ١٠ ثواني — بدون تسجيل</span>
             </div>
-            <h2 className="font-cairo text-base sm:text-lg font-extrabold text-[#261A13]">
+            <h2 className="font-cairo text-sm sm:text-lg font-extrabold text-[#261A13]">
               املأ بياناتك واستلم {product.name} لحد باب البيت
             </h2>
           </div>
-          <span className="text-[11px] font-bold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2.5 py-1 rounded-full flex items-center gap-1">
+          <span className="text-[10px] sm:text-[11px] font-bold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2 py-0.5 rounded-full flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>الدفع عند الاستلام بعد المعاينة</span>
           </span>
         </div>
 
         {/* Real Operational Dispatch Cutoff */}
-        <div className="flex items-center gap-2 rounded-xl bg-[#FAF7F2] border border-[#E8DFD3] px-3 py-2 text-[11px] font-bold text-[#5E4D40]">
+        <div className="flex items-center gap-1.5 rounded-xl bg-[#FAF7F2] border border-[#E8DFD3] px-2.5 py-1.5 text-[10px] sm:text-[11px] font-bold text-[#5E4D40]">
           <Clock className="w-3.5 h-3.5 text-[#9A6836] shrink-0" />
           <span>{dispatchCutoffText}</span>
         </div>
       </div>
 
       {errorMsg && (
-        <div className="bg-[#FDF2F0] border border-[#F2D6D0] text-[#B84A39] text-xs font-bold p-3 rounded-xl flex items-center gap-2">
+        <div className="bg-[#FDF2F0] border border-[#F2D6D0] text-[#B84A39] text-xs font-bold p-2.5 rounded-xl flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmitDirectOrder} className="space-y-3.5">
-        {/* Core Simple Inputs: Name + Mobile */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <form onSubmit={handleSubmitDirectOrder} className="space-y-3">
+        {/* Core 4-Field Flow: Name + Mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <div>
             <label className="text-xs font-bold text-[#261A13] flex items-center gap-1 mb-1">
               <User className="w-3.5 h-3.5 text-[#9A6836]" />
@@ -923,7 +909,7 @@ export default function DirectProductOrderForm({
               onFocus={markInitiateCheckout}
               onChange={(e) => setCustomerName(e.target.value)}
               placeholder="اكتب اسمك (مثلاً: أحمد محمد)"
-              className="w-full min-h-[46px] bg-[#FAF7F2] border border-[#E8DFD3] focus:border-[#9A6836] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-[#261A13] focus:outline-none transition"
+              className="w-full min-h-[42px] bg-[#FAF7F2] border border-[#E8DFD3] focus:border-[#9A6836] focus:bg-white rounded-xl px-3 py-2 text-xs sm:text-sm font-medium text-[#261A13] focus:outline-none transition"
             />
           </div>
 
@@ -941,21 +927,18 @@ export default function DirectProductOrderForm({
               onFocus={markInitiateCheckout}
               onChange={(e) => setCustomerPhone(e.target.value)}
               placeholder="01012345678"
-              className="w-full min-h-[46px] bg-[#FAF7F2] border border-[#E8DFD3] focus:border-[#9A6836] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-right text-[#261A13] tabular-nums focus:outline-none transition"
+              className="w-full min-h-[42px] bg-[#FAF7F2] border border-[#E8DFD3] focus:border-[#9A6836] focus:bg-white rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-right text-[#261A13] tabular-nums focus:outline-none transition"
             />
           </div>
         </div>
 
-        {/* 3-Mode Delivery Toggle (Always visible in store mode; collapsed cleanly in Ad Mode until clicked) */}
-        {(!isAdMode || showLocalOptionsInAdMode) && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {/* Optional Local Delivery Toggle (revealed only when requested) */}
+        {(showLocalDeliveryOptions || deliveryMethod !== 'governorate_shipping') && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
             <button
               type="button"
-              onClick={() => {
-                setHasManualDeliverySelect(true);
-                setDeliveryMethod('governorate_shipping');
-              }}
-              className={`min-h-[42px] px-3 py-2 rounded-xl text-xs font-cairo flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
+              onClick={() => setDeliveryMethod('governorate_shipping')}
+              className={`min-h-[38px] px-2.5 py-1.5 rounded-xl text-[11px] font-cairo flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
                 deliveryMethod === 'governorate_shipping'
                   ? 'bg-[#FFF9EE] text-[#261A13] border-2 border-[#9A6836] font-extrabold'
                   : 'bg-[#FAF7F2] text-[#5E4D40] border border-[#E8DFD3] hover:border-[#C88A4B] font-bold'
@@ -967,13 +950,12 @@ export default function DirectProductOrderForm({
 
             <button
               type="button"
-              onClick={() => {
-                setHasManualDeliverySelect(true);
+              onClick={() =>
                 setDeliveryMethod((prev) =>
                   prev === 'villages_scheduled' ? 'villages_scheduled' : 'bandar_fast'
-                );
-              }}
-              className={`min-h-[42px] px-3 py-2 rounded-xl text-xs font-cairo flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
+                )
+              }
+              className={`min-h-[38px] px-2.5 py-1.5 rounded-xl text-[11px] font-cairo flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
                 deliveryMethod === 'bandar_fast' || deliveryMethod === 'villages_scheduled'
                   ? 'bg-[#FFF9EE] text-[#261A13] border-2 border-[#9A6836] font-extrabold'
                   : 'bg-[#FAF7F2] text-[#5E4D40] border border-[#E8DFD3] hover:border-[#C88A4B] font-bold'
@@ -985,11 +967,8 @@ export default function DirectProductOrderForm({
 
             <button
               type="button"
-              onClick={() => {
-                setHasManualDeliverySelect(true);
-                setDeliveryMethod('store_pickup');
-              }}
-              className={`min-h-[42px] px-3 py-2 rounded-xl text-xs font-cairo flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
+              onClick={() => setDeliveryMethod('store_pickup')}
+              className={`min-h-[38px] px-2.5 py-1.5 rounded-xl text-[11px] font-cairo flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
                 deliveryMethod === 'store_pickup'
                   ? 'bg-[#FFF9EE] text-[#261A13] border-2 border-[#9A6836] font-extrabold'
                   : 'bg-[#FAF7F2] text-[#5E4D40] border border-[#E8DFD3] hover:border-[#C88A4B] font-bold'
@@ -1003,7 +982,7 @@ export default function DirectProductOrderForm({
 
         {/* Option A: All-Egypt 27 Governorates Selector */}
         {deliveryMethod === 'governorate_shipping' && (
-          <div className="space-y-2.5 bg-[#FAF7F2]/80 border border-[#E8DFD3] rounded-xl p-3">
+          <div className="space-y-2 bg-[#FAF7F2]/80 border border-[#E8DFD3] rounded-xl p-2.5 sm:p-3">
             <div>
               <label className="text-xs font-bold text-[#261A13] flex items-center justify-between gap-2 mb-1">
                 <span className="flex items-center gap-1">
@@ -1018,7 +997,7 @@ export default function DirectProductOrderForm({
               <select
                 value={selectedGovernorate}
                 onChange={(e) => setSelectedGovernorate(e.target.value)}
-                className="w-full min-h-[46px] bg-white border border-[#E8DFD3] focus:border-[#9A6836] rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-[#261A13] focus:outline-none"
+                className="w-full min-h-[42px] bg-white border border-[#E8DFD3] focus:border-[#9A6836] rounded-xl px-3 py-1.5 text-xs sm:text-sm font-bold text-[#261A13] focus:outline-none"
               >
                 {governorateRates.map((rate) => (
                   <option key={rate.id} value={rate.governorate}>
@@ -1039,14 +1018,14 @@ export default function DirectProductOrderForm({
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="الحي والشارع ورقم العمارة أو أقرب علامة مميزة"
-                className="w-full min-h-[46px] bg-white border border-[#E8DFD3] focus:border-[#9A6836] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-[#261A13] focus:outline-none transition"
+                className="w-full min-h-[42px] bg-white border border-[#E8DFD3] focus:border-[#9A6836] rounded-xl px-3 py-2 text-xs sm:text-sm font-medium text-[#261A13] focus:outline-none transition"
               />
             </div>
 
-            {isAdMode && !showLocalOptionsInAdMode && (
+            {!showLocalDeliveryOptions && (
               <button
                 type="button"
-                onClick={() => setShowLocalOptionsInAdMode(true)}
+                onClick={() => setShowLocalDeliveryOptions(true)}
                 className="text-[11px] font-bold text-[#9A6836] hover:text-[#261A13] underline decoration-dotted cursor-pointer"
               >
                 من {cityName} وعايز توصيل فوري في ٣٠ دقيقة أو استلام من الفرع؟ اضغط هنا
@@ -1252,10 +1231,10 @@ export default function DirectProductOrderForm({
           )}
         </div>
 
-        {/* Payment Method Quick Pills (Clean COD default in Ad Mode) */}
+        {/* Payment Method Quick Pills (Clean COD default with 1-click toggle) */}
         {(pageContent.enableInstapay !== false || pageContent.enableVodafoneCash !== false) && (
           <div className="space-y-2">
-            {isAdMode && !showElectronicPaymentInAdMode && paymentMethod === 'cod' ? (
+            {!showElectronicPaymentOptions && paymentMethod === 'cod' ? (
               <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
                 <span className="inline-flex items-center gap-1 font-bold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2.5 py-1 rounded-lg">
                   <ShieldCheck className="w-3.5 h-3.5" />
@@ -1263,7 +1242,7 @@ export default function DirectProductOrderForm({
                 </span>
                 <button
                   type="button"
-                  onClick={() => setShowElectronicPaymentInAdMode(true)}
+                  onClick={() => setShowElectronicPaymentOptions(true)}
                   className="font-bold text-[#9A6836] hover:text-[#261A13] underline decoration-dotted cursor-pointer"
                 >
                   أو الدفع عبر إنستا باي / فودافون كاش
@@ -1378,28 +1357,22 @@ export default function DirectProductOrderForm({
           )}
 
           <div className="pt-2 border-t border-[#E8DFD3] flex items-center justify-between">
-            <span className="font-cairo font-extrabold text-sm text-[#261A13]">
+            <span className="font-cairo font-extrabold text-xs sm:text-sm text-[#261A13]">
               الإجمالي المطلوب عند الاستلام
             </span>
-            <span className="font-cairo font-extrabold text-lg text-[#261A13]">
+            <span className="font-cairo font-extrabold text-base sm:text-lg text-[#261A13]">
               {finalTotal}{' '}
               <span className="text-xs font-bold text-[#9A6836]">{currency}</span>
             </span>
           </div>
-
-          {expectedCashback > 0 && !isAdMode && (
-            <div className="text-[11px] font-bold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2.5 py-1 rounded-lg text-center">
-              ستحصل تلقائياً على +{expectedCashback} {currency} كاش باك في محفظة VIP برقم موبايلك!
-            </div>
-          )}
         </div>
 
         {/* Isolated Emerald Green Submit CTA + Reassurance Microcopy + Subtle WhatsApp Alternative */}
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           <button
             type="submit"
             disabled={!product.inStock || isSubmitting || isVillageBelowMinimum}
-            className="w-full min-h-[54px] py-3.5 px-5 rounded-xl bg-[#15803D] hover:bg-[#166534] text-white font-cairo font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 shadow-[0_10px_24px_-8px_rgba(21,128,61,0.5)] transition-all duration-200 active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed tabular-nums"
+            className="w-full min-h-[48px] sm:min-h-[54px] py-3 px-4 sm:px-5 rounded-xl bg-[#15803D] hover:bg-[#166534] text-white font-cairo font-extrabold text-xs sm:text-base flex items-center justify-center gap-2 shadow-[0_10px_24px_-8px_rgba(21,128,61,0.5)] transition-all duration-200 active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed tabular-nums"
           >
             {!product.inStock ? (
               <span>غير متوفر بالمخزون حالياً</span>
@@ -1420,7 +1393,7 @@ export default function DirectProductOrderForm({
             )}
           </button>
 
-          <p className="text-center text-[11px] font-bold text-[#5E4D40] leading-relaxed">
+          <p className="text-center text-[10px] sm:text-[11px] font-bold text-[#5E4D40] leading-relaxed">
             مش هتدفع مليم غير لما تستلم وتعاين طلبك بنفسك • هنكلمك نأكد العنوان قبل ما الشحنة تخرج
           </p>
 
@@ -1428,11 +1401,7 @@ export default function DirectProductOrderForm({
             href={prefilledWhatsappOrderUrl}
             target="_blank"
             rel="noreferrer"
-            className={`w-full min-h-[42px] py-2 px-4 rounded-xl border font-cairo font-bold text-xs flex items-center justify-center gap-2 transition ${
-              isAdMode
-                ? 'bg-white hover:bg-[#FAF7F2] text-[#5E4D40] border-[#E8DFD3]'
-                : 'bg-[#F1F7F3] hover:bg-[#E4F2E8] text-[#2B5A3C] border-[#CBE2D3]'
-            }`}
+            className="w-full min-h-[40px] py-2 px-3 rounded-xl bg-white hover:bg-[#FAF7F2] text-[#5E4D40] border border-[#E8DFD3] font-cairo font-bold text-xs flex items-center justify-center gap-2 transition"
           >
             <MessageCircle className="w-4 h-4 text-[#15803D]" />
             <span>أو اطلب هذا المنتج عبر واتساب بضغطة واحدة</span>

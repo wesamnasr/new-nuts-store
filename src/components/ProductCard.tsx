@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ShoppingBag, Eye, Check, Zap } from 'lucide-react';
+import { ShoppingBag, Check, Zap } from 'lucide-react';
 import { Product, RoastOption, WeightVariant } from '@/types/store';
 import { useStore } from '@/context/StoreContext';
 import { getCurrencySymbol, getSafeImageUrl } from '@/lib/defaults';
@@ -17,7 +17,7 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const { addToCart, setSelectedProductModal, storeData } = useStore();
+  const { addToCart, storeData } = useStore();
   const currency = getCurrencySymbol(storeData?.settings);
   const unitMode = isUnitProduct(product);
 
@@ -69,8 +69,8 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <div className="theme-product-card group bg-white rounded-2xl border border-[#E8DFD3] flex flex-col overflow-hidden">
-      {/* 4:5 Portrait Product Studio Frame */}
-      <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#F6F1EA]">
+      {/* Compact Square-on-Mobile / Portrait-on-Desktop Product Frame */}
+      <div className="relative aspect-square sm:aspect-[4/5] w-full overflow-hidden bg-[#F6F1EA]">
         <Link
           href={productDetailHref}
           className="block w-full h-full overflow-hidden relative"
@@ -97,35 +97,24 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Muted Terracotta Sale Tag (-XX%) */}
         {discountPercent && (
-          <div className="absolute top-2.5 right-2.5 z-10">
-            <span className="bg-[#B84A39] text-[#FAF7F2] text-[11px] font-extrabold px-2.5 py-1 rounded-full shadow-xs tabular-nums">
+          <div className="absolute top-2 right-2 z-10">
+            <span className="bg-[#B84A39] text-[#FAF7F2] text-[10px] sm:text-[11px] font-extrabold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-xs tabular-nums">
               -{discountPercent}%
             </span>
           </div>
         )}
-
-        {/* Subtle Quick View Trigger */}
-        <button
-          type="button"
-          onClick={() => setSelectedProductModal(product)}
-          className="absolute top-2.5 left-2.5 z-10 min-h-[36px] min-w-[36px] flex items-center justify-center bg-white/95 hover:bg-[#261A13] text-[#261A13] hover:text-[#FAF7F2] border border-[#E8DFD3] p-2 rounded-full opacity-95 sm:opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer shadow-xs"
-          title="معاينة سريعة"
-          aria-label="معاينة سريعة"
-        >
-          <Eye className="w-3.5 h-3.5" />
-        </button>
       </div>
 
-      {/* Centered Card Body + Preserved Weight/Quantity Options */}
-      <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between gap-3">
-        <h3 className="font-cairo text-xs sm:text-[15px] font-extrabold text-[#261A13] hover:text-[#9A6836] text-center line-clamp-2 leading-snug transition-colors duration-200 min-h-[2.5em] flex items-center justify-center">
+      {/* Compact Card Body + Single-Row Weight Pills + Primary Buy Now CTA */}
+      <div className="p-2 sm:p-3.5 flex-1 flex flex-col justify-between gap-2 sm:gap-2.5">
+        <h3 className="font-cairo text-xs sm:text-[15px] font-extrabold text-[#261A13] hover:text-[#9A6836] text-center line-clamp-2 leading-snug transition-colors duration-200 min-h-[2.4em] flex items-center justify-center">
           <Link href={productDetailHref}>{product.name}</Link>
         </h3>
 
-        <div className="space-y-2.5">
-          {/* Preserved Multi-Weight / Unit Selector (Supports 125g, 250g, 500g, 1kg, 2kg & units) */}
+        <div className="space-y-2">
+          {/* Single-Row Scrollable Weight Pills on Mobile (prevents vertical card bloat) */}
           {resolvedWeights.length <= 1 ? (
-            <div className="bg-[#F6F1EA] min-h-[34px] px-2.5 py-1.5 rounded-xl border border-[#EAE0D3] flex items-center justify-center gap-1.5 text-[11px]">
+            <div className="bg-[#F6F1EA] min-h-[30px] px-2 py-1 rounded-xl border border-[#EAE0D3] flex items-center justify-center gap-1 text-[10px] sm:text-[11px]">
               <span className="text-[#6E5D4F] font-medium">
                 {unitMode ? 'العبوة:' : 'الوزن:'}
               </span>
@@ -136,7 +125,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               </span>
             </div>
           ) : (
-            <div className="flex flex-wrap items-center justify-center gap-1 bg-[#F6F1EA] p-1 rounded-xl border border-[#EAE0D3]">
+            <div className="flex flex-nowrap sm:flex-wrap items-center justify-start sm:justify-center gap-1 bg-[#F6F1EA] p-1 rounded-xl border border-[#EAE0D3] overflow-x-auto no-scrollbar">
               {resolvedWeights.map((w) => {
                 const isSelected = selectedWeight?.id === w.id;
                 return (
@@ -144,9 +133,9 @@ export default function ProductCard({ product }: ProductCardProps) {
                     key={w.id}
                     type="button"
                     onClick={() => setSelectedWeight(w)}
-                    className={`min-h-[30px] py-1 px-2 rounded-lg text-[10px] sm:text-[11px] transition-all duration-200 flex items-center justify-center text-center leading-tight cursor-pointer tabular-nums whitespace-nowrap flex-1 min-w-[44px] ${
+                    className={`min-h-[26px] sm:min-h-[30px] py-0.5 px-2 rounded-lg text-[10px] sm:text-[11px] transition-all duration-200 flex items-center justify-center text-center leading-tight cursor-pointer tabular-nums whitespace-nowrap shrink-0 sm:flex-1 sm:min-w-[44px] ${
                       isSelected
-                        ? 'bg-[#2C1D14] text-[#FAF7F2] font-extrabold shadow-2xs'
+                        ? 'bg-[#FFF9EE] text-[#261A13] border border-[#9A6836] font-extrabold shadow-2xs'
                         : 'text-[#5E4D40] hover:text-[#261A13] hover:bg-white/85 font-bold'
                     }`}
                   >
@@ -158,60 +147,57 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
 
           {/* Centered Price Row */}
-          <div className="flex items-baseline justify-center gap-1.5 tabular-nums pt-0.5">
+          <div className="flex items-baseline justify-center gap-1.5 tabular-nums">
             {selectedWeight?.originalPrice &&
               selectedWeight.originalPrice > selectedWeight.price && (
-                <span className="text-[11px] sm:text-xs text-[#8A7968] line-through font-medium">
+                <span className="text-[10px] sm:text-xs text-[#8A7968] line-through font-medium">
                   {selectedWeight.originalPrice} {currency}
                 </span>
               )}
             <span className="font-cairo text-sm sm:text-lg font-black text-[#261A13] leading-none">
               {selectedWeight?.price}
             </span>
-            <span className="text-[11px] font-bold text-[#9A6836]">
+            <span className="text-[10px] sm:text-[11px] font-bold text-[#9A6836]">
               {currency}
             </span>
           </div>
 
-          {/* Harmonious CTA Row: Add to Cart + Direct Instant Order */}
+          {/* Primary Isolated Emerald "اطلب الآن" + Compact Cart Icon */}
           <div className="flex items-center gap-1.5">
+            {product.inStock ? (
+              <Link
+                href={directOrderHref}
+                className="flex-1 min-h-[36px] sm:min-h-[40px] py-1.5 px-2.5 rounded-xl bg-[#15803D] hover:bg-[#166534] text-white font-cairo font-extrabold text-[11px] sm:text-xs flex items-center justify-center gap-1 shadow-2xs transition-all duration-200 active:scale-[0.98]"
+              >
+                <Zap className="w-3.5 h-3.5 shrink-0" />
+                <span>اطلب الآن</span>
+              </Link>
+            ) : (
+              <span className="flex-1 min-h-[36px] sm:min-h-[40px] py-1.5 px-2.5 rounded-xl bg-[#F4EFE6] text-[#8A7968] border border-[#E8DFD3] font-cairo font-bold text-[11px] sm:text-xs flex items-center justify-center">
+                غير متاح حالياً
+              </span>
+            )}
+
             <button
               type="button"
               disabled={!product.inStock}
               onClick={handleAdd}
-              className={`flex-1 min-h-[40px] py-2 px-2.5 rounded-xl font-cairo font-extrabold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 border transition-all duration-200 cursor-pointer active:scale-[0.98] ${
+              title={justAdded ? 'تمت الإضافة للسلة' : 'أضف إلى السلة'}
+              aria-label={justAdded ? 'تمت الإضافة للسلة' : 'أضف إلى السلة'}
+              className={`min-h-[36px] min-w-[36px] sm:min-h-[40px] sm:min-w-[40px] px-2 rounded-xl border flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-[0.96] shrink-0 ${
                 !product.inStock
                   ? 'bg-[#F4EFE6] text-[#8A7968] border-[#E8DFD3] cursor-not-allowed'
                   : justAdded
-                    ? 'bg-[#3B6E4C] text-white border-[#3B6E4C]'
-                    : 'bg-[#2C1D14] hover:bg-[#3D291D] text-[#FAF7F2] border-[#2C1D14] hover:border-[#3D291D]'
+                    ? 'bg-[#15803D] text-white border-[#15803D]'
+                    : 'bg-[#FAF7F2] hover:bg-[#F3ECE2] text-[#261A13] border-[#D5C4AE]'
               }`}
             >
-              {!product.inStock ? (
-                <span>غير متاح</span>
-              ) : justAdded ? (
-                <>
-                  <Check className="w-3.5 h-3.5 shrink-0" />
-                  <span>تمت الإضافة</span>
-                </>
+              {justAdded ? (
+                <Check className="w-3.5 h-3.5 shrink-0" />
               ) : (
-                <>
-                  <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
-                  <span>أضف إلى السلة</span>
-                </>
+                <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
               )}
             </button>
-
-            {product.inStock && (
-              <Link
-                href={directOrderHref}
-                title="اطلب مباشرة بالاسم ورقم الموبايل"
-                aria-label="اطلب مباشرة بالاسم ورقم الموبايل"
-                className="min-h-[40px] min-w-[40px] px-2.5 rounded-xl bg-[#FBF3E4] hover:bg-[#F3E3C6] text-[#8C5828] border border-[#EBD8B8] flex items-center justify-center transition-all duration-200 active:scale-[0.96] shrink-0"
-              >
-                <Zap className="w-4 h-4 fill-[#D99B26] text-[#9A6836]" />
-              </Link>
-            )}
           </div>
         </div>
       </div>

@@ -19,95 +19,11 @@ import {
 import { Product } from '@/types/store';
 import { getSafeImageUrl } from '@/lib/defaults';
 import { buildAdLandingUrl } from '@/lib/ad-mode';
+import { compressAndUploadAdminImage } from '@/lib/admin-image-upload';
 
 interface ProductAdStudioEditorProps {
   product: Product;
   onChange: (patch: Partial<Product>) => void;
-}
-
-async function compressAndUploadProofImage(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    if (!file.type.startsWith('image/')) {
-      reject(new Error('يرجى اختيار ملفات صور صالحة فقط'));
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('تعذر قراءة ملف الصورة'));
-    reader.onload = (e) => {
-      const src = String(e.target?.result || '');
-      if (!src) {
-        reject(new Error('ملف الصورة فارغ'));
-        return;
-      }
-
-      const img = new window.Image();
-      img.onerror = () => reject(new Error('تعذر معالجة أبعاد الصورة'));
-      img.onload = () => {
-        const maxDim = 720;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxDim || height > maxDim) {
-          if (width >= height) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          resolve(src);
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0, width, height);
-        let quality = 0.8;
-        let dataUrl = canvas.toDataURL('image/webp', quality);
-        const mime = dataUrl.startsWith('data:image/webp') ? 'image/webp' : 'image/jpeg';
-        if (mime === 'image/jpeg') {
-          dataUrl = canvas.toDataURL('image/jpeg', quality);
-        }
-
-        while (Math.round((dataUrl.length * 3) / 4) > 180 * 1024 && quality > 0.45) {
-          quality = Math.round((quality - 0.12) * 100) / 100;
-          dataUrl = canvas.toDataURL(mime, quality);
-        }
-
-        const token =
-          (typeof window !== 'undefined' &&
-            (sessionStorage.getItem('admin_token') || localStorage.getItem('admin_token'))) ||
-          '';
-
-        if (!token) {
-          resolve(dataUrl);
-          return;
-        }
-
-        fetch('/api/admin/upload-image', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ dataUrl }),
-        })
-          .then((r) => r.json().catch(() => null))
-          .then((json) => {
-            resolve(json?.success && json?.url ? String(json.url) : dataUrl);
-          })
-          .catch(() => resolve(dataUrl));
-      };
-      img.src = src;
-    };
-    reader.readAsDataURL(file);
-  });
 }
 
 export default function ProductAdStudioEditor({
@@ -162,7 +78,7 @@ export default function ProductAdStudioEditor({
     try {
       const uploaded: string[] = [];
       for (const file of files) {
-        const url = await compressAndUploadProofImage(file);
+        const url = await compressAndUploadAdminImage(file);
         if (url) uploaded.push(url);
       }
       if (uploaded.length > 0) {
@@ -207,10 +123,10 @@ export default function ProductAdStudioEditor({
           </span>
           <div>
             <div className="text-xs font-extrabold text-[#14532D]">
-              إعدادات الإعلان الممول وصفحة الهبوط (فيسبوك وتيك توك)
+              إعدادات صفحة الهبوط والإعلانات الممولة (الوضع الأساسي المباشر)
             </div>
             <div className="text-[10px] text-[#3B6E4C]">
-              رابط الإعلان السريع + فيديو المشهور + العنوان التسويقي + سكرين شوت العملاء
+              الرابط المباشر + فيديو المشهور + العنوان التسويقي + سكرين شوت العملاء
             </div>
           </div>
           <ChevronDown
@@ -227,7 +143,7 @@ export default function ProductAdStudioEditor({
             className="px-3 py-1.5 rounded-xl bg-[#15803D] hover:bg-[#166534] text-white text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer"
           >
             {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copiedLink ? 'تم النسخ!' : 'نسخ رابط الإعلان الممول'}</span>
+            <span>{copiedLink ? 'تم النسخ!' : 'نسخ رابط الإعلان المباشر'}</span>
           </button>
           <a
             href={relativeAdUrl}
@@ -236,7 +152,7 @@ export default function ProductAdStudioEditor({
             className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-[#FAF7F2] text-[#14532D] border border-[#BBF7D0] text-[11px] font-bold flex items-center gap-1 transition"
           >
             <ExternalLink className="w-3 h-3" />
-            <span>معاينة</span>
+            <span>معاينة الصفحة</span>
           </a>
         </div>
       </div>

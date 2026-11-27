@@ -14,7 +14,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
-import { useAdLandingMode } from '@/lib/ad-mode';
+import { useIsProductLanding } from '@/lib/ad-mode';
 import {
   getCurrencySymbol,
   getResolvedFeatureFlags,
@@ -35,7 +35,7 @@ export default function Navbar() {
   } = useStore();
   const pathname = usePathname();
   const router = useRouter();
-  const isAdMode = useAdLandingMode();
+  const isProductLanding = useIsProductLanding();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [announcementDismissed, setAnnouncementDismissed] = useState(false);
@@ -100,13 +100,13 @@ export default function Navbar() {
     settings?.storeName || 'محمصة حفصة للبن والمكسرات'
   );
 
-  // Distraction-Free Minimal Header for Paid Ad Traffic (?ad=1 / fbclid / ttclid / utm_source)
-  if (isAdMode) {
+  // Permanent clean minimal header on all product pages (zero distractions & maximum speed)
+  if (isProductLanding) {
     return (
       <header className="sticky top-0 z-40 print:hidden bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E8DFD3] shadow-[0_4px_18px_-12px_rgba(35,23,16,0.08)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[56px] flex items-center justify-between gap-2">
-          <Link href="/" className="inline-flex items-center gap-2 shrink-0">
-            <span className="w-9 h-9 rounded-full ring-1 ring-[#D4AF37]/50 bg-[#FAF7F2] shadow-2xs overflow-hidden flex items-center justify-center shrink-0">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-[50px] sm:h-[56px] flex items-center justify-between gap-2">
+          <Link href="/" className="inline-flex items-center gap-2 shrink-0 min-w-0">
+            <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-full ring-1 ring-[#D4AF37]/50 bg-[#FAF7F2] shadow-2xs overflow-hidden flex items-center justify-center shrink-0">
               <img
                 src={getSafeImageUrl('/images/brand/hafsa-sticker-gold.png')}
                 alt={storeName}
@@ -115,12 +115,12 @@ export default function Navbar() {
                 className="w-full h-full object-contain"
               />
             </span>
-            <span className="font-cairo text-sm sm:text-base font-black text-[#261A13] whitespace-nowrap">
+            <span className="font-cairo text-xs sm:text-base font-black text-[#261A13] truncate">
               {storeName}
             </span>
           </Link>
 
-          <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-cairo font-extrabold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2.5 py-1 rounded-full whitespace-nowrap">
+          <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-cairo font-extrabold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2.5 py-1 rounded-full whitespace-nowrap shrink-0">
             <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
             <span>شحن لكل مصر • دفع عند الاستلام</span>
           </span>
@@ -216,9 +216,9 @@ export default function Navbar() {
     <>
       <header className="sticky top-0 z-40 print:hidden">
         <div ref={topBarsRef}>
-          {/* 1. Calm Warm Espresso Announcement Strip */}
+          {/* 1. Calm Warm Espresso Announcement Strip (Desktop only so mobile screens stay spacious) */}
           {showAnnouncement && (
-            <div className="bg-[#261A13] text-[#F5EFE6] border-b border-white/10 text-xs h-9 px-3 flex items-center justify-between gap-2 overflow-hidden">
+            <div className="hidden lg:flex bg-[#261A13] text-[#F5EFE6] border-b border-white/10 text-xs h-9 px-3 items-center justify-between gap-2 overflow-hidden">
               <div className="flex-1 overflow-hidden relative">
                 <div className="zain-marquee-track flex items-center gap-8 whitespace-nowrap font-cairo font-medium text-[11px] sm:text-xs text-[#F5EFE6]/95">
                   {[...marqueeItems, ...marqueeItems].map((msg, idx) => (
@@ -251,13 +251,13 @@ export default function Navbar() {
                 : 'bg-[#FAF7F2]/95 text-[#261A13] border-b border-[#E8DFD3] shadow-[0_4px_20px_-12px_rgba(35,23,16,0.08)]'
             }`}
           >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[66px] lg:min-h-[74px] py-2 flex items-center justify-between gap-3">
+            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 min-h-[54px] lg:min-h-[70px] py-1.5 sm:py-2 flex items-center justify-between gap-2 sm:gap-3">
               {/* Mobile Menu Trigger (Mobile/Tablet Only) */}
-              <div className="flex lg:hidden items-center justify-start min-w-[84px]">
+              <div className="flex lg:hidden items-center justify-start min-w-[44px]">
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen((v) => !v)}
-                  className={`min-h-[42px] min-w-[42px] flex items-center justify-center p-2 rounded-xl transition cursor-pointer ${
+                  className={`min-h-[38px] min-w-[38px] flex items-center justify-center p-1.5 rounded-xl transition cursor-pointer ${
                     isDarkNavbar
                       ? 'text-[#FAF7F2] hover:bg-white/10'
                       : 'text-[#261A13] hover:bg-[#EFE8DD]'
@@ -276,10 +276,10 @@ export default function Navbar() {
               {/* Brand Emblem & Full Store Name (Centered on Mobile, Right-Anchored on Desktop) */}
               <Link
                 href="/"
-                className="inline-flex items-center gap-2.5 group py-0.5 shrink-0"
+                className="inline-flex items-center gap-2 group py-0.5 shrink-0 min-w-0"
               >
                 <span
-                  className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0 overflow-hidden ${
+                  className={`w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shrink-0 overflow-hidden ${
                     isDarkNavbar
                       ? 'ring-2 ring-[#E5B869]/55 bg-[#231710]'
                       : 'ring-1 ring-[#D4AF37]/50 bg-[#FAF7F2] shadow-2xs'
@@ -531,14 +531,14 @@ export default function Navbar() {
         )}
       </header>
 
-      {/* 3. Mobile Sticky Bottom 4-Tab Bar (المنتجات | العربة | حسابي | البحث) */}
+      {/* 3. Mobile Compact Sticky Bottom 4-Tab Bar (المنتجات | العربة | حسابي | البحث) */}
       <nav
         aria-label="شريط التنقل السفلي للموبايل"
-        className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-[#FAF7F2]/95 backdrop-blur-md border-t border-[#E8DFD3] h-[58px] grid grid-cols-4 px-1.5 shadow-[0_-4px_18px_rgba(35,23,16,0.06)] print:hidden"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-[#FAF7F2]/95 backdrop-blur-md border-t border-[#E8DFD3] h-[52px] grid grid-cols-4 px-1 shadow-[0_-4px_16px_rgba(35,23,16,0.06)] print:hidden"
       >
         <Link
           href="/shop"
-          className={`flex flex-col items-center justify-center gap-0.5 my-1 rounded-xl text-[11px] font-cairo font-bold transition ${
+          className={`flex flex-col items-center justify-center gap-0.5 my-1 rounded-lg text-[10px] font-cairo font-bold transition ${
             pathname?.startsWith('/shop')
               ? 'bg-[#EFE8DD] text-[#261A13]'
               : 'text-[#5E4D40] hover:text-[#261A13]'
@@ -551,12 +551,12 @@ export default function Navbar() {
         <button
           type="button"
           onClick={() => setIsCartOpen(true)}
-          className="relative flex flex-col items-center justify-center gap-0.5 my-1 rounded-xl text-[11px] font-cairo font-bold text-[#5E4D40] hover:text-[#261A13] transition cursor-pointer"
+          className="relative flex flex-col items-center justify-center gap-0.5 my-1 rounded-lg text-[10px] font-cairo font-bold text-[#5E4D40] hover:text-[#261A13] transition cursor-pointer"
         >
           <div className="relative">
             <ShoppingBag className="w-4 h-4" />
             {cartCount > 0 && (
-              <span className="absolute -top-1.5 -right-2.5 bg-[#261A13] text-[#FAF7F2] text-[11px] font-black min-w-[17px] h-[17px] px-1 rounded-full flex items-center justify-center tabular-nums leading-none">
+              <span className="absolute -top-1.5 -right-2.5 bg-[#261A13] text-[#FAF7F2] text-[10px] font-black min-w-[16px] h-[16px] px-1 rounded-full flex items-center justify-center tabular-nums leading-none">
                 {cartCount}
               </span>
             )}
@@ -566,7 +566,7 @@ export default function Navbar() {
 
         <Link
           href={featureFlags.enableVipWallet ? '/vip' : '/track'}
-          className={`flex flex-col items-center justify-center gap-0.5 my-1 rounded-xl text-[11px] font-cairo font-bold transition ${
+          className={`flex flex-col items-center justify-center gap-0.5 my-1 rounded-lg text-[10px] font-cairo font-bold transition ${
             pathname?.startsWith('/vip') || pathname?.startsWith('/track')
               ? 'bg-[#EFE8DD] text-[#261A13]'
               : 'text-[#5E4D40] hover:text-[#261A13]'
@@ -584,7 +584,7 @@ export default function Navbar() {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }
           }}
-          className={`flex flex-col items-center justify-center gap-0.5 my-1 rounded-xl text-[11px] font-cairo font-bold transition cursor-pointer ${
+          className={`flex flex-col items-center justify-center gap-0.5 my-1 rounded-lg text-[10px] font-cairo font-bold transition cursor-pointer ${
             searchOpen
               ? 'bg-[#EFE8DD] text-[#261A13]'
               : 'text-[#5E4D40] hover:text-[#261A13]'

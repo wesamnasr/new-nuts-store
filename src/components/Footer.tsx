@@ -7,9 +7,6 @@ import {
   MapPin,
   Phone,
   Clock,
-  ShieldCheck,
-  Truck,
-  Store,
   MessageCircle,
   ArrowUp,
 } from 'lucide-react';
@@ -17,15 +14,14 @@ import { useStore } from '@/context/StoreContext';
 import {
   getCityName,
   getResolvedFeatureFlags,
-  getResolvedPageContent,
 } from '@/lib/defaults';
 import { formatWhatsAppPhone } from '@/lib/validation';
-import { useAdLandingMode } from '@/lib/ad-mode';
+import { useIsProductLanding } from '@/lib/ad-mode';
 
 export default function Footer() {
   const { storeData, cartCount } = useStore();
   const pathname = usePathname();
-  const isAdMode = useAdLandingMode();
+  const isProductLanding = useIsProductLanding();
 
   if (
     pathname?.startsWith('/admin') ||
@@ -39,7 +35,6 @@ export default function Footer() {
   }
 
   const settings = storeData?.settings;
-  const pageContent = getResolvedPageContent(settings);
   const featureFlags = getResolvedFeatureFlags(settings);
   const cityName = getCityName(settings);
   const storeName = settings?.storeName || 'محمصة حفصة للبن والمكسرات';
@@ -54,23 +49,23 @@ export default function Footer() {
     }
   };
 
-  if (isAdMode) {
+  if (isProductLanding) {
     return (
-      <footer className="bg-[#F4EFE6] text-[#261A13] border-t border-[#E6DDD0] mt-10 pb-24 lg:pb-8 print:hidden">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 text-center space-y-3">
-          <div className="inline-flex items-center gap-2.5">
+      <footer className="bg-[#F4EFE6] text-[#261A13] border-t border-[#E6DDD0] mt-8 pb-20 lg:pb-8 print:hidden">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5 text-center space-y-2.5">
+          <div className="inline-flex items-center gap-2">
             <img
               src="/images/brand/hafsa-sticker-gold.png"
               alt={storeName}
-              width={36}
-              height={36}
-              className="w-9 h-9 rounded-full object-contain ring-1 ring-[#D4AF37]/45 shrink-0"
+              width={32}
+              height={32}
+              className="w-8 h-8 rounded-full object-contain ring-1 ring-[#D4AF37]/45 shrink-0"
             />
-            <span className="font-cairo text-base font-black text-[#261A13]">
+            <span className="font-cairo text-sm sm:text-base font-black text-[#261A13]">
               {storeName}
             </span>
           </div>
-          <p className="text-xs text-[#5E4D40]">
+          <p className="text-[11px] sm:text-xs text-[#5E4D40]">
             {settings?.address || 'مركز بني مزار — أمام مسجد الزراعيين مباشرة'} •{' '}
             <a
               href={`tel:${settings?.supportPhone || '01107677672'}`}
@@ -79,18 +74,18 @@ export default function Footer() {
               {settings?.supportPhone || '01107677672'}
             </a>
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-0.5">
             <a
               href={whatsappUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#15803D] hover:bg-[#166534] text-white text-xs font-cairo font-extrabold transition"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#15803D] hover:bg-[#166534] text-white text-xs font-cairo font-extrabold transition"
             >
               <MessageCircle className="w-4 h-4" />
               <span>تواصل معنا عبر واتساب</span>
             </a>
             <Link
-              href="/?mode=store"
+              href="/"
               className="inline-flex items-center px-3.5 py-2 rounded-xl bg-white hover:bg-[#FAF7F2] text-[#5E4D40] border border-[#E8DFD3] text-xs font-bold transition"
             >
               تصفح باقي منتجات المتجر
@@ -106,65 +101,12 @@ export default function Footer() {
 
   return (
     <footer
-      className={`bg-[#F4EFE6] text-[#261A13] border-t border-[#E6DDD0] mt-16 print:hidden ${
-        cartCount > 0 ? 'pb-32 lg:pb-16' : 'pb-20 lg:pb-8'
+      className={`bg-[#F4EFE6] text-[#261A13] border-t border-[#E6DDD0] mt-8 sm:mt-14 print:hidden ${
+        cartCount > 0 ? 'pb-28 lg:pb-12' : 'pb-18 lg:pb-8'
       }`}
     >
-      {/* Service Pillars */}
-      <div className="border-b border-[#E6DDD0] bg-white/70">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-[#FAF7F2] border border-[#E8DFD3] flex items-center justify-center text-[#9A6836] shrink-0">
-              <Store className="w-4 h-4 stroke-[2]" />
-            </div>
-            <div>
-              <h4 className="font-cairo font-extrabold text-[#261A13] text-sm">
-                {pageContent.footerFeatures[0]?.title ||
-                  'منتجات مختارة بأعلى معايير الجودة'}
-              </h4>
-              <p className="text-xs text-[#6E5D4F]">
-                {pageContent.footerFeatures[0]?.description ||
-                  'تحميص يومي وتغليف محكم يحفظ الطزاجة والقرمشة'}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-[#FAF7F2] border border-[#E8DFD3] flex items-center justify-center text-[#9A6836] shrink-0">
-              <Truck className="w-4 h-4 stroke-[2]" />
-            </div>
-            <div>
-              <h4 className="font-cairo font-extrabold text-[#261A13] text-sm">
-                {pageContent.footerFeatures[2]?.title ||
-                  'توصيل محلي سريع وشحن لجميع المحافظات'}
-              </h4>
-              <p className="text-xs text-[#6E5D4F]">
-                {pageContent.footerFeatures[2]?.description ||
-                  'تغطية سريعة وشحن آمن لباب المنزل'}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-[#EEF5F0] border border-[#D4E8DA] flex items-center justify-center text-[#3B6E4C] shrink-0">
-              <ShieldCheck className="w-4 h-4 stroke-[2]" />
-            </div>
-            <div>
-              <h4 className="font-cairo font-extrabold text-[#261A13] text-sm">
-                {pageContent.footerFeatures[1]?.title ||
-                  'مكافآت كاش باك لأعضاء VIP'}
-              </h4>
-              <p className="text-xs text-[#6E5D4F]">
-                {pageContent.footerFeatures[1]?.description ||
-                  'رصيد تلقائي برقم الهاتف مع كل طلب'}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Main Footer Columns */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-7 sm:py-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
         {/* Column 1: Brand & Branch Contact */}
         <div className="space-y-3.5">
           <div className="flex items-center gap-3">

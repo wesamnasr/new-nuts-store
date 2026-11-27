@@ -12,8 +12,6 @@ interface ProductBundleCardsProps {
   onSelectWeight: (w: WeightVariant) => void;
   currency: string;
   freeShippingThreshold: number;
-  localFreeShippingThreshold: number;
-  isAdMode: boolean;
 }
 
 function getTierPresentation(
@@ -76,15 +74,8 @@ export default function ProductBundleCards({
   onSelectWeight,
   currency,
   freeShippingThreshold,
-  localFreeShippingThreshold,
-  isAdMode,
 }: ProductBundleCardsProps) {
   const unitMode = isUnitProduct(product);
-
-  const variant125 = useMemo(() => {
-    if (unitMode) return null;
-    return availableWeights.find((w) => (w.weightGrams || w.grams) === 125) || null;
-  }, [availableWeights, unitMode]);
 
   const baseRefWeight = useMemo(() => {
     if (unitMode) return availableWeights[0];
@@ -104,9 +95,8 @@ export default function ProductBundleCards({
     });
     const list = filtered.length > 0 ? [...filtered] : [...availableWeights];
 
-    const has1000 = list.some((w) => (w.weightGrams || w.grams) === 1000);
     const has2000 = list.some((w) => (w.weightGrams || w.grams) === 2000);
-    if (!has2000 && (isAdMode || has1000)) {
+    if (!has2000) {
       const p2000 = getProductPriceForWeight(product, 2000);
       if (p2000 > 0) {
         const w1000 = list.find((w) => (w.weightGrams || w.grams) === 1000);
@@ -126,7 +116,7 @@ export default function ProductBundleCards({
     }
 
     return list;
-  }, [availableWeights, isAdMode, product, unitMode]);
+  }, [availableWeights, product, unitMode]);
 
   const kiloVariantPrice = useMemo(() => {
     if (unitMode) return 0;
@@ -137,17 +127,17 @@ export default function ProductBundleCards({
   const has1kgExpensive = kiloVariantPrice > 750;
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <label className="text-xs sm:text-sm font-extrabold text-[#261A13]">
           {unitMode ? '١. اختر الباقة أو العدد المناسب:' : '١. اختر الباقة المناسبة:'}
         </label>
-        <span className="text-[11px] font-bold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2 py-0.5 rounded-full">
+        <span className="text-[10px] sm:text-[11px] font-bold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2 py-0.5 rounded-full">
           شحن مجاني فوق {freeShippingThreshold} {currency}
         </span>
       </div>
 
-      <div className="space-y-2.5">
+      <div className="space-y-2">
         {offerVariants.map((w) => {
           const isSelected = selectedWeight.id === w.id;
           const grams = w.weightGrams || w.grams || 0;
@@ -166,47 +156,45 @@ export default function ProductBundleCards({
 
           const displaySavings = Math.max(originalSavings, bulkSavings);
           const unlocksFreeGovShipping = w.price >= freeShippingThreshold;
-          const unlocksFreeLocalShipping =
-            !unlocksFreeGovShipping && w.price >= localFreeShippingThreshold;
 
           return (
             <button
               key={w.id}
               type="button"
               onClick={() => onSelectWeight(w)}
-              className={`w-full text-right rounded-2xl p-3.5 transition-all duration-200 cursor-pointer flex items-center justify-between gap-3 ${
+              className={`w-full text-right rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 transition-all duration-200 cursor-pointer flex items-center justify-between gap-2.5 ${
                 isSelected
-                  ? 'bg-[#FFFBF2] border-2 border-[#9A6836] ring-2 ring-[#E5B869]/35 shadow-sm'
+                  ? 'bg-[#FFFBF2] border-2 border-[#9A6836] ring-2 ring-[#E5B869]/30 shadow-sm'
                   : 'bg-white border border-[#E8DFD3] hover:border-[#C88A4B] hover:bg-[#FFFEFC]'
               }`}
             >
               {/* Right side: Custom Radio + Title + Badges */}
-              <div className="flex items-start gap-3 min-w-0 flex-1">
+              <div className="flex items-start gap-2.5 min-w-0 flex-1">
                 <span
                   aria-hidden="true"
-                  className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition ${
+                  className={`mt-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition ${
                     isSelected
                       ? 'border-[#9A6836] bg-[#9A6836] text-white'
                       : 'border-[#CFC3B4] bg-white'
                   }`}
                 >
-                  {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                  {isSelected && <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />}
                 </span>
 
-                <div className="min-w-0 flex-1 space-y-1">
+                <div className="min-w-0 flex-1 space-y-0.5">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="font-cairo text-xs sm:text-sm font-extrabold text-[#261A13]">
                       {presentation.title}
                     </span>
 
                     {unlocksFreeGovShipping ? (
-                      <span className="inline-flex items-center gap-1 bg-[#15803D] text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                        <Truck className="w-3 h-3" />
+                      <span className="inline-flex items-center gap-1 bg-[#15803D] text-white text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                        <Truck className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                         <span>شحن مجاني لكل مصر</span>
                       </span>
                     ) : presentation.badgeText ? (
                       <span
-                        className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                        className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
                           presentation.badgeTone === 'emerald'
                             ? 'bg-[#F0FDF4] text-[#15803D] border border-[#BBF7D0]'
                             : 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
@@ -216,15 +204,9 @@ export default function ProductBundleCards({
                         <span>{presentation.badgeText}</span>
                       </span>
                     ) : null}
-
-                    {unlocksFreeLocalShipping && !isAdMode && (
-                      <span className="text-[10px] font-bold text-[#3B6E4C] bg-[#F1F7F3] px-2 py-0.5 rounded-full border border-[#D4E6DA]">
-                        توصيل مجاني داخل بني مزار
-                      </span>
-                    )}
                   </div>
 
-                  <p className="text-[11px] text-[#6E5D4F] leading-snug">
+                  <p className="text-[10px] sm:text-[11px] text-[#6E5D4F] leading-snug">
                     {presentation.subtitle}
                   </p>
                 </div>
@@ -232,16 +214,16 @@ export default function ProductBundleCards({
 
               {/* Left side: Price + Anchor + Real Savings */}
               <div className="text-left shrink-0 tabular-nums space-y-0.5">
-                <div className="font-cairo text-base sm:text-lg font-black text-[#261A13] leading-none">
-                  {w.price} <span className="text-xs font-bold text-[#9A6836]">{currency}</span>
+                <div className="font-cairo text-sm sm:text-lg font-black text-[#261A13] leading-none">
+                  {w.price} <span className="text-[11px] font-bold text-[#9A6836]">{currency}</span>
                 </div>
                 {hasOriginalDiscount && (
-                  <div className="text-[11px] text-[#8A7968] line-through font-bold">
+                  <div className="text-[10px] text-[#8A7968] line-through font-bold">
                     {w.originalPrice} {currency}
                   </div>
                 )}
                 {displaySavings > 0 && (
-                  <div className="inline-block text-[10px] font-extrabold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-1.5 py-0.5 rounded-md">
+                  <div className="inline-block text-[9px] sm:text-[10px] font-extrabold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-1.5 py-0.5 rounded-md">
                     وفّر {displaySavings} {currency}
                   </div>
                 )}
@@ -250,26 +232,6 @@ export default function ProductBundleCards({
           );
         })}
       </div>
-
-      {/* Preserve 125g option discretely for normal storefront buyers only */}
-      {!isAdMode && variant125 && (
-        <div className="pt-0.5">
-          <button
-            type="button"
-            onClick={() => onSelectWeight(variant125)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border transition cursor-pointer tabular-nums ${
-              selectedWeight.id === variant125.id
-                ? 'bg-[#FFFBF2] text-[#261A13] border-2 border-[#9A6836]'
-                : 'bg-[#FAF7F2] text-[#5E4D40] border-[#E8DFD3] hover:border-[#C88A4B]'
-            }`}
-          >
-            <span>أو اطلب ثمن كيلو (١٢٥ جم) —</span>
-            <span className="text-[#9A6836] font-extrabold">
-              {variant125.price} {currency}
-            </span>
-          </button>
-        </div>
-      )}
     </div>
   );
 }

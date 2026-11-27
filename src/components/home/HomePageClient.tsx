@@ -52,7 +52,7 @@ export default function HomePageClient({
   );
 
   return (
-    <div className="bg-[#FAF7F2] text-[#261A13] space-y-12 sm:space-y-16 pb-12">
+    <div className="bg-[#FAF7F2] text-[#261A13] space-y-7 sm:space-y-14 pb-8">
       <HeroSection initialSettings={initialSettings} />
       <CategoriesGridSection categories={categories} products={products} />
       <SpecialOffersAndBoxesSection promotions={promotions} products={products} />

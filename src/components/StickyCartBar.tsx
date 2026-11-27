@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { ShoppingBag, ArrowLeft, Truck, Check } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 import { getCurrencySymbol } from '@/lib/defaults';
-import { useAdLandingMode } from '@/lib/ad-mode';
+import { useIsProductLanding } from '@/lib/ad-mode';
 
 export default function StickyCartBar() {
   const {
@@ -18,10 +18,10 @@ export default function StickyCartBar() {
     storeData,
   } = useStore();
   const pathname = usePathname();
-  const isAdMode = useAdLandingMode();
+  const isProductLanding = useIsProductLanding();
 
   if (
-    isAdMode ||
+    isProductLanding ||
     pathname?.startsWith('/admin') ||
     pathname?.startsWith('/pos') ||
     pathname?.startsWith('/cashier') ||
@@ -42,8 +42,8 @@ export default function StickyCartBar() {
   const netSubtotal = Math.max(0, cartSubtotal - discountAmount);
 
   return (
-    <div className="fixed bottom-[66px] lg:bottom-5 inset-x-3 sm:left-auto sm:right-6 z-40 pointer-events-none flex justify-end sm:justify-start print:hidden">
-      <div className="pointer-events-auto bg-[#261A13]/95 backdrop-blur-md text-[#FAF7F2] border border-[#3D2B20] rounded-2xl px-3 py-2 sm:px-3.5 sm:py-2.5 shadow-[0_14px_34px_-10px_rgba(35,23,16,0.35)] flex items-center justify-between gap-2.5 sm:gap-4 w-full sm:w-auto sm:min-w-[350px] max-w-md transition-all duration-300">
+    <div className="fixed bottom-[56px] lg:bottom-5 inset-x-2.5 sm:left-auto sm:right-6 z-40 pointer-events-none flex justify-end sm:justify-start print:hidden">
+      <div className="pointer-events-auto bg-[#261A13]/95 backdrop-blur-md text-[#FAF7F2] border border-[#3D2B20] rounded-2xl px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 shadow-[0_14px_34px_-10px_rgba(35,23,16,0.35)] flex items-center justify-between gap-2 sm:gap-4 w-full sm:w-auto sm:min-w-[340px] max-w-md transition-all duration-300">
         <button
           type="button"
           onClick={() => setIsCartOpen(true)}
