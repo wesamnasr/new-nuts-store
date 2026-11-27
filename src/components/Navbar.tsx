@@ -11,8 +11,10 @@ import {
   User,
   LayoutGrid,
   Wallet,
+  ShieldCheck,
 } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
+import { useAdLandingMode } from '@/lib/ad-mode';
 import {
   getCurrencySymbol,
   getResolvedFeatureFlags,
@@ -33,6 +35,7 @@ export default function Navbar() {
   } = useStore();
   const pathname = usePathname();
   const router = useRouter();
+  const isAdMode = useAdLandingMode();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [announcementDismissed, setAnnouncementDismissed] = useState(false);
@@ -93,10 +96,40 @@ export default function Navbar() {
     return null;
   }
 
-  const whatsappNumber = formatWhatsAppPhone(settings?.whatsappNumber);
   const storeName = stripUiEmojis(
     settings?.storeName || 'محمصة حفصة للبن والمكسرات'
   );
+
+  // Distraction-Free Minimal Header for Paid Ad Traffic (?ad=1 / fbclid / ttclid / utm_source)
+  if (isAdMode) {
+    return (
+      <header className="sticky top-0 z-40 print:hidden bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E8DFD3] shadow-[0_4px_18px_-12px_rgba(35,23,16,0.08)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[56px] flex items-center justify-between gap-2">
+          <Link href="/" className="inline-flex items-center gap-2 shrink-0">
+            <span className="w-9 h-9 rounded-full ring-1 ring-[#D4AF37]/50 bg-[#FAF7F2] shadow-2xs overflow-hidden flex items-center justify-center shrink-0">
+              <img
+                src={getSafeImageUrl('/images/brand/hafsa-sticker-gold.png')}
+                alt={storeName}
+                width={36}
+                height={36}
+                className="w-full h-full object-contain"
+              />
+            </span>
+            <span className="font-cairo text-sm sm:text-base font-black text-[#261A13] whitespace-nowrap">
+              {storeName}
+            </span>
+          </Link>
+
+          <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-cairo font-extrabold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2.5 py-1 rounded-full whitespace-nowrap">
+            <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+            <span>شحن لكل مصر • دفع عند الاستلام</span>
+          </span>
+        </div>
+      </header>
+    );
+  }
+
+  const whatsappNumber = formatWhatsAppPhone(settings?.whatsappNumber);
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
     `مرحباً ${storeName} (بني مزار)، أود الاستفسار عن الطلبات والمنتجات المتاحة.`
   )}`;

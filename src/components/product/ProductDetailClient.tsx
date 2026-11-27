@@ -16,6 +16,7 @@ import {
   Truck,
   Zap,
   Sparkles,
+  Flame,
 } from 'lucide-react';
 import {
   Product,
@@ -33,13 +34,29 @@ import {
 import ProductCard from '@/components/ProductCard';
 import NutritionFactsCard from '@/components/product/NutritionFactsCard';
 import ProductAutoSlideshow from '@/modules/catalog/ProductAutoSlideshow';
+import ProductBundleCards from '@/modules/catalog/ProductBundleCards';
+import {
+  ProductComparisonCard,
+  CustomerProofGallery,
+  ProductFaqAccordion,
+} from '@/modules/catalog/ProductConversionSections';
 import DirectProductOrderForm from '@/modules/orders/DirectProductOrderForm';
 import {
   updateUrlQueryParams,
   useBrowserUrlSync,
   buildUrlWithParams,
 } from '@/lib/url-sync';
-import { getResolvedProductWeights, isUnitProduct } from '@/lib/pricing';
+import {
+  getProductPriceForWeight,
+  getResolvedProductWeights,
+  isUnitProduct,
+} from '@/lib/pricing';
+import { getFreeShippingThresholdForMethod } from '@/lib/egypt-shipping';
+import { useAdLandingMode } from '@/lib/ad-mode';
+import {
+  getProductAdHeadline,
+  getProductHighlights,
+} from '@/lib/product-conversion-copy';
 
 interface ProductDetailClientProps {
   initialProduct: Product;
@@ -61,9 +78,12 @@ export default function ProductDetailClient({
   relatedProducts,
 }: ProductDetailClientProps) {
   const { addToCart, showToast, refreshStore, storeData, cartCount, trackPixelEvent } = useStore();
+  const isAdMode = useAdLandingMode();
   const currency = getCurrencySymbol(storeData?.settings);
   const directOrderNameRef = useRef<HTMLInputElement | null>(null);
   const trackedViewContentIdRef = useRef<string | null>(null);
+  const hasManualWeightSelectionRef = useRef<boolean>(false);
+  const [isOrderBoxVisible, setIsOrderBoxVisible] = useState<boolean>(false);
 
   // Local state for product reviews and rating metrics (synced with live storeData updates)
   const [product, setProduct] = useState<Product>(initialProduct);
@@ -108,15 +128,47 @@ export default function ProductDetailClient({
     [product]
   );
 
-  // Variant selector states & Sub-section state synced with URL
+  // Variant selector states & Sub-section state synced with URL (prefer 500g middle tier by default)
   const [selectedWeight, setSelectedWeight] = useState<WeightVariant>(() => {
     const resolved = getResolvedProductWeights(initialProduct);
     return isUnitProduct(initialProduct)
       ? resolved[0]
-      : resolved.find((w) => (w.grams || w.weightGrams) === 250) ||
+      : resolved.find((w) => (w.grams || w.weightGrams) === 500) ||
+          resolved.find((w) => (w.grams || w.weightGrams) === 250) ||
           resolved[1] ||
           resolved[0];
   });
+
+  // In Ad Mode, pre-select the highest-converting bundle tier unless buyer manually picked one or passed ?weight=
+  useEffect(() => {
+    if (!isAdMode || unitMode || hasManualWeightSelectionRef.current) return;
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('weight')) return;
+    }
+    const w1000 = availableWeights.find((w) => (w.weightGrams || w.grams) === 1000);
+    const w500 = availableWeights.find((w) => (w.weightGrams || w.grams) === 500);
+    const w250 = availableWeights.find((w) => (w.weightGrams || w.grams) === 250);
+    const target = w1000 && w1000.price <= 750 ? w1000 : w500 || w1000 || w250 || availableWeights[0];
+    if (target) {
+      setSelectedWeight(target);
+    }
+  }, [isAdMode, unitMode, availableWeights]);
+
+  // Hide mobile sticky bar automatically while DirectProductOrderForm is visible on screen
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') return;
+    const el = document.getElementById('direct-order-box');
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        setIsOrderBoxVisible(Boolean(entries[0]?.isIntersecting));
+      },
+      { threshold: 0.12 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   const [selectedRoast, setSelectedRoast] = useState<RoastOption>(
     initialProduct.roastOptions?.[0] || ''
   );
@@ -135,13 +187,28 @@ export default function ProductDetailClient({
   useBrowserUrlSync((params) => {
     const wParam = params.get('weight');
     if (wParam) {
-      const matchedW = availableWeights.find(
+      let matchedW = availableWeights.find(
         (w) =>
           w.id === wParam ||
           String(w.weightGrams) === wParam ||
           String(w.grams) === wParam
       );
-      if (matchedW) setSelectedWeight(matchedW);
+      if (!matchedW && (wParam === 'w-2000' || wParam === '2000') && !unitMode) {
+        const p2000 = getProductPriceForWeight(product, 2000);
+        if (p2000 > 0) {
+          matchedW = {
+            id: 'w-2000',
+            label: '2 كجم (2000 جم)',
+            weightGrams: 2000,
+            grams: 2000,
+            price: p2000,
+          };
+        }
+      }
+      if (matchedW) {
+        hasManualWeightSelectionRef.current = true;
+        setSelectedWeight(matchedW);
+      }
     }
 
     const rParam = params.get('roast');
@@ -341,41 +408,56 @@ export default function ProductDetailClient({
         )
       : 0;
 
+  const govFreeShippingThreshold = getFreeShippingThresholdForMethod(
+    'governorate_shipping',
+    storeData?.settings
+  );
+  const localFreeShippingThreshold = getFreeShippingThresholdForMethod(
+    'bandar_fast',
+    storeData?.settings
+  );
+  const adHeadline = getProductAdHeadline(product);
+  const highlightBullets = useMemo(() => getProductHighlights(product), [product]);
+
   return (
     <div className="bg-[#FAF7F2] min-h-screen pb-24 lg:pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
-        {/* Breadcrumb Navigation */}
-        <nav className="flex items-center gap-1.5 text-xs font-medium text-[#6E5D4F] overflow-x-auto no-scrollbar whitespace-nowrap">
-          <Link href="/" className="hover:text-[#9A6836] transition shrink-0">
-            الرئيسية
-          </Link>
-          <ChevronLeft className="w-3.5 h-3.5 text-[#8A7968] shrink-0" />
-          {category && (
-            <>
-              <Link
-                href={`/shop?cat=${category.id}`}
-                className="hover:text-[#9A6836] transition shrink-0"
-              >
-                {formatCategoryName(category.name)}
-              </Link>
-              <ChevronLeft className="w-3.5 h-3.5 text-[#8A7968] shrink-0" />
-            </>
-          )}
-          <span className="text-[#261A13] font-bold truncate">
-            {product.name}
-          </span>
-        </nav>
+        {/* Breadcrumb Navigation (Hidden in Distraction-Free Ad Mode) */}
+        {!isAdMode && (
+          <nav className="flex items-center gap-1.5 text-xs font-medium text-[#6E5D4F] overflow-x-auto no-scrollbar whitespace-nowrap">
+            <Link href="/" className="hover:text-[#9A6836] transition shrink-0">
+              الرئيسية
+            </Link>
+            <ChevronLeft className="w-3.5 h-3.5 text-[#8A7968] shrink-0" />
+            {category && (
+              <>
+                <Link
+                  href={`/shop?cat=${category.id}`}
+                  className="hover:text-[#9A6836] transition shrink-0"
+                >
+                  {formatCategoryName(category.name)}
+                </Link>
+                <ChevronLeft className="w-3.5 h-3.5 text-[#8A7968] shrink-0" />
+              </>
+            )}
+            <span className="text-[#261A13] font-bold truncate">
+              {product.name}
+            </span>
+          </nav>
+        )}
 
         {/* Main Ad-Landing & Product Showcase Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-          {/* Left/Right Column 1: Automatic Multi-Image Slideshow (5 cols, sticky on desktop) */}
-          <div className="lg:col-span-5 lg:sticky lg:top-28 space-y-4">
+          {/* Left/Right Column 1: Automatic Multi-Image + Video Slideshow (5 cols, sticky on desktop) */}
+          <div className={`lg:col-span-5 lg:sticky ${isAdMode ? 'lg:top-20' : 'lg:top-28'} space-y-4`}>
             <ProductAutoSlideshow
               images={allGalleryImages}
               productName={product.name}
               discountPercent={discountPercent}
               badgeText={product.badge}
               originText={product.origin}
+              videoUrl={product.videoUrl}
+              videoPoster={product.videoPoster}
               selectedIndex={selectedSlideIndex}
               onSelectIndex={(idx) => {
                 setSelectedSlideIndex(idx);
@@ -387,8 +469,8 @@ export default function ProductDetailClient({
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="rounded-xl border border-[#E8DFD3] bg-white p-2.5 space-y-1 shadow-2xs">
                 <Sparkles className="w-4 h-4 text-[#9A6836] mx-auto" />
-                <div className="text-[11px] font-bold text-[#261A13]">طازج يومياً</div>
-                <div className="text-[10px] text-[#6E5D4F]">تحميص وتعبئة للطلب</div>
+                <div className="text-[11px] font-bold text-[#261A13]">تحميص يومي</div>
+                <div className="text-[10px] text-[#6E5D4F]">طازج ساعة بساعة</div>
               </div>
               <div className="rounded-xl border border-[#E8DFD3] bg-white p-2.5 space-y-1 shadow-2xs">
                 <Truck className="w-4 h-4 text-[#9A6836] mx-auto" />
@@ -396,8 +478,8 @@ export default function ProductDetailClient({
                 <div className="text-[10px] text-[#6E5D4F]">مخزن أكتوبر + المنيا</div>
               </div>
               <div className="rounded-xl border border-[#E8DFD3] bg-white p-2.5 space-y-1 shadow-2xs">
-                <ShieldCheck className="w-4 h-4 text-[#3B6E4C] mx-auto" />
-                <div className="text-[11px] font-bold text-[#261A13]">دفع عند الاستلام</div>
+                <ShieldCheck className="w-4 h-4 text-[#15803D] mx-auto" />
+                <div className="text-[11px] font-bold text-[#261A13]">معاينة قبل الدفع</div>
                 <div className="text-[10px] text-[#6E5D4F]">ضمان القرمشة والجودة</div>
               </div>
             </div>
@@ -407,7 +489,7 @@ export default function ProductDetailClient({
           <div className="lg:col-span-7 space-y-5">
             <div className="bg-white rounded-2xl border border-[#E8DFD3] p-5 sm:p-6 space-y-5 shadow-[0_6px_24px_-12px_rgba(35,23,16,0.07)]">
               {/* Rating & Title */}
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   {reviewsCount > 0 && (
                     <div className="inline-flex items-center gap-1 text-xs font-medium text-[#5E4D40] tabular-nums bg-[#FAF7F2] px-2.5 py-1 rounded-full border border-[#E8DFD3]">
@@ -421,16 +503,16 @@ export default function ProductDetailClient({
                   <span
                     className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                       product.inStock
-                        ? 'bg-[#F1F7F3] text-[#3B6E4C] border border-[#D4E6DA]'
+                        ? 'bg-[#F0FDF4] text-[#15803D] border border-[#BBF7D0]'
                         : 'bg-[#FDF2F0] text-[#B84A39] border border-[#F2D6D0]'
                     }`}
                   >
-                    {product.inStock ? 'متوفر وجاهز للشحن الفوري' : 'نفدت الكمية مؤقتاً'}
+                    {product.inStock ? 'متوفر طازج وجاهز للشحن النهارده' : 'نفدت الكمية مؤقتاً'}
                   </span>
                 </div>
 
                 <h1 className="font-cairo text-xl sm:text-2xl lg:text-[28px] font-extrabold text-[#261A13] leading-snug">
-                  {product.name}
+                  {adHeadline}
                 </h1>
                 {product.subtitle && (
                   <p className="text-xs sm:text-sm font-medium text-[#9A6836]">
@@ -439,13 +521,47 @@ export default function ProductDetailClient({
                 )}
               </div>
 
+              {/* 3 Scannable Sensory Bullets (Readable in 3 seconds) */}
+              <div className="grid grid-cols-1 gap-2">
+                {highlightBullets.map((bullet, idx) => {
+                  const IconComp =
+                    bullet.icon === 'flame'
+                      ? Flame
+                      : bullet.icon === 'truck'
+                        ? Truck
+                        : bullet.icon === 'shield'
+                          ? ShieldCheck
+                          : Sparkles;
+                  return (
+                    <div
+                      key={idx}
+                      className="flex items-start gap-2.5 rounded-xl bg-[#FAF7F2] border border-[#EDE5D9] px-3 py-2.5"
+                    >
+                      <span className="w-7 h-7 rounded-lg bg-white border border-[#E8DFD3] flex items-center justify-center shrink-0 mt-0.5">
+                        <IconComp className="w-3.5 h-3.5 text-[#15803D]" />
+                      </span>
+                      <div className="min-w-0 space-y-0.5">
+                        <div className="text-xs sm:text-sm font-cairo font-extrabold text-[#261A13]">
+                          {bullet.title}
+                        </div>
+                        {bullet.subtitle && (
+                          <div className="text-[11px] text-[#5E4D40] leading-snug">
+                            {bullet.subtitle}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
               {/* Harmonious Price Banner */}
               <div className="bg-[#FAF7F2] border border-[#E8DFD3] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 tabular-nums">
                 <div>
                   <span className="text-xs text-[#6E5D4F] font-bold block mb-1">
                     {unitMode
-                      ? `سعر العبوة المحددة (${selectedWeight.label})`
-                      : `سعر الوزن المحدد (${selectedWeight.label})`}
+                      ? `سعر الباقة المختارة (${selectedWeight.label})`
+                      : `سعر الباقة المختارة (${selectedWeight.label})`}
                   </span>
                   <div className="flex flex-wrap items-baseline gap-2">
                     <span className="font-cairo text-2xl sm:text-3xl font-black text-[#261A13]">
@@ -470,87 +586,41 @@ export default function ProductDetailClient({
                     </span>
                   )}
                   {bulkSavingsEgp > 0 && (
-                    <span className="text-[11px] font-bold text-[#3B6E4C]">
-                      توفير إضافي {bulkSavingsEgp} {currency} للحجم الأكبر
+                    <span className="text-[11px] font-bold text-[#15803D]">
+                      توفير إضافي {bulkSavingsEgp} {currency} في الباقة الأكبر
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Description */}
-              <div className="text-sm text-[#5E4D40] leading-relaxed">
-                <p>{product.description}</p>
-              </div>
-
-              {/* Step 1: Interactive Weight / Unit Variant Selector (ALL Weights Preserved!) */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs sm:text-sm font-extrabold text-[#261A13]">
-                    {unitMode
-                      ? '١. اختر العبوة / العدد المطلوب:'
-                      : '١. اختر الوزن / الكمية المطلوبة:'}
-                  </label>
-                  <span className="text-[11px] font-bold text-[#9A6836]">
-                    متاح جميع الأوزان
-                  </span>
+              {/* Short Description (collapsed cleanly to essentials in Ad Mode) */}
+              {!isAdMode && product.description && (
+                <div className="text-sm text-[#5E4D40] leading-relaxed">
+                  <p>{product.description}</p>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2">
-                  {availableWeights.map((w) => {
-                    const isSelected = selectedWeight.id === w.id;
-                    const gramsVal = w.weightGrams || w.grams || 0;
-                    const packTag = !unitMode
-                      ? gramsVal === 500
-                        ? 'الأكثر طلباً'
-                        : gramsVal === 1000
-                          ? 'أفضل توفير'
-                          : null
-                      : null;
-                    return (
-                      <button
-                        key={w.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedWeight(w);
-                          updateUrlQueryParams({ weight: w.id });
-                        }}
-                        className={`relative py-2.5 px-2 rounded-xl border text-center transition-all duration-200 cursor-pointer tabular-nums ${
-                          isSelected
-                            ? 'bg-[#2C1D14] text-[#FAF7F2] border-[#2C1D14] shadow-xs'
-                            : packTag
-                              ? 'bg-[#FFFDF9] text-[#261A13] border-[#D9B67E] hover:border-[#9A6836] hover:bg-white'
-                              : 'bg-[#FAF7F2] text-[#261A13] border-[#E8DFD3] hover:border-[#C88A4B] hover:bg-white'
-                        }`}
-                      >
-                        {packTag && (
-                          <span
-                            className={`absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-2xs ${
-                              gramsVal === 1000
-                                ? 'bg-[#3B6E4C] text-white'
-                                : 'bg-[#D99B26] text-[#231710]'
-                            }`}
-                          >
-                            {packTag}
-                          </span>
-                        )}
-                        <div className="text-xs font-extrabold">{w.label}</div>
-                        <div
-                          className={`text-xs font-bold mt-0.5 ${
-                            isSelected ? 'text-[#E5B869]' : 'text-[#9A6836]'
-                          }`}
-                        >
-                          {w.price} {currency}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              )}
 
-              {/* Step 2: Interactive Roast / Option Selector */}
+              {/* Step 1: Visual Tiered Bundle Offer Cards */}
+              <ProductBundleCards
+                product={product}
+                availableWeights={availableWeights}
+                selectedWeight={selectedWeight}
+                onSelectWeight={(w) => {
+                  hasManualWeightSelectionRef.current = true;
+                  setSelectedWeight(w);
+                  updateUrlQueryParams({ weight: w.id });
+                }}
+                currency={currency}
+                freeShippingThreshold={govFreeShippingThreshold}
+                localFreeShippingThreshold={localFreeShippingThreshold}
+                isAdMode={isAdMode}
+              />
+
+              {/* Step 2: Interactive Roast / Option Selector (Softened non-CTA active style) */}
               {product.roastOptions && product.roastOptions.length > 0 && (
                 <div className="space-y-2">
                   <label className="text-xs sm:text-sm font-extrabold text-[#261A13] block">
-                    {unitMode ? '٢. اختر النوع / النكهة:' : '٢. اختر درجة التحميص / التجهيز:'}
+                    {unitMode ? '٢. اختر النوع / النكهة:' : '٢. اختر درجة التحميص أو الطعم:'}
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {product.roastOptions.map((roast) => {
@@ -563,10 +633,10 @@ export default function ProductDetailClient({
                             setSelectedRoast(roast);
                             updateUrlQueryParams({ roast });
                           }}
-                          className={`px-3.5 py-2 rounded-xl text-xs border transition-all duration-200 cursor-pointer ${
+                          className={`px-3.5 py-2 rounded-xl text-xs transition-all duration-200 cursor-pointer ${
                             isActive
-                              ? 'bg-[#2C1D14] text-[#FAF7F2] border-[#2C1D14] font-bold'
-                              : 'bg-[#FAF7F2] text-[#5E4D40] border-[#E8DFD3] hover:border-[#C88A4B] hover:bg-white font-medium'
+                              ? 'bg-[#FFF9EE] text-[#261A13] border-2 border-[#9A6836] font-extrabold shadow-2xs'
+                              : 'bg-[#FAF7F2] text-[#5E4D40] border border-[#E8DFD3] hover:border-[#C88A4B] hover:bg-white font-medium'
                           }`}
                         >
                           {roast}
@@ -577,13 +647,59 @@ export default function ProductDetailClient({
                 </div>
               )}
 
-              {/* Quantity + Worker Notes + Add-to-Cart / Instant Scroll Actions */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end pt-1">
-                <div className="sm:col-span-4 space-y-1.5">
-                  <label className="text-xs font-bold text-[#261A13] block">
-                    الكمية (عدد الأكياس / العبوات):
-                  </label>
-                  <div className="flex items-center justify-between border border-[#E8DFD3] rounded-xl bg-[#FAF7F2] p-1 min-h-[44px]">
+              {/* Quantity + Optional Notes (Normal Mode) + Isolated Emerald Action CTA */}
+              {!isAdMode && (
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end pt-1">
+                  <div className="sm:col-span-4 space-y-1.5">
+                    <label className="text-xs font-bold text-[#261A13] block">
+                      عدد الباقات / الأكياس:
+                    </label>
+                    <div className="flex items-center justify-between border border-[#E8DFD3] rounded-xl bg-[#FAF7F2] p-1 min-h-[44px]">
+                      <button
+                        type="button"
+                        onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                        className="p-2 text-[#261A13] hover:bg-white rounded-lg transition cursor-pointer"
+                        aria-label="تقليل الكمية"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="px-4 font-extrabold text-[#261A13] text-sm tabular-nums">
+                        {quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setQuantity((q) => q + 1)}
+                        className="p-2 text-[#261A13] hover:bg-white rounded-lg transition cursor-pointer"
+                        aria-label="زيادة الكمية"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-8 space-y-1.5">
+                    <label className="text-xs font-bold text-[#261A13] block">
+                      ملاحظة خاصة للتجهيز (اختياري):
+                    </label>
+                    <input
+                      type="text"
+                      value={workerNotes}
+                      onChange={(e) => setWorkerNotes(e.target.value)}
+                      placeholder={
+                        unitMode
+                          ? 'مثال: تغليف هدية / ملاحظة للتسليم...'
+                          : 'مثال: تقسيم الوزن في كيسين / بدون ملح إضافي...'
+                      }
+                      className="w-full min-h-[44px] bg-[#FAF7F2] border border-[#E8DFD3] focus:border-[#9A6836] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs text-[#261A13] focus:outline-none transition"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Primary Isolated Emerald CTA (Streamlined in Ad Mode, Dual in Store Mode) */}
+              <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                {isAdMode && (
+                  <div className="flex items-center justify-between border border-[#E8DFD3] rounded-xl bg-[#FAF7F2] p-1 min-h-[48px] sm:w-32 shrink-0">
                     <button
                       type="button"
                       onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -592,7 +708,7 @@ export default function ProductDetailClient({
                     >
                       <Minus className="w-4 h-4" />
                     </button>
-                    <span className="px-4 font-extrabold text-[#261A13] text-sm tabular-nums">
+                    <span className="px-2 font-extrabold text-[#261A13] text-sm tabular-nums">
                       {quantity}
                     </span>
                     <button
@@ -604,66 +720,48 @@ export default function ProductDetailClient({
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
-                </div>
+                )}
 
-                <div className="sm:col-span-8 space-y-1.5">
-                  <label className="text-xs font-bold text-[#261A13] block">
-                    ملاحظة خاصة للتجهيز (اختياري):
-                  </label>
-                  <input
-                    type="text"
-                    value={workerNotes}
-                    onChange={(e) => setWorkerNotes(e.target.value)}
-                    placeholder={
-                      unitMode
-                        ? 'مثال: تغليف هدية / ملاحظة للتسليم...'
-                        : 'مثال: تقسيم الوزن في كيسين / بدون ملح إضافي...'
-                    }
-                    className="w-full min-h-[44px] bg-[#FAF7F2] border border-[#E8DFD3] focus:border-[#9A6836] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs text-[#261A13] focus:outline-none transition"
-                  />
-                </div>
-              </div>
-
-              {/* Dual Action Row: Add to Cart (Multi-Product Shopping) + Jump to Instant Order */}
-              <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
                 <button
                   type="button"
                   disabled={!product.inStock}
                   onClick={scrollToDirectOrder}
-                  className="flex-1 min-h-[48px] py-3 px-4 rounded-xl font-cairo font-extrabold text-xs sm:text-sm bg-[#2C1D14] hover:bg-[#3D291D] text-[#FAF7F2] flex items-center justify-center gap-2 shadow-xs transition-all duration-200 active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed tabular-nums"
+                  className="flex-1 min-h-[50px] py-3 px-4 rounded-xl font-cairo font-extrabold text-xs sm:text-sm bg-[#15803D] hover:bg-[#166534] text-white flex items-center justify-center gap-2 shadow-[0_8px_20px_-6px_rgba(21,128,61,0.45)] transition-all duration-200 active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed tabular-nums"
                 >
-                  <Zap className="w-4 h-4 fill-[#E5B869] text-[#E5B869] shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <span>
-                    اطلب مباشرة من الصفحة • {selectedWeight.price * quantity} {currency}
+                    اطلب الآن — الدفع عند الاستلام • {selectedWeight.price * quantity} {currency}
                   </span>
                 </button>
 
-                <button
-                  type="button"
-                  disabled={!product.inStock}
-                  onClick={handleAddToCart}
-                  className={`min-h-[48px] py-3 px-5 rounded-xl font-cairo font-bold text-xs sm:text-sm flex items-center justify-center gap-2 border transition-all duration-200 active:scale-[0.99] cursor-pointer tabular-nums ${
-                    !product.inStock
-                      ? 'bg-[#F4EFE6] text-[#8A7968] border-[#E8DFD3] cursor-not-allowed'
-                      : justAdded
-                        ? 'bg-[#3B6E4C] text-white border-[#3B6E4C]'
-                        : 'bg-[#FAF7F2] hover:bg-[#F3ECE2] text-[#261A13] border-[#D5C4AE]'
-                  }`}
-                >
-                  {!product.inStock ? (
-                    <span>غير متوفر حالياً</span>
-                  ) : justAdded ? (
-                    <>
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>تمت الإضافة للسلة</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingBag className="w-4 h-4" />
-                      <span>أضف إلى السلة</span>
-                    </>
-                  )}
-                </button>
+                {!isAdMode && (
+                  <button
+                    type="button"
+                    disabled={!product.inStock}
+                    onClick={handleAddToCart}
+                    className={`min-h-[50px] py-3 px-5 rounded-xl font-cairo font-bold text-xs sm:text-sm flex items-center justify-center gap-2 border transition-all duration-200 active:scale-[0.99] cursor-pointer tabular-nums ${
+                      !product.inStock
+                        ? 'bg-[#F4EFE6] text-[#8A7968] border-[#E8DFD3] cursor-not-allowed'
+                        : justAdded
+                          ? 'bg-[#15803D] text-white border-[#15803D]'
+                          : 'bg-[#FAF7F2] hover:bg-[#F3ECE2] text-[#261A13] border-[#D5C4AE]'
+                    }`}
+                  >
+                    {!product.inStock ? (
+                      <span>غير متوفر حالياً</span>
+                    ) : justAdded ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>تمت الإضافة للسلة</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingBag className="w-4 h-4" />
+                        <span>أضف إلى السلة</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -676,53 +774,60 @@ export default function ProductDetailClient({
               workerNotes={workerNotes}
               relatedProducts={relatedProducts}
               nameInputRef={directOrderNameRef}
+              isAdMode={isAdMode}
             />
           </div>
         </div>
 
-        {/* Sub-pages / Sections Navigation Bar */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar bg-white p-2 rounded-2xl border border-[#E8DFD3]">
-          {[
-            { id: 'all' as const, label: 'نظرة شاملة' },
-            ...(showNutritionSection
-              ? [{ id: 'nutrition' as const, label: 'القيمة الغذائية' }]
-              : []),
-            { id: 'reviews' as const, label: `تقييمات العملاء (${reviewsCount})` },
-            ...(relatedProducts.length > 0
-              ? [{ id: 'related' as const, label: 'أصناف مشابهة' }]
-              : []),
-          ].map((tab) => {
-            const isActive = activeSection === tab.id;
-            const tabHref = buildUrlWithParams(
-              `/product/${product.slug || product.id}`,
-              {
-                weight: selectedWeight.id,
-                roast: selectedRoast,
-                section: tab.id === 'all' ? null : tab.id,
-              }
-            );
-            return (
-              <a
-                key={tab.id}
-                href={tabHref}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setActiveSection(tab.id);
-                  updateUrlQueryParams({
-                    section: tab.id === 'all' ? null : tab.id,
-                  });
-                }}
-                className={`px-4 py-2 rounded-xl text-xs font-cairo font-bold whitespace-nowrap transition cursor-pointer ${
-                  isActive
-                    ? 'bg-[#2C1D14] text-[#FAF7F2]'
-                    : 'bg-[#FAF7F2] text-[#5E4D40] hover:text-[#261A13]'
-                }`}
-              >
-                {tab.label}
-              </a>
-            );
-          })}
-        </div>
+        {/* High-Trust Conversion Comparison + Customer Proof Gallery */}
+        <ProductComparisonCard product={product} />
+        <CustomerProofGallery images={product.proofImages} productName={product.name} />
+
+        {/* Sub-pages / Sections Navigation Bar (Hidden in Ad Mode to prevent extra taps) */}
+        {!isAdMode && (
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar bg-white p-2 rounded-2xl border border-[#E8DFD3]">
+            {[
+              { id: 'all' as const, label: 'نظرة شاملة' },
+              ...(showNutritionSection
+                ? [{ id: 'nutrition' as const, label: 'القيمة الغذائية' }]
+                : []),
+              { id: 'reviews' as const, label: `تقييمات العملاء (${reviewsCount})` },
+              ...(relatedProducts.length > 0
+                ? [{ id: 'related' as const, label: 'أصناف مشابهة' }]
+                : []),
+            ].map((tab) => {
+              const isActive = activeSection === tab.id;
+              const tabHref = buildUrlWithParams(
+                `/product/${product.slug || product.id}`,
+                {
+                  weight: selectedWeight.id,
+                  roast: selectedRoast,
+                  section: tab.id === 'all' ? null : tab.id,
+                }
+              );
+              return (
+                <a
+                  key={tab.id}
+                  href={tabHref}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setActiveSection(tab.id);
+                    updateUrlQueryParams({
+                      section: tab.id === 'all' ? null : tab.id,
+                    });
+                  }}
+                  className={`px-4 py-2 rounded-xl text-xs font-cairo whitespace-nowrap transition cursor-pointer ${
+                    isActive
+                      ? 'bg-[#FFF9EE] text-[#261A13] border border-[#9A6836] font-extrabold'
+                      : 'bg-[#FAF7F2] text-[#5E4D40] hover:text-[#261A13] font-bold'
+                  }`}
+                >
+                  {tab.label}
+                </a>
+              );
+            })}
+          </div>
+        )}
 
         {/* Luxury Nutrition Facts Card Section */}
         {showNutritionSection &&
@@ -971,8 +1076,12 @@ export default function ProductDetailClient({
           </section>
         )}
 
-        {/* Smart Cross-Sell Recommendation */}
-        {relatedProducts.length > 0 &&
+        {/* Food Shipping & Quality FAQ Accordion */}
+        <ProductFaqAccordion product={product} settings={storeData?.settings} />
+
+        {/* Smart Cross-Sell Recommendation (Hidden in Ad Mode so traffic doesn't leak) */}
+        {!isAdMode &&
+          relatedProducts.length > 0 &&
           (activeSection === 'all' || activeSection === 'related') && (
             <section id="related" className="space-y-4 pt-2">
               <div className="text-center space-y-1">
@@ -990,9 +1099,13 @@ export default function ProductDetailClient({
           )}
       </div>
 
-      {/* Mobile Ad-Landing Quick-Order Floating Bar (Only when cart is empty so StickyCartBar stays uncluttered) */}
-      {cartCount === 0 && product.inStock && (
-        <div className="lg:hidden fixed bottom-[58px] inset-x-0 z-30 bg-[#FAF7F2]/95 backdrop-blur-md border-t border-[#E8DFD3] px-3 py-2 shadow-[0_-4px_16px_rgba(35,23,16,0.06)]">
+      {/* Smart Mobile Sticky Emerald CTA Bar (Auto-hides while #direct-order-box is in view) */}
+      {!isOrderBoxVisible && product.inStock && (isAdMode || cartCount === 0) && (
+        <div
+          className={`lg:hidden fixed ${
+            isAdMode ? 'bottom-0' : 'bottom-[58px]'
+          } inset-x-0 z-30 bg-[#FAF7F2]/95 backdrop-blur-md border-t border-[#E8DFD3] px-3 py-2.5 shadow-[0_-4px_16px_rgba(35,23,16,0.08)]`}
+        >
           <div className="flex items-center justify-between gap-2.5 max-w-lg mx-auto">
             <div className="min-w-0">
               <div className="text-[11px] font-bold text-[#6E5D4F] truncate">
@@ -1005,10 +1118,10 @@ export default function ProductDetailClient({
             <button
               type="button"
               onClick={scrollToDirectOrder}
-              className="flex-1 max-w-[230px] min-h-[42px] bg-[#2C1D14] hover:bg-[#3D291D] text-[#FAF7F2] rounded-xl font-cairo text-xs font-extrabold flex items-center justify-center gap-1.5 px-3 py-2 cursor-pointer"
+              className="flex-1 max-w-[240px] min-h-[44px] bg-[#15803D] hover:bg-[#166534] text-white rounded-xl font-cairo text-xs font-extrabold flex items-center justify-center gap-1.5 px-3 py-2 shadow-sm cursor-pointer"
             >
-              <Zap className="w-3.5 h-3.5 fill-[#E5B869] text-[#E5B869] shrink-0" />
-              <span>اطلب الآن مباشرة</span>
+              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+              <span>اطلب الآن — الدفع عند الاستلام</span>
             </button>
           </div>
         </div>

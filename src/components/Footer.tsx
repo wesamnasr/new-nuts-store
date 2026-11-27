@@ -20,10 +20,12 @@ import {
   getResolvedPageContent,
 } from '@/lib/defaults';
 import { formatWhatsAppPhone } from '@/lib/validation';
+import { useAdLandingMode } from '@/lib/ad-mode';
 
 export default function Footer() {
   const { storeData, cartCount } = useStore();
   const pathname = usePathname();
+  const isAdMode = useAdLandingMode();
 
   if (
     pathname?.startsWith('/admin') ||
@@ -51,6 +53,56 @@ export default function Footer() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
+
+  if (isAdMode) {
+    return (
+      <footer className="bg-[#F4EFE6] text-[#261A13] border-t border-[#E6DDD0] mt-10 pb-24 lg:pb-8 print:hidden">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 text-center space-y-3">
+          <div className="inline-flex items-center gap-2.5">
+            <img
+              src="/images/brand/hafsa-sticker-gold.png"
+              alt={storeName}
+              width={36}
+              height={36}
+              className="w-9 h-9 rounded-full object-contain ring-1 ring-[#D4AF37]/45 shrink-0"
+            />
+            <span className="font-cairo text-base font-black text-[#261A13]">
+              {storeName}
+            </span>
+          </div>
+          <p className="text-xs text-[#5E4D40]">
+            {settings?.address || 'مركز بني مزار — أمام مسجد الزراعيين مباشرة'} •{' '}
+            <a
+              href={`tel:${settings?.supportPhone || '01107677672'}`}
+              className="font-bold text-[#261A13] tabular-nums hover:text-[#9A6836]"
+            >
+              {settings?.supportPhone || '01107677672'}
+            </a>
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#15803D] hover:bg-[#166534] text-white text-xs font-cairo font-extrabold transition"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>تواصل معنا عبر واتساب</span>
+            </a>
+            <Link
+              href="/?mode=store"
+              className="inline-flex items-center px-3.5 py-2 rounded-xl bg-white hover:bg-[#FAF7F2] text-[#5E4D40] border border-[#E8DFD3] text-xs font-bold transition"
+            >
+              تصفح باقي منتجات المتجر
+            </Link>
+          </div>
+          <div className="text-[11px] text-[#6E5D4F] pt-2 border-t border-[#E6DDD0]">
+            © {new Date().getFullYear()} {storeName} — جميع الحقوق محفوظة
+          </div>
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer

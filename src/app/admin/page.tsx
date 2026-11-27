@@ -77,6 +77,7 @@ import { playOrderAlertChime, isAudioMuted, toggleAudioMuted } from '@/lib/audio
 import ImageUploadDropzone from '@/components/admin/ImageUploadDropzone';
 import RapidBarcodeCatalogModal from '@/modules/catalog/RapidBarcodeCatalogModal';
 import ProductGalleryEditor from '@/modules/catalog/ProductGalleryEditor';
+import ProductAdStudioEditor from '@/modules/catalog/ProductAdStudioEditor';
 import {
   OrderStatus,
   Product,
@@ -1861,11 +1862,26 @@ export default function AdminDashboardPage() {
           .filter((u) => Boolean(u) && u !== cleanPrimaryImg)
       )
     );
+    const cleanedHighlights = (editingProduct.adHighlights || [])
+      .map((s) => (typeof s === 'string' ? s.trim() : ''))
+      .filter(Boolean)
+      .slice(0, 3);
+    const cleanedProofImages = Array.from(
+      new Set(
+        (editingProduct.proofImages || [])
+          .map((u) => (typeof u === 'string' ? u.trim() : ''))
+          .filter(Boolean)
+      )
+    );
 
     const finalProd: Product = {
       ...editingProduct,
       image: cleanPrimaryImg || '/images/products/royal-mix.jpg',
       gallery: cleanedGallery,
+      videoUrl: editingProduct.videoUrl?.trim() || undefined,
+      adHeadline: editingProduct.adHeadline?.trim() || undefined,
+      adHighlights: cleanedHighlights.length > 0 ? cleanedHighlights : undefined,
+      proofImages: cleanedProofImages.length > 0 ? cleanedProofImages : undefined,
       sellingMode: isUnit ? 'unit' : 'weight',
       ...(isUnit
         ? {
@@ -2705,6 +2721,7 @@ export default function AdminDashboardPage() {
               <AccountantIsolationPortal
                 orders={orders}
                 products={products}
+                categories={categories}
                 posShifts={storeData?.posShifts || []}
                 posExpenses={storeData?.posExpenses || []}
                 vipMembers={storeData?.vipMembers || []}
@@ -4432,6 +4449,12 @@ export default function AdminDashboardPage() {
                             )
                           }
                           presetImages={LOCAL_PRODUCT_IMAGES}
+                        />
+                        <ProductAdStudioEditor
+                          product={editingProduct}
+                          onChange={(patch) =>
+                            setEditingProduct((prev) => (prev ? { ...prev, ...patch } : prev))
+                          }
                         />
                       </div>
                     </div>

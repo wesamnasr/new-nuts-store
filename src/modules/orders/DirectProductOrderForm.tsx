@@ -67,6 +67,7 @@ interface DirectProductOrderFormProps {
   workerNotes?: string;
   relatedProducts?: Product[];
   nameInputRef?: React.RefObject<HTMLInputElement | null>;
+  isAdMode?: boolean;
 }
 
 const QUICK_CUSTOMER_STORAGE_KEY = 'mizan_quick_customer_v1';
@@ -79,6 +80,7 @@ export default function DirectProductOrderForm({
   workerNotes,
   relatedProducts = [],
   nameInputRef,
+  isAdMode = false,
 }: DirectProductOrderFormProps) {
   const {
     storeData,
@@ -136,6 +138,43 @@ export default function DirectProductOrderForm({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
   const initiatedCheckoutRef = useRef(false);
+  const [hasManualDeliverySelect, setHasManualDeliverySelect] = useState(false);
+  const [showLocalOptionsInAdMode, setShowLocalOptionsInAdMode] = useState(false);
+  const [showElectronicPaymentInAdMode, setShowElectronicPaymentInAdMode] = useState(false);
+  const [dispatchCutoffText, setDispatchCutoffText] = useState(
+    'طلبك بيتجهز ويتحمص طازج ويخرج من أقرب مخزن ليك (أكتوبر أو بني مزار)'
+  );
+  const [upsellLoading, setUpsellLoading] = useState(false);
+  const [upsellError, setUpsellError] = useState<string | null>(null);
+  const [upsellSuccessName, setUpsellSuccessName] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const hourStr = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Africa/Cairo',
+        hour: 'numeric',
+        hour12: false,
+      }).format(new Date());
+      const cairoHour = Number(hourStr);
+      if (Number.isFinite(cairoHour) && cairoHour < 16) {
+        setDispatchCutoffText(
+          'اطلب قبل الساعة ٤ عصراً ويخرج شحنك النهارده من مخزن أكتوبر أو بني مزار'
+        );
+      } else {
+        setDispatchCutoffText(
+          'اطلب دلوقتي ويخرج طلبك طازج في أول شحنة الصبح من مخزن أكتوبر أو بني مزار'
+        );
+      }
+    } catch {
+      // Fallback already set
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAdMode && !hasManualDeliverySelect) {
+      setDeliveryMethod('governorate_shipping');
+    }
+  }, [isAdMode, hasManualDeliverySelect]);
 
   // Pick one clean complementary in-stock product as an optional 1-click bump
   const bumpCandidate = useMemo(() => {
@@ -150,6 +189,28 @@ export default function DirectProductOrderForm({
     if (!chosenWeight) return null;
     return { product: candidate, weight: chosenWeight };
   }, [relatedProducts, product.id]);
+
+  // Pick one high-converting complementary product for the Thank-You screen (-15% with 0 extra shipping)
+  const postUpsellCandidate = useMemo(() => {
+    if (!completedOrder) return null;
+    const orderedIds = new Set((completedOrder.items || []).map((it) => it.productId));
+    const pool = [...relatedProducts, ...(storeData?.products || [])];
+    const candidate = pool.find(
+      (p) =>
+        p.id !== product.id &&
+        !orderedIds.has(p.id) &&
+        p.inStock &&
+        p.showOnline !== false
+    );
+    if (!candidate) return null;
+    const weights = getResolvedProductWeights(candidate);
+    const chosenWeight = isUnitProduct(candidate)
+      ? weights[0]
+      : weights.find((w) => (w.weightGrams || w.grams) === 250) || weights[0];
+    if (!chosenWeight) return null;
+    const upsellPrice = Math.max(1, Math.round(chosenWeight.price * 0.85));
+    return { product: candidate, weight: chosenWeight, upsellPrice };
+  }, [completedOrder, relatedProducts, storeData?.products, product.id]);
 
   // Hydrate saved customer details for repeat one-click ordering
   useEffect(() => {
@@ -468,13 +529,13 @@ export default function DirectProductOrderForm({
 
     const cleanName = customerName.trim();
     if (cleanName.length < 2) {
-      setErrorMsg('يرجى إدخال الاسم بالكامل لإتمام الطلب السريع');
+      setErrorMsg('اكتب اسمك عشان نعرف نوصلك الطلب');
       return;
     }
 
     const phoneCheck = validateEgyptianPhone(customerPhone);
     if (!phoneCheck.isValid) {
-      setErrorMsg(phoneCheck.error || 'يرجى إدخال رقم موبايل مصري صحيح مكون من 11 رقم');
+      setErrorMsg(phoneCheck.error || 'اكتب رقم موبايل مصري صحيح مكون من ١١ رقم');
       return;
     }
 
@@ -503,7 +564,7 @@ export default function DirectProductOrderForm({
               : '';
 
     if (!resolvedAddress) {
-      setErrorMsg('يرجى كتابة العنوان أو الشارع باختصار لتوصيل الطلب لباب البيت');
+      setErrorMsg('اكتب العنوان أو الشارع بالتفصيل عشان المندوب يوصلك بسهولة');
       return;
     }
 
@@ -600,6 +661,44 @@ export default function DirectProductOrderForm({
     }
   };
 
+  const handleAddPostPurchaseUpsell = async () => {
+    if (!completedOrder || !postUpsellCandidate || upsellLoading) return;
+    setUpsellLoading(true);
+    setUpsellError(null);
+    try {
+      const res = await fetch('/api/orders/upsell', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: completedOrder.id,
+          orderNumber: completedOrder.orderNumber,
+          customerPhone: completedOrder.customerPhone,
+          metaEventId: completedOrder.metaEventId || '',
+          productId: postUpsellCandidate.product.id,
+          weightId: postUpsellCandidate.weight.id,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.order) {
+        setUpsellError(data.error || 'تعذر إضافة العرض الإضافي حالياً');
+        return;
+      }
+      setCompletedOrder(data.order);
+      setUpsellSuccessName(
+        `${postUpsellCandidate.product.name} (${postUpsellCandidate.weight.label})`
+      );
+      showToast(
+        'تمت إضافة العرض على نفس الشحنة',
+        `بدون أي مصاريف شحن إضافية • الإجمالي الجديد ${data.order.total} ${currency}`
+      );
+      refreshStore();
+    } catch {
+      setUpsellError('حدث خطأ في الاتصال، حاول مرة أخرى');
+    } finally {
+      setUpsellLoading(false);
+    }
+  };
+
   if (completedOrder) {
     const hubText = getFulfillmentHubLabel(completedOrder.fulfillmentHub);
     const itemsLines = completedOrder.items
@@ -671,12 +770,76 @@ export default function DirectProductOrderForm({
           )}
         </div>
 
+        {/* Post-Purchase 1-Click Upsell (0 extra shipping) */}
+        {upsellSuccessName && (
+          <div className="rounded-xl bg-[#ECFDF5] border border-[#A7F3D0] p-3 text-xs font-bold text-[#14532D] flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-[#15803D] shrink-0" />
+            <span>
+              تمت إضافة {upsellSuccessName} على نفس كرتونتك بدون أي مصاريف شحن زيادة!
+            </span>
+          </div>
+        )}
+
+        {!completedOrder.upsellAdded && postUpsellCandidate && (
+          <div className="rounded-2xl border-2 border-dashed border-[#D99B26] bg-[#FFFDF7] p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <img
+                src={getSafeImageUrl(postUpsellCandidate.product.image)}
+                alt={postUpsellCandidate.product.name}
+                className="w-14 h-14 rounded-xl object-cover border border-[#E8DFD3] shrink-0"
+              />
+              <div className="min-w-0 flex-1 space-y-1">
+                <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-[#92400E] bg-[#FEF3C7] border border-[#FDE68A] px-2 py-0.5 rounded-full">
+                  <Sparkles className="w-3 h-3" />
+                  <span>عرض حصري لمرة واحدة قبل تقفيل كرتونتك</span>
+                </span>
+                <div className="font-cairo text-xs sm:text-sm font-extrabold text-[#261A13]">
+                  ضيف {postUpsellCandidate.product.name} ({postUpsellCandidate.weight.label}) بخصم ١٥٪ بدون أي مصاريف شحن زيادة!
+                </div>
+                <div className="flex items-center gap-2 text-xs tabular-nums">
+                  <span className="line-through text-[#8A7968] font-bold">
+                    {postUpsellCandidate.weight.price} {currency}
+                  </span>
+                  <span className="font-cairo font-black text-sm text-[#15803D]">
+                    {postUpsellCandidate.upsellPrice} {currency} فقط
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {upsellError && (
+              <p className="text-[11px] font-bold text-[#B84A39]">{upsellError}</p>
+            )}
+
+            <button
+              type="button"
+              disabled={upsellLoading}
+              onClick={handleAddPostPurchaseUpsell}
+              className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-[#15803D] hover:bg-[#166534] text-white font-cairo font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition cursor-pointer disabled:opacity-50 tabular-nums"
+            >
+              {upsellLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>جاري إضافته على طلبك...</span>
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 fill-[#E5B869] text-[#E5B869]" />
+                  <span>
+                    ضيفه على طلبي دلوقتي (+{postUpsellCandidate.upsellPrice} {currency})
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
           <a
             href={waConfirmUrl}
             target="_blank"
             rel="noreferrer"
-            className="flex-1 min-h-[46px] py-2.5 px-4 rounded-xl bg-[#3B6E4C] hover:bg-[#315D40] text-white font-cairo font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition"
+            className="flex-1 min-h-[46px] py-2.5 px-4 rounded-xl bg-[#15803D] hover:bg-[#166534] text-white font-cairo font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition"
           >
             <MessageCircle className="w-4 h-4" />
             <span>إرسال تأكيد سريع عبر واتساب</span>
@@ -692,7 +855,11 @@ export default function DirectProductOrderForm({
 
           <button
             type="button"
-            onClick={() => setCompletedOrder(null)}
+            onClick={() => {
+              setCompletedOrder(null);
+              setUpsellSuccessName(null);
+              setUpsellError(null);
+            }}
             className="min-h-[46px] py-2.5 px-3.5 rounded-xl bg-white hover:bg-[#FAF7F2] text-[#5E4D40] border border-[#D4E8DA] font-cairo font-bold text-xs flex items-center justify-center gap-1 transition cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -709,20 +876,28 @@ export default function DirectProductOrderForm({
       className="rounded-2xl border border-[#E8DFD3] bg-white p-4 sm:p-6 space-y-4 shadow-[0_6px_24px_-12px_rgba(35,23,16,0.08)]"
     >
       {/* Header Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F0EAE0] pb-3">
-        <div className="space-y-0.5">
-          <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#8C5828] bg-[#FBF3E4] border border-[#EBD8B8] px-2.5 py-0.5 rounded-full">
-            <Zap className="w-3.5 h-3.5 fill-[#D99B26] text-[#9A6836]" />
-            <span>الطلب السريع المباشر بدون مغادرة الصفحة</span>
+      <div className="space-y-2.5 border-b border-[#F0EAE0] pb-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="space-y-0.5">
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#8C5828] bg-[#FBF3E4] border border-[#EBD8B8] px-2.5 py-0.5 rounded-full">
+              <Zap className="w-3.5 h-3.5 fill-[#D99B26] text-[#9A6836]" />
+              <span>طلب سريع في ١٠ ثواني — بدون تسجيل</span>
+            </div>
+            <h2 className="font-cairo text-base sm:text-lg font-extrabold text-[#261A13]">
+              املأ بياناتك واستلم {product.name} لحد باب البيت
+            </h2>
           </div>
-          <h2 className="font-cairo text-base sm:text-lg font-extrabold text-[#261A13]">
-            اطلب {product.name} الآن في ١٠ ثوانٍ
-          </h2>
+          <span className="text-[11px] font-bold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2.5 py-1 rounded-full flex items-center gap-1">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>الدفع عند الاستلام بعد المعاينة</span>
+          </span>
         </div>
-        <span className="text-[11px] font-bold text-[#3B6E4C] bg-[#F1F7F3] border border-[#D4E6DA] px-2.5 py-1 rounded-full flex items-center gap-1">
-          <ShieldCheck className="w-3.5 h-3.5" />
-          <span>الدفع عند الاستلام متاح</span>
-        </span>
+
+        {/* Real Operational Dispatch Cutoff */}
+        <div className="flex items-center gap-2 rounded-xl bg-[#FAF7F2] border border-[#E8DFD3] px-3 py-2 text-[11px] font-bold text-[#5E4D40]">
+          <Clock className="w-3.5 h-3.5 text-[#9A6836] shrink-0" />
+          <span>{dispatchCutoffText}</span>
+        </div>
       </div>
 
       {errorMsg && (
@@ -738,7 +913,7 @@ export default function DirectProductOrderForm({
           <div>
             <label className="text-xs font-bold text-[#261A13] flex items-center gap-1 mb-1">
               <User className="w-3.5 h-3.5 text-[#9A6836]" />
-              <span>الاسم بالكامل *</span>
+              <span>الاسم *</span>
             </label>
             <input
               ref={nameInputRef}
@@ -747,15 +922,15 @@ export default function DirectProductOrderForm({
               value={customerName}
               onFocus={markInitiateCheckout}
               onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="اكتب اسمك الكريم هنا..."
-              className="w-full min-h-[44px] bg-[#FAF7F2] border border-[#E8DFD3] focus:border-[#9A6836] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-[#261A13] focus:outline-none transition"
+              placeholder="اكتب اسمك (مثلاً: أحمد محمد)"
+              className="w-full min-h-[46px] bg-[#FAF7F2] border border-[#E8DFD3] focus:border-[#9A6836] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-[#261A13] focus:outline-none transition"
             />
           </div>
 
           <div>
             <label className="text-xs font-bold text-[#261A13] flex items-center gap-1 mb-1">
               <Phone className="w-3.5 h-3.5 text-[#9A6836]" />
-              <span>رقم الموبايل (للتأكيد والتوصيل) *</span>
+              <span>رقم الموبايل (للتأكيد والشحن) *</span>
             </label>
             <input
               type="tel"
@@ -766,56 +941,65 @@ export default function DirectProductOrderForm({
               onFocus={markInitiateCheckout}
               onChange={(e) => setCustomerPhone(e.target.value)}
               placeholder="01012345678"
-              className="w-full min-h-[44px] bg-[#FAF7F2] border border-[#E8DFD3] focus:border-[#9A6836] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-right text-[#261A13] tabular-nums focus:outline-none transition"
+              className="w-full min-h-[46px] bg-[#FAF7F2] border border-[#E8DFD3] focus:border-[#9A6836] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-right text-[#261A13] tabular-nums focus:outline-none transition"
             />
           </div>
         </div>
 
-        {/* 3-Mode Delivery Toggle: All Egypt Governorates | Local Bani Mazar Fast/Villages | Branch Pickup */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <button
-            type="button"
-            onClick={() => setDeliveryMethod('governorate_shipping')}
-            className={`min-h-[42px] px-3 py-2 rounded-xl border text-xs font-cairo font-bold flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
-              deliveryMethod === 'governorate_shipping'
-                ? 'bg-[#2C1D14] text-[#FAF7F2] border-[#2C1D14]'
-                : 'bg-[#FAF7F2] text-[#5E4D40] border-[#E8DFD3] hover:border-[#C88A4B]'
-            }`}
-          >
-            <Globe2 className="w-3.5 h-3.5 shrink-0" />
-            <span>شحن لكل محافظات مصر</span>
-          </button>
+        {/* 3-Mode Delivery Toggle (Always visible in store mode; collapsed cleanly in Ad Mode until clicked) */}
+        {(!isAdMode || showLocalOptionsInAdMode) && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setHasManualDeliverySelect(true);
+                setDeliveryMethod('governorate_shipping');
+              }}
+              className={`min-h-[42px] px-3 py-2 rounded-xl text-xs font-cairo flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
+                deliveryMethod === 'governorate_shipping'
+                  ? 'bg-[#FFF9EE] text-[#261A13] border-2 border-[#9A6836] font-extrabold'
+                  : 'bg-[#FAF7F2] text-[#5E4D40] border border-[#E8DFD3] hover:border-[#C88A4B] font-bold'
+              }`}
+            >
+              <Globe2 className="w-3.5 h-3.5 shrink-0" />
+              <span>شحن لكل محافظات مصر</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() =>
-              setDeliveryMethod((prev) =>
-                prev === 'villages_scheduled' ? 'villages_scheduled' : 'bandar_fast'
-              )
-            }
-            className={`min-h-[42px] px-3 py-2 rounded-xl border text-xs font-cairo font-bold flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
-              deliveryMethod === 'bandar_fast' || deliveryMethod === 'villages_scheduled'
-                ? 'bg-[#2C1D14] text-[#FAF7F2] border-[#2C1D14]'
-                : 'bg-[#FAF7F2] text-[#5E4D40] border-[#E8DFD3] hover:border-[#C88A4B]'
-            }`}
-          >
-            <Truck className="w-3.5 h-3.5 shrink-0" />
-            <span>توصيل فوري ({cityName})</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => {
+                setHasManualDeliverySelect(true);
+                setDeliveryMethod((prev) =>
+                  prev === 'villages_scheduled' ? 'villages_scheduled' : 'bandar_fast'
+                );
+              }}
+              className={`min-h-[42px] px-3 py-2 rounded-xl text-xs font-cairo flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
+                deliveryMethod === 'bandar_fast' || deliveryMethod === 'villages_scheduled'
+                  ? 'bg-[#FFF9EE] text-[#261A13] border-2 border-[#9A6836] font-extrabold'
+                  : 'bg-[#FAF7F2] text-[#5E4D40] border border-[#E8DFD3] hover:border-[#C88A4B] font-bold'
+              }`}
+            >
+              <Truck className="w-3.5 h-3.5 shrink-0" />
+              <span>توصيل فوري ({cityName})</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setDeliveryMethod('store_pickup')}
-            className={`min-h-[42px] px-3 py-2 rounded-xl border text-xs font-cairo font-bold flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
-              deliveryMethod === 'store_pickup'
-                ? 'bg-[#2C1D14] text-[#FAF7F2] border-[#2C1D14]'
-                : 'bg-[#FAF7F2] text-[#5E4D40] border-[#E8DFD3] hover:border-[#C88A4B]'
-            }`}
-          >
-            <Store className="w-3.5 h-3.5 shrink-0" />
-            <span>استلام من الفرع (٠ {currency})</span>
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => {
+                setHasManualDeliverySelect(true);
+                setDeliveryMethod('store_pickup');
+              }}
+              className={`min-h-[42px] px-3 py-2 rounded-xl text-xs font-cairo flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
+                deliveryMethod === 'store_pickup'
+                  ? 'bg-[#FFF9EE] text-[#261A13] border-2 border-[#9A6836] font-extrabold'
+                  : 'bg-[#FAF7F2] text-[#5E4D40] border border-[#E8DFD3] hover:border-[#C88A4B] font-bold'
+              }`}
+            >
+              <Store className="w-3.5 h-3.5 shrink-0" />
+              <span>استلام من الفرع (٠ {currency})</span>
+            </button>
+          </div>
+        )}
 
         {/* Option A: All-Egypt 27 Governorates Selector */}
         {deliveryMethod === 'governorate_shipping' && (
@@ -824,9 +1008,9 @@ export default function DirectProductOrderForm({
               <label className="text-xs font-bold text-[#261A13] flex items-center justify-between gap-2 mb-1">
                 <span className="flex items-center gap-1">
                   <Globe2 className="w-3.5 h-3.5 text-[#9A6836]" />
-                  <span>اختر المحافظة *</span>
+                  <span>المحافظة *</span>
                 </span>
-                <span className="text-[10px] font-bold text-[#3B6E4C] inline-flex items-center gap-1">
+                <span className="text-[10px] font-bold text-[#15803D] inline-flex items-center gap-1">
                   <Warehouse className="w-3 h-3" />
                   <span>{getFulfillmentHubLabel(resolvedHub)}</span>
                 </span>
@@ -834,7 +1018,7 @@ export default function DirectProductOrderForm({
               <select
                 value={selectedGovernorate}
                 onChange={(e) => setSelectedGovernorate(e.target.value)}
-                className="w-full min-h-[44px] bg-white border border-[#E8DFD3] focus:border-[#9A6836] rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-[#261A13] focus:outline-none"
+                className="w-full min-h-[46px] bg-white border border-[#E8DFD3] focus:border-[#9A6836] rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-[#261A13] focus:outline-none"
               >
                 {governorateRates.map((rate) => (
                   <option key={rate.id} value={rate.governorate}>
@@ -847,17 +1031,27 @@ export default function DirectProductOrderForm({
             <div>
               <label className="text-xs font-bold text-[#261A13] flex items-center gap-1 mb-1">
                 <MapPin className="w-3.5 h-3.5 text-[#9A6836]" />
-                <span>المدينة / الحي والشارع بالتفصيل *</span>
+                <span>العنوان بالتفصيل *</span>
               </label>
               <input
                 type="text"
                 required
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="مثال: مدينة نصر — شارع عباس العقاد، عمارة ١٢، الدور الثالث"
-                className="w-full min-h-[44px] bg-white border border-[#E8DFD3] focus:border-[#9A6836] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-[#261A13] focus:outline-none transition"
+                placeholder="الحي والشارع ورقم العمارة أو أقرب علامة مميزة"
+                className="w-full min-h-[46px] bg-white border border-[#E8DFD3] focus:border-[#9A6836] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-medium text-[#261A13] focus:outline-none transition"
               />
             </div>
+
+            {isAdMode && !showLocalOptionsInAdMode && (
+              <button
+                type="button"
+                onClick={() => setShowLocalOptionsInAdMode(true)}
+                className="text-[11px] font-bold text-[#9A6836] hover:text-[#261A13] underline decoration-dotted cursor-pointer"
+              >
+                من {cityName} وعايز توصيل فوري في ٣٠ دقيقة أو استلام من الفرع؟ اضغط هنا
+              </button>
+            )}
           </div>
         )}
 
@@ -869,10 +1063,10 @@ export default function DirectProductOrderForm({
                 <button
                   type="button"
                   onClick={() => setDeliveryMethod('bandar_fast')}
-                  className={`flex-1 py-1.5 px-2.5 rounded-lg text-[11px] font-bold border transition cursor-pointer ${
+                  className={`flex-1 py-1.5 px-2.5 rounded-lg text-[11px] transition cursor-pointer ${
                     deliveryMethod === 'bandar_fast'
-                      ? 'bg-[#2C1D14] text-white border-[#2C1D14]'
-                      : 'bg-white text-[#5E4D40] border-[#E8DFD3]'
+                      ? 'bg-[#FFF9EE] text-[#261A13] border-2 border-[#9A6836] font-extrabold'
+                      : 'bg-white text-[#5E4D40] border border-[#E8DFD3] font-bold'
                   }`}
                 >
                   بندر {cityName} (٣٠–٤٥ دقيقة • {settings?.bandarShippingCost ?? 20} {currency})
@@ -880,10 +1074,10 @@ export default function DirectProductOrderForm({
                 <button
                   type="button"
                   onClick={() => setDeliveryMethod('villages_scheduled')}
-                  className={`flex-1 py-1.5 px-2.5 rounded-lg text-[11px] font-bold border transition cursor-pointer ${
+                  className={`flex-1 py-1.5 px-2.5 rounded-lg text-[11px] transition cursor-pointer ${
                     deliveryMethod === 'villages_scheduled'
-                      ? 'bg-[#2C1D14] text-white border-[#2C1D14]'
-                      : 'bg-white text-[#5E4D40] border-[#E8DFD3]'
+                      ? 'bg-[#FFF9EE] text-[#261A13] border-2 border-[#9A6836] font-extrabold'
+                      : 'bg-white text-[#5E4D40] border border-[#E8DFD3] font-bold'
                   }`}
                 >
                   دورية القرى ({settings?.villagesShippingCost ?? 25} {currency})
@@ -1058,49 +1252,65 @@ export default function DirectProductOrderForm({
           )}
         </div>
 
-        {/* Payment Method Quick Pills */}
+        {/* Payment Method Quick Pills (Clean COD default in Ad Mode) */}
         {(pageContent.enableInstapay !== false || pageContent.enableVodafoneCash !== false) && (
           <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[11px] font-bold text-[#6E5D4F]">طريقة الدفع:</span>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('cod')}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition cursor-pointer ${
-                  paymentMethod === 'cod'
-                    ? 'bg-[#2C1D14] text-[#FAF7F2] border-[#2C1D14]'
-                    : 'bg-[#FAF7F2] text-[#5E4D40] border-[#E8DFD3]'
-                }`}
-              >
-                الدفع عند الاستلام
-              </button>
-              {pageContent.enableInstapay !== false && (
+            {isAdMode && !showElectronicPaymentInAdMode && paymentMethod === 'cod' ? (
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                <span className="inline-flex items-center gap-1 font-bold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2.5 py-1 rounded-lg">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>طريقة الدفع: الدفع عند الاستلام بعد المعاينة</span>
+                </span>
                 <button
                   type="button"
-                  onClick={() => setPaymentMethod('instapay')}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition cursor-pointer ${
-                    paymentMethod === 'instapay'
-                      ? 'bg-[#2C1D14] text-[#FAF7F2] border-[#2C1D14]'
-                      : 'bg-[#FAF7F2] text-[#5E4D40] border-[#E8DFD3]'
-                  }`}
+                  onClick={() => setShowElectronicPaymentInAdMode(true)}
+                  className="font-bold text-[#9A6836] hover:text-[#261A13] underline decoration-dotted cursor-pointer"
                 >
-                  إنستا باي
+                  أو الدفع عبر إنستا باي / فودافون كاش
                 </button>
-              )}
-              {pageContent.enableVodafoneCash !== false && (
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-bold text-[#6E5D4F]">طريقة الدفع:</span>
                 <button
                   type="button"
-                  onClick={() => setPaymentMethod('vodafone_cash')}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition cursor-pointer ${
-                    paymentMethod === 'vodafone_cash'
-                      ? 'bg-[#2C1D14] text-[#FAF7F2] border-[#2C1D14]'
-                      : 'bg-[#FAF7F2] text-[#5E4D40] border-[#E8DFD3]'
+                  onClick={() => setPaymentMethod('cod')}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] transition cursor-pointer ${
+                    paymentMethod === 'cod'
+                      ? 'bg-[#FFF9EE] text-[#261A13] border-2 border-[#9A6836] font-extrabold'
+                      : 'bg-[#FAF7F2] text-[#5E4D40] border border-[#E8DFD3] font-bold'
                   }`}
                 >
-                  فودافون كاش
+                  الدفع عند الاستلام
                 </button>
-              )}
-            </div>
+                {pageContent.enableInstapay !== false && (
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('instapay')}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] transition cursor-pointer ${
+                      paymentMethod === 'instapay'
+                        ? 'bg-[#FFF9EE] text-[#261A13] border-2 border-[#9A6836] font-extrabold'
+                        : 'bg-[#FAF7F2] text-[#5E4D40] border border-[#E8DFD3] font-bold'
+                    }`}
+                  >
+                    إنستا باي
+                  </button>
+                )}
+                {pageContent.enableVodafoneCash !== false && (
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('vodafone_cash')}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] transition cursor-pointer ${
+                      paymentMethod === 'vodafone_cash'
+                        ? 'bg-[#FFF9EE] text-[#261A13] border-2 border-[#9A6836] font-extrabold'
+                        : 'bg-[#FAF7F2] text-[#5E4D40] border border-[#E8DFD3] font-bold'
+                    }`}
+                  >
+                    فودافون كاش
+                  </button>
+                )}
+              </div>
+            )}
 
             {paymentMethod !== 'cod' && (
               <div className="bg-[#FAF7F2] rounded-xl border border-[#E8DFD3] p-2.5 space-y-2 text-xs">
@@ -1135,7 +1345,7 @@ export default function DirectProductOrderForm({
           ))}
 
           {discountAmount > 0 && (
-            <div className="flex items-center justify-between text-[#3B6E4C] font-bold">
+            <div className="flex items-center justify-between text-[#15803D] font-bold">
               <span>خصم الكوبون ({appliedDirectCoupon?.code})</span>
               <span>
                 -{discountAmount} {currency}
@@ -1153,7 +1363,7 @@ export default function DirectProductOrderForm({
               )}
             </span>
             {shippingCost === 0 ? (
-              <span className="font-extrabold text-[#3B6E4C]">مجاني</span>
+              <span className="font-extrabold text-[#15803D]">مجاني</span>
             ) : (
               <span className="font-bold text-[#261A13]">
                 {shippingCost} {currency}
@@ -1163,13 +1373,13 @@ export default function DirectProductOrderForm({
 
           {remainingForFreeShipping > 0 && (
             <div className="text-[11px] text-[#9A6836] font-medium">
-              أضف بقيمة {remainingForFreeShipping} {currency} (أو اختر وزناً أكبر) للحصول على شحن مجاني!
+              باقي {remainingForFreeShipping} {currency} وتاخد شحن مجاني! (اختار الباقة الأكبر لتوفير الشحن)
             </div>
           )}
 
           <div className="pt-2 border-t border-[#E8DFD3] flex items-center justify-between">
             <span className="font-cairo font-extrabold text-sm text-[#261A13]">
-              الإجمالي المطلوب
+              الإجمالي المطلوب عند الاستلام
             </span>
             <span className="font-cairo font-extrabold text-lg text-[#261A13]">
               {finalTotal}{' '}
@@ -1177,45 +1387,55 @@ export default function DirectProductOrderForm({
             </span>
           </div>
 
-          {expectedCashback > 0 && (
-            <div className="text-[11px] font-bold text-[#3B6E4C] bg-[#F1F7F3] border border-[#D4E6DA] px-2.5 py-1 rounded-lg text-center">
+          {expectedCashback > 0 && !isAdMode && (
+            <div className="text-[11px] font-bold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2.5 py-1 rounded-lg text-center">
               ستحصل تلقائياً على +{expectedCashback} {currency} كاش باك في محفظة VIP برقم موبايلك!
             </div>
           )}
         </div>
 
-        {/* Big High-Converting Submit CTA + Instant WhatsApp Alternative */}
-        <div className="space-y-2">
+        {/* Isolated Emerald Green Submit CTA + Reassurance Microcopy + Subtle WhatsApp Alternative */}
+        <div className="space-y-2.5">
           <button
             type="submit"
             disabled={!product.inStock || isSubmitting || isVillageBelowMinimum}
-            className="w-full min-h-[52px] py-3.5 px-5 rounded-xl bg-[#2C1D14] hover:bg-[#3D291D] text-[#FAF7F2] font-cairo font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm transition-all duration-200 active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed tabular-nums"
+            className="w-full min-h-[54px] py-3.5 px-5 rounded-xl bg-[#15803D] hover:bg-[#166534] text-white font-cairo font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 shadow-[0_10px_24px_-8px_rgba(21,128,61,0.5)] transition-all duration-200 active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed tabular-nums"
           >
             {!product.inStock ? (
               <span>غير متوفر بالمخزون حالياً</span>
             ) : isSubmitting ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>جاري تسجيل وتأكيد طلبك الفوري...</span>
+                <span>جاري تسجيل وتأكيد طلبك...</span>
               </>
             ) : (
               <>
-                <Zap className="w-4 h-4 fill-[#E5B869] text-[#E5B869]" />
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <span>
-                  تأكيد الطلب الآن • {finalTotal} {currency}
+                  {paymentMethod === 'cod'
+                    ? `أكد طلبك الآن — الدفع عند الاستلام • ${finalTotal} ${currency}`
+                    : `أكد طلبك الآن • ${finalTotal} ${currency}`}
                 </span>
               </>
             )}
           </button>
 
+          <p className="text-center text-[11px] font-bold text-[#5E4D40] leading-relaxed">
+            مش هتدفع مليم غير لما تستلم وتعاين طلبك بنفسك • هنكلمك نأكد العنوان قبل ما الشحنة تخرج
+          </p>
+
           <a
             href={prefilledWhatsappOrderUrl}
             target="_blank"
             rel="noreferrer"
-            className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-[#F1F7F3] hover:bg-[#E4F2E8] text-[#2B5A3C] border border-[#CBE2D3] font-cairo font-bold text-xs flex items-center justify-center gap-2 transition"
+            className={`w-full min-h-[42px] py-2 px-4 rounded-xl border font-cairo font-bold text-xs flex items-center justify-center gap-2 transition ${
+              isAdMode
+                ? 'bg-white hover:bg-[#FAF7F2] text-[#5E4D40] border-[#E8DFD3]'
+                : 'bg-[#F1F7F3] hover:bg-[#E4F2E8] text-[#2B5A3C] border-[#CBE2D3]'
+            }`}
           >
-            <MessageCircle className="w-4 h-4 text-[#3B6E4C]" />
-            <span>أو اطلب هذا المنتج مباشرة عبر واتساب بضغطة واحدة</span>
+            <MessageCircle className="w-4 h-4 text-[#15803D]" />
+            <span>أو اطلب هذا المنتج عبر واتساب بضغطة واحدة</span>
           </a>
         </div>
       </form>

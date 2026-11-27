@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { ShoppingBag, ArrowLeft, Truck, Check } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 import { getCurrencySymbol } from '@/lib/defaults';
+import { useAdLandingMode } from '@/lib/ad-mode';
 
 export default function StickyCartBar() {
   const {
@@ -17,8 +18,10 @@ export default function StickyCartBar() {
     storeData,
   } = useStore();
   const pathname = usePathname();
+  const isAdMode = useAdLandingMode();
 
   if (
+    isAdMode ||
     pathname?.startsWith('/admin') ||
     pathname?.startsWith('/pos') ||
     pathname?.startsWith('/cashier') ||

@@ -94,6 +94,20 @@ export interface Product {
   description: string;
   image: string;
   gallery?: string[];
+  videoUrl?: string;            // Direct MP4/WebM or YouTube/Shorts/Facebook reel URL
+  videoPoster?: string;         // Optional thumbnail poster for video slide
+  adHeadline?: string;          // Optional sensory ad headline override
+  adHighlights?: string[];      // Optional 3 short scannable bullet points
+  proofImages?: string[];       // Optional customer WhatsApp screenshot / unboxing proof images
+  comparisonPoints?: Array<{
+    feature: string;
+    hafsa: string;
+    others: string;
+  }>;
+  adFaqs?: Array<{
+    question: string;
+    answer: string;
+  }>;
   badge?: string;            // e.g. "الأكثر مبيعاً", "محمص اليوم", "عرض خاص", "فاخر"
   origin: string;            // e.g. "تركي فاخر", "أمريكي جامبو", "محلي طازج"
   nutritionalHighlight: string;
@@ -109,6 +123,7 @@ export interface Product {
   costPerKg?: number;        // Wholesale cost per Kg (or unit cost mirror for WAC & margin protection)
   packagingCost?: number;    // Packaging cost per unit
   stockKg?: number;          // Current available inventory (in Kg for weight mode, or Units for unit mode)
+  warehouseStocks?: Record<string, number>; // Multi-warehouse stock split: { [warehouseId]: qtyKgOrUnits }
   showOnline?: boolean;      // Controls visibility on storefront (/) and online checkout
   showInPos?: boolean;       // Controls visibility in POS cashier terminal (/pos)
   barcode?: string;          // Electronic barcode scale PLU / SKU code
@@ -219,6 +234,7 @@ export interface CartItem {
   customWeightGrams?: number; // Exact scale weight in grams (e.g. 185g or 320g)
   barcodeLabel?: string;      // EAN-13 / Scale barcode string
   workerNotes?: string; // ملاحظات خاصة للعامل (بدون ملح، تقسيم الربع على كيسين ثمن، إلخ)
+  selectedAddons?: Array<{ id: string; name: string; extraPrice: number }>; // Paid modifiers / add-ons
   isCustomMix?: boolean;
   boxCapacityGrams?: number; // 500 | 1000 | 2000
   customBreakdown?: CustomMixItem[];
@@ -297,6 +313,11 @@ export interface Order {
   orderSource?: 'online' | 'pos';
   posOrderType?: PosOrderType;
   chairNumber?: 1 | 2 | 3 | 4; // For the 4-chair glass bar in front of Agricultural Mosque
+  hallName?: string;          // Optional dining hall name when enableHallsAndTables is active
+  tableName?: string;         // Optional dining table name when enableHallsAndTables is active
+  deliveryCompanyId?: string; // Optional 3rd-party delivery company ID
+  deliveryCompanyName?: string;
+  warehouseId?: string;       // Fulfilling warehouse ID
   registerId?: string;        // Multi-register POS identifier (e.g. "reg-1", "reg-2")
   registerName?: string;      // Display name of POS register
   cashierId?: string;
@@ -313,6 +334,7 @@ export interface Order {
   deliveryMethod?: DeliveryMethodType;
   fulfillmentHub?: FulfillmentHub; // Automatic warehouse routing: bani_mazar vs cairo_october
   metaEventId?: string;            // Deduplication event_id shared between Meta Pixel & Conversions API
+  upsellAdded?: boolean;           // True once a post-purchase 1-click upsell item was added
   villageName?: string;
   deliverySlot?: string;      // "دورة الساعة 2:00 ظهراً" | "دورة الساعة 8:00 مساءً"
   deliveryBatchSlot?: string; // Alias for deliverySlot
@@ -543,6 +565,8 @@ export interface StoreFeatureFlags {
   enableWeightScale?: boolean;
   enableVillageBatches?: boolean;
   enableVipWallet?: boolean;
+  enableHallsAndTables?: boolean;
+  enableBlindShiftClose?: boolean;
 }
 export type HeroLayoutStyle = 'split' | 'centered' | 'showcase';
 export type NavbarStyle = 'classic' | 'floating' | 'dark_royal';
@@ -783,7 +807,7 @@ export interface PosExpense {
   registerId?: string;
   title: string;
   amount: number;
-  category: 'raw_materials' | 'packaging' | 'utilities' | 'delivery_rider' | 'other';
+  category: 'raw_materials' | 'packaging' | 'utilities' | 'delivery_rider' | 'other' | string;
   createdBy?: string;
   notes?: string;
   createdAt: string;
@@ -856,7 +880,10 @@ export type AuditActionType =
   | 'credit_settlement'
   | 'system_reset'
   | 'system_backup'
-  | 'system_restore';
+  | 'system_restore'
+  | 'warehouse_transfer'
+  | 'bom_update'
+  | 'erp_master_update';
 
 export interface AuditLogEntry {
   id: string;
@@ -871,6 +898,106 @@ export interface AuditLogEntry {
   afterValue?: unknown;
   ipAddress?: string;
   createdAt: string;
+}
+
+export interface Warehouse {
+  id: string;
+  code: string;
+  name: string;
+  address?: string;
+  isMainStore?: boolean;
+  isPosBranch?: boolean;
+  active: boolean;
+}
+
+export interface WarehouseTransfer {
+  id: string;
+  transferNumber: string;
+  fromWarehouseId: string;
+  fromWarehouseName: string;
+  toWarehouseId: string;
+  toWarehouseName: string;
+  productId: string;
+  productName: string;
+  quantityKg: number; // Kg for weight items, units for unit items
+  unitLabel?: string;
+  notes?: string;
+  transferredBy: string;
+  createdAt: string;
+}
+
+export interface ProductBomIngredient {
+  rawProductId: string;
+  rawProductName: string;
+  deductGramsOrUnits: number; // Grams for weight raw item, count for unit raw item
+  isUnitRaw?: boolean;
+}
+
+export interface ProductBomRecipe {
+  id: string;
+  parentProductId: string;
+  parentProductName: string;
+  ingredients: ProductBomIngredient[];
+  updatedAt: string;
+}
+
+export interface PrepMethodOption {
+  id: string;
+  name: string;
+  groupName: string; // درجة التحميص | التحويج | درجة الطحن | التمليح
+  extraPrice: number;
+  active: boolean;
+}
+
+export interface ProductAddonOption {
+  id: string;
+  name: string;
+  extraPrice: number;
+  extraCost?: number;
+  active: boolean;
+}
+
+export interface DeliveryCompany {
+  id: string;
+  name: string;
+  phone?: string;
+  commissionPercent: number;
+  notes?: string;
+  active: boolean;
+}
+
+export interface EmployeeRecord {
+  id: string;
+  code: string;
+  name: string;
+  phone?: string;
+  jobTitle: string;
+  monthlySalary: number;
+  hireDate?: string;
+  notes?: string;
+  active: boolean;
+}
+
+export interface DiningTable {
+  id: string;
+  name: string;
+  capacity: number;
+  active: boolean;
+}
+
+export interface DiningHall {
+  id: string;
+  name: string;
+  tables: DiningTable[];
+  active: boolean;
+}
+
+export interface CustomExpenseCategory {
+  id: string;
+  key: string;
+  label: string;
+  monthlyBudget?: number;
+  active: boolean;
 }
 
 export interface DatabaseSchema {
@@ -894,6 +1021,16 @@ export interface DatabaseSchema {
   staffAccounts?: StaffAccount[];
   inventoryAdjustments?: InventoryAdjustment[];
   auditLogs?: AuditLogEntry[];
+  // Extended ERP Master Data & Multi-Warehouse / BOM Modules
+  warehouses?: Warehouse[];
+  warehouseTransfers?: WarehouseTransfer[];
+  bomRecipes?: ProductBomRecipe[];
+  prepMethods?: PrepMethodOption[];
+  productAddons?: ProductAddonOption[];
+  deliveryCompanies?: DeliveryCompany[];
+  employees?: EmployeeRecord[];
+  diningHalls?: DiningHall[];
+  expenseCategories?: CustomExpenseCategory[];
 }
 
 export type InventoryAdjustmentReason =

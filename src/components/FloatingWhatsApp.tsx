@@ -5,10 +5,12 @@ import { usePathname } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
 import { getResolvedPageContent, stripUiEmojis } from '@/lib/defaults';
 import { formatWhatsAppPhone } from '@/lib/validation';
+import { useAdLandingMode } from '@/lib/ad-mode';
 
 export default function FloatingWhatsApp() {
   const { storeData, isCartOpen, cartCount, selectedProductModal } = useStore();
   const pathname = usePathname();
+  const isAdMode = useAdLandingMode();
 
   if (
     isCartOpen ||
@@ -47,7 +49,11 @@ export default function FloatingWhatsApp() {
   return (
     <div
       className={`fixed left-4 ${
-        hasStickyCart || isProductLanding ? 'bottom-[132px] sm:bottom-[84px]' : 'bottom-[72px]'
+        isAdMode
+          ? 'bottom-[76px]'
+          : hasStickyCart || isProductLanding
+            ? 'bottom-[132px] sm:bottom-[84px]'
+            : 'bottom-[72px]'
       } lg:bottom-6 z-40 flex items-center gap-2.5 group print:hidden transition-all duration-200`}
     >
       <a
