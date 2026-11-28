@@ -71,39 +71,7 @@ export async function GET(request: Request) {
 
     const invoices: SupplyInvoice[] = Array.isArray(db.supplyInvoices) ? db.supplyInvoices : [];
 
-    // Supplier gets their own invoices (multi-supplier isolation)
-    if (auth.role === 'supplier') {
-      const primarySupplierUser = (db.settings?.supplierUsername || 'sup')
-        .trim()
-        .toLowerCase();
-      const callerUsername = (auth.username || primarySupplierUser).trim().toLowerCase();
-      const isPrimarySupplier =
-        callerUsername === primarySupplierUser ||
-        callerUsername === 'sup' ||
-        callerUsername === 'supplier_arafat';
-
-      const scopedInvoices = invoices.filter((inv) => {
-        const invOwner = (inv.supplierId || '').trim().toLowerCase();
-        if (invOwner === callerUsername) return true;
-        if (
-          isPrimarySupplier &&
-          (!invOwner ||
-            invOwner === primarySupplierUser ||
-            invOwner === 'sup' ||
-            invOwner === 'supplier_arafat')
-        ) {
-          return true;
-        }
-        return false;
-      });
-      return NextResponse.json({
-        success: true,
-        invoices: scopedInvoices,
-        supplyInvoices: scopedInvoices,
-      });
-    }
-
-    // Accountant, Admin, or any role granted supply_invoices/accounting_portal get all invoices
+    // Internal Procurement Officer (supplier role), Accountant & Admin get full visibility
     return NextResponse.json({
       success: true,
       invoices,
@@ -212,8 +180,31 @@ export async function POST(request: Request) {
         const cleanQty = isUnitMode
           ? Math.round(qty)
           : Math.round(qty * 1000) / 1000;
+        const rawScaleQty =
+          item.actualScaleQty !== undefined && item.actualScaleQty !== null && item.actualScaleQty !== ''
+            ? Number(item.actualScaleQty)
+            : NaN;
+        const cleanScaleQty =
+          Number.isFinite(rawScaleQty) && rawScaleQty >= 0
+            ? isUnitMode
+              ? Math.round(rawScaleQty)
+              : Math.round(rawScaleQty * 1000) / 1000
+            : undefined;
+        const weightVarianceKg =
+          cleanScaleQty !== undefined
+            ? Math.round((cleanScaleQty - cleanQty) * 1000) / 1000
+            : undefined;
         const cleanCost = Math.round(cost * 100) / 100;
-        const totalCost = Math.round(cleanQty * cleanCost * 100) / 100;
+        const prevCost =
+          matchedProduct?.lastPurchaseCostPerKg ??
+          (isUnitMode ? matchedProduct?.unitCost ?? matchedProduct?.costPerKg : matchedProduct?.costPerKg) ??
+          0;
+        const priceChangePercent =
+          prevCost > 0
+            ? Math.round(((cleanCost - prevCost) / prevCost) * 1000) / 10
+            : undefined;
+        const effectiveBillingQty = cleanScaleQty !== undefined ? cleanScaleQty : cleanQty;
+        const totalCost = Math.round(effectiveBillingQty * cleanCost * 100) / 100;
 
         validatedItems.push({
           productId: item.productId,
@@ -223,8 +214,12 @@ export async function POST(request: Request) {
             ? item.unitLabel || matchedProduct?.unitLabel || 'قطعة'
             : 'كجم',
           quantityKg: cleanQty,
+          actualScaleQty: cleanScaleQty,
+          weightVarianceKg,
           unitsCount: isUnitMode ? cleanQty : undefined,
           costPerKg: cleanCost,
+          previousUnitCost: prevCost > 0 ? prevCost : undefined,
+          priceChangePercent,
           unitCost: isUnitMode ? cleanCost : undefined,
           totalCost,
         });
@@ -252,6 +247,11 @@ export async function POST(request: Request) {
         (auth.role === 'supplier' ? auth.displayName : undefined) ||
         'مورد الفرع المعتمد';
 
+      const canAutoApprove =
+        body.autoApprove === true &&
+        (auth.role === 'super_admin' || auth.role === 'admin' || auth.role === 'supplier');
+      const nowIso = new Date().toISOString();
+
       const newInvoice: SupplyInvoice = {
         id: invoiceId,
         invoiceNumber,
@@ -264,16 +264,62 @@ export async function POST(request: Request) {
         remainingAmount: totalAmount,
         paymentStatus: 'unpaid',
         dueDate: typeof body.dueDate === 'string' && body.dueDate ? body.dueDate : undefined,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
+        status: canAutoApprove ? 'approved' : 'pending',
+        createdAt: nowIso,
+        reviewedAt: canAutoApprove ? nowIso : undefined,
+        reviewedBy: canAutoApprove ? (auth.displayName || auth.username || 'مسؤول التوريدات') : undefined,
         notes: typeof body.notes === 'string' ? body.notes.trim() : undefined,
       };
 
-      // Crucial: Physical inventory and product costs MUST NOT change at this point.
+      if (canAutoApprove) {
+        for (const item of validatedItems) {
+          const product = db.products.find((p) => p.id === item.productId);
+          if (!product) continue;
+          const isUnitProd = product.sellingMode === 'unit' || item.sellingMode === 'unit';
+          const currentStock = typeof product.stockKg === 'number' ? Math.max(0, product.stockKg) : 0;
+          const currentCost = isUnitProd
+            ? product.unitCost ?? product.costPerKg ?? 50
+            : product.costPerKg ?? 300;
+          const incomingQty = Math.max(
+            0,
+            Number(item.actualScaleQty ?? (isUnitProd ? item.unitsCount ?? item.quantityKg : item.quantityKg)) || 0
+          );
+          const incomingCost = Math.max(0, Number(isUnitProd ? item.unitCost ?? item.costPerKg : item.costPerKg) || 0);
+          product.stockKg = Math.max(
+            0,
+            isUnitProd
+              ? Math.round(currentStock + incomingQty)
+              : Math.round((currentStock + incomingQty) * 1000) / 1000
+          );
+          if (product.stockKg > 0) product.inStock = true;
+          product.lastRestockedAt = nowIso;
+          if (incomingCost > 0) {
+            product.lastPurchaseCostPerKg = incomingCost;
+            if (currentStock > 0) {
+              const totalVal = currentStock * currentCost + incomingQty * incomingCost;
+              const totalStock = currentStock + incomingQty;
+              product.costPerKg = totalStock > 0 ? Math.round((totalVal / totalStock) * 100) / 100 : incomingCost;
+            } else {
+              product.costPerKg = Math.round(incomingCost * 100) / 100;
+            }
+            if (isUnitProd) product.unitCost = product.costPerKg;
+          }
+        }
+      }
+
       if (!Array.isArray(db.supplyInvoices)) {
         db.supplyInvoices = [];
       }
       db.supplyInvoices.unshift(newInvoice);
+
+      const priceHikeAlerts = validatedItems
+        .filter((it) => typeof it.priceChangePercent === 'number' && it.priceChangePercent > 5)
+        .map((it) => ({
+          productName: it.productName,
+          previousUnitCost: it.previousUnitCost,
+          newUnitCost: it.costPerKg,
+          priceChangePercent: it.priceChangePercent,
+        }));
 
       sendStoreTelegramAlert(db.settings, 'supply_invoice', newInvoice).catch((e) =>
         console.error('Telegram supply notification error:', e)
@@ -283,7 +329,10 @@ export async function POST(request: Request) {
         {
           success: true,
           invoice: newInvoice,
-          message: 'تم إنشاء وإرسال فاتورة التوريد بنجاح وهي قيد مراجعة واعتماد الإدارة',
+          priceHikeAlerts,
+          message: canAutoApprove
+            ? 'تم تسجيل واعتماد فاتورة التوريد وتحديث المخزون وتاريخ الطزاجة فوراً'
+            : 'تم إنشاء وإرسال فاتورة التوريد بنجاح وهي قيد مراجعة واعتماد الإدارة',
         },
         { status: 201 }
       );
@@ -660,7 +709,10 @@ export async function PATCH(request: Request) {
                   : 300;
             const incomingQty = Math.max(
               0,
-              Number(isUnitProd ? item.unitsCount ?? item.quantityUnits ?? item.quantityKg : item.quantityKg) || 0
+              Number(
+                item.actualScaleQty ??
+                  (isUnitProd ? item.unitsCount ?? item.quantityUnits ?? item.quantityKg : item.quantityKg)
+              ) || 0
             );
             const incomingCost = Math.max(
               0,
@@ -676,9 +728,11 @@ export async function PATCH(request: Request) {
             if (product.stockKg > 0) {
               product.inStock = true;
             }
+            product.lastRestockedAt = new Date().toISOString();
 
             // Weighted Average Cost (WAC): ((currentStock * currentCost) + (incomingQty * incomingCost)) / (currentStock + incomingQty)
             if (incomingCost > 0) {
+              product.lastPurchaseCostPerKg = incomingCost;
               if (currentStock > 0) {
                 const totalValuation = (currentStock * currentCost) + (incomingQty * incomingCost);
                 const totalStock = currentStock + incomingQty;

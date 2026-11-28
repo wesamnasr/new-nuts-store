@@ -127,6 +127,8 @@ export interface Product {
   showOnline?: boolean;      // Controls visibility on storefront (/) and online checkout
   showInPos?: boolean;       // Controls visibility in POS cashier terminal (/pos)
   barcode?: string;          // Electronic barcode scale PLU / SKU code
+  lastRestockedAt?: string;  // ISO date of latest supply restock (for 10-day freshness traffic light)
+  lastPurchaseCostPerKg?: number; // Previous supply purchase cost (for >5% price hike alert)
   pluCode?: number;          // Optional numeric PLU code for 20/21/22 scale tickets
   isSuperVipItem?: boolean;  // Super VIP nuts indicator for partitioned box margin safety
   inStock: boolean;
@@ -232,6 +234,7 @@ export interface CartItem {
   quantity: number;
   rawCostEgp?: number;        // Raw cost from Arafat's sheet for POS profit calculation
   customWeightGrams?: number; // Exact scale weight in grams (e.g. 185g or 320g)
+  sellByAmountMode?: boolean; // True when sold via POS "بيع بالمبلغ" quick calculator (audited)
   barcodeLabel?: string;      // EAN-13 / Scale barcode string
   workerNotes?: string; // ملاحظات خاصة للعامل (بدون ملح، تقسيم الربع على كيسين ثمن، إلخ)
   selectedAddons?: Array<{ id: string; name: string; extraPrice: number }>; // Paid modifiers / add-ons
@@ -701,7 +704,11 @@ export interface SupplyInvoiceItem {
   unitsCount?: number;
   unitCost?: number;
   quantityKg: number;
+  actualScaleQty?: number;       // Actual weight/qty measured on roastery scale upon receipt
+  weightVarianceKg?: number;     // actualScaleQty - invoicedQty (positive = surplus, negative = shortage)
   costPerKg: number;
+  previousUnitCost?: number;     // Prior purchase cost for >5% price hike alert
+  priceChangePercent?: number;   // % change vs previous purchase cost
   totalCost: number;
 }
 
@@ -806,6 +813,10 @@ export interface StoreSettings {
   // Credit Sales (البيع الآجل) Master Admin Controls
   enableCreditSales?: boolean;       // Master Admin switch: false = completely locked/disabled
   creditSalesRequireApproval?: boolean; // true = only customers with allowCredit=true & creditLimit
+
+  // Security Manager PIN & 4-Partner Distribution Config
+  managerPin?: string;               // 4-6 digit Manager secret PIN for returns, voids & partner withdrawals
+  partnersList?: Array<{ id: string; name: string; sharePercent: number }>;
 
   pageContent?: StorePageContent;
   themeConfig?: StoreThemeConfig;
@@ -962,7 +973,9 @@ export type AuditActionType =
   | 'system_restore'
   | 'warehouse_transfer'
   | 'bom_update'
-  | 'erp_master_update';
+  | 'erp_master_update'
+  | 'partner_withdrawal'
+  | 'pos_sell_by_amount';
 
 export interface AuditLogEntry {
   id: string;
@@ -1079,6 +1092,22 @@ export interface CustomExpenseCategory {
   active: boolean;
 }
 
+export interface PartnerWithdrawal {
+  id: string;
+  withdrawalNumber: string; // e.g. "PW-1001"
+  partnerId: string;        // partner-1 .. partner-4
+  partnerName: string;
+  productId: string;
+  productName: string;
+  quantityKgOrUnits: number;
+  unitLabel: string;
+  unitCostEgp: number;
+  totalCostEgp: number;     // Deducted from partner's 25% profit share at wholesale cost
+  notes?: string;
+  recordedBy: string;
+  createdAt: string;
+}
+
 export interface DatabaseSchema {
   isSeeded?: boolean;
   settings: StoreSettings;
@@ -1110,6 +1139,7 @@ export interface DatabaseSchema {
   employees?: EmployeeRecord[];
   diningHalls?: DiningHall[];
   expenseCategories?: CustomExpenseCategory[];
+  partnerWithdrawals?: PartnerWithdrawal[];
 }
 
 export type InventoryAdjustmentReason =

@@ -231,7 +231,7 @@ const ALL_ADMIN_TABS: AdminTab[] = [
 ];
 
 function getDefaultTabForRole(role: AdminRole): AdminTab {
-  if (role === 'supplier') return 'supply_portal';
+  if (role === 'supplier') return 'supply_invoices';
   if (role === 'accountant') return 'overview';
   if (role === 'cashier') return 'cashier_portal';
   return 'overview';
@@ -585,10 +585,6 @@ export default function AdminDashboardPage() {
             }
             const resolvedCustomRoleId = typeof data.customRoleId === 'string' ? data.customRoleId : '';
             const resolvedCustomRoleName = typeof data.customRoleName === 'string' ? data.customRoleName : '';
-            if (!resolvedCustomRoleId && resolvedRole === 'supplier') {
-              window.location.replace('/supplier');
-              return;
-            }
             if (!resolvedCustomRoleId && resolvedRole === 'cashier') {
               window.location.replace('/pos');
               return;
@@ -712,10 +708,6 @@ export default function AdminDashboardPage() {
           const resolvedCustomRoleId = typeof data.customRoleId === 'string' ? data.customRoleId : '';
           const resolvedCustomRoleName = typeof data.customRoleName === 'string' ? data.customRoleName : '';
 
-          if (!resolvedCustomRoleId && resolvedRole === 'supplier') {
-            window.location.href = '/supplier';
-            return;
-          }
           if (!resolvedCustomRoleId && resolvedRole === 'cashier') {
             window.location.href = '/pos';
             return;
@@ -2477,7 +2469,7 @@ export default function AdminDashboardPage() {
   const roleHeaderBadge = currentCustomRoleName
     ? { label: currentCustomRoleName, cls: 'bg-amber-50 text-[#9A6836] border-amber-200' }
     : currentRole === 'supplier'
-      ? { label: 'المورد', cls: 'bg-[#FAF6F0] text-[#9A6836] border-[#E8E0D5]' }
+      ? { label: 'مسؤول التوريدات والمخزون', cls: 'bg-[#FAF6F0] text-[#9A6836] border-[#E8E0D5]' }
       : currentRole === 'accountant'
         ? { label: 'المحاسب', cls: 'bg-[#FAF6F0] text-[#3B6E4C] border-[#E8E0D5]' }
         : currentRole === 'cashier'
@@ -2842,11 +2834,13 @@ export default function AdminDashboardPage() {
               setExpandedAdminInvoiceId={setExpandedAdminInvoiceId}
               actionLoadingInvoiceId={actionLoadingInvoiceId}
               products={products}
+              orders={orders}
+              storeName={settings.storeName}
               invoiceReviewNotes={invoiceReviewNotes}
               setInvoiceReviewNotes={setInvoiceReviewNotes}
               fetchSupplyInvoices={() => fetchSupplyInvoices()}
               handleReviewSupplyInvoice={handleReviewSupplyInvoice}
-              canApprove={isFullAdmin}
+              canApprove={isFullAdmin || currentRole === 'supplier'}
             />
           )}
 
@@ -2862,6 +2856,7 @@ export default function AdminDashboardPage() {
                 vipMembers={storeData?.vipMembers || []}
                 coupons={coupons}
                 supplyInvoices={effectiveSupplyInvoices}
+                partnerWithdrawals={storeData?.partnerWithdrawals || []}
                 settings={settings}
                 canMutate={isFullAdmin}
                 onRefreshStore={refreshStore}

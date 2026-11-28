@@ -223,7 +223,7 @@ export default function HafsaOperationsStudio({
         promoOriginalPrice,
         promoCostPrice,
         promoProposedPrice,
-        15
+        18
       ),
     [promoOriginalPrice, promoCostPrice, promoProposedPrice]
   );
@@ -654,8 +654,8 @@ export default function HafsaOperationsStudio({
               <div className="flex items-center justify-between font-bold">
                 <span>
                   {profitSafety.isSafe
-                    ? 'فحص الأرباح آمن (مسموح بنشر العرض)'
-                    : 'مرفوض: العرض يكسر الحد الأدنى لهامش الربح (15%)'}
+                    ? 'فحص الأرباح آمن (هامش ≥ 18% — مسموح بنشر العرض)'
+                    : 'مرفوض: العرض يكسر الحد الأدنى لهامش الربح (18%)'}
                 </span>
                 <span>هامش الربح: {profitSafety.profitMarginPercent}%</span>
               </div>
@@ -665,7 +665,18 @@ export default function HafsaOperationsStudio({
                 {profitSafety.discountPercentage}%)
               </div>
               {profitSafety.warning && (
-                <div className="text-[11px] font-bold">{stripUiEmojis(profitSafety.warning)}</div>
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <span className="text-[11px] font-bold">{stripUiEmojis(profitSafety.warning)}</span>
+                  {!profitSafety.isSafe && profitSafety.suggestedMinPrice > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setPromoProposedPrice(profitSafety.suggestedMinPrice)}
+                      className="bg-[#D4AF37] hover:bg-[#c5a02d] text-[#231710] px-2.5 py-1 rounded-lg text-[11px] font-extrabold cursor-pointer transition shrink-0"
+                    >
+                      تطبيق السعر المقترح ({profitSafety.suggestedMinPrice} {currency})
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 

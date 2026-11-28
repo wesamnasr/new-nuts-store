@@ -17,9 +17,10 @@ import {
   Wallet,
   Undo2,
 } from 'lucide-react';
-import { Product, SupplyInvoice, SupplyInvoiceItem, TreasuryAccountId } from '@/types/store';
+import { Order, Product, SupplyInvoice, SupplyInvoiceItem, TreasuryAccountId } from '@/types/store';
 import { updateUrlQueryParams } from '@/lib/url-sync';
 import { generateSupplyLedgerCsv, triggerCsvDownload } from '@/lib/financials';
+import InternalProcurementStudio from '@/components/admin/InternalProcurementStudio';
 
 export interface SupplyInvoicesApprovalModuleProps {
   effectiveSupplyInvoices: SupplyInvoice[];
@@ -32,6 +33,8 @@ export interface SupplyInvoicesApprovalModuleProps {
   setExpandedAdminInvoiceId: (id: string | null) => void;
   actionLoadingInvoiceId: string | null;
   products: Product[];
+  orders?: Order[];
+  storeName?: string;
   invoiceReviewNotes: Record<string, string>;
   setInvoiceReviewNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   fetchSupplyInvoices: () => void;
@@ -50,6 +53,8 @@ export default function SupplyInvoicesApprovalModule({
   setExpandedAdminInvoiceId,
   actionLoadingInvoiceId,
   products,
+  orders = [],
+  storeName,
   invoiceReviewNotes,
   setInvoiceReviewNotes,
   fetchSupplyInvoices,
@@ -252,16 +257,6 @@ export default function SupplyInvoicesApprovalModule({
               <RotateCcw className={`w-3.5 h-3.5 text-[#6B5644] ${loadingSupplyInvoices ? 'animate-spin' : ''}`} />
               <span>تحديث الفواتير</span>
             </button>
-            {canApprove && (
-              <Link
-                href="/supplier"
-                target="_blank"
-                className="min-h-[40px] bg-[#231710] hover:bg-[#3A271C] text-white font-bold px-3.5 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5"
-              >
-                <Truck className="w-3.5 h-3.5" />
-                <span>فتح بوابة المورد</span>
-              </Link>
-            )}
           </div>
         </div>
 
@@ -307,6 +302,16 @@ export default function SupplyInvoicesApprovalModule({
           </div>
         </div>
       </div>
+
+      {/* Internal Procurement Studio: Direct Receipt + Scale Variance + >5% Hike + Traffic Lights + WhatsApp PO */}
+      <InternalProcurementStudio
+        products={products}
+        orders={orders}
+        supplyInvoices={effectiveSupplyInvoices}
+        storeName={storeName}
+        canCreate={canApprove}
+        onCreated={() => fetchSupplyInvoices()}
+      />
 
       {/* Status Filter Tabs */}
       <div className="flex items-center gap-2 flex-wrap">

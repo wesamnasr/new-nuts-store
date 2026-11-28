@@ -6,6 +6,7 @@ import {
   InventoryAdjustment,
   Order,
   OrderStatus,
+  PartnerWithdrawal,
   PaymentMethod,
   PosExpense,
   PosOrderType,
@@ -24,7 +25,7 @@ import {
   isUnitProduct,
 } from '@/lib/pricing';
 import { validateCoupon, validateEgyptianPhone } from '@/lib/validation';
-import { getSafeImageUrl } from '@/lib/defaults';
+import { getResolvedManagerPin, getSafeImageUrl } from '@/lib/defaults';
 import { hasRolePermission, verifyAdminRequest } from '@/lib/auth';
 import { sendStoreTelegramAlert, type LowStockAlertItem } from '@/lib/telegram';
 import { reverseOrderEffects, reapplyOrderEffects } from '@/lib/order-reversal';
@@ -798,8 +799,100 @@ export async function POST(request: Request) {
         });
       }
 
+      // 4.2.5 VERIFY MANAGER SECRET PIN (التحقق من كود المدير السري)
+      if (action === 'verify_manager_pin') {
+        const expectedPin = getResolvedManagerPin(db.settings);
+        const suppliedPin = String(body.managerPin || '').trim();
+        if (!suppliedPin || suppliedPin !== expectedPin) {
+          return NextResponse.json(
+            { success: false, error: 'كود المدير السري غير صحيح' },
+            { status: 403 }
+          );
+        }
+        return NextResponse.json({ success: true });
+      }
+
+      // 4.2.6 RECORD PARTNER WITHDRAWAL AT WHOLESALE COST (مسحوبات الشركاء بالتكلفة)
+      if (action === 'record_partner_withdrawal') {
+        const expectedPin = getResolvedManagerPin(db.settings);
+        const suppliedPin = String(body.managerPin || '').trim();
+        if (!suppliedPin || suppliedPin !== expectedPin) {
+          return NextResponse.json(
+            { error: 'كود المدير السري غير صحيح — لا يمكن تسجيل مسحوب الشريك بدون اعتماد المدير' },
+            { status: 403 }
+          );
+        }
+
+        const partnerId = String(body.partnerId || '').trim();
+        const partnerName = String(body.partnerName || '').trim() || 'شريك';
+        const productId = String(body.productId || '').trim();
+        const qty = Math.max(0, Number(body.quantityKgOrUnits) || 0);
+        const prod = db.products.find((p) => p.id === productId);
+        if (!prod || qty <= 0) {
+          return NextResponse.json(
+            { error: 'يرجى اختيار صنف وإدخال كمية مسحوبة صحيحة أكبر من صفر' },
+            { status: 400 }
+          );
+        }
+
+        const unitMode = isUnitProduct(prod);
+        const unitLabel = unitMode ? (prod.unitLabel?.trim() || 'قطعة') : 'كجم';
+        const unitCostEgp =
+          typeof prod.costPerKg === 'number' && prod.costPerKg > 0
+            ? prod.costPerKg
+            : prod.pricePerKg
+              ? Math.round(prod.pricePerKg * 0.68)
+              : 200;
+        const totalCostEgp = Math.round(qty * unitCostEgp * 100) / 100;
+
+        const currStock = typeof prod.stockKg === 'number' ? prod.stockKg : 0;
+        prod.stockKg = Math.max(0, Math.round((currStock - qty) * 1000) / 1000);
+        prod.inStock = prod.stockKg > 0;
+
+        if (!Array.isArray(db.partnerWithdrawals)) db.partnerWithdrawals = [];
+        const withdrawal: PartnerWithdrawal = {
+          id: `pw-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          withdrawalNumber: `PW-${1001 + db.partnerWithdrawals.length}`,
+          partnerId: partnerId || 'partner-1',
+          partnerName,
+          productId: prod.id,
+          productName: prod.name,
+          quantityKgOrUnits: Math.round(qty * 1000) / 1000,
+          unitLabel,
+          unitCostEgp,
+          totalCostEgp,
+          notes: typeof body.notes === 'string' && body.notes.trim() ? body.notes.trim() : undefined,
+          recordedBy: auth.displayName || auth.username || 'إدارة الفرع',
+          createdAt: new Date().toISOString(),
+        };
+        db.partnerWithdrawals.unshift(withdrawal);
+
+        appendAuditLog(db, {
+          actorUsername: auth.username || 'admin',
+          actorDisplayName: auth.displayName || auth.username || 'إدارة الفرع',
+          actorRole: auth.role || 'super_admin',
+          action: 'partner_withdrawal',
+          targetType: 'partner_withdrawal',
+          targetId: withdrawal.withdrawalNumber,
+          summary: `مسحوب شريك بالتكلفة (${partnerName}): ${withdrawal.quantityKgOrUnits} ${unitLabel} ${prod.name} بقيمة تكلفة ${totalCostEgp} ج.م`,
+          afterValue: withdrawal,
+        });
+
+        return NextResponse.json({ success: true, withdrawal }, { status: 201 });
+      }
+
       // 4.3 PARTIAL & FULL POS RETURNS (مرتجع جزئي أو كلي للفواتير مع فحص الحالة والدرج)
       if (action === 'create_return') {
+        if (auth.role === 'cashier') {
+          const expectedPin = getResolvedManagerPin(db.settings);
+          const suppliedPin = String(body.managerPin || '').trim();
+          if (!suppliedPin || suppliedPin !== expectedPin) {
+            return NextResponse.json(
+              { error: 'كود المدير السري غير صحيح — لا يمكن للكاشير اعتماد المرتجع بدون كود المدير' },
+              { status: 403 }
+            );
+          }
+        }
         const targetId = String(body.orderId || body.orderNumber || '').trim();
         if (!targetId) {
           return NextResponse.json(
@@ -2088,6 +2181,27 @@ export async function POST(request: Request) {
       }
 
       db.orders.unshift(createdOrder);
+
+      // UX Constitution Audit Tag: log any items sold via "بيع بالمبلغ" quick calculator
+      const sellByAmountItems = verifiedItems.filter((it) => it.sellByAmountMode);
+      if (sellByAmountItems.length > 0) {
+        appendAuditLog(db, {
+          actorUsername: auth.username || 'cashier',
+          actorDisplayName: auth.displayName || auth.username || 'كاشير الفرع',
+          actorRole: auth.role || 'cashier',
+          action: 'pos_sell_by_amount',
+          targetType: 'order',
+          targetId: orderNumber,
+          summary: `وسم [بيع بالمبلغ] في الفاتورة #${orderNumber}: ${sellByAmountItems
+            .map((i) => `${i.productName} (${i.unitPrice} ج.م = ${i.customWeightGrams || 0} جم)`)
+            .join(' + ')}`,
+          afterValue: sellByAmountItems.map((i) => ({
+            productName: i.productName,
+            amountEgp: i.unitPrice,
+            grams: i.customWeightGrams,
+          })),
+        });
+      }
 
       if (crossedLowStockAlerts.length > 0) {
         sendStoreTelegramAlert(db.settings, 'low_stock', {

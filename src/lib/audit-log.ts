@@ -24,6 +24,8 @@ export const AUDIT_ACTION_LABELS_AR: Record<AuditActionType, string> = {
   warehouse_transfer: 'تحويل مخزني بين المخازن',
   bom_update: 'تحديث شجرة المكونات (BOM)',
   erp_master_update: 'تحديث البيانات الأساسية (ERP)',
+  partner_withdrawal: 'مسحوب شريك بسعر التكلفة',
+  pos_sell_by_amount: 'بيع بالمبلغ (وسم رقابي)',
 };
 
 const SENSITIVE_KEY_PATTERN = /password|secret|token|hash|pin/i;

@@ -53,11 +53,13 @@ function TrackContent() {
   } = useStore();
   const searchParams = useSearchParams();
   const initialQ = searchParams.get('q') || '';
+  const autoReorderFlag = searchParams.get('reorder') === '1';
 
   const [query, setQuery] = useState(initialQ);
   const [orders, setOrders] = useState<Order[]>([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [autoReordered, setAutoReordered] = useState(false);
   const [recentOrderNumbers, setRecentOrderNumbers] = useState<string[]>([]);
 
   const performSearch = async (searchVal: string, pushUrl = true) => {
@@ -130,6 +132,15 @@ function TrackContent() {
     });
     setIsCartOpen(true);
   };
+
+  // Support 1-click QR Bag Reorder (?q=HFS-XXXX&reorder=1) per UX Constitution
+  useEffect(() => {
+    if (autoReorderFlag && !autoReordered && orders.length > 0 && storeData?.products?.length) {
+      setAutoReordered(true);
+      handleReorder(orders[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoReorderFlag, autoReordered, orders, storeData?.products?.length]);
 
   useBrowserUrlSync((params) => {
     const qParam = params.get('q');

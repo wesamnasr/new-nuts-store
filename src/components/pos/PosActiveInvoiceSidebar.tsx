@@ -123,6 +123,7 @@ interface PosActiveInvoiceSidebarProps {
   onScanCode?: (rawCode: string) => boolean;
   lastScanNotice?: { ok: boolean; title: string; subtitle: string } | null;
   currencySymbol?: string;
+  vipMinOrder?: number;
 }
 
 export const MIN_POS_CART_WIDTH = 200;
@@ -186,10 +187,12 @@ export default function PosActiveInvoiceSidebar({
   onScanCode,
   lastScanNotice,
   currencySymbol = 'ج.م',
+  vipMinOrder = 150,
 }: PosActiveInvoiceSidebarProps) {
   const [scanInput, setScanInput] = useState('');
   const [showHeldList, setShowHeldList] = useState(false);
   const [showExtrasDrawer, setShowExtrasDrawer] = useState(false);
+  const [showVipNumpad, setShowVipNumpad] = useState(false);
   const [showDebtPayBox, setShowDebtPayBox] = useState(false);
   const [debtPayAmount, setDebtPayAmount] = useState<number | ''>('');
   const [debtPayMethod, setDebtPayMethod] = useState<PaymentMethod>('cod');
@@ -223,6 +226,15 @@ export default function PosActiveInvoiceSidebar({
     Math.round(paymentSplits.reduce((sum, s) => sum + (Number(s.amount) || 0), 0) * 100) / 100;
   const splitRemaining = Math.round((posNetTotal - splitAllocatedSum) * 100) / 100;
   const isSplitMismatch = paymentMethod === 'split' && Math.abs(splitRemaining) > 0.5;
+  const isCashShort =
+    paymentMethod === 'cod' &&
+    cashTenderedInput !== '' &&
+    Number(cashTenderedInput) < posNetTotal - 0.01;
+  const cashShortRemaining = isCashShort
+    ? Math.max(0, Math.round((posNetTotal - Number(cashTenderedInput || 0)) * 100) / 100)
+    : 0;
+  const showVip150Prompt =
+    posItems.length > 0 && posNetTotal >= vipMinOrder && !customerPhone.trim();
 
   const handleScanSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -516,9 +528,9 @@ export default function PosActiveInvoiceSidebar({
                                 .filter((i) => i.quantity > 0)
                             )
                           }
-                          className="w-6 h-6 rounded-md hover:bg-white flex items-center justify-center text-[#231710] cursor-pointer"
+                          className="w-8 h-8 rounded-md hover:bg-white flex items-center justify-center text-[#231710] cursor-pointer"
                         >
-                          <Minus className="w-3 h-3" />
+                          <Minus className="w-3.5 h-3.5" />
                         </button>
                         <span className="font-bold text-xs px-2 tabular-nums text-[#231710]">
                           {fmtNum(item.quantity)}
@@ -534,9 +546,9 @@ export default function PosActiveInvoiceSidebar({
                               )
                             )
                           }
-                          className="w-6 h-6 rounded-md hover:bg-white flex items-center justify-center text-[#231710] cursor-pointer"
+                          className="w-8 h-8 rounded-md hover:bg-white flex items-center justify-center text-[#231710] cursor-pointer"
                         >
-                          <Plus className="w-3 h-3" />
+                          <Plus className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -906,45 +918,74 @@ export default function PosActiveInvoiceSidebar({
 
         {/* Contextual Payment Strip (Cash Quick Bills + Change / Electronic Ref / Split / Credit) */}
         {paymentMethod === 'cod' && (
-          <div className="bg-white rounded-xl border border-[#E8E0D5] px-2.5 py-2 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setCashTenderedInput(posNetTotal)}
-                className="px-2 py-1 rounded-lg bg-[#FAF6F0] hover:bg-[#231710] hover:text-white border border-[#E8E0D5] text-[11px] font-bold cursor-pointer transition"
-              >
-                المضبوط
-              </button>
-              {[50, 100, 200, 500, 1000].map((bill) => (
+          <div className="bg-white rounded-xl border border-[#E8E0D5] px-2.5 py-2 space-y-1.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-1">
                 <button
-                  key={bill}
                   type="button"
-                  onClick={() => setCashTenderedInput(bill)}
-                  className={`px-2 py-1 rounded-lg border text-[11px] font-bold tabular-nums cursor-pointer transition ${
-                    cashTenderedInput === bill
-                      ? 'bg-[#231710] text-white border-[#231710]'
-                      : 'bg-[#FAF6F0] hover:bg-[#231710] hover:text-white text-[#231710] border-[#E8E0D5]'
+                  onClick={() => setCashTenderedInput(posNetTotal)}
+                  className="min-h-[38px] px-2.5 py-1 rounded-lg bg-[#FAF6F0] hover:bg-[#231710] hover:text-white border border-[#E8E0D5] text-xs font-bold cursor-pointer transition"
+                >
+                  المضبوط
+                </button>
+                {[50, 100, 200, 500].map((bill) => (
+                  <button
+                    key={bill}
+                    type="button"
+                    onClick={() => setCashTenderedInput(bill)}
+                    className={`min-h-[38px] px-2.5 py-1 rounded-lg border text-xs font-bold tabular-nums cursor-pointer transition ${
+                      cashTenderedInput === bill
+                        ? 'bg-[#231710] text-white border-[#231710]'
+                        : 'bg-[#FAF6F0] hover:bg-[#231710] hover:text-white text-[#231710] border-[#E8E0D5]'
+                    }`}
+                  >
+                    {bill}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 flex-1 justify-end min-w-[190px]">
+                <input
+                  type="number"
+                  value={cashTenderedInput}
+                  onChange={(e) =>
+                    setCashTenderedInput(e.target.value === '' ? '' : Number(e.target.value))
+                  }
+                  placeholder={`المدفوع (${fmtNum(posNetTotal)})`}
+                  className={`w-24 bg-[#FAF6F0] focus:bg-white border rounded-lg px-2 py-1.5 text-xs font-bold tabular-nums outline-none text-center ${
+                    isCashShort
+                      ? 'border-[#B91C1C] bg-red-50 text-[#B91C1C]'
+                      : 'border-[#E8E0D5] focus:border-[#231710]'
+                  }`}
+                />
+                <div
+                  className={`px-2.5 py-1.5 rounded-lg border text-xs font-extrabold tabular-nums whitespace-nowrap ${
+                    isCashShort
+                      ? 'bg-red-50 border-red-200 text-[#B91C1C]'
+                      : 'bg-emerald-50 border-emerald-200 text-[#166534]'
                   }`}
                 >
-                  {bill}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-2 flex-1 justify-end min-w-[190px]">
-              <input
-                type="number"
-                value={cashTenderedInput}
-                onChange={(e) =>
-                  setCashTenderedInput(e.target.value === '' ? '' : Number(e.target.value))
-                }
-                placeholder={`المدفوع (${fmtNum(posNetTotal)})`}
-                className="w-24 bg-[#FAF6F0] focus:bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-lg px-2 py-1 text-xs font-bold tabular-nums outline-none text-center"
-              />
-              <div className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 tabular-nums whitespace-nowrap">
-                الباقي: {fmtNum(changeDue)} {currencySymbol}
+                  {isCashShort
+                    ? `ناقص: ${fmtNum(cashShortRemaining)} ${currencySymbol}`
+                    : `الباقي: ${fmtNum(changeDue)} ${currencySymbol}`}
+                </div>
               </div>
             </div>
+
+            {isCashShort && (
+              <div className="bg-[#B91C1C] text-white rounded-lg px-2.5 py-1.5 text-[11px] font-bold flex items-center justify-between gap-2">
+                <span>
+                  لا يمكن إغلاق الفاتورة بمبلغ ناقص — باقي {fmtNum(cashShortRemaining)} {currencySymbol} لإتمام الدفع.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCashTenderedInput(posNetTotal)}
+                  className="bg-white/20 hover:bg-white/30 text-white px-2 py-0.5 rounded text-[10px] font-bold shrink-0 cursor-pointer"
+                >
+                  المضبوط
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -1065,6 +1106,59 @@ export default function PosActiveInvoiceSidebar({
           </div>
         )}
 
+        {/* Royal Gold 150 EGP VIP Cashback Alert Bar (High Contrast: #D4AF37 bg + #231710 text = 8.2:1) */}
+        {showVip150Prompt && (
+          <div className="bg-[#D4AF37] text-[#231710] border border-[#B89220] rounded-xl p-2 space-y-1.5 shadow-2xs">
+            <div className="flex flex-wrap items-center justify-between gap-1.5">
+              <div className="flex items-center gap-1.5 text-[11px] font-cairo font-extrabold">
+                <Crown className="w-4 h-4 text-[#231710] shrink-0" />
+                <span>
+                  الفاتورة مؤهلة لكاش باك 5% — أدخل رقم هاتف العميل
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <input
+                  type="tel"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                  placeholder="01XXXXXXXXX"
+                  className="w-28 bg-white text-[#231710] border border-[#231710]/30 rounded-lg px-2 py-1 text-xs font-bold tabular-nums outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowVipNumpad((v) => !v)}
+                  className="bg-[#231710] text-[#FAF6F0] hover:bg-[#3A271C] px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition"
+                >
+                  {showVipNumpad ? 'إخفاء' : 'لوحة أرقام'}
+                </button>
+              </div>
+            </div>
+            {showVipNumpad && (
+              <div className="grid grid-cols-6 gap-1 pt-0.5" dir="ltr">
+                {['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() =>
+                      setCustomerPhone((customerPhone + d).replace(/\D/g, '').slice(0, 11))
+                    }
+                    className="min-h-[38px] rounded-lg bg-[#FAF6F0] hover:bg-[#231710] hover:text-white text-[#231710] font-cairo font-black text-sm tabular-nums cursor-pointer transition"
+                  >
+                    {d}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setCustomerPhone(customerPhone.slice(0, -1))}
+                  className="col-span-2 min-h-[38px] rounded-lg bg-[#231710] text-[#FAF6F0] text-xs font-bold cursor-pointer"
+                >
+                  حذف ⌫
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Final Totals + Primary Complete & Print CTA */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
           <div className="flex items-center gap-3 text-[11px] text-[#6B5B4E] tabular-nums flex-wrap">
@@ -1075,14 +1169,14 @@ export default function PosActiveInvoiceSidebar({
             )}
             {taxConfig?.enableTax && <span>ض.ق.م: {fmtNum(posTaxAmount)}</span>}
             {posVipCashbackEarned > 0 && (
-              <span className="text-[#3B6E4C] font-bold">
+              <span className="text-[#166534] font-bold">
                 كاش باك: +{fmtNum(posVipCashbackEarned)}
               </span>
             )}
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-xs font-bold text-[#6B5644]">الإجمالي:</span>
-            <span className="font-cairo font-black text-xl text-[#231710] tabular-nums">
+            <span className="font-cairo font-black text-2xl text-[#231710] tabular-nums">
               {fmtNum(posNetTotal)}
             </span>
             <span className="text-xs font-bold text-[#6B5644]">{currencySymbol}</span>
@@ -1091,18 +1185,18 @@ export default function PosActiveInvoiceSidebar({
 
         <button
           type="button"
-          disabled={posItems.length === 0 || posLoading || isSplitMismatch}
+          disabled={posItems.length === 0 || posLoading || isSplitMismatch || isCashShort}
           onClick={() => onCompleteInvoice()}
-          className={`w-full min-h-[44px] disabled:opacity-40 text-white font-cairo font-bold text-sm py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition cursor-pointer shadow-xs ${
+          className={`w-full min-h-[60px] disabled:opacity-40 disabled:cursor-not-allowed text-white font-cairo font-bold text-base py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition cursor-pointer shadow-xs ${
             paymentMethod === 'cod'
-              ? 'bg-[#3B6E4C] hover:bg-[#2f5a3d]'
+              ? 'bg-[#166534] hover:bg-[#14532d]'
               : 'bg-[#231710] hover:bg-[#3A271C]'
           }`}
         >
           {paymentMethod === 'cod' ? (
-            <Zap className="w-4 h-4 shrink-0" />
+            <Zap className="w-5 h-5 shrink-0" />
           ) : (
-            <Printer className="w-4 h-4 shrink-0" />
+            <Printer className="w-5 h-5 shrink-0" />
           )}
           <span>{posLoading ? 'جارٍ الحفظ والطباعة...' : primaryBtnLabel}</span>
         </button>

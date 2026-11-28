@@ -854,3 +854,41 @@ table.sr-table tr:last-child td {
   }
 }
 
+/* ==========================================================================
+   ACCOUNTANT WORKBENCH TABLE DENSITY & STICKY CONTEXT (UX Constitution)
+   ========================================================================== */
+.acct-density-compact table th,
+.acct-density-compact table td {
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+  line-height: 1.25 !important;
+  font-size: 11px !important;
+}
+.acct-density-normal table th,
+.acct-density-normal table td {
+  padding-top: 0.55rem !important;
+  padding-bottom: 0.55rem !important;
+}
+.acct-density-relaxed table th,
+.acct-density-relaxed table td {
+  padding-top: 0.85rem !important;
+  padding-bottom: 0.85rem !important;
+  font-size: 13px !important;
+}
+.acct-density-compact table thead th,
+.acct-density-normal table thead th,
+.acct-density-relaxed table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.acct-density-compact table tfoot td,
+.acct-density-normal table tfoot td,
+.acct-density-relaxed table tfoot td {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  background-color: #faf6f0;
+}
+
+

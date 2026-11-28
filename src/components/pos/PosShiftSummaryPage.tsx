@@ -88,6 +88,29 @@ export default function PosShiftSummaryPage({
       : ''
   );
   const [closingNotes, setClosingNotes] = useState<string>('');
+  const [showDenomHelper, setShowDenomHelper] = useState<boolean>(false);
+  const [denomCounts, setDenomCounts] = useState<Record<number, number>>({
+    200: 0,
+    100: 0,
+    50: 0,
+    20: 0,
+    10: 0,
+    5: 0,
+    1: 0,
+  });
+
+  const updateDenomCount = (bill: number, nextCount: number) => {
+    const safeCount = Math.max(0, Math.round(nextCount) || 0);
+    setDenomCounts((prev) => {
+      const updated = { ...prev, [bill]: safeCount };
+      const sum = Object.entries(updated).reduce(
+        (acc, [k, v]) => acc + Number(k) * Number(v || 0),
+        0
+      );
+      setClosingActualCash(sum);
+      return updated;
+    });
+  };
 
   const [expenseTitle, setExpenseTitle] = useState<string>('');
   const [expenseAmount, setExpenseAmount] = useState<number>(50);
@@ -364,16 +387,117 @@ export default function PosShiftSummaryPage({
               )}
             </p>
 
-            <div>
-              <label className="text-xs font-bold block mb-1 text-[#231710]">
-                النقدية الفعلية المعدودة في الدرج (ج.م):
-              </label>
+            {/* Step 1: Empty Cups & Containers Count (Bar Audit) */}
+            <div className="bg-[#FAF6F0] rounded-xl p-3 border border-[#E8E0D5] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-cairo font-bold text-[#231710]">
+                  1. جرد الأكواب والعلب الفارغة المتبقية على البار:
+                </span>
+                {!isBlindCloseActive && isCupsTracked && (
+                  <span className="text-[11px] font-bold text-[#6B5B4E] tabular-nums">
+                    متوقع: {expectedClosingCups}
+                  </span>
+                )}
+              </div>
+              {!isBlindCloseActive && isCupsTracked && (
+                <div className="flex items-center justify-between text-[11px] text-[#6B5B4E] tabular-nums">
+                  <span>بداية: {activeShift?.cupsOpeningCount || 0}</span>
+                  <span>مباع: {activeShift?.cupsSoldCount || 0}</span>
+                  <span className="font-bold text-[#231710]">المتوقع: {expectedClosingCups}</span>
+                </div>
+              )}
+              <input
+                type="number"
+                min={0}
+                value={closingActualCups}
+                onChange={(e) =>
+                  setClosingActualCups(
+                    e.target.value === ''
+                      ? ''
+                      : Math.max(0, Math.round(Number(e.target.value) || 0))
+                  )
+                }
+                placeholder="أدخل عدد الأكواب الفارغة المتبقية (اختياري)"
+                className="w-full min-h-[42px] bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-sm font-bold tabular-nums outline-none"
+              />
+              {!isBlindCloseActive && isCupsTracked && closingActualCups !== '' && (
+                <div
+                  className={`p-2 rounded-lg text-[11px] font-bold flex items-center justify-between tabular-nums border ${
+                    Number(closingActualCups) - expectedClosingCups === 0
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                      : Number(closingActualCups) - expectedClosingCups > 0
+                        ? 'bg-amber-50 border-amber-200 text-amber-900'
+                        : 'bg-red-50 border-red-200 text-[#B83B2B]'
+                  }`}
+                >
+                  <span>
+                    {Number(closingActualCups) - expectedClosingCups === 0
+                      ? 'عدّاد الأكواب مطابق 100%'
+                      : Number(closingActualCups) - expectedClosingCups > 0
+                        ? 'زيادة في عدّاد الأكواب:'
+                        : 'عجز أكواب فارغة:'}
+                  </span>
+                  <span className="font-cairo font-bold">
+                    {Number(closingActualCups) - expectedClosingCups > 0
+                      ? `+${Number(closingActualCups) - expectedClosingCups}`
+                      : Number(closingActualCups) - expectedClosingCups}{' '}
+                    كوب
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Step 2: Actual Cash Count + Egyptian Banknote Denomination Counter */}
+            <div className="bg-[#FAF6F0] rounded-xl p-3 border border-[#E8E0D5] space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-xs font-cairo font-bold text-[#231710]">
+                  2. النقدية الفعلية المعدودة في الدرج (ج.م):
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowDenomHelper((v) => !v)}
+                  className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-white hover:bg-[#231710] hover:text-white text-[#231710] border border-[#E8E0D5] cursor-pointer transition"
+                >
+                  {showDenomHelper ? 'إخفاء آلة الفئات' : 'آلة عدّ الفئات الورقية'}
+                </button>
+              </div>
               <input
                 type="number"
                 value={closingActualCash}
                 onChange={(e) => setClosingActualCash(Number(e.target.value))}
-                className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-sm font-bold tabular-nums outline-none"
+                className="w-full min-h-[44px] bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-base font-black tabular-nums outline-none"
               />
+
+              {showDenomHelper && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1 tabular-nums">
+                  {[200, 100, 50, 20, 10, 5, 1].map((bill) => (
+                    <div
+                      key={bill}
+                      className="bg-white border border-[#E8E0D5] rounded-xl p-1.5 flex items-center justify-between gap-1"
+                    >
+                      <span className="text-[11px] font-extrabold text-[#9A6836]">{bill}ج</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={denomCounts[bill] || ''}
+                        placeholder="0"
+                        onChange={(e) => updateDenomCount(bill, Number(e.target.value))}
+                        className="w-12 bg-[#FAF6F0] border border-[#E8E0D5] rounded-md px-1 py-0.5 text-center text-xs font-bold outline-none"
+                      />
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDenomCounts({ 200: 0, 100: 0, 50: 0, 20: 0, 10: 0, 5: 0, 1: 0 });
+                      setClosingActualCash(0);
+                    }}
+                    className="bg-red-50 hover:bg-red-100 text-[#B91C1C] border border-red-200 rounded-xl text-[11px] font-bold cursor-pointer"
+                  >
+                    تصفير العدّ
+                  </button>
+                </div>
+              )}
             </div>
 
             {activeShift && !isBlindCloseActive && (
@@ -403,59 +527,6 @@ export default function PosShiftSummaryPage({
                 <span className="font-cairo font-bold text-sm">
                   {cashDiff > 0 ? `+${cashDiff}` : cashDiff} ج.م
                 </span>
-              </div>
-            )}
-
-            {isCupsTracked && (
-              <div className="bg-[#FAF6F0] rounded-xl p-3 border border-[#E8E0D5] space-y-2">
-                <div className="flex items-center justify-between text-[11px] text-[#6B5B4E] tabular-nums">
-                  <span>بداية: {activeShift?.cupsOpeningCount || 0}</span>
-                  <span>مباع: {activeShift?.cupsSoldCount || 0}</span>
-                  <span className="font-bold text-[#231710]">المتوقع: {expectedClosingCups}</span>
-                </div>
-                <div>
-                  <label className="text-xs font-bold block mb-1 text-[#231710]">
-                    الأكواب الفارغة المتبقية فعلياً (جرد بار القهوة):
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={closingActualCups}
-                    onChange={(e) =>
-                      setClosingActualCups(
-                        e.target.value === ''
-                          ? ''
-                          : Math.max(0, Math.round(Number(e.target.value) || 0))
-                      )
-                    }
-                    className="w-full bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-sm font-bold tabular-nums outline-none"
-                  />
-                </div>
-                {closingActualCups !== '' && (
-                  <div
-                    className={`p-2 rounded-lg text-[11px] font-bold flex items-center justify-between tabular-nums border ${
-                      Number(closingActualCups) - expectedClosingCups === 0
-                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                        : Number(closingActualCups) - expectedClosingCups > 0
-                          ? 'bg-amber-50 border-amber-200 text-amber-900'
-                          : 'bg-red-50 border-red-200 text-[#B83B2B]'
-                    }`}
-                  >
-                    <span>
-                      {Number(closingActualCups) - expectedClosingCups === 0
-                        ? 'عدّاد الأكواب مطابق 100%'
-                        : Number(closingActualCups) - expectedClosingCups > 0
-                          ? 'زيادة في عدّاد الأكواب:'
-                          : 'عجز أكواب فارغة:'}
-                    </span>
-                    <span className="font-cairo font-bold">
-                      {Number(closingActualCups) - expectedClosingCups > 0
-                        ? `+${Number(closingActualCups) - expectedClosingCups}`
-                        : Number(closingActualCups) - expectedClosingCups}{' '}
-                      كوب
-                    </span>
-                  </div>
-                )}
               </div>
             )}
 

@@ -6,6 +6,7 @@ import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
 import FloatingWhatsApp from '@/components/FloatingWhatsApp';
 import StickyCartBar from '@/components/StickyCartBar';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import MarketingPixels from '@/components/MarketingPixels';
 import Footer from '@/components/Footer';
 
@@ -211,6 +212,7 @@ export default function RootLayout({
           <main className="flex-1">{children}</main>
           <CartDrawer />
           <StickyCartBar />
+          <MobileBottomNav />
           <FloatingWhatsApp />
           <Footer />
         </StoreProvider>

@@ -714,7 +714,7 @@ export function calculatePromoProfitSafety(
   itemsOrOriginalPrice: FlashPromotionItem[] | number,
   packagingOrCostPrice: number,
   promoPrice: number,
-  minSafeMarginPercent = 15
+  minSafeMarginPercent = 18
 ): {
   isSafe: boolean;
   isProfitSafe: boolean;
@@ -723,6 +723,7 @@ export function calculatePromoProfitSafety(
   netProfit: number;
   netProfitEgp: number;
   profitMarginPercent: number;
+  suggestedMinPrice: number;
   discountAmount: number;
   discountPercentage: number;
   warning?: string;
@@ -757,8 +758,11 @@ export function calculatePromoProfitSafety(
       ? Math.round((discountAmount / originalRetailPrice) * 100)
       : 0;
 
+  const suggestedMinPrice =
+    totalRawCost > 0 ? Math.ceil(totalRawCost / (1 - minSafeMarginPercent / 100)) : 0;
+
   if (netProfitEgp <= 0) {
-    const msg = `⛔ مرفوض برمجياً: سعر العرض (${safePromoPrice} ج.م) أقل من أو يساوي التكلفة الفعلية في شيت عرفات + التغليف (${totalRawCost} ج.م) ويسبب خسارة (${netProfitEgp} ج.م)!`;
+    const msg = `مرفوض برمجياً: سعر العرض (${safePromoPrice} ج.م) لا يحقق ربحاً مقارنة بالتكلفة (${totalRawCost} ج.م) — ارفع السعر إلى ${suggestedMinPrice} ج.م على الأقل للتفعيل.`;
     return {
       isSafe: false,
       isProfitSafe: false,
@@ -767,6 +771,7 @@ export function calculatePromoProfitSafety(
       netProfit: netProfitEgp,
       netProfitEgp,
       profitMarginPercent,
+      suggestedMinPrice,
       discountAmount,
       discountPercentage,
       warning: msg,
@@ -775,8 +780,7 @@ export function calculatePromoProfitSafety(
   }
 
   if (profitMarginPercent < minSafeMarginPercent) {
-    const minAllowed = Math.ceil(totalRawCost / (1 - minSafeMarginPercent / 100));
-    const msg = `⚠️ مرفوض من حاسبة أمان الربح: هامش الربح الحالي (${profitMarginPercent}%) أقل من حد الأمان الأدنى للمحل (${minSafeMarginPercent}%). الحد الأدنى المسموح لسعر هذا العرض هو ${minAllowed} ج.م.`;
+    const msg = `هامش الربح الحالي ${profitMarginPercent}% وهو أقل من الحد الآمن ${minSafeMarginPercent}% — ارفع السعر إلى ${suggestedMinPrice} ج.م للتفعيل.`;
     return {
       isSafe: false,
       isProfitSafe: false,
@@ -785,6 +789,7 @@ export function calculatePromoProfitSafety(
       netProfit: netProfitEgp,
       netProfitEgp,
       profitMarginPercent,
+      suggestedMinPrice,
       discountAmount,
       discountPercentage,
       warning: msg,
@@ -800,6 +805,7 @@ export function calculatePromoProfitSafety(
     netProfit: netProfitEgp,
     netProfitEgp,
     profitMarginPercent,
+    suggestedMinPrice,
     discountAmount,
     discountPercentage,
   };

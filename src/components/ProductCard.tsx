@@ -146,20 +146,30 @@ export default function ProductCard({ product }: ProductCardProps) {
             </div>
           )}
 
-          {/* Centered Price Row */}
-          <div className="flex items-baseline justify-center gap-1.5 tabular-nums">
-            {selectedWeight?.originalPrice &&
-              selectedWeight.originalPrice > selectedWeight.price && (
-                <span className="text-[10px] sm:text-xs text-[#8A7968] line-through font-medium">
-                  {selectedWeight.originalPrice} {currency}
-                </span>
+          {/* Centered Price Row + Price per 100g Transparency Badge (UX Constitution) */}
+          <div className="text-center space-y-0.5 tabular-nums">
+            <div className="flex items-baseline justify-center gap-1.5">
+              {selectedWeight?.originalPrice &&
+                selectedWeight.originalPrice > selectedWeight.price && (
+                  <span className="text-[10px] sm:text-xs text-[#8A7968] line-through font-medium">
+                    {selectedWeight.originalPrice} {currency}
+                  </span>
+                )}
+              <span className="font-cairo text-sm sm:text-lg font-black text-[#261A13] leading-none">
+                {selectedWeight?.price}
+              </span>
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#9A6836]">
+                {currency}
+              </span>
+            </div>
+            {!unitMode &&
+              selectedWeight &&
+              (selectedWeight.weightGrams || selectedWeight.grams || 0) > 0 && (
+                <div className="text-[10px] sm:text-[11px] font-medium text-[#6E5D4F]">
+                  ({Math.round((selectedWeight.price / (selectedWeight.weightGrams || selectedWeight.grams || 250)) * 100)}{' '}
+                  {currency} لكل 100 جم)
+                </div>
               )}
-            <span className="font-cairo text-sm sm:text-lg font-black text-[#261A13] leading-none">
-              {selectedWeight?.price}
-            </span>
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#9A6836]">
-              {currency}
-            </span>
           </div>
 
           {/* Primary Isolated Emerald "اطلب الآن" + Compact Cart Icon */}

@@ -48,7 +48,8 @@ function recordFailedAttempt(rateKey: string): void {
 function getRoleRedirectPath(role: AdminRole): string {
   switch (role) {
     case 'supplier':
-      return '/supplier';
+      // UX Constitution: No external supplier login — internal Procurement Officer works inside /admin
+      return '/admin?tab=supply_invoices';
     case 'cashier':
       return '/pos';
     case 'delivery_rider':

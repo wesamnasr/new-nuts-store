@@ -11,7 +11,7 @@ import {
 export const ROLE_LABELS_AR: Record<SystemRole, string> = {
   super_admin: 'الأدمن (المدير العام)',
   admin: 'الأدمن (المدير العام)',
-  supplier: 'المورد (إدارة التوريد والمخزون)',
+  supplier: 'مسؤول التوريدات والمخزون (داخلي)',
   cashier: 'الكاشير (نقطة البيع وتجهيز الطلبات)',
   accountant: 'المحاسب (المراجعة المالية والورديات)',
   delivery_rider: 'مندوب التوصيل (البندر ودورات القرى)',

@@ -69,6 +69,7 @@ function BuildBoxStudioContent() {
   const [activeSlotIdx, setActiveSlotIdx] = useState<number>(0);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [justAdded, setJustAdded] = useState(false);
+  const [highlightedEmptySlotIdx, setHighlightedEmptySlotIdx] = useState<number | null>(null);
 
   useBrowserUrlSync((params) => {
     const tab = params.get('tab') || params.get('mode');
@@ -439,11 +440,13 @@ function BuildBoxStudioContent() {
                 >
                   {slots.map((slot, idx) => {
                     const isActive = activeSlotIdx === idx;
+                    const isWarmPrompted = !slot && highlightedEmptySlotIdx === idx;
                     return (
                       <div
                         key={idx}
                         onClick={() => {
                           setActiveSlotIdx(idx);
+                          setHighlightedEmptySlotIdx(null);
                           updateUrlQueryParams({ slot: idx + 1 });
                         }}
                         className={`rounded-xl p-2.5 border transition cursor-pointer flex flex-col justify-between min-h-[125px] ${
@@ -451,9 +454,11 @@ function BuildBoxStudioContent() {
                             ? isActive
                               ? 'bg-white border-[#231710]'
                               : 'bg-white border-[#E8E0D5]'
-                            : isActive
-                              ? 'bg-white border-dashed border-[#9A6836]'
-                              : 'bg-[#FAF6F0] border-dashed border-[#D6C9B8]'
+                            : isWarmPrompted
+                              ? 'bg-amber-50 border-[#C88A4B] ring-2 ring-[#D4AF37] animate-pulse'
+                              : isActive
+                                ? 'bg-white border-dashed border-[#9A6836]'
+                                : 'bg-[#FAF6F0] border-dashed border-[#D6C9B8]'
                         }`}
                       >
                         <div className="flex items-center justify-between text-[11px] font-bold">
@@ -520,8 +525,18 @@ function BuildBoxStudioContent() {
                           </div>
                         ) : (
                           <div className="text-center my-auto py-3">
-                            <span className="text-xs font-medium text-[#6E5D4F] block">
-                              {isActive ? 'اختر صنفاً من القائمة' : 'اضغط لتحديد الخانة'}
+                            <span
+                              className={`text-xs block ${
+                                isWarmPrompted
+                                  ? 'font-bold text-[#9A6836]'
+                                  : 'font-medium text-[#6E5D4F]'
+                              }`}
+                            >
+                              {isWarmPrompted
+                                ? 'اختر صنفاً لهذه الخانة لإكمال البوكس'
+                                : isActive
+                                  ? 'اختر صنفاً من القائمة'
+                                  : 'اضغط لتحديد الخانة'}
                             </span>
                           </div>
                         )}
@@ -544,13 +559,25 @@ function BuildBoxStudioContent() {
 
                 <button
                   type="button"
-                  disabled={!pricingCalc.isValid}
-                  onClick={handleAddBoxToCart}
-                  className={`w-full py-3.5 px-4 rounded-xl font-cairo font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer ${
+                  onClick={() => {
+                    if (!pricingCalc.isValid) {
+                      const firstEmpty = slots.findIndex((s) => s === null);
+                      if (firstEmpty !== -1) {
+                        setActiveSlotIdx(firstEmpty);
+                        setHighlightedEmptySlotIdx(firstEmpty);
+                        updateUrlQueryParams({ slot: firstEmpty + 1 });
+                        setTimeout(() => setHighlightedEmptySlotIdx(null), 3500);
+                      }
+                      return;
+                    }
+                    setHighlightedEmptySlotIdx(null);
+                    handleAddBoxToCart();
+                  }}
+                  className={`w-full min-h-[52px] py-3.5 px-4 rounded-xl font-cairo font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer ${
                     !pricingCalc.isValid
-                      ? 'bg-[#F4EFE6] text-[#6E5D4F] cursor-not-allowed'
+                      ? 'bg-[#D4AF37]/30 hover:bg-[#D4AF37]/45 text-[#231710] border border-[#C88A4B]'
                       : justAdded
-                        ? 'bg-[#3B6E4C] text-white'
+                        ? 'bg-[#166534] text-white'
                         : 'bg-[#231710] hover:bg-[#3A2519] text-white'
                   }`}
                 >

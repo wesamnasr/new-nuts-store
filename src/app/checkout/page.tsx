@@ -81,6 +81,7 @@ export default function CheckoutPage() {
   const {
     cart,
     cartSubtotal,
+    addToCart,
     appliedCoupon,
     applyCouponCode,
     removeCoupon,
@@ -855,8 +856,42 @@ export default function CheckoutPage() {
                 {featureFlags.enableVillageBatches && deliveryMethod === 'villages_scheduled' && (
                   <div className="space-y-3 pt-2 border-t border-[#F0EAE0]">
                     {isVillageBelowMinimum && (
-                      <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs font-bold text-[#B83B2B]">
-                        الحد الأدنى لطلبات التوصيل المجدول هو {minOrderVillages} {currency} (متبقي {minOrderVillages - cartSubtotal} {currency}).
+                      <div className="bg-amber-50 border border-[#C88A4B]/60 rounded-xl p-3.5 space-y-2.5">
+                        <div className="text-xs font-bold text-[#231710]">
+                          الحد الأدنى لطلبات القرى هو {minOrderVillages} {currency} — باقي{' '}
+                          <strong className="text-[#9A6836] tabular-nums">
+                            {minOrderVillages - cartSubtotal} {currency}
+                          </strong>{' '}
+                          فقط لإكمال الطلب! أضف صنفاً سريعاً بضغطة واحدة:
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {(storeData?.products || [])
+                            .filter((p) => p.inStock && p.showOnline !== false && p.weights?.length > 0)
+                            .slice(0, 4)
+                            .map((quickProd) => {
+                              const w = quickProd.weights[0];
+                              return (
+                                <button
+                                  key={quickProd.id}
+                                  type="button"
+                                  onClick={() =>
+                                    addToCart(
+                                      quickProd,
+                                      w,
+                                      quickProd.roastOptions?.[0] || 'محمص مملح',
+                                      1
+                                    )
+                                  }
+                                  className="min-h-[40px] bg-white hover:bg-[#231710] hover:text-white text-[#231710] border border-[#E8E0D5] rounded-xl px-3 py-1.5 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition"
+                                >
+                                  <span>+ {quickProd.name}</span>
+                                  <span className="text-[#9A6836] font-black tabular-nums">
+                                    ({w.price} {currency})
+                                  </span>
+                                </button>
+                              );
+                            })}
+                        </div>
                       </div>
                     )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Calculator,
   DollarSign,
@@ -34,18 +34,21 @@ import {
   Search,
   RotateCcw,
   FileText,
+  Users,
 } from 'lucide-react';
 import ExportMenu from '@/components/ui/ExportMenu';
 import DataTableShell from '@/components/ui/DataTableShell';
 import {
   Coupon,
   Order,
+  PartnerWithdrawal,
   PosExpense,
   PosShift,
   Product,
   SupplyInvoice,
   VipMember,
 } from '@/types/store';
+import { getResolvedPartners } from '@/lib/defaults';
 import {
   calculateFinancialSummary,
   DateRangePreset,
@@ -67,11 +70,13 @@ import SupermarketReceiptModal from '@/components/SupermarketReceiptModal';
 import InventoryAdjustmentModal from '@/components/admin/InventoryAdjustmentModal';
 import TreasuryAndLedgersModule from '@/components/admin/TreasuryAndLedgersModule';
 import AdvancedCompetitorReports from '@/components/admin/AdvancedCompetitorReports';
+import PartnersAndChannelsPanel from '@/components/admin/PartnersAndChannelsPanel';
 import type { Category } from '@/types/store';
 
 export type AccountantReportSubTab =
   | 'executive_pnl'
   | 'daily_income'
+  | 'partners_dist'
   | 'treasury_ledgers'
   | 'channels'
   | 'shifts'
@@ -81,6 +86,7 @@ export type AccountantReportSubTab =
   | 'advanced_reports';
 
 export type AccountantDisplayMode = 'both' | 'cards' | 'table';
+export type AccountantTableDensity = 'compact' | 'normal' | 'relaxed';
 
 interface AccountantIsolationPortalProps {
   products: Product[];
@@ -91,6 +97,7 @@ interface AccountantIsolationPortalProps {
   coupons?: Coupon[];
   vipMembers: VipMember[];
   supplyInvoices?: SupplyInvoice[];
+  partnerWithdrawals?: PartnerWithdrawal[];
   settings?: any;
   canMutate?: boolean;
   onRefreshStore?: () => void;
@@ -124,6 +131,7 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
 const VALID_SUBTABS: AccountantReportSubTab[] = [
   'executive_pnl',
   'daily_income',
+  'partners_dist',
   'treasury_ledgers',
   'channels',
   'shifts',
@@ -141,6 +149,7 @@ export default function AccountantIsolationPortal({
   posExpenses,
   vipMembers,
   supplyInvoices = [],
+  partnerWithdrawals = [],
   settings,
   canMutate = false,
   onRefreshStore,
@@ -153,9 +162,11 @@ export default function AccountantIsolationPortal({
   const [activeSubTab, setActiveSubTab] = useState<AccountantReportSubTab>('executive_pnl');
   // Display Mode: Clean Accounting Table by default, switchable to Cards on demand
   const [displayMode, setDisplayMode] = useState<AccountantDisplayMode>('table');
+  const [tableDensity, setTableDensity] = useState<AccountantTableDensity>('normal');
   const [directoryOpen, setDirectoryOpen] = useState<boolean>(true);
   const [showInventoryModal, setShowInventoryModal] = useState<boolean>(false);
   const reportSheetRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   // Filter States
   const [datePreset, setDatePreset] = useState<DateRangePreset>('all');
@@ -906,6 +917,15 @@ export default function AccountantIsolationPortal({
       icon: Calendar,
     },
     {
+      id: 'partners_dist',
+      group: 'sales',
+      label: 'توزيع الـ 25% ومطابقة القنوات',
+      fullTitle: 'مطابقة القنوات الثلاثة وتوزيع حصص الشركاء الأربعة (25%)',
+      description: 'مقارنة الدرج وفودافون كاش وإنستاباي وحساب صافي مستحق كل شريك بعد المسحوبات',
+      count: partnerWithdrawals.length || undefined,
+      icon: Users,
+    },
+    {
       id: 'channels',
       group: 'sales',
       label: 'القنوات والفواتير',
@@ -987,6 +1007,30 @@ export default function AccountantIsolationPortal({
       subtab: tabId === 'executive_pnl' ? null : tabId,
     });
   };
+
+  // Accountant Keyboard Navigation: "/" focuses search, "Escape" closes active modals
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInput =
+        target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT');
+      if (e.key === 'Escape') {
+        if (selectedShiftForZReport) {
+          setSelectedShiftForZReport(null);
+          updateUrlQueryParams({ zreport: null });
+        } else if (selectedInvoiceOrder) {
+          setSelectedInvoiceOrder(null);
+        } else if (showInventoryModal) {
+          setShowInventoryModal(false);
+        }
+      } else if (e.key === '/' && !isInput && searchInputRef.current) {
+        e.preventDefault();
+        searchInputRef.current.focus();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedShiftForZReport, selectedInvoiceOrder, showInventoryModal]);
 
   const handlePrintCurrentReport = () => {
     if (typeof window === 'undefined' || !reportSheetRef.current) return;
@@ -1212,6 +1256,35 @@ export default function AccountantIsolationPortal({
                 ))}
               </div>
 
+              {/* Contextual Table Density Switcher (Compact 32px / Standard 44px / Relaxed 52px) */}
+              {currentTabInfo.supportsViewToggle && displayMode !== 'cards' && (
+                <div
+                  title="التحكم في كثافة صفوف الجداول للمراجعة السريعة"
+                  className="hidden sm:inline-flex items-center bg-[#FAF6F0] p-0.5 rounded-xl border border-[#E8E0D5] gap-0.5"
+                >
+                  {(
+                    [
+                      { id: 'compact' as const, label: 'مضغوط' },
+                      { id: 'normal' as const, label: 'قياسي' },
+                      { id: 'relaxed' as const, label: 'مريح' },
+                    ]
+                  ).map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => setTableDensity(d.id)}
+                      className={`min-h-[30px] px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer ${
+                        tableDensity === d.id
+                          ? 'bg-[#231710] text-white'
+                          : 'text-[#6B5A4E] hover:text-[#231710]'
+                      }`}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {/* Contextual Table / Cards Toggle (ONLY for tabs that support both views) */}
               {currentTabInfo.supportsViewToggle && (
                 <div className="inline-flex items-center bg-[#FAF6F0] p-0.5 rounded-xl border border-[#E8E0D5] gap-0.5">
@@ -1290,6 +1363,7 @@ export default function AccountantIsolationPortal({
                 <div className="relative flex-1 min-w-[200px]">
                   <Search className="w-3.5 h-3.5 text-[#8A735E] absolute start-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
+                    ref={searchInputRef}
                     type="search"
                     value={searchQuery}
                     onChange={(e) => {
@@ -1413,7 +1487,10 @@ export default function AccountantIsolationPortal({
           )}
 
           {/* FOCUSED ACCOUNTING REPORT PAPER BODY */}
-          <div ref={reportSheetRef} className="flex-1 p-4 sm:p-5 bg-white space-y-5">
+          <div
+            ref={reportSheetRef}
+            className={`flex-1 p-4 sm:p-5 bg-white space-y-5 acct-density-${tableDensity}`}
+          >
             {/* =============================================================== */}
             {/* REPORT 1 (DEFAULT): EXECUTIVE P&L STATEMENT & LIVE ASSETS SHEET */}
             {/* =============================================================== */}
@@ -3393,6 +3470,21 @@ export default function AccountantIsolationPortal({
             </div>
           )}
         </div>
+      )}
+
+      {activeSubTab === 'partners_dist' && (
+        <PartnersAndChannelsPanel
+          totalRevenue={report.totalRevenue}
+          totalCogs={report.totalCogs}
+          operatingExpenses={report.operatingExpenses}
+          netOperatingProfit={report.netOperatingProfit}
+          expectedCash={paymentBreakdown.cod}
+          expectedVodafone={paymentBreakdown.vodafone_cash}
+          expectedInstapay={paymentBreakdown.instapay}
+          partnerWithdrawals={partnerWithdrawals}
+          partners={getResolvedPartners(settings)}
+          currency={currency}
+        />
       )}
 
       {activeSubTab === 'treasury_ledgers' && (

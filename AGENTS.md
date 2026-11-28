@@ -13,5 +13,13 @@ When building or modifying authentication, login forms, or role-based access con
      - **Admin (`super_admin` / `admin`):** `/admin`
      - **Accountant (`accountant`):** `/admin` (unified Admin Dashboard showing the accountant's permitted tabs: `overview`, `accounting_portal`, `orders`, `supply_invoices`, `products`, `operations`, `coupons`)
      - **Cashier (`cashier`):** `/pos`
-     - **Supplier (`supplier`):** `/supplier`
+     - **Procurement & Inventory Officer (`supplier` internal role — NO external supplier login):** `/admin` (internal procurement & supply invoices workspace only; external supplier portal logins are disabled per security policy)
    - If an already-authenticated non-admin user navigates to a route outside their specialization (e.g., `/admin`), automatically redirect them to their permitted portal.
+
+# UX Constitution & Engineering Design Standards
+
+All UI, POS, Storefront, Accounting, and Procurement changes MUST strictly follow [`UX_CONSTITUTION.md`](./UX_CONSTITUTION.md), including:
+- Royal Gold (`#D4AF37`) buttons MUST ALWAYS use Deep Espresso (`#231710`) text (NEVER `#FFFFFF`).
+- POS cash credit-lock (block checkout when paid < total), 150 EGP VIP prompt, 2-step blind shift close with empty cups counter, out-of-stock muscle-memory preservation, and Manager PIN protection for returns/voids/partner withdrawals.
+- 18% minimum profit-margin floor on promotions with automatic suggested safe price.
+- External suppliers NEVER have login access; all supply invoices are recorded internally by the Procurement Officer with scale weight variance and >5% price-hike alerts.

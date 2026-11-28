@@ -23,6 +23,7 @@ import {
   Minimize2,
   GripVertical,
   Plus,
+  Users,
   X,
 } from 'lucide-react';
 import { playOrderAlertChime, isAudioMuted, toggleAudioMuted } from '@/lib/audio-chime';
@@ -59,6 +60,7 @@ import {
   getCityName,
   getCurrencySymbol,
   getResolvedFeatureFlags,
+  getResolvedPartners,
   getSafeImageUrl,
 } from '@/lib/defaults';
 import { validateCoupon, validateEgyptianPhone } from '@/lib/validation';
@@ -78,6 +80,7 @@ import PosCoffeeBlendPage from '@/components/pos/PosCoffeeBlendPage';
 import PosInvoicesTablePage from '@/components/pos/PosInvoicesTablePage';
 import PosShiftSummaryPage from '@/components/pos/PosShiftSummaryPage';
 import PosOnlineOrdersPage from '@/components/pos/PosOnlineOrdersPage';
+import PartnerWithdrawalModal from '@/components/pos/PartnerWithdrawalModal';
 import {
   updateUrlQueryParams,
   useBrowserUrlSync,
@@ -155,6 +158,7 @@ export default function HafsaPosCashierPage() {
 
   // 6-Page POS Navigation State + Internal Sub-Sections State
   const [activePage, setActivePage] = useState<PosPageId>('direct_sales');
+  const [partnerWithdrawalModalOpen, setPartnerWithdrawalModalOpen] = useState<boolean>(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   const [boxTab, setBoxTab] = useState<'ready' | 'touch_builder'>('ready');
   const [coffeeTab, setCoffeeTab] = useState<'ready' | 'custom_bag'>('ready');
@@ -1636,6 +1640,7 @@ export default function HafsaPosCashierPage() {
     refundMethod: PosReturnRecord['refundMethod'];
     reason?: string;
     customerPhone?: string;
+    managerPin?: string;
   }): Promise<PosReturnRecord | null> => {
     setPosLoading(true);
     try {
@@ -2270,6 +2275,16 @@ export default function HafsaPosCashierPage() {
                 <Wallet className="w-4 h-4 shrink-0" />
                 <span>الوردية والدرج</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => setPartnerWithdrawalModalOpen(true)}
+                title="تسجيل مسحوب شخصي لأحد الشركاء بسعر التكلفة (يتطلب كود المدير)"
+                className="min-h-[40px] sm:min-h-[44px] px-2.5 py-2 rounded-xl text-xs font-cairo font-bold bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] hover:bg-[#F3ECE1] flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <Users className="w-4 h-4 shrink-0 text-[#9A6836]" />
+                <span className="hidden lg:inline">مسحوب شريك</span>
+              </button>
             </div>
 
             {/* Left Side: Width Presets, Add Product, Single Bell (no duplicate), Auto-Print, Shift Cash, Focus Mode */}
@@ -2277,7 +2292,7 @@ export default function HafsaPosCashierPage() {
               {activePage === 'direct_sales' && (
                 <div
                   title="تحكم سريع في عرض منطقة المنتجات والفاتورة"
-                  className="hidden xl:flex items-center bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl p-0.5 gap-0.5"
+                  className="hidden lg:flex items-center bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl p-0.5 gap-0.5"
                 >
                   {[
                     { pct: 38, label: 'فاتورة عريضة' },
@@ -2627,6 +2642,7 @@ export default function HafsaPosCashierPage() {
                     onScanCode={handleManualOrInputScan}
                     lastScanNotice={lastScanNotice}
                     currencySymbol={currency}
+                    vipMinOrder={settings?.vipMinOrderForCashback || 150}
                   />
                 </div>
               </div>
@@ -2725,6 +2741,7 @@ export default function HafsaPosCashierPage() {
                     onScanCode={handleManualOrInputScan}
                     lastScanNotice={lastScanNotice}
                     currencySymbol={currency}
+                    vipMinOrder={settings?.vipMinOrderForCashback || 150}
                   />
                 </div>
               </div>
@@ -2740,6 +2757,7 @@ export default function HafsaPosCashierPage() {
                   activeShift={activeShift}
                   posReturns={posReturns}
                   canSeeProfits={canSeeProfits}
+                  requireManagerPin={!canSeeProfits}
                   onReprintOrder={handleOpenOrderReceiptModal}
                   onPrintReturnReceipt={handleOpenReturnReceiptModal}
                   onCreateReturn={handleCreatePosReturn}
@@ -2975,6 +2993,40 @@ export default function HafsaPosCashierPage() {
           </form>
         </div>
       )}
+
+      {/* PARTNER WITHDRAWAL AT WHOLESALE COST MODAL (Protected by Manager PIN) */}
+      <PartnerWithdrawalModal
+        isOpen={partnerWithdrawalModalOpen}
+        products={products}
+        partners={getResolvedPartners(settings)}
+        currencySymbol={currency}
+        onClose={() => setPartnerWithdrawalModalOpen(false)}
+        onSubmitWithdrawal={async (payload) => {
+          try {
+            const res = await fetch('/api/pos', {
+              method: 'POST',
+              headers: getPosAuthHeaders(),
+              body: JSON.stringify({
+                action: 'record_partner_withdrawal',
+                ...payload,
+              }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.success) {
+              return { ok: false, error: data.error || 'تعذر تسجيل مسحوب الشريك' };
+            }
+            playCashierBeep(700, 0.15);
+            await refreshStore();
+            showToast(
+              `تم تسجيل مسحوب الشريك ${data.withdrawal?.withdrawalNumber || ''}`,
+              `${payload.partnerName} • بقيمة تكلفة ${data.withdrawal?.totalCostEgp || 0} ${currency}`
+            );
+            return { ok: true };
+          } catch {
+            return { ok: false, error: 'تعذر الاتصال بالخادم أثناء حفظ مسحوب الشريك' };
+          }
+        }}
+      />
 
       {/* ===================================================================== */}
       {/* SUPERMARKET 80MM THERMAL RECEIPT, Z-REPORT, RETURN & 58MM STICKER     */}

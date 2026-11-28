@@ -80,8 +80,29 @@ export const DEFAULT_FEATURE_FLAGS: Required<StoreFeatureFlags> = {
   enableVillageBatches: true,
   enableVipWallet: true,
   enableHallsAndTables: false,
-  enableBlindShiftClose: false,
+  enableBlindShiftClose: true,
 };
+
+export const DEFAULT_PARTNERS = [
+  { id: 'partner-1', name: 'الشريك الأول (إدارة المحمصة)', sharePercent: 25 },
+  { id: 'partner-2', name: 'الشريك الثاني (التوريدات والمخزون)', sharePercent: 25 },
+  { id: 'partner-3', name: 'الشريك الثالث (المحاسبة والمالية)', sharePercent: 25 },
+  { id: 'partner-4', name: 'الشريك الرابع (العروض والتسويق)', sharePercent: 25 },
+];
+
+export function getResolvedPartners(
+  settings?: StoreSettings | null
+): Array<{ id: string; name: string; sharePercent: number }> {
+  if (Array.isArray(settings?.partnersList) && settings!.partnersList.length > 0) {
+    return settings!.partnersList;
+  }
+  return DEFAULT_PARTNERS;
+}
+
+export function getResolvedManagerPin(settings?: StoreSettings | null): string {
+  const clean = (settings?.managerPin || '').trim();
+  return clean.length >= 4 ? clean : '1234';
+}
 
 export function getResolvedFeatureFlags(
   settings?: StoreSettings | null

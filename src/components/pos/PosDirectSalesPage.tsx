@@ -67,6 +67,31 @@ type SellingTypeFilter = 'all' | 'weight' | 'unit' | 'low_stock';
 const fmtNum = (val: number) =>
   Number.isFinite(val) ? Number(Math.round(val * 100) / 100).toLocaleString('en-US') : '0';
 
+// 6-Category Fixed Color Coding (UX Constitution — Muscle Memory & Instant Visual Scan)
+function getCategoryAccentColor(categoryId?: string, categoryName?: string): {
+  bar: string;
+  dot: string;
+} {
+  const id = (categoryId || '').toLowerCase();
+  const name = (categoryName || '').toLowerCase();
+  if (id.includes('box') || name.includes('بوكس') || name.includes('هدايا')) {
+    return { bar: 'bg-[#7F1D1D]', dot: 'bg-[#7F1D1D]' }; // Burgundy — Boxes
+  }
+  if (id.includes('coffee') || name.includes('بن') || name.includes('قهوة') || name.includes('إسبريسو')) {
+    return { bar: 'bg-[#231710]', dot: 'bg-[#231710]' }; // Espresso — Coffee & Drinks
+  }
+  if (id.includes('honey') || id.includes('date') || id.includes('spice') || name.includes('عسل') || name.includes('تمر') || name.includes('عطارة')) {
+    return { bar: 'bg-[#C88A4B]', dot: 'bg-[#C88A4B]' }; // Honey Oak — Honey & Spices
+  }
+  if (id.includes('offer') || id.includes('promo') || name.includes('عرض') || name.includes('عروض')) {
+    return { bar: 'bg-[#1D4ED8]', dot: 'bg-[#1D4ED8]' }; // Calm Blue — Active Promos
+  }
+  if (id.includes('cup') || id.includes('snack') || id.includes('candy') || name.includes('كاندي') || name.includes('كوبا') || name.includes('تسالي')) {
+    return { bar: 'bg-[#BE185D]', dot: 'bg-[#BE185D]' }; // Soft Rose — Candy & Cups
+  }
+  return { bar: 'bg-[#D4AF37]', dot: 'bg-[#D4AF37]' }; // Royal Gold — Luxury Nuts
+}
+
 export default function PosDirectSalesPage({
   products,
   categories,
@@ -234,7 +259,11 @@ export default function PosDirectSalesPage({
     }
     const addonsExtra = scaleSelectedAddons.reduce((s, a) => s + Number(a.extraPrice || 0), 0);
     const addonsLabel = scaleSelectedAddons.map((a) => a.name).join(' + ');
-    const combinedNotes = [addonsLabel ? `إضافات: ${addonsLabel}` : '', scaleWorkerNotes.trim()]
+    const combinedNotes = [
+      scaleMode === 'by_amount_egp' ? `بيع بالمبلغ (${fmtNum(scaleTargetEgp)} ${currencySymbol})` : '',
+      addonsLabel ? `إضافات: ${addonsLabel}` : '',
+      scaleWorkerNotes.trim(),
+    ]
       .filter(Boolean)
       .join(' • ');
     const finalUnitPrice = Number((scaleCalculation.unitPrice + addonsExtra).toFixed(2));
@@ -250,6 +279,7 @@ export default function PosDirectSalesPage({
       quantity: 1,
       rawCostEgp: scaleCalculation.rawCostEgp,
       customWeightGrams: scaleCalculation.weightGrams,
+      sellByAmountMode: scaleMode === 'by_amount_egp',
       barcodeLabel: scaleCalculation.barcodeLabel,
       workerNotes: combinedNotes || undefined,
       selectedAddons:
@@ -329,11 +359,11 @@ export default function PosDirectSalesPage({
             <button
               type="button"
               onClick={() => openProductScaleModal(weightProducts[0], 'by_amount_egp')}
-              title="حساب وزن حر أو بيع بمبلغ بالجنيه"
-              className="min-h-[38px] bg-[#231710] hover:bg-[#3A271C] text-white px-2.5 rounded-xl text-[11px] font-bold flex items-center gap-1 cursor-pointer shrink-0 transition"
+              title="بيع سريع بمبلغ محدد بالجنيه مع حساب الجرامات تلقائياً وتسجيل وسم الرقابة"
+              className="min-h-[42px] bg-[#D4AF37] hover:bg-[#c5a02d] text-[#231710] border border-[#B89220] px-3 rounded-xl text-xs font-cairo font-extrabold flex items-center gap-1.5 cursor-pointer shrink-0 transition shadow-2xs"
             >
-              <Scale className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span>ميزان حر</span>
+              <Scale className="w-4 h-4 text-[#231710]" />
+              <span>بيع بالمبلغ</span>
             </button>
           )}
         </div>
@@ -356,20 +386,24 @@ export default function PosDirectSalesPage({
               كل الأقسام ({products.length})
             </button>
 
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setSelectedCategoryId(cat.id)}
-                className={`min-h-[34px] px-3 py-1 rounded-xl text-[11px] font-bold cursor-pointer shrink-0 transition border ${
-                  selectedCategoryId === cat.id
-                    ? 'bg-[#231710] text-white border-[#231710]'
-                    : 'bg-white text-[#231710] border-[#E8E0D5] hover:bg-[#FAF6F0]'
-                }`}
-              >
-                {formatCategoryName(cat.name)}
-              </button>
-            ))}
+            {categories.map((cat) => {
+              const catAccent = getCategoryAccentColor(cat.id, cat.name);
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setSelectedCategoryId(cat.id)}
+                  className={`min-h-[38px] px-3 py-1 rounded-xl text-xs font-bold cursor-pointer shrink-0 transition border flex items-center gap-1.5 ${
+                    selectedCategoryId === cat.id
+                      ? 'bg-[#231710] text-white border-[#231710]'
+                      : 'bg-white text-[#231710] border-[#E8E0D5] hover:bg-[#FAF6F0]'
+                  }`}
+                >
+                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${catAccent.dot}`} />
+                  <span>{formatCategoryName(cat.name)}</span>
+                </button>
+              );
+            })}
           </div>
 
           <div className="flex items-center gap-1.5 overflow-x-auto">
@@ -476,17 +510,22 @@ export default function PosDirectSalesPage({
                 ? calculatePosItemByGrams(prod, activeWeightObj.grams, prodIdx)
                 : null;
 
+            const matchedCat = categories.find((c) => c.id === prod.categoryId);
+            const cardAccent = getCategoryAccentColor(prod.categoryId, matchedCat?.name);
+
             return (
               <div
                 key={prod.id}
-                className={`rounded-xl border p-2.5 flex flex-col justify-between gap-2 transition ${
+                className={`rounded-xl border overflow-hidden flex flex-col justify-between transition ${
                   isOutOfStock
-                    ? 'bg-red-50/30 border-red-200 opacity-75'
+                    ? 'bg-red-50/30 border-red-200 opacity-70'
                     : isLowStock
                       ? 'bg-amber-50/25 border-amber-200 hover:border-amber-400'
                       : 'bg-white border-[#E8E0D5] hover:border-[#B9A48C] hover:shadow-2xs'
                 }`}
               >
+                <div className={`h-1 w-full ${isOutOfStock ? 'bg-red-400' : cardAccent.bar}`} />
+                <div className="p-2.5 flex-1 flex flex-col justify-between gap-2">
                 {/* Top: Compact Thumbnail (40x40 optional) + Name + Mode/Stock Meta */}
                 <div className="flex items-start gap-2 min-w-0">
                   {showThumbnails && (
@@ -522,9 +561,9 @@ export default function PosDirectSalesPage({
                       )}
 
                       {isOutOfStock ? (
-                        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-red-100 text-red-700 px-1.5 py-0.5 rounded">
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-[#B91C1C] text-white px-1.5 py-0.5 rounded">
                           <AlertCircle className="w-2.5 h-2.5" />
-                          <span>نفد</span>
+                          <span>نفد المخزون</span>
                         </span>
                       ) : (
                         <span
@@ -640,6 +679,7 @@ export default function PosDirectSalesPage({
                     </button>
                   </div>
                 )}
+                </div>
               </div>
             );
           })}
@@ -768,22 +808,25 @@ export default function PosDirectSalesPage({
                     {currencySymbol}
                   </span>
                 </div>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-                  {[20, 30, 50, 100, 150, 200].map((amt) => (
+                <div className="grid grid-cols-5 gap-2">
+                  {[20, 25, 30, 50, 100].map((amt) => (
                     <button
                       key={amt}
                       type="button"
                       onClick={() => setScaleTargetEgp(amt)}
-                      className={`min-h-[36px] py-1.5 rounded-lg text-xs font-bold tabular-nums cursor-pointer border transition ${
+                      className={`min-h-[48px] py-2 rounded-xl text-sm font-cairo font-extrabold tabular-nums cursor-pointer border transition ${
                         scaleTargetEgp === amt
-                          ? 'bg-[#231710] text-white border-[#231710]'
-                          : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]'
+                          ? 'bg-[#D4AF37] text-[#231710] border-[#B89220] shadow-xs'
+                          : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5] hover:bg-[#F3ECE1]'
                       }`}
                     >
-                      {amt}
+                      {amt} {currencySymbol}
                     </button>
                   ))}
                 </div>
+                <p className="text-[11px] text-[#6B5B4E] bg-[#FAF6F0] border border-[#E8E0D5] rounded-lg px-2.5 py-1.5">
+                  سعر الكيلو المركزي مقفل للرقابة ({fmtNum(scaleModalProduct.pricePerKg || 400)} {currencySymbol}/كجم) وتُسجل العملية بوسم <strong>«بيع بالمبلغ»</strong> في سجل التدقيق.
+                </p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -885,17 +928,19 @@ export default function PosDirectSalesPage({
               className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs outline-none"
             />
 
-            {/* Digital Result Display */}
-            <div className="bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl p-3 flex items-center justify-between">
+            {/* Digital Result Display — Huge Grams Readout for Worker on Scale */}
+            <div className="bg-[#231710] text-[#FAF6F0] border border-[#3A271C] rounded-2xl p-4 flex items-center justify-between gap-3">
               <div>
-                <span className="text-[11px] text-[#6B5B4E] block">الوزن الصافي</span>
-                <span className="font-cairo font-bold text-lg text-[#9A6836] tabular-nums">
+                <span className="text-xs text-[#D4AF37] font-bold block">
+                  الوزن المطلوب وزنه على الميزان
+                </span>
+                <span className="font-cairo font-black text-3xl text-white tabular-nums">
                   {fmtNum(scaleCalculation.weightGrams)} جم
                 </span>
               </div>
               <div className="text-left">
-                <span className="text-[11px] text-[#6B5B4E] block">السعر النهائي</span>
-                <span className="font-cairo font-bold text-xl text-[#231710] tabular-nums">
+                <span className="text-xs text-[#FAF6F0]/75 block">السعر النهائي</span>
+                <span className="font-cairo font-black text-2xl text-[#D4AF37] tabular-nums">
                   {fmtNum(
                     scaleCalculation.unitPrice +
                       scaleSelectedAddons.reduce((s, a) => s + Number(a.extraPrice || 0), 0)

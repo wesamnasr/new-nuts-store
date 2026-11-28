@@ -19,6 +19,9 @@ import {
 import { Order, PosReturnItem, PosReturnRecord, PosShift } from '@/types/store';
 import { formatWhatsAppPhone } from '@/lib/validation';
 import { useStore } from '@/context/StoreContext';
+import ManagerPinModal from '@/components/pos/ManagerPinModal';
+
+const RETURN_QUICK_REASONS = ['خطأ وزن', 'استبدال صنف', 'تالف'] as const;
 
 interface PosInvoicesTablePageProps {
   recentPosOrders: Order[];
@@ -27,6 +30,7 @@ interface PosInvoicesTablePageProps {
   activeShift: PosShift | null;
   posReturns?: PosReturnRecord[];
   canSeeProfits: boolean;
+  requireManagerPin?: boolean;
   onReprintOrder: (order: Order) => void;
   onPrintReturnReceipt?: (ret: PosReturnRecord) => void;
   onCreateReturn?: (payload: {
@@ -35,6 +39,7 @@ interface PosInvoicesTablePageProps {
     refundMethod: PosReturnRecord['refundMethod'];
     reason?: string;
     customerPhone?: string;
+    managerPin?: string;
   }) => Promise<PosReturnRecord | null>;
   initialReturnOrder?: Order | null;
   onClearInitialReturnOrder?: () => void;
@@ -77,6 +82,7 @@ export default function PosInvoicesTablePage({
   activeShift,
   posReturns = [],
   canSeeProfits,
+  requireManagerPin = false,
   onReprintOrder,
   onPrintReturnReceipt,
   onCreateReturn,
@@ -120,6 +126,15 @@ export default function PosInvoicesTablePage({
   const [returnCustomerPhone, setReturnCustomerPhone] = useState<string>('');
   const [returnSubmitting, setReturnSubmitting] = useState<boolean>(false);
   const [quickReturnLookup, setQuickReturnLookup] = useState<string>('');
+  const [pinModalOpen, setPinModalOpen] = useState<boolean>(false);
+  const [pinModalError, setPinModalError] = useState<string | null>(null);
+  const [pendingReturnPayload, setPendingReturnPayload] = useState<{
+    orderId: string;
+    items: PosReturnItem[];
+    refundMethod: PosReturnRecord['refundMethod'];
+    reason?: string;
+    customerPhone?: string;
+  } | null>(null);
 
   const openReturnModalForOrder = (ord: Order) => {
     setReturnTargetOrder(ord);
@@ -1111,13 +1126,29 @@ export default function PosInvoicesTablePage({
 
                 <div>
                   <label className="block text-xs font-cairo font-bold text-[#231710] mb-1">
-                    سبب المرتجع (اختياري):
+                    سبب المرتجع (اختر زراً جاهزاً):
                   </label>
+                  <div className="flex flex-wrap gap-1.5 mb-1.5">
+                    {RETURN_QUICK_REASONS.map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setReturnReason(preset)}
+                        className={`min-h-[34px] px-2.5 py-1 rounded-lg text-[11px] font-bold border transition cursor-pointer ${
+                          returnReason === preset
+                            ? 'bg-[#231710] text-white border-[#231710]'
+                            : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5] hover:bg-[#F3ECE1]'
+                        }`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
                   <input
                     type="text"
                     value={returnReason}
                     onChange={(e) => setReturnReason(e.target.value)}
-                    placeholder="مثال: استبدال صنف / رغبة العميل..."
+                    placeholder="أو اكتب تفصيلاً إضافياً..."
                     className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs font-medium outline-none"
                   />
                 </div>
@@ -1181,14 +1212,23 @@ export default function PosInvoicesTablePage({
                     }));
                   if (selectedItems.length === 0) return;
 
-                  setReturnSubmitting(true);
-                  const created = await onCreateReturn({
+                  const draftPayload = {
                     orderId: returnTargetOrder.id,
                     items: selectedItems,
                     refundMethod: returnRefundMethod,
-                    reason: returnReason.trim() || undefined,
+                    reason: returnReason.trim() || 'استبدال صنف',
                     customerPhone: returnCustomerPhone.trim() || undefined,
-                  });
+                  };
+
+                  if (requireManagerPin) {
+                    setPendingReturnPayload(draftPayload);
+                    setPinModalError(null);
+                    setPinModalOpen(true);
+                    return;
+                  }
+
+                  setReturnSubmitting(true);
+                  const created = await onCreateReturn(draftPayload);
                   setReturnSubmitting(false);
 
                   if (created) {
@@ -1209,6 +1249,40 @@ export default function PosInvoicesTablePage({
           </div>
         );
       })()}
+
+      {/* Manager Secret PIN Modal for Cashier Returns */}
+      <ManagerPinModal
+        isOpen={pinModalOpen}
+        title="اعتماد المرتجع بكود المدير السري"
+        subtitle="لحماية المخزون والدرج، يرجى إدخال كود المدير السري لاعتماد المرتجع وتوثيقه في سجل الرقابة."
+        actionLabel="اعتماد المرتجع الآن"
+        errorMessage={pinModalError}
+        loading={returnSubmitting}
+        onClose={() => {
+          setPinModalOpen(false);
+          setPinModalError(null);
+        }}
+        onConfirm={async (pin) => {
+          if (!pendingReturnPayload || !onCreateReturn) return;
+          setReturnSubmitting(true);
+          setPinModalError(null);
+          const created = await onCreateReturn({
+            ...pendingReturnPayload,
+            managerPin: pin,
+          });
+          setReturnSubmitting(false);
+          if (created) {
+            setPinModalOpen(false);
+            setPendingReturnPayload(null);
+            setReturnTargetOrder(null);
+            if (onPrintReturnReceipt) {
+              onPrintReturnReceipt(created);
+            }
+          } else {
+            setPinModalError('كود المدير غير صحيح أو تعذر تنفيذ المرتجع — يرجى المحاولة مرة أخرى');
+          }
+        }}
+      />
     </div>
   );
 }
