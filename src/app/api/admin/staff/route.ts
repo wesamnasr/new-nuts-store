@@ -7,6 +7,7 @@ import {
 import {
   computeSettingsFingerprint,
   generateAdminToken,
+  getResolvedCustomRoles,
   hashPasswordScrypt,
   normalizeAdminRole,
   toPublicStaffAccount,
@@ -105,6 +106,8 @@ export async function POST(request: NextRequest) {
     const rawPassword = typeof body.password === 'string' ? body.password.trim() : '';
     const rawDisplayName = typeof body.displayName === 'string' ? body.displayName.trim() : '';
     const rawRole = typeof body.role === 'string' ? body.role.trim() : '';
+    const rawCustomRoleId =
+      typeof body.customRoleId === 'string' ? body.customRoleId.trim() : '';
 
     if (!USERNAME_REGEX.test(rawUsername)) {
       return NextResponse.json(
@@ -130,19 +133,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!VALID_STAFF_ROLES.has(rawRole)) {
+    if (!rawCustomRoleId && !VALID_STAFF_ROLES.has(rawRole)) {
       return NextResponse.json(
-        { error: 'الدور الوظيفي المحدد غير صالح ضمن أدوار النظام الخمسة' },
+        { error: 'الدور الوظيفي المحدد غير صالح' },
         { status: 400 }
       );
     }
-
-    const normalizedRole: AdminRole = normalizeAdminRole(rawRole);
 
     return await withDbTransaction(async (db) => {
       if (!Array.isArray(db.staffAccounts)) {
         db.staffAccounts = [];
       }
+
+      const customRoles = getResolvedCustomRoles(db.settings);
+      const matchedCustomRole = rawCustomRoleId
+        ? customRoles.find((r) => r.id === rawCustomRoleId)
+        : undefined;
+
+      if (rawCustomRoleId && !matchedCustomRole) {
+        return NextResponse.json(
+          { error: 'الدور المخصص المحدد غير موجود — يرجى تحديث الصفحة والمحاولة مجدداً' },
+          { status: 400 }
+        );
+      }
+
+      const normalizedRole: AdminRole = matchedCustomRole
+        ? normalizeAdminRole(matchedCustomRole.baseRole)
+        : normalizeAdminRole(rawRole);
 
       const duplicate = db.staffAccounts.find(
         (acc) => acc.username.trim().toLowerCase() === rawUsername.toLowerCase()
@@ -160,6 +177,7 @@ export async function POST(request: NextRequest) {
         username: rawUsername,
         passwordHash: hashPasswordScrypt(rawPassword),
         role: normalizedRole,
+        customRoleId: matchedCustomRole?.id,
         displayName: rawDisplayName,
         phone: typeof body.phone === 'string' && body.phone.trim() ? body.phone.trim() : undefined,
         active: body.active !== false,
@@ -303,7 +321,28 @@ export async function PATCH(request: NextRequest) {
 
       target.username = updatedUsername;
       if (!target.isPrimary) {
-        target.role = nextRole;
+        if ('customRoleId' in body) {
+          const incomingCustomId =
+            typeof body.customRoleId === 'string' ? body.customRoleId.trim() : '';
+          if (incomingCustomId) {
+            const matchedCustom = getResolvedCustomRoles(db.settings).find(
+              (r) => r.id === incomingCustomId
+            );
+            if (!matchedCustom) {
+              return NextResponse.json(
+                { error: 'الدور المخصص المحدد غير موجود' },
+                { status: 400 }
+              );
+            }
+            target.customRoleId = matchedCustom.id;
+            target.role = normalizeAdminRole(matchedCustom.baseRole);
+          } else {
+            target.customRoleId = undefined;
+            target.role = nextRole;
+          }
+        } else {
+          target.role = nextRole;
+        }
       }
       target.active = nextActive;
 

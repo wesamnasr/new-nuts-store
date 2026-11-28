@@ -23,8 +23,9 @@ import {
   isUnitProduct,
 } from '@/lib/pricing';
 import { FlashPromotion, Product, AdminRole } from '@/types/store';
-import { getCurrencySymbol, stripUiEmojis } from '@/lib/defaults';
+import { getCurrencySymbol, getResolvedFeatureFlags, stripUiEmojis } from '@/lib/defaults';
 import PreLaunchResetSafeguard from './PreLaunchResetSafeguard';
+import ErpMasterModulesStudio from './ErpMasterModulesStudio';
 import {
   updateUrlQueryParams,
   buildUrlWithParams,
@@ -50,17 +51,17 @@ export default function HafsaOperationsStudio({
   const { storeData, refreshStore, showToast, pixelEvents } = useStore();
 
   const [subTab, setSubTab] = useState<
-    'kilo_updater' | 'partner4_promos' | 'vip_cashier' | 'qr_codes' | 'wesam_marketing' | 'pre_launch_reset'
+    'kilo_updater' | 'erp_modules' | 'partner4_promos' | 'vip_cashier' | 'qr_codes' | 'wesam_marketing' | 'pre_launch_reset'
   >('kilo_updater');
 
   useBrowserUrlSync((params) => {
     const st = params.get('subtab');
     if (
       st &&
-      ['kilo_updater', 'partner4_promos', 'vip_cashier', 'qr_codes', 'wesam_marketing', 'pre_launch_reset'].includes(st)
+      ['kilo_updater', 'erp_modules', 'partner4_promos', 'vip_cashier', 'qr_codes', 'wesam_marketing', 'pre_launch_reset'].includes(st)
     ) {
       setSubTab(
-        st as 'kilo_updater' | 'partner4_promos' | 'vip_cashier' | 'qr_codes' | 'wesam_marketing' | 'pre_launch_reset'
+        st as 'kilo_updater' | 'erp_modules' | 'partner4_promos' | 'vip_cashier' | 'qr_codes' | 'wesam_marketing' | 'pre_launch_reset'
       );
     } else if (!st) {
       setSubTab('kilo_updater');
@@ -68,10 +69,54 @@ export default function HafsaOperationsStudio({
   });
 
   const products = storeData?.products || [];
+  const categories = storeData?.categories || [];
   const promotions = storeData?.promotions || [];
   const vipMembers = storeData?.vipMembers || [];
   const settings = storeData?.settings;
+  const featureFlags = getResolvedFeatureFlags(settings);
   const currency = getCurrencySymbol(settings);
+
+  // Batch Bulk Price Update (% or EGP across category or all)
+  const [bulkMode, setBulkMode] = useState<'percent' | 'fixed'>('percent');
+  const [bulkValue, setBulkValue] = useState<string>('5');
+  const [bulkCategoryId, setBulkCategoryId] = useState<string>('all');
+  const [bulkTargetField, setBulkTargetField] = useState<'price' | 'cost'>('price');
+  const [bulkApplying, setBulkApplying] = useState<boolean>(false);
+
+  const handleApplyBulkPriceUpdate = async () => {
+    const val = Number(bulkValue);
+    if (!Number.isFinite(val) || val === 0) {
+      showToast('أدخل نسبة أو مبلغاً غير صفري للتعديل الجماعي');
+      return;
+    }
+    setBulkApplying(true);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (adminToken) {
+        headers['Authorization'] = `Bearer ${adminToken}`;
+        headers['x-admin-token'] = adminToken;
+      }
+      const res = await fetch('/api/admin/erp-modules', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          action: 'bulk_price_update',
+          mode: bulkMode,
+          value: val,
+          categoryId: bulkCategoryId,
+          targetField: bulkTargetField,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'تعذر التعديل الجماعي');
+      showToast(`تم تحديث أسعار (${json.updatedCount}) صنف وتوليد الأوزان تلقائياً`);
+      refreshStore();
+    } catch (e: unknown) {
+      showToast('خطأ في التعديل الجماعي', e instanceof Error ? e.message : '');
+    } finally {
+      setBulkApplying(false);
+    }
+  };
 
   // 1. Web Audio Chime Generator for New Orders
   const playOrderChime = () => {
@@ -318,7 +363,11 @@ export default function HafsaOperationsStudio({
         {[
           {
             id: 'kilo_updater',
-            label: 'أسعار الكيلو والـ 4 أوزان',
+            label: 'أسعار الكيلو والتعديل الجماعي',
+          },
+          {
+            id: 'erp_modules',
+            label: 'المخازن والـ BOM والإضافات والموظفين والصالات',
           },
           {
             id: 'partner4_promos',
@@ -363,9 +412,67 @@ export default function HafsaOperationsStudio({
         ))}
       </div>
 
-      {/* TAB 1: 1-Click Kilo Price & 4-Weights Updater */}
+      {/* TAB 1: 1-Click Kilo Price & 4-Weights Updater + Batch Bulk Price Editor */}
       {subTab === 'kilo_updater' && (
         <div className="space-y-4">
+          {canMutate && (
+            <div className="bg-amber-50/70 rounded-xl p-3.5 border border-amber-200 flex flex-wrap items-end gap-2.5">
+              <div>
+                <span className="text-[11px] font-bold text-[#231710] block mb-1">القسم المستهدف</span>
+                <select
+                  value={bulkCategoryId}
+                  onChange={(e) => setBulkCategoryId(e.target.value)}
+                  className="bg-white border border-[#E8E0D5] rounded-lg px-2.5 py-2 text-xs font-bold"
+                >
+                  <option value="all">جميع الأقسام ({products.length})</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <span className="text-[11px] font-bold text-[#231710] block mb-1">تعديل</span>
+                <select
+                  value={bulkTargetField}
+                  onChange={(e) => setBulkTargetField(e.target.value as 'price' | 'cost')}
+                  className="bg-white border border-[#E8E0D5] rounded-lg px-2.5 py-2 text-xs font-bold"
+                >
+                  <option value="price">سعر البيع</option>
+                  <option value="cost">سعر التكلفة</option>
+                </select>
+              </div>
+              <div>
+                <span className="text-[11px] font-bold text-[#231710] block mb-1">نوع التعديل</span>
+                <select
+                  value={bulkMode}
+                  onChange={(e) => setBulkMode(e.target.value as 'percent' | 'fixed')}
+                  className="bg-white border border-[#E8E0D5] rounded-lg px-2.5 py-2 text-xs font-bold"
+                >
+                  <option value="percent">نسبة مئوية (%)</option>
+                  <option value="fixed">مبلغ ثابت ({currency})</option>
+                </select>
+              </div>
+              <div>
+                <span className="text-[11px] font-bold text-[#231710] block mb-1">القيمة (+/-)</span>
+                <input
+                  type="number"
+                  step="any"
+                  value={bulkValue}
+                  onChange={(e) => setBulkValue(e.target.value)}
+                  className="w-24 bg-white border border-[#9A6836] rounded-lg px-2.5 py-2 text-xs font-bold tabular-nums"
+                />
+              </div>
+              <button
+                type="button"
+                disabled={bulkApplying}
+                onClick={handleApplyBulkPriceUpdate}
+                className="min-h-[36px] bg-[#231710] hover:bg-[#3A271C] text-white px-4 py-2 rounded-lg text-xs font-bold cursor-pointer disabled:opacity-50"
+              >
+                {bulkApplying ? 'جاري التحديث...' : 'تطبيق التعديل الجماعي فوراً'}
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[#FAF6F0] p-3 rounded-xl border border-[#E8E0D5]">
             <div>
               <p className="text-xs text-[#231710] font-bold">
@@ -881,6 +988,19 @@ export default function HafsaOperationsStudio({
             )}
           </div>
         </form>
+      )}
+
+      {/* TAB ERP MODULES: Multi-Warehouse Transfers, BOM, Modifiers, HR, Delivery Companies, Halls & Blind Close */}
+      {subTab === 'erp_modules' && (
+        <ErpMasterModulesStudio
+          products={products}
+          currency={currency}
+          canMutate={canMutate}
+          enableHallsAndTables={featureFlags.enableHallsAndTables}
+          enableBlindShiftClose={featureFlags.enableBlindShiftClose}
+          onRefreshStore={refreshStore}
+          showToast={showToast}
+        />
       )}
 
       {/* TAB 6: Pre-Launch Operational Reset & Purge (Super Admin Only) */}

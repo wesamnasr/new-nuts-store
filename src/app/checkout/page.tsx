@@ -82,6 +82,8 @@ export default function CheckoutPage() {
     cart,
     cartSubtotal,
     appliedCoupon,
+    applyCouponCode,
+    removeCoupon,
     discountAmount,
     clearCart,
     storeData,
@@ -168,6 +170,13 @@ export default function CheckoutPage() {
   const [compressingReceipt, setCompressingReceipt] = useState(false);
   const [useVipWallet, setUseVipWallet] = useState<boolean>(false);
   const [vipPin, setVipPin] = useState<string>('');
+
+  // Coupon code input state
+  const [couponInput, setCouponInput] = useState('');
+  const [couponFeedback, setCouponFeedback] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
 
   // Submission states
   const [submitting, setSubmitting] = useState(false);
@@ -1132,6 +1141,78 @@ export default function CheckoutPage() {
                     </span>
                   </div>
                 ))}
+              </div>
+
+              {/* Coupon Code Box */}
+              <div className="pt-3 border-t border-[#F0EAE0] space-y-2">
+                <label className="block text-[11px] font-bold text-[#5C4A3D]">
+                  لديك كود خصم أو كوبون؟
+                </label>
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 text-xs">
+                    <div className="min-w-0">
+                      <span className="font-mono font-bold text-emerald-900">
+                        {appliedCoupon.code}
+                      </span>
+                      <span className="text-emerald-700 mr-1.5">
+                        (-{discountAmount} {currency})
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        removeCoupon();
+                        setCouponFeedback(null);
+                      }}
+                      className="text-[11px] font-bold text-[#B83B2B] hover:underline shrink-0 cursor-pointer"
+                    >
+                      إزالة
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={couponInput}
+                      onChange={(e) => {
+                        setCouponInput(e.target.value);
+                        if (couponFeedback) setCouponFeedback(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (!couponInput.trim()) return;
+                          const result = applyCouponCode(couponInput);
+                          setCouponFeedback(result);
+                          if (result.success) setCouponInput('');
+                        }
+                      }}
+                      placeholder="أدخل كود الخصم مثل QA10"
+                      className="flex-1 min-w-0 min-h-[38px] bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-[#231710] outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!couponInput.trim()) return;
+                        const result = applyCouponCode(couponInput);
+                        setCouponFeedback(result);
+                        if (result.success) setCouponInput('');
+                      }}
+                      className="min-h-[38px] px-4 py-1.5 rounded-xl bg-[#231710] hover:bg-[#3A271C] text-white text-xs font-bold shrink-0 cursor-pointer transition"
+                    >
+                      تطبيق
+                    </button>
+                  </div>
+                )}
+                {couponFeedback && (
+                  <p
+                    className={`text-[11px] font-bold ${
+                      couponFeedback.success ? 'text-emerald-700' : 'text-[#B83B2B]'
+                    }`}
+                  >
+                    {couponFeedback.message}
+                  </p>
+                )}
               </div>
 
               {/* Totals */}

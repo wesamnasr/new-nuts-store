@@ -370,6 +370,7 @@ export function calculatePartitionedBox(
 
   const slots: BoxSlotSelection[] = [];
   let rawIngredientsCost = 0;
+  let publicRetailIngredientsTotal = 0;
 
   for (let i = 0; i < (selectedSlots || []).length; i++) {
     const item = selectedSlots[i] as any;
@@ -413,6 +414,7 @@ export function calculatePartitionedBox(
     }
 
     rawIngredientsCost += costContribution;
+    publicRetailIngredientsTotal += Math.round((pricePerKg * weightGrams) / 1000);
     slots.push({
       slotIndex: slotNumber,
       slotNumber,
@@ -432,9 +434,13 @@ export function calculatePartitionedBox(
     });
   }
 
+  // Deterministic customer selling price computed solely from public retail pricePerKg
+  // so public storefront (/build-box) and server (POST /api/orders) ALWAYS match 100%.
+  const deterministicCostProxy =
+    Math.round(publicRetailIngredientsTotal * 0.72) + preset.packagingCost;
   const totalRawCost = rawIngredientsCost + preset.packagingCost;
   const minSafeSellingPrice =
-    Math.ceil(totalRawCost / (1 - preset.minMarginPercent / 100) / 5) * 5;
+    Math.ceil(deterministicCostProxy / (1 - preset.minMarginPercent / 100) / 5) * 5;
   const protectedPrice = Math.max(preset.basePrice, minSafeSellingPrice);
   const vipExtraSurcharge = Math.max(0, protectedPrice - preset.basePrice);
   const netProfitEgp = protectedPrice - totalRawCost;
@@ -1248,15 +1254,34 @@ export function parseScaleBarcode(
   calc: PosScaleItemResult;
   barcodeKind?: 'scale_weight' | 'scale_price' | 'plu' | 'sku';
 } | null {
-  const clean = normalizeBarcodeScanInput(code || '');
-  if (!clean || !products || products.length === 0) return null;
+  const rawTrimmed = (code || '').trim();
+  const clean = normalizeBarcodeScanInput(rawTrimmed);
+  if ((!rawTrimmed && !clean) || !products || products.length === 0) return null;
 
-  // 0. Exact match on custom SKU / EAN-13 / UPC barcode first (unless it's a dynamic 12-13 digit 20/21/22 scale ticket)
-  const exactCustomIdx = products.findIndex(
-    (p) => p.barcode && p.barcode.trim() === clean
-  );
-  if (exactCustomIdx !== -1 && !/^(20|21|22)\d{9,11}$/.test(clean)) {
-    const product = products[exactCustomIdx];
+  // Helper to resolve a matched product with optional explicit weight/price (used by QR payloads too)
+  const buildProductScanResult = (
+    product: Product,
+    idx: number,
+    explicitGrams?: number,
+    explicitPrice?: number
+  ) => {
+    if (explicitGrams && explicitGrams > 0 && !isUnitProduct(product)) {
+      return {
+        product,
+        weightGrams: Math.round(explicitGrams),
+        barcodeKind: 'scale_weight' as const,
+        calc: calculatePosItemByGrams(product, Math.round(explicitGrams), idx),
+      };
+    }
+    if (explicitPrice && explicitPrice > 0 && !isUnitProduct(product)) {
+      const calc = calculatePosItemByAmountEgp(product, explicitPrice, idx);
+      return {
+        product,
+        weightGrams: calc.weightGrams,
+        barcodeKind: 'scale_price' as const,
+        calc,
+      };
+    }
     if (isUnitProduct(product)) {
       const variants = getResolvedProductWeights(product);
       const firstVar = variants[0];
@@ -1268,7 +1293,7 @@ export function parseScaleBarcode(
       return {
         product,
         weightGrams: firstVar?.weightGrams || 1000,
-        barcodeKind: 'sku',
+        barcodeKind: 'sku' as const,
         calc: {
           weightGrams: firstVar?.weightGrams || 1000,
           weightLabel: firstVar?.label || product.unitLabel?.trim() || 'قطعة واحدة',
@@ -1276,16 +1301,130 @@ export function parseScaleBarcode(
           rawCostEgp,
           netProfitEgp,
           marginPercent,
-          barcodeLabel: product.barcode || getProductBarcode(product, exactCustomIdx),
+          barcodeLabel: product.barcode || getProductBarcode(product, idx),
         },
       };
     }
     return {
       product,
       weightGrams: 250,
-      barcodeKind: 'sku',
-      calc: calculatePosItemByGrams(product, 250, exactCustomIdx),
+      barcodeKind: 'sku' as const,
+      calc: calculatePosItemByGrams(product, 250, idx),
     };
+  };
+
+  // -2. Direct exact match against raw QR/Barcode text stored on a product (supports alphanumeric QR strings / URLs)
+  if (rawTrimmed && !/^(20|21|22)\d{9,11}$/.test(clean)) {
+    const rawExactIdx = products.findIndex(
+      (p) =>
+        p.barcode &&
+        p.barcode.trim().toLowerCase() === rawTrimmed.toLowerCase()
+    );
+    if (rawExactIdx !== -1) {
+      return buildProductScanResult(products[rawExactIdx], rawExactIdx);
+    }
+  }
+
+  // -1. Smart QR Code Payloads (JSON e.g. {"plu":"0001","weight":350}, Key-Value/Pipe e.g. PLU=0001&W=350, or QR containing an embedded 11-13 digit 20/21/22 scale barcode)
+  if (rawTrimmed.startsWith('{') && rawTrimmed.endsWith('}')) {
+    try {
+      const obj = JSON.parse(rawTrimmed) as Record<string, unknown>;
+      const codeKey = String(
+        obj.barcode ?? obj.code ?? obj.sku ?? obj.plu ?? obj.id ?? ''
+      ).trim();
+      const rawWeight = Number(obj.weightGrams ?? obj.grams ?? obj.weight ?? obj.w ?? 0);
+      const rawKg = Number(obj.kg ?? obj.weightKg ?? 0);
+      const grams = rawWeight > 0 ? rawWeight : rawKg > 0 ? Math.round(rawKg * 1000) : 0;
+      const price = Number(obj.price ?? obj.amount ?? obj.total ?? obj.p ?? 0);
+      if (codeKey) {
+        const pluClean = normalizeBarcodeScanInput(codeKey);
+        const byPlu =
+          /^\d{1,6}$/.test(pluClean)
+            ? findProductByScalePlu(
+                pluClean.length >= 6 && /^(20|21|22)/.test(pluClean)
+                  ? pluClean.slice(2, 6)
+                  : pluClean.padStart(4, '0'),
+                products
+              )
+            : null;
+        if (byPlu) {
+          return buildProductScanResult(byPlu.product, byPlu.index, grams || undefined, price || undefined);
+        }
+        const byCodeIdx = products.findIndex(
+          (p, idx) =>
+            (p.barcode && p.barcode.trim().toLowerCase() === codeKey.toLowerCase()) ||
+            getProductBarcode(p, idx) === pluClean ||
+            p.id.toLowerCase() === codeKey.toLowerCase() ||
+            p.slug.toLowerCase() === codeKey.toLowerCase()
+        );
+        if (byCodeIdx !== -1) {
+          return buildProductScanResult(
+            products[byCodeIdx],
+            byCodeIdx,
+            grams || undefined,
+            price || undefined
+          );
+        }
+      }
+    } catch {
+      // Fall through to standard barcode/QR parsers
+    }
+  }
+
+  // QR key-value / pipe format (e.g. "PLU=0001&W=350", "SKU:622123|W:500", "CODE=200001;G=250")
+  if (/[=:|&;]/.test(rawTrimmed)) {
+    const embeddedScale = rawTrimmed.match(/\b((?:20|21|22)\d{9,11})\b/);
+    if (embeddedScale?.[1]) {
+      return parseScaleBarcode(embeddedScale[1], products);
+    }
+    const kvMap: Record<string, string> = {};
+    rawTrimmed.split(/[&|;\n]+/).forEach((part) => {
+      const m = part.trim().match(/^([a-zA-Z_]+)\s*[:=]\s*(.+)$/);
+      if (m) kvMap[m[1].toLowerCase()] = m[2].trim();
+    });
+    const kvCode = kvMap.barcode || kvMap.code || kvMap.sku || kvMap.plu || kvMap.id || '';
+    const kvGrams = Number(kvMap.grams || kvMap.weightgrams || kvMap.weight || kvMap.w || kvMap.g || 0);
+    const kvKg = Number(kvMap.kg || kvMap.weightkg || 0);
+    const grams = kvGrams > 0 ? kvGrams : kvKg > 0 ? Math.round(kvKg * 1000) : 0;
+    const price = Number(kvMap.price || kvMap.amount || kvMap.p || 0);
+    if (kvCode) {
+      const pluClean = normalizeBarcodeScanInput(kvCode);
+      const byPlu =
+        /^\d{1,6}$/.test(pluClean)
+          ? findProductByScalePlu(
+              pluClean.length >= 6 && /^(20|21|22)/.test(pluClean)
+                ? pluClean.slice(2, 6)
+                : pluClean.padStart(4, '0'),
+              products
+            )
+          : null;
+      if (byPlu) {
+        return buildProductScanResult(byPlu.product, byPlu.index, grams || undefined, price || undefined);
+      }
+      const byCodeIdx = products.findIndex(
+        (p, idx) =>
+          (p.barcode && p.barcode.trim().toLowerCase() === kvCode.toLowerCase()) ||
+          getProductBarcode(p, idx) === pluClean ||
+          p.id.toLowerCase() === kvCode.toLowerCase() ||
+          p.slug.toLowerCase() === kvCode.toLowerCase()
+      );
+      if (byCodeIdx !== -1) {
+        return buildProductScanResult(
+          products[byCodeIdx],
+          byCodeIdx,
+          grams || undefined,
+          price || undefined
+        );
+      }
+    }
+  }
+
+  // 0. Exact match on custom SKU / EAN-13 / UPC barcode first (unless it's a dynamic 12-13 digit 20/21/22 scale ticket)
+  const exactCustomIdx = products.findIndex(
+    (p) => p.barcode && p.barcode.trim() === clean
+  );
+  if (exactCustomIdx !== -1 && !/^(20|21|22)\d{9,11}$/.test(clean)) {
+    return buildProductScanResult(products[exactCustomIdx], exactCustomIdx);
   }
 
   // 1. Check 11-13 digit weight-embedded scale barcode: 20 + 4-digit PLU + 5-digit weightGrams + [pad/checksum]

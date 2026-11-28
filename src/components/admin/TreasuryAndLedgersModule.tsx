@@ -147,8 +147,8 @@ export default function TreasuryAndLedgersModule({
     try {
       const headers = getTokenHeader();
       const [trsRes, crdRes] = await Promise.all([
-        fetch('/api/admin/treasury', { headers, cache: 'no-store' }),
-        fetch('/api/admin/credit', { headers, cache: 'no-store' }),
+        fetch('/api/admin/treasury', { headers, credentials: 'include', cache: 'no-store' }),
+        fetch('/api/admin/credit', { headers, credentials: 'include', cache: 'no-store' }),
       ]);
       if (trsRes.ok) {
         const trsData = await trsRes.json();
@@ -176,8 +176,8 @@ export default function TreasuryAndLedgersModule({
   }, []);
 
   useEffect(() => {
-    fetchAllFinancialData();
-  }, [fetchAllFinancialData]);
+    void fetchAllFinancialData();
+  }, [fetchAllFinancialData, supplyInvoices.length]);
 
   const filteredTransactions = useMemo(() => {
     if (txAccountFilter === 'all') return transactions;
@@ -473,7 +473,9 @@ export default function TreasuryAndLedgersModule({
               إجمالي السيولة بالخزينة والبنوك والمحافظ
             </span>
             <span className="text-lg font-black text-emerald-950 mt-0.5 block">
-              {totalLiquidity.toLocaleString('ar-EG')} ج.م
+              {loading && accounts === null
+                ? 'جاري التحميل...'
+                : `${totalLiquidity.toLocaleString('ar-EG')} ج.م`}
             </span>
           </div>
           <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200">
@@ -481,7 +483,9 @@ export default function TreasuryAndLedgersModule({
               إجمالي مديونيات العملاء الآجلة (لنا - AR)
             </span>
             <span className="text-lg font-black text-blue-950 mt-0.5 block">
-              {totalReceivables.toLocaleString('ar-EG')} ج.م
+              {loading && accounts === null
+                ? 'جاري التحميل...'
+                : `${totalReceivables.toLocaleString('ar-EG')} ج.م`}
             </span>
           </div>
           <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200">
@@ -489,7 +493,9 @@ export default function TreasuryAndLedgersModule({
               إجمالي مستحقات الموردين القائمة (علينا - AP)
             </span>
             <span className="text-lg font-black text-amber-950 mt-0.5 block">
-              {totalSupplierPayables.toLocaleString('ar-EG')} ج.م
+              {loading && accounts === null
+                ? 'جاري التحميل...'
+                : `${totalSupplierPayables.toLocaleString('ar-EG')} ج.م`}
             </span>
           </div>
         </div>

@@ -2,19 +2,24 @@
 
 import React, { useState, useMemo } from 'react';
 import {
-  Scale,
-  Barcode,
-  Search,
+  AlertCircle,
+  AlertTriangle,
+  Image as ImageIcon,
+  ImageOff,
+  Package,
   Plus,
+  Scale,
+  Search,
+  SlidersHorizontal,
   Tag,
   X,
-  AlertTriangle,
-  AlertCircle,
 } from 'lucide-react';
 import {
   CartItem,
   Category,
+  PrepMethodOption,
   Product,
+  ProductAddonOption,
   WeightVariant,
 } from '@/types/store';
 import {
@@ -24,7 +29,6 @@ import {
   getProductStockUnitLabel,
   getResolvedProductWeights,
   isUnitProduct,
-  parseScaleBarcode,
 } from '@/lib/pricing';
 import { formatCategoryName, getSafeImageUrl } from '@/lib/defaults';
 import { StickerPreviewData } from '@/components/SupermarketReceiptModal';
@@ -41,16 +45,27 @@ interface PosDirectSalesPageProps {
   onSelectCategoryId?: (catId: string) => void;
   enableWeightScale?: boolean;
   currencySymbol?: string;
+  prepMethods?: PrepMethodOption[];
+  productAddons?: ProductAddonOption[];
+  canAddProduct?: boolean;
+  onOpenQuickAddProduct?: () => void;
 }
 
 const LOW_STOCK_THRESHOLD_KG = 5;
 
-const QUICK_WEIGHTS = [
-  { grams: 125, label: 'ثمن' },
-  { grams: 250, label: 'ربع' },
-  { grams: 500, label: 'نصف' },
-  { grams: 1000, label: 'كيلو' },
+const UNIFIED_WEIGHT_MODES = [
+  { id: '125' as const, grams: 125, label: 'ثمن', short: '125 جم' },
+  { id: '250' as const, grams: 250, label: 'ربع', short: '250 جم' },
+  { id: '500' as const, grams: 500, label: 'نصف', short: '500 جم' },
+  { id: '1000' as const, grams: 1000, label: 'كيلو', short: '1 كجم' },
+  { id: 'custom' as const, grams: 0, label: 'ميزان حر', short: 'مبلغ / جم' },
 ];
+
+type ActiveWeightModeId = (typeof UNIFIED_WEIGHT_MODES)[number]['id'];
+type SellingTypeFilter = 'all' | 'weight' | 'unit' | 'low_stock';
+
+const fmtNum = (val: number) =>
+  Number.isFinite(val) ? Number(Math.round(val * 100) / 100).toLocaleString('en-US') : '0';
 
 export default function PosDirectSalesPage({
   products,
@@ -63,49 +78,61 @@ export default function PosDirectSalesPage({
   onSelectCategoryId,
   enableWeightScale = true,
   currencySymbol = 'ج.م',
+  prepMethods = [],
+  productAddons = [],
+  canAddProduct = false,
+  onOpenQuickAddProduct,
 }: PosDirectSalesPageProps) {
-  const weightProducts = useMemo(
-    () => products.filter((p) => !isUnitProduct(p)),
-    [products]
-  );
+  const weightProducts = useMemo(() => products.filter((p) => !isUnitProduct(p)), [products]);
+  const unitProductsCount = useMemo(() => products.filter((p) => isUnitProduct(p)).length, [products]);
+
   const [internalCategoryId, setInternalCategoryId] = useState<string>('all');
   const selectedCategoryId = externalCategoryId ?? internalCategoryId;
   const setSelectedCategoryId = (catId: string) => {
     setInternalCategoryId(catId);
     onSelectCategoryId?.(catId);
   };
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [barcodeInput, setBarcodeInput] = useState<string>('');
-  const [mobileInputMode, setMobileInputMode] = useState<'search' | 'barcode'>('search');
-  const [stockFilter, setStockFilter] = useState<'all' | 'low_stock'>('all');
 
-  // Per-card quick roast selection state
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sellingTypeFilter, setSellingTypeFilter] = useState<SellingTypeFilter>('all');
+  const [activeWeightMode, setActiveWeightMode] = useState<ActiveWeightModeId>('250');
+  const [showThumbnails, setShowThumbnails] = useState<boolean>(true);
+
+  // Per-product remembered roast (when customized)
   const [cardRoasts, setCardRoasts] = useState<Record<string, string>>({});
 
-  // On-Demand Custom Scale / Sell-by-Amount Modal State (Hidden by default)
+  // On-Demand Custom Scale / Roast / Sell-by-Amount Modal State
   const [scaleModalProduct, setScaleModalProduct] = useState<Product | null>(null);
   const [scaleMode, setScaleMode] = useState<'by_amount_egp' | 'by_grams'>('by_amount_egp');
   const [scaleGrams, setScaleGrams] = useState<number>(250);
   const [scaleTargetEgp, setScaleTargetEgp] = useState<number>(50);
-  const [scaleRoast, setScaleRoast] = useState<string>('محمص مملح');
+  const [scaleRoast, setScaleRoast] = useState<string>('');
   const [scaleWorkerNotes, setScaleWorkerNotes] = useState<string>('');
+  const [scaleSelectedAddons, setScaleSelectedAddons] = useState<ProductAddonOption[]>([]);
+
+  const shortageCount = useMemo(() => {
+    return products.filter((p) => {
+      if (p.showInPos === false) return false;
+      const s = typeof p.stockKg === 'number' ? p.stockKg : 50;
+      return !p.inStock || s <= LOW_STOCK_THRESHOLD_KG;
+    }).length;
+  }, [products]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
-      if (p.showInPos !== false) {
-        // product is allowed in POS
-      } else {
-        return false;
-      }
+      if (p.showInPos === false) return false;
+
       if (selectedCategoryId !== 'all' && p.categoryId !== selectedCategoryId) {
         return false;
       }
-      if (stockFilter === 'low_stock') {
+
+      if (sellingTypeFilter === 'weight' && isUnitProduct(p)) return false;
+      if (sellingTypeFilter === 'unit' && !isUnitProduct(p)) return false;
+      if (sellingTypeFilter === 'low_stock') {
         const s = typeof p.stockKg === 'number' ? p.stockKg : 50;
-        if (!(!p.inStock || s <= LOW_STOCK_THRESHOLD_KG)) {
-          return false;
-        }
+        if (!(!p.inStock || s <= LOW_STOCK_THRESHOLD_KG)) return false;
       }
+
       if (searchQuery.trim()) {
         const q = searchQuery.trim().toLowerCase();
         return (
@@ -117,73 +144,24 @@ export default function PosDirectSalesPage({
       }
       return true;
     });
-  }, [products, selectedCategoryId, searchQuery, stockFilter]);
+  }, [products, selectedCategoryId, searchQuery, sellingTypeFilter]);
 
-  const shortageCount = useMemo(() => {
-    return products.filter((p) => {
-      if (p.showInPos === false) return false;
-      const s = typeof p.stockKg === 'number' ? p.stockKg : 50;
-      return !p.inStock || s <= LOW_STOCK_THRESHOLD_KG;
-    }).length;
-  }, [products]);
+  const activeWeightObj = useMemo(
+    () => UNIFIED_WEIGHT_MODES.find((w) => w.id === activeWeightMode) || UNIFIED_WEIGHT_MODES[1],
+    [activeWeightMode]
+  );
 
   // Live Digital Scale Calculation (only when modal is open)
   const scaleCalculation = useMemo(() => {
     if (!scaleModalProduct) return null;
-    const prodIdx = Math.max(
-      0,
-      products.findIndex((p) => p.id === scaleModalProduct.id)
-    );
+    const prodIdx = Math.max(0, products.findIndex((p) => p.id === scaleModalProduct.id));
     if (scaleMode === 'by_amount_egp') {
       return calculatePosItemByAmountEgp(scaleModalProduct, scaleTargetEgp, prodIdx);
     }
     return calculatePosItemByGrams(scaleModalProduct, scaleGrams, prodIdx);
   }, [scaleModalProduct, scaleMode, scaleGrams, scaleTargetEgp, products]);
 
-  // Barcode / Scale Input Handler
-  const executeBarcodeScan = (rawCode: string): boolean => {
-    const codeToScan = rawCode.trim();
-    if (!codeToScan) return false;
-
-    const parsed = parseScaleBarcode(codeToScan, products);
-    if (!parsed) {
-      playCashierBeep(320, 0.25);
-      showToast('باركود غير معروف', `لم يتم العثور على الصنف: ${codeToScan}`);
-      return false;
-    }
-
-    const { product, calc, barcodeKind } = parsed;
-    const isDeterministicSku = barcodeKind === 'sku' || isUnitProduct(product);
-    const weightId = isUnitProduct(product) ? 'u-1' : `scale-${calc.weightGrams}`;
-    const cartItemId = isDeterministicSku
-      ? `pos-sku-${product.id}-${weightId}`
-      : `pos-bc-${product.id}-${calc.weightGrams}-${calc.unitPrice}-${Date.now()}`;
-
-    onAddPosItem({
-      cartItemId,
-      productId: product.id,
-      productName: product.name,
-      productImage: getSafeImageUrl(product.image),
-      weightId,
-      weightLabel: calc.weightLabel,
-      roastOption: product.roastOptions?.[0] || '',
-      unitPrice: calc.unitPrice,
-      quantity: 1,
-      rawCostEgp: calc.rawCostEgp,
-      customWeightGrams: calc.weightGrams,
-      barcodeLabel: calc.barcodeLabel,
-    });
-    return true;
-  };
-
-  const handleBarcodeScanSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!barcodeInput.trim()) return;
-    executeBarcodeScan(barcodeInput);
-    setBarcodeInput('');
-  };
-
-  // 1-Click Add Unit / Pack Variant from Card
+  // 1-Click Add Unit / Pack Variant
   const handleQuickAddUnitVariant = (prod: Product, variant: WeightVariant) => {
     const prodIdx = Math.max(0, products.findIndex((p) => p.id === prod.id));
     const roast = cardRoasts[prod.id] || prod.roastOptions?.[0] || '';
@@ -213,7 +191,7 @@ export default function PosDirectSalesPage({
     });
   };
 
-  // 1-Click Add Product Weight from Card
+  // 1-Click Add Weight Product using Unified Top Weight Bar
   const handleQuickAddWeight = (prod: Product, weightGrams: number) => {
     const prodIdx = Math.max(0, products.findIndex((p) => p.id === prod.id));
     const calc = calculatePosItemByGrams(prod, weightGrams, prodIdx);
@@ -235,81 +213,63 @@ export default function PosDirectSalesPage({
     });
   };
 
-  // Open Scale / Custom Amount Modal for a Product
-  const openProductScaleModal = (prod: Product, defaultMode: 'by_amount_egp' | 'by_grams' = 'by_amount_egp') => {
+  // Open Scale / Roast / Amount Modal for a Product
+  const openProductScaleModal = (
+    prod: Product,
+    defaultMode: 'by_amount_egp' | 'by_grams' = 'by_grams'
+  ) => {
     setScaleModalProduct(prod);
     setScaleMode(defaultMode);
-    setScaleRoast(cardRoasts[prod.id] || prod.roastOptions?.[0] || 'سادة');
+    setScaleRoast(cardRoasts[prod.id] || prod.roastOptions?.[0] || '');
     setScaleTargetEgp(50);
-    setScaleGrams(250);
+    setScaleGrams(activeWeightObj.grams > 0 ? activeWeightObj.grams : 250);
     setScaleWorkerNotes('');
+    setScaleSelectedAddons([]);
   };
 
-  // Add from Scale Modal
   const handleConfirmScaleModal = () => {
     if (!scaleModalProduct || !scaleCalculation) return;
+    if (scaleRoast) {
+      setCardRoasts((prev) => ({ ...prev, [scaleModalProduct.id]: scaleRoast }));
+    }
+    const addonsExtra = scaleSelectedAddons.reduce((s, a) => s + Number(a.extraPrice || 0), 0);
+    const addonsLabel = scaleSelectedAddons.map((a) => a.name).join(' + ');
+    const combinedNotes = [addonsLabel ? `إضافات: ${addonsLabel}` : '', scaleWorkerNotes.trim()]
+      .filter(Boolean)
+      .join(' • ');
+    const finalUnitPrice = Number((scaleCalculation.unitPrice + addonsExtra).toFixed(2));
     onAddPosItem({
-      cartItemId: `pos-scale-${scaleModalProduct.id}-${scaleCalculation.weightGrams}-${scaleCalculation.unitPrice}-${scaleRoast}-${scaleWorkerNotes}`,
+      cartItemId: `pos-scale-${scaleModalProduct.id}-${scaleCalculation.weightGrams}-${finalUnitPrice}-${scaleRoast}-${combinedNotes}`,
       productId: scaleModalProduct.id,
       productName: scaleModalProduct.name,
       productImage: getSafeImageUrl(scaleModalProduct.image),
       weightId: `scale-${scaleCalculation.weightGrams}`,
       weightLabel: scaleCalculation.weightLabel,
       roastOption: scaleRoast,
-      unitPrice: scaleCalculation.unitPrice,
+      unitPrice: finalUnitPrice,
       quantity: 1,
       rawCostEgp: scaleCalculation.rawCostEgp,
       customWeightGrams: scaleCalculation.weightGrams,
       barcodeLabel: scaleCalculation.barcodeLabel,
-      workerNotes: scaleWorkerNotes.trim() || undefined,
+      workerNotes: combinedNotes || undefined,
+      selectedAddons:
+        scaleSelectedAddons.length > 0
+          ? scaleSelectedAddons.map((a) => ({ id: a.id, name: a.name, extraPrice: a.extraPrice }))
+          : undefined,
     });
     setScaleModalProduct(null);
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       {/* =================================================================== */}
-      {/* COMPACT MOBILE-FIRST SEARCH / BARCODE / SCALE & CATEGORY BAR        */}
+      {/* COMPACT QUICK-CATALOG BAR: SEARCH -> CATEGORIES -> WEIGHTS -> GRID  */}
       {/* =================================================================== */}
-      <div className="bg-white rounded-2xl p-2.5 sm:p-3.5 border border-[#E8E0D5] space-y-2.5">
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Mobile (<lg): Quick Mode Toggle (بحث / باركود) */}
-          <div className="flex lg:hidden items-center bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl p-0.5 shrink-0">
-            <button
-              type="button"
-              onClick={() => setMobileInputMode('search')}
-              aria-label="وضع البحث بالاسم"
-              className={`min-h-[40px] px-2.5 rounded-lg text-xs font-cairo font-bold flex items-center gap-1 transition cursor-pointer ${
-                mobileInputMode === 'search'
-                  ? 'bg-[#231710] text-white'
-                  : 'text-[#6B5A4E] hover:text-[#231710]'
-              }`}
-            >
-              <Search className="w-3.5 h-3.5" />
-              <span>بحث</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setMobileInputMode('barcode')}
-              aria-label="وضع مسح الباركود"
-              className={`min-h-[40px] px-2.5 rounded-lg text-xs font-cairo font-bold flex items-center gap-1 transition cursor-pointer ${
-                mobileInputMode === 'barcode'
-                  ? 'bg-[#231710] text-white'
-                  : 'text-[#6B5A4E] hover:text-[#231710]'
-              }`}
-            >
-              <Barcode className="w-3.5 h-3.5" />
-              <span>باركود</span>
-            </button>
-          </div>
-
-          {/* Instant Search (Always visible on lg+, shown on mobile when mobileInputMode === 'search') */}
-          <div
-            className={`relative flex-1 min-w-0 lg:min-w-[220px] ${
-              mobileInputMode === 'search' ? 'block' : 'hidden lg:block'
-            }`}
-          >
-            <Search className="w-4 h-4 text-[#6B5B4E] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+      <div className="bg-white rounded-2xl p-2.5 border border-[#E8E0D5] space-y-2 shadow-2xs">
+        {/* 1. TOPMOST ROW: Search + Quick Add Product + Thumbnails Toggle + Free Scale */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <div className="relative flex-1 min-w-[160px]">
+            <Search className="w-3.5 h-3.5 text-[#6B5B4E] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               id="pos-search-input"
               type="text"
@@ -319,339 +279,398 @@ export default function PosDirectSalesPage({
                 if (e.key === 'Escape') {
                   setSearchQuery('');
                   (e.currentTarget as HTMLInputElement).blur();
-                  return;
-                }
-                if (e.key === 'Enter' && searchQuery.trim().length >= 4) {
-                  const candidate = searchQuery.trim();
-                  if (/^[\d\u0660-\u0669]{4,}$/.test(candidate)) {
-                    e.preventDefault();
-                    if (executeBarcodeScan(candidate)) {
-                      setSearchQuery('');
-                    }
-                  }
                 }
               }}
-              placeholder="ابحث باسم الصنف أو الباركود (F2)..."
-              className="w-full min-h-[42px] sm:min-h-[44px] bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl pr-9 pl-3 py-2 text-xs sm:text-sm font-medium outline-none"
+              placeholder="بحث سريع بالاسم أو الكود (F2)..."
+              className="w-full min-h-[38px] bg-[#FAF6F0] focus:bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl pr-8 pl-7 py-1.5 text-xs font-medium outline-none transition"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute left-2 top-1/2 -translate-y-1/2 text-[#6B5B4E] hover:text-[#231710] cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
-          {/* Compact Barcode Input (Always visible on lg+, shown on mobile when mobileInputMode === 'barcode') */}
-          <form
-            onSubmit={handleBarcodeScanSubmit}
-            className={`items-center gap-1.5 ${
-              mobileInputMode === 'barcode' ? 'flex flex-1 min-w-0' : 'hidden lg:flex'
+          {canAddProduct && onOpenQuickAddProduct && (
+            <button
+              type="button"
+              onClick={onOpenQuickAddProduct}
+              title="إضافة منتج جديد مباشرة من الكاشير"
+              className="min-h-[38px] bg-[#3B6E4C] hover:bg-[#2f5a3d] text-white px-2.5 rounded-xl text-[11px] font-bold flex items-center gap-1 cursor-pointer shrink-0 transition"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>إضافة منتج</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setShowThumbnails((v) => !v)}
+            title={showThumbnails ? 'إخفاء الصور لعرض أصناف أكثر' : 'إظهار الصور المصغرة'}
+            className={`min-h-[38px] px-2.5 rounded-xl border text-[11px] font-bold flex items-center gap-1 cursor-pointer shrink-0 transition ${
+              showThumbnails
+                ? 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5] hover:bg-[#EFE6D8]'
+                : 'bg-[#231710] text-white border-[#231710]'
             }`}
           >
-            <div className="relative flex-1 lg:w-56">
-              <Barcode className="w-4 h-4 text-[#9A6836] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                id="pos-barcode-input"
-                type="text"
-                value={barcodeInput}
-                onChange={(e) => setBarcodeInput(e.target.value)}
-                placeholder="مسح تلقائي (وزن 20 / سعر 21-22)..."
-                className="w-full min-h-[42px] sm:min-h-[44px] bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl pr-9 pl-2.5 py-2 text-xs font-medium outline-none tabular-nums"
-              />
-            </div>
-          </form>
+            {showThumbnails ? (
+              <ImageOff className="w-3.5 h-3.5 text-[#9A6836]" />
+            ) : (
+              <ImageIcon className="w-3.5 h-3.5 text-[#D4AF37]" />
+            )}
+            <span className="hidden sm:inline">{showThumbnails ? 'بدون صور' : 'إظهار الصور'}</span>
+          </button>
 
-          {/* On-Demand Free Scale Button ("ميزان حر") */}
           {enableWeightScale && weightProducts.length > 0 && (
             <button
               type="button"
               onClick={() => openProductScaleModal(weightProducts[0], 'by_amount_egp')}
-              className="min-h-[42px] sm:min-h-[44px] bg-[#231710] hover:bg-[#3A271C] text-white px-3 sm:px-4 py-2 rounded-xl text-xs font-cairo font-bold flex items-center gap-1.5 cursor-pointer shrink-0 transition"
+              title="حساب وزن حر أو بيع بمبلغ بالجنيه"
+              className="min-h-[38px] bg-[#231710] hover:bg-[#3A271C] text-white px-2.5 rounded-xl text-[11px] font-bold flex items-center gap-1 cursor-pointer shrink-0 transition"
             >
-              <Scale className="w-4 h-4 shrink-0" />
-              <span className="lg:hidden">ميزان حر</span>
-              <span className="hidden lg:inline">ميزان حر / بيع بمبلغ</span>
+              <Scale className="w-3.5 h-3.5 text-[#D4AF37]" />
+              <span>ميزان حر</span>
             </button>
           )}
         </div>
 
-        {/* Clean Category Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedCategoryId('all');
-              setStockFilter('all');
-            }}
-            className={`min-h-[40px] px-4 py-2 rounded-xl text-xs font-cairo font-bold cursor-pointer shrink-0 transition ${
-              selectedCategoryId === 'all' && stockFilter === 'all'
-                ? 'bg-[#231710] text-white'
-                : 'bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] hover:bg-[#F3ECE1]'
-            }`}
-          >
-            الكل ({products.length})
-          </button>
-          {shortageCount > 0 && (
+        {/* 2. CATEGORIES ROW (ABOVE QUICK WEIGHTS): Categories + Weight/Unit Type Filter */}
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
             <button
-              type="button"
-              onClick={() => setStockFilter((prev) => (prev === 'low_stock' ? 'all' : 'low_stock'))}
-              className={`min-h-[40px] px-3 py-2 rounded-xl text-xs font-cairo font-bold cursor-pointer flex items-center gap-1.5 shrink-0 transition ${
-                stockFilter === 'low_stock'
-                  ? 'bg-amber-700 text-white'
-                  : 'bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100'
-              }`}
-            >
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-              <span>النواقص ({shortageCount})</span>
-            </button>
-          )}
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
               type="button"
               onClick={() => {
-                setSelectedCategoryId(cat.id);
-                setStockFilter('all');
+                setSelectedCategoryId('all');
+                setSellingTypeFilter('all');
               }}
-              className={`min-h-[40px] px-4 py-2 rounded-xl text-xs font-cairo font-bold cursor-pointer flex items-center gap-1.5 shrink-0 transition ${
-                selectedCategoryId === cat.id
-                  ? 'bg-[#231710] text-white'
-                  : 'bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] hover:bg-[#F3ECE1]'
+              className={`min-h-[34px] px-3 py-1 rounded-xl text-[11px] font-bold cursor-pointer shrink-0 transition border ${
+                selectedCategoryId === 'all' && sellingTypeFilter === 'all'
+                  ? 'bg-[#231710] text-white border-[#231710]'
+                  : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5] hover:bg-[#EFE6D8]'
               }`}
             >
-              <span>{formatCategoryName(cat.name)}</span>
+              كل الأقسام ({products.length})
             </button>
-          ))}
+
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setSelectedCategoryId(cat.id)}
+                className={`min-h-[34px] px-3 py-1 rounded-xl text-[11px] font-bold cursor-pointer shrink-0 transition border ${
+                  selectedCategoryId === cat.id
+                    ? 'bg-[#231710] text-white border-[#231710]'
+                    : 'bg-white text-[#231710] border-[#E8E0D5] hover:bg-[#FAF6F0]'
+                }`}
+              >
+                {formatCategoryName(cat.name)}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-1.5 overflow-x-auto">
+            {[
+              { id: 'all' as const, label: `الكل (${products.length})` },
+              { id: 'weight' as const, label: `بالوزن (${weightProducts.length})` },
+              { id: 'unit' as const, label: `بالقطعة (${unitProductsCount})` },
+            ].map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setSellingTypeFilter(f.id)}
+                className={`min-h-[28px] px-2.5 py-0.5 rounded-lg text-[11px] font-bold cursor-pointer shrink-0 transition border ${
+                  sellingTypeFilter === f.id
+                    ? 'bg-[#9A6836] text-white border-[#9A6836]'
+                    : 'bg-[#FAF6F0]/80 text-[#6B5644] border-[#E8E0D5] hover:text-[#231710]'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+
+            {shortageCount > 0 && (
+              <button
+                type="button"
+                onClick={() =>
+                  setSellingTypeFilter((prev) => (prev === 'low_stock' ? 'all' : 'low_stock'))
+                }
+                className={`min-h-[28px] px-2.5 py-0.5 rounded-lg text-[11px] font-bold cursor-pointer flex items-center gap-1 shrink-0 transition border ${
+                  sellingTypeFilter === 'low_stock'
+                    ? 'bg-amber-700 text-white border-amber-700'
+                    : 'bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100'
+                }`}
+              >
+                <AlertTriangle className="w-3 h-3" />
+                <span>نواقص ({shortageCount})</span>
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* 3. QUICK WEIGHTS ROW (BELOW CATEGORIES, DIRECTLY ABOVE PRODUCTS) */}
+        {enableWeightScale && (
+          <div className="bg-[#FAF6F0] rounded-xl p-1 border border-[#E8E0D5] flex items-center gap-1 overflow-x-auto">
+            <span className="text-[10px] font-bold text-[#6B5644] px-1.5 shrink-0 hidden sm:inline">
+              الوزن السريع:
+            </span>
+            {UNIFIED_WEIGHT_MODES.map((w) => {
+              const active = activeWeightMode === w.id;
+              return (
+                <button
+                  key={w.id}
+                  type="button"
+                  onClick={() => setActiveWeightMode(w.id)}
+                  className={`flex-1 min-w-[60px] py-1.5 px-2 rounded-lg text-center transition cursor-pointer ${
+                    active
+                      ? 'bg-[#231710] text-white shadow-2xs'
+                      : 'text-[#231710] hover:bg-white'
+                  }`}
+                >
+                  <div className="text-[11px] font-bold leading-none">{w.label}</div>
+                  <div
+                    className={`text-[9px] mt-0.5 leading-none ${
+                      active ? 'text-[#D4AF37]' : 'text-[#8C7A6B]'
+                    }`}
+                  >
+                    {w.short}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* =================================================================== */}
-      {/* SQUARE-STYLE ZERO-TRUNCATION PRODUCT TILES                          */}
+      {/* ZERO-COLLISION COMPACT PRODUCT CARDS GRID                           */}
       {/* =================================================================== */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-3.5">
-        {filteredProducts.map((prod) => {
-          const prodIdx = Math.max(0, products.findIndex((p) => p.id === prod.id));
-          const unitMode = isUnitProduct(prod);
-          const stockUnitLabel = getProductStockUnitLabel(prod);
-          const unitVariants = unitMode ? getResolvedProductWeights(prod) : [];
-          const activeRoast = cardRoasts[prod.id] || prod.roastOptions?.[0] || '';
-          const hasMultipleRoasts = (prod.roastOptions?.length || 0) > 1;
+      {filteredProducts.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-[#E8E0D5] p-8 text-center">
+          <p className="text-xs font-bold text-[#231710]">لا توجد أصناف مطابقة للفلتر الحالي</p>
+          <p className="text-[11px] text-[#6B5B4E] mt-1">جرّب مسح البحث أو اختيار «الكل».</p>
+        </div>
+      ) : (
+        <div
+          className={`grid gap-2 ${
+            showThumbnails
+              ? 'grid-cols-[repeat(auto-fill,minmax(175px,1fr))]'
+              : 'grid-cols-[repeat(auto-fill,minmax(150px,1fr))]'
+          }`}
+        >
+          {filteredProducts.map((prod) => {
+            const prodIdx = Math.max(0, products.findIndex((p) => p.id === prod.id));
+            const unitMode = isUnitProduct(prod);
+            const stockUnitLabel = getProductStockUnitLabel(prod);
+            const unitVariants = unitMode ? getResolvedProductWeights(prod) : [];
+            const activeRoast = cardRoasts[prod.id] || prod.roastOptions?.[0] || '';
+            const stockKg = typeof prod.stockKg === 'number' ? Math.max(0, prod.stockKg) : 50;
+            const isOutOfStock = !prod.inStock || stockKg <= 0;
+            const isLowStock = !isOutOfStock && stockKg <= LOW_STOCK_THRESHOLD_KG;
 
-          const stockKg = typeof prod.stockKg === 'number' ? Math.max(0, prod.stockKg) : 50;
-          const isOutOfStock = !prod.inStock || stockKg <= 0;
-          const isLowStock = !isOutOfStock && stockKg <= LOW_STOCK_THRESHOLD_KG;
+            const activeWeightCalc =
+              !unitMode && activeWeightObj.grams > 0
+                ? calculatePosItemByGrams(prod, activeWeightObj.grams, prodIdx)
+                : null;
 
-          return (
-            <div
-              key={prod.id}
-              className={`rounded-2xl border p-3 sm:p-3.5 flex flex-col justify-between gap-2.5 transition ${
-                isOutOfStock
-                  ? 'bg-red-50/20 border-red-200 opacity-80'
-                  : isLowStock
-                    ? 'bg-amber-50/20 border-amber-200 hover:border-amber-400'
-                    : 'bg-white border-[#E8E0D5] hover:border-[#C5B8A8]'
-              }`}
-            >
-              {/* Top: Image + Name + Roast */}
-              <div>
-                <div className="relative h-20 sm:h-24 rounded-xl overflow-hidden bg-[#FAF6F0] mb-2.5">
-                  <img
-                    src={getSafeImageUrl(prod.image)}
-                    alt={prod.name}
-                    className={`w-full h-full object-cover ${isOutOfStock ? 'grayscale-40' : ''}`}
-                  />
-                  {/* Price per Kg / Unit Badge */}
-                  <span className="absolute top-1.5 right-1.5 bg-white/95 text-[#231710] border border-[#E8E0D5] text-[11px] font-bold px-2 py-0.5 rounded-lg tabular-nums">
-                    {unitMode
-                      ? `${prod.unitPrice ?? prod.pricePerKg ?? 0} ${currencySymbol}/${stockUnitLabel}`
-                      : `${prod.pricePerKg || 400} ${currencySymbol}/كجم`}
-                  </span>
-
-                  {/* Low-Stock / Out-of-Stock Indicator Badge */}
-                  {isOutOfStock ? (
-                    <span className="absolute top-1.5 left-1.5 bg-red-600/95 text-white text-[11px] font-cairo font-bold px-2 py-0.5 rounded-lg flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3 text-white shrink-0" />
-                      <span>نفد المخزون</span>
-                    </span>
-                  ) : isLowStock ? (
-                    <span className="absolute top-1.5 left-1.5 bg-amber-600/95 text-white text-[11px] font-cairo font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 tabular-nums">
-                      <AlertTriangle className="w-3 h-3 text-white shrink-0" />
-                      <span>
-                        {unitMode
-                          ? `متبقي ${stockKg} ${stockUnitLabel}`
-                          : stockKg >= 1
-                            ? `متبقي ${stockKg} كجم`
-                            : `متبقي ${Math.round(stockKg * 1000)} جم`}
-                      </span>
-                    </span>
-                  ) : null}
-
-                  {/* Custom Scale / Amount Trigger Button (Weight Products Only) */}
-                  {!unitMode && enableWeightScale && (
-                    <button
-                      type="button"
-                      disabled={isOutOfStock}
-                      onClick={() => openProductScaleModal(prod, 'by_amount_egp')}
-                      title="وزن حر أو بيع بمبلغ"
-                      className={`absolute bottom-1.5 left-1.5 min-h-[32px] px-2.5 py-1 rounded-lg text-[11px] font-cairo font-bold flex items-center gap-1 transition ${
-                        isOutOfStock
-                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                          : 'bg-white/95 hover:bg-[#231710] text-[#231710] hover:text-white border border-[#E8E0D5] cursor-pointer'
+            return (
+              <div
+                key={prod.id}
+                className={`rounded-xl border p-2.5 flex flex-col justify-between gap-2 transition ${
+                  isOutOfStock
+                    ? 'bg-red-50/30 border-red-200 opacity-75'
+                    : isLowStock
+                      ? 'bg-amber-50/25 border-amber-200 hover:border-amber-400'
+                      : 'bg-white border-[#E8E0D5] hover:border-[#B9A48C] hover:shadow-2xs'
+                }`}
+              >
+                {/* Top: Compact Thumbnail (40x40 optional) + Name + Mode/Stock Meta */}
+                <div className="flex items-start gap-2 min-w-0">
+                  {showThumbnails && (
+                    <img
+                      src={getSafeImageUrl(prod.image)}
+                      alt=""
+                      aria-hidden="true"
+                      className={`w-10 h-10 rounded-lg object-cover border border-[#E8E0D5] bg-[#FAF6F0] shrink-0 ${
+                        isOutOfStock ? 'grayscale' : ''
                       }`}
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <h3
+                      title={prod.name}
+                      className="font-cairo font-bold text-xs text-[#231710] leading-snug line-clamp-2"
                     >
-                      <Scale className="w-3.5 h-3.5" />
-                      <span>مبلغ / وزن</span>
-                    </button>
-                  )}
-                </div>
+                      {prod.name}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-1 mt-1">
+                      {unitMode ? (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-1.5 py-0.5 rounded">
+                          <Package className="w-2.5 h-2.5" />
+                          <span>قطعة</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-amber-50 text-[#9A6836] border border-amber-200/80 px-1.5 py-0.5 rounded tabular-nums">
+                          <Scale className="w-2.5 h-2.5" />
+                          <span>
+                            {fmtNum(prod.pricePerKg || 400)}/كجم
+                          </span>
+                        </span>
+                      )}
 
-                <div className="flex items-start justify-between gap-1.5 mb-2">
-                  <h3 className="font-cairo font-bold text-sm text-[#231710] leading-snug break-words flex-1 min-w-0">
-                    {prod.name}
-                  </h3>
-                  {isLowStock ? (
-                    <span className="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md shrink-0 tabular-nums">
-                      {stockKg} {stockUnitLabel}
-                    </span>
-                  ) : isOutOfStock ? (
-                    <span className="text-[11px] font-bold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-md shrink-0">
-                      0 {stockUnitLabel}
-                    </span>
-                  ) : (
-                    <span className="text-[11px] font-medium text-[#6B5B4E] bg-[#FAF6F0] border border-[#E8E0D5] px-1.5 py-0.5 rounded-md shrink-0 tabular-nums">
-                      {stockKg} {stockUnitLabel}
-                    </span>
-                  )}
-                </div>
-
-                {/* Simple Roast Toggle (Zero-Truncation Multi-line Safe) */}
-                {hasMultipleRoasts && (
-                  <div className="flex flex-wrap items-center gap-1 mb-1 bg-[#FAF6F0] p-1 rounded-xl border border-[#E8E0D5]">
-                    {prod.roastOptions!.slice(0, 3).map((roastOpt) => (
-                      <button
-                        key={roastOpt}
-                        type="button"
-                        onClick={() =>
-                          setCardRoasts((prev) => ({ ...prev, [prod.id]: roastOpt }))
-                        }
-                        className={`flex-1 min-w-[60px] min-h-[36px] py-1 px-2 rounded-lg text-[11px] font-bold leading-snug break-words transition cursor-pointer ${
-                          activeRoast === roastOpt
-                            ? 'bg-[#231710] text-white'
-                            : 'text-[#6B5A4E] hover:text-[#231710]'
-                        }`}
-                      >
-                        {roastOpt}
-                      </button>
-                    ))}
+                      {isOutOfStock ? (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-red-100 text-red-700 px-1.5 py-0.5 rounded">
+                          <AlertCircle className="w-2.5 h-2.5" />
+                          <span>نفد</span>
+                        </span>
+                      ) : (
+                        <span
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded tabular-nums ${
+                            isLowStock
+                              ? 'bg-amber-100 text-amber-900'
+                              : 'bg-[#FAF6F0] text-[#6B5B4E]'
+                          }`}
+                        >
+                          {fmtNum(stockKg)} {stockUnitLabel}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-
-              {/* Bottom: Unit Add Buttons OR 4 Big 1-Click Weight Buttons */}
-              {unitMode ? (
-                <div className={unitVariants.length <= 1 ? 'grid grid-cols-1 gap-1.5' : 'grid grid-cols-1 sm:grid-cols-2 gap-1.5'}>
-                  {unitVariants.slice(0, 4).map((uv) => (
-                    <button
-                      key={uv.id}
-                      type="button"
-                      disabled={isOutOfStock}
-                      onClick={() => {
-                        if (isOutOfStock) {
-                          playCashierBeep(300, 0.2);
-                          showToast('نفد المخزون', `صنف "${prod.name}" غير متوفر حالياً بالمخزن`);
-                          return;
-                        }
-                        handleQuickAddUnitVariant(prod, uv);
-                      }}
-                      className={`min-h-[40px] sm:min-h-[44px] rounded-xl py-2 px-2.5 flex items-center justify-between gap-1.5 text-right transition group ${
-                        isOutOfStock
-                          ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
-                          : 'bg-[#FAF6F0] hover:bg-[#231710] text-[#231710] hover:text-white border border-[#E8E0D5] hover:border-[#231710] cursor-pointer'
-                      }`}
-                    >
-                      <span className="font-cairo font-bold text-xs leading-snug break-words flex items-center gap-1 min-w-0">
-                        <Plus className="w-3.5 h-3.5 shrink-0" />
-                        <span className="leading-snug break-words">{uv.label}</span>
-                      </span>
-                      <span
-                        className={`font-bold text-xs tabular-nums shrink-0 ${
-                          isOutOfStock
-                            ? 'text-gray-400'
-                            : 'text-[#6B5B4E] group-hover:text-white'
-                        }`}
-                      >
-                        {uv.price} {currencySymbol}
-                      </span>
-                    </button>
-                  ))}
                 </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-1.5">
-                  {QUICK_WEIGHTS.map((w) => {
-                    const calc = calculatePosItemByGrams(prod, w.grams, prodIdx);
-                    return (
+
+                {/* Bottom Action Strip (Zero Overlapping Text) */}
+                {unitMode ? (
+                  <div className="space-y-1">
+                    {unitVariants.slice(0, 3).map((uv) => (
                       <button
-                        key={w.grams}
+                        key={uv.id}
                         type="button"
                         disabled={isOutOfStock}
                         onClick={() => {
                           if (isOutOfStock) {
                             playCashierBeep(300, 0.2);
-                            showToast('نفد المخزون', `صنف "${prod.name}" غير متوفر حالياً بالمخزن`);
+                            showToast('نفد المخزون', `صنف "${prod.name}" غير متوفر حالياً`);
                             return;
                           }
-                          handleQuickAddWeight(prod, w.grams);
+                          handleQuickAddUnitVariant(prod, uv);
                         }}
-                        className={`min-h-[40px] sm:min-h-[44px] rounded-xl py-2 px-2 flex items-center justify-between gap-1 transition group ${
+                        className={`w-full min-h-[34px] rounded-lg px-2 py-1 flex items-center justify-between gap-2 text-right transition group ${
                           isOutOfStock
                             ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
                             : 'bg-[#FAF6F0] hover:bg-[#231710] text-[#231710] hover:text-white border border-[#E8E0D5] hover:border-[#231710] cursor-pointer'
                         }`}
                       >
-                        <span className="font-cairo font-bold text-xs leading-snug">{w.label}</span>
-                        <span className={`font-bold text-xs tabular-nums shrink-0 ${
-                          isOutOfStock
-                            ? 'text-gray-400'
-                            : 'text-[#6B5B4E] group-hover:text-white'
-                        }`}>
-                          {calc.unitPrice} {currencySymbol}
+                        <span className="text-[11px] font-bold truncate flex items-center gap-1 min-w-0">
+                          <Plus className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{uv.label}</span>
+                        </span>
+                        <span
+                          className={`text-[11px] font-bold tabular-nums shrink-0 whitespace-nowrap ${
+                            isOutOfStock
+                              ? 'text-gray-400'
+                              : 'text-[#3B6E4C] group-hover:text-[#D4AF37]'
+                          }`}
+                        >
+                          {fmtNum(uv.price)} {currencySymbol}
                         </span>
                       </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      disabled={isOutOfStock}
+                      onClick={() => {
+                        if (isOutOfStock) {
+                          playCashierBeep(300, 0.2);
+                          showToast('نفد المخزون', `صنف "${prod.name}" غير متوفر حالياً`);
+                          return;
+                        }
+                        if (activeWeightMode === 'custom' || !activeWeightCalc) {
+                          openProductScaleModal(prod, 'by_amount_egp');
+                        } else {
+                          handleQuickAddWeight(prod, activeWeightObj.grams);
+                        }
+                      }}
+                      className={`flex-1 min-w-0 min-h-[36px] rounded-lg px-2 py-1 flex items-center justify-between gap-1.5 transition group ${
+                        isOutOfStock
+                          ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
+                          : 'bg-[#FAF6F0] hover:bg-[#231710] text-[#231710] hover:text-white border border-[#E8E0D5] hover:border-[#231710] cursor-pointer'
+                      }`}
+                    >
+                      <span className="text-[11px] font-bold flex items-center gap-1 truncate min-w-0">
+                        <Plus className="w-3 h-3 shrink-0" />
+                        <span className="truncate">
+                          {activeWeightMode === 'custom' ? 'وزن / مبلغ' : activeWeightObj.label}
+                        </span>
+                      </span>
+                      {activeWeightCalc && (
+                        <span
+                          className={`text-[11px] font-bold tabular-nums shrink-0 whitespace-nowrap ${
+                            isOutOfStock
+                              ? 'text-gray-400'
+                              : 'text-[#9A6836] group-hover:text-[#D4AF37]'
+                          }`}
+                        >
+                          {fmtNum(activeWeightCalc.unitPrice)} {currencySymbol}
+                        </span>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={isOutOfStock}
+                      onClick={() => openProductScaleModal(prod, 'by_grams')}
+                      title={
+                        activeRoast
+                          ? `تعديل التحميص (${activeRoast}) أو إدخال وزن / مبلغ حر`
+                          : 'تعديل التحميص أو وزن / مبلغ حر'
+                      }
+                      className={`min-h-[36px] w-9 rounded-lg border flex items-center justify-center shrink-0 transition ${
+                        isOutOfStock
+                          ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                          : 'bg-white hover:bg-[#FAF6F0] text-[#6B5644] hover:text-[#231710] border-[#E8E0D5] cursor-pointer'
+                      }`}
+                    >
+                      <SlidersHorizontal className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* =================================================================== */}
-      {/* ON-DEMAND SCALE / SELL-BY-AMOUNT MODAL                              */}
+      {/* ON-DEMAND SCALE / ROAST / SELL-BY-AMOUNT MODAL                      */}
       {/* =================================================================== */}
       {scaleModalProduct && scaleCalculation && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-5 border border-[#E8E0D5] shadow-xl space-y-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 border border-[#E8E0D5] shadow-xl space-y-4 max-h-[92vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-[#E8E0D5] pb-3">
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <img
                   src={getSafeImageUrl(scaleModalProduct.image)}
-                  alt={scaleModalProduct.name}
-                  className="w-12 h-12 rounded-xl object-cover border border-[#E8E0D5]"
+                  alt=""
+                  className="w-11 h-11 rounded-xl object-cover border border-[#E8E0D5] shrink-0"
                 />
-                <div>
-                  <h3 className="font-cairo font-bold text-base text-[#231710]">
+                <div className="min-w-0">
+                  <h3 className="font-cairo font-bold text-sm text-[#231710] truncate">
                     {scaleModalProduct.name}
                   </h3>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs font-medium text-[#9A6836] tabular-nums">
-                      سعر الكيلو: {scaleModalProduct.pricePerKg || 400} ج.م
+                  <div className="flex items-center gap-2 mt-0.5 text-xs tabular-nums">
+                    <span className="font-bold text-[#9A6836]">
+                      الكيلو: {fmtNum(scaleModalProduct.pricePerKg || 400)} {currencySymbol}
                     </span>
-                    <span className="text-xs text-[#E8E0D5]">•</span>
-                    <span
-                      className={`text-xs font-medium tabular-nums ${
-                        (scaleModalProduct.stockKg ?? 50) <= LOW_STOCK_THRESHOLD_KG
-                          ? 'text-amber-700 font-bold'
-                          : 'text-[#6B5B4E]'
-                      }`}
-                    >
-                      المخزون المتاح: {scaleModalProduct.stockKg ?? 50} كجم
+                    <span className="text-[#E8E0D5]">•</span>
+                    <span className="text-[#6B5B4E]">
+                      المتاح: {fmtNum(scaleModalProduct.stockKg ?? 50)} كجم
                     </span>
                   </div>
                 </div>
@@ -659,13 +678,13 @@ export default function PosDirectSalesPage({
               <button
                 type="button"
                 onClick={() => setScaleModalProduct(null)}
-                className="w-10 h-10 rounded-xl bg-[#FAF6F0] hover:bg-red-50 text-[#231710] flex items-center justify-center cursor-pointer"
+                className="w-9 h-9 rounded-xl bg-[#FAF6F0] hover:bg-red-50 text-[#231710] flex items-center justify-center cursor-pointer shrink-0"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Product Switcher inside Modal */}
+            {/* Product Switcher */}
             <div>
               <select
                 value={scaleModalProduct.id}
@@ -673,39 +692,60 @@ export default function PosDirectSalesPage({
                   const found = products.find((p) => p.id === e.target.value);
                   if (found) {
                     setScaleModalProduct(found);
-                    setScaleRoast(found.roastOptions?.[0] || 'سادة');
+                    setScaleRoast(cardRoasts[found.id] || found.roastOptions?.[0] || '');
                   }
                 }}
-                className="w-full min-h-[42px] bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs font-bold text-[#231710] outline-none"
+                className="w-full min-h-[40px] bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs font-bold text-[#231710] outline-none"
               >
                 {weightProducts.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} ({p.pricePerKg || 400} {currencySymbol}/كجم)
+                    {p.name} ({fmtNum(p.pricePerKg || 400)} {currencySymbol}/كجم)
                   </option>
                 ))}
               </select>
             </div>
 
+            {/* Product Roast Options (if available) */}
+            {scaleModalProduct.roastOptions && scaleModalProduct.roastOptions.length > 0 && (
+              <div className="space-y-1">
+                <span className="text-[11px] font-bold text-[#6B5B4E] block">
+                  درجة التحميص / التمليح:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {scaleModalProduct.roastOptions.map((roastOpt) => (
+                    <button
+                      key={roastOpt}
+                      type="button"
+                      onClick={() => setScaleRoast(roastOpt)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                        scaleRoast === roastOpt
+                          ? 'bg-[#231710] text-white border-[#231710]'
+                          : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5] hover:bg-[#EFE6D8]'
+                      }`}
+                    >
+                      {roastOpt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Mode Switcher: By EGP Amount vs By Weight Grams */}
-            <div className="grid grid-cols-2 gap-2 bg-[#FAF6F0] p-1.5 rounded-2xl border border-[#E8E0D5]">
+            <div className="grid grid-cols-2 gap-2 bg-[#FAF6F0] p-1 rounded-xl border border-[#E8E0D5]">
               <button
                 type="button"
                 onClick={() => setScaleMode('by_amount_egp')}
-                className={`min-h-[42px] py-2 rounded-xl font-cairo font-bold text-xs cursor-pointer transition ${
-                  scaleMode === 'by_amount_egp'
-                    ? 'bg-[#231710] text-white'
-                    : 'text-[#231710]'
+                className={`min-h-[38px] py-1.5 rounded-lg font-cairo font-bold text-xs cursor-pointer transition ${
+                  scaleMode === 'by_amount_egp' ? 'bg-[#231710] text-white' : 'text-[#231710]'
                 }`}
               >
-                بيع بمبلغ (عايز بـ ... جنيه)
+                بيع بمبلغ (بـ ... {currencySymbol})
               </button>
               <button
                 type="button"
                 onClick={() => setScaleMode('by_grams')}
-                className={`min-h-[42px] py-2 rounded-xl font-cairo font-bold text-xs cursor-pointer transition ${
-                  scaleMode === 'by_grams'
-                    ? 'bg-[#231710] text-white'
-                    : 'text-[#231710]'
+                className={`min-h-[38px] py-1.5 rounded-lg font-cairo font-bold text-xs cursor-pointer transition ${
+                  scaleMode === 'by_grams' ? 'bg-[#231710] text-white' : 'text-[#231710]'
                 }`}
               >
                 وزن بالجرام (جم)
@@ -714,20 +754,18 @@ export default function PosDirectSalesPage({
 
             {/* Input & Quick Buttons */}
             {scaleMode === 'by_amount_egp' ? (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
                     min={5}
                     step={5}
                     value={scaleTargetEgp}
-                    onChange={(e) =>
-                      setScaleTargetEgp(Math.max(5, Number(e.target.value) || 0))
-                    }
-                    className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-2xl px-4 py-3 text-xl font-bold text-center text-[#231710] tabular-nums outline-none"
+                    onChange={(e) => setScaleTargetEgp(Math.max(5, Number(e.target.value) || 0))}
+                    className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-4 py-2.5 text-lg font-bold text-center text-[#231710] tabular-nums outline-none"
                   />
                   <span className="font-cairo font-bold text-sm text-[#231710] shrink-0">
-                    ج.م
+                    {currencySymbol}
                   </span>
                 </div>
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
@@ -736,33 +774,29 @@ export default function PosDirectSalesPage({
                       key={amt}
                       type="button"
                       onClick={() => setScaleTargetEgp(amt)}
-                      className={`min-h-[40px] py-2 rounded-xl text-xs font-bold tabular-nums cursor-pointer border transition ${
+                      className={`min-h-[36px] py-1.5 rounded-lg text-xs font-bold tabular-nums cursor-pointer border transition ${
                         scaleTargetEgp === amt
                           ? 'bg-[#231710] text-white border-[#231710]'
                           : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]'
                       }`}
                     >
-                      {amt} ج
+                      {amt}
                     </button>
                   ))}
                 </div>
               </div>
             ) : (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
                     min={10}
                     step={10}
                     value={scaleGrams}
-                    onChange={(e) =>
-                      setScaleGrams(Math.max(10, Number(e.target.value) || 0))
-                    }
-                    className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-2xl px-4 py-3 text-xl font-bold text-center text-[#231710] tabular-nums outline-none"
+                    onChange={(e) => setScaleGrams(Math.max(10, Number(e.target.value) || 0))}
+                    className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-4 py-2.5 text-lg font-bold text-center text-[#231710] tabular-nums outline-none"
                   />
-                  <span className="font-cairo font-bold text-sm text-[#231710] shrink-0">
-                    جرام
-                  </span>
+                  <span className="font-cairo font-bold text-sm text-[#231710] shrink-0">جرام</span>
                 </div>
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                   {[100, 125, 200, 250, 500, 1000].map((g) => (
@@ -770,7 +804,7 @@ export default function PosDirectSalesPage({
                       key={g}
                       type="button"
                       onClick={() => setScaleGrams(g)}
-                      className={`min-h-[40px] py-2 rounded-xl text-xs font-bold tabular-nums cursor-pointer border transition ${
+                      className={`min-h-[36px] py-1.5 rounded-lg text-xs font-bold tabular-nums cursor-pointer border transition ${
                         scaleGrams === g
                           ? 'bg-[#231710] text-white border-[#231710]'
                           : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]'
@@ -783,31 +817,110 @@ export default function PosDirectSalesPage({
               </div>
             )}
 
+            {/* Dynamic Prep Methods & Paid Add-ons */}
+            {(prepMethods.length > 0 || productAddons.length > 0) && (
+              <div className="space-y-2 pt-1">
+                {prepMethods.length > 0 && (
+                  <div>
+                    <span className="text-[11px] font-bold text-[#6B5B4E] block mb-1">
+                      طريقة التجهيز / التحويج:
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {prepMethods.slice(0, 8).map((pm) => (
+                        <button
+                          key={pm.id}
+                          type="button"
+                          onClick={() => setScaleRoast(pm.name)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition cursor-pointer ${
+                            scaleRoast === pm.name
+                              ? 'bg-[#231710] text-white border-[#231710]'
+                              : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]'
+                          }`}
+                        >
+                          {pm.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {productAddons.length > 0 && (
+                  <div>
+                    <span className="text-[11px] font-bold text-[#6B5B4E] block mb-1">
+                      إضافات مدفوعة:
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {productAddons.map((ad) => {
+                        const active = scaleSelectedAddons.some((x) => x.id === ad.id);
+                        return (
+                          <button
+                            key={ad.id}
+                            type="button"
+                            onClick={() =>
+                              setScaleSelectedAddons((prev) =>
+                                active ? prev.filter((x) => x.id !== ad.id) : [...prev, ad]
+                              )
+                            }
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition cursor-pointer ${
+                              active
+                                ? 'bg-[#9A6836] text-white border-[#9A6836]'
+                                : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]'
+                            }`}
+                          >
+                            {ad.name} (+{fmtNum(ad.extraPrice)} {currencySymbol})
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Worker Notes */}
+            <input
+              type="text"
+              value={scaleWorkerNotes}
+              onChange={(e) => setScaleWorkerNotes(e.target.value)}
+              placeholder="ملاحظة للعامل (مثال: تقسيم على كيسين / بدون ملح)..."
+              className="w-full bg-[#FAF6F0] border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs outline-none"
+            />
+
             {/* Digital Result Display */}
-            <div className="bg-[#FAF6F0] border border-[#E8E0D5] text-[#231710] rounded-2xl p-4 flex items-center justify-between">
+            <div className="bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl p-3 flex items-center justify-between">
               <div>
                 <span className="text-[11px] text-[#6B5B4E] block">الوزن الصافي</span>
-                <span className="font-cairo font-bold text-xl text-[#9A6836] tabular-nums">
-                  {scaleCalculation.weightGrams} جم
+                <span className="font-cairo font-bold text-lg text-[#9A6836] tabular-nums">
+                  {fmtNum(scaleCalculation.weightGrams)} جم
                 </span>
               </div>
               <div className="text-left">
                 <span className="text-[11px] text-[#6B5B4E] block">السعر النهائي</span>
-                <span className="font-cairo font-bold text-2xl text-[#231710] tabular-nums">
-                  {scaleCalculation.unitPrice} ج.م
+                <span className="font-cairo font-bold text-xl text-[#231710] tabular-nums">
+                  {fmtNum(
+                    scaleCalculation.unitPrice +
+                      scaleSelectedAddons.reduce((s, a) => s + Number(a.extraPrice || 0), 0)
+                  )}{' '}
+                  {currencySymbol}
                 </span>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={handleConfirmScaleModal}
-                className="flex-1 bg-[#231710] hover:bg-[#3A271C] text-white font-cairo font-bold text-sm py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition"
+                className="flex-1 bg-[#231710] hover:bg-[#3A271C] text-white font-cairo font-bold text-xs py-3 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition"
               >
-                <Plus className="w-5 h-5" />
-                <span>إضافة للفاتورة ({scaleCalculation.unitPrice} ج.م)</span>
+                <Plus className="w-4 h-4" />
+                <span>
+                  إضافة للفاتورة (
+                  {fmtNum(
+                    scaleCalculation.unitPrice +
+                      scaleSelectedAddons.reduce((s, a) => s + Number(a.extraPrice || 0), 0)
+                  )}{' '}
+                  {currencySymbol})
+                </span>
               </button>
               <button
                 type="button"
@@ -818,12 +931,11 @@ export default function PosDirectSalesPage({
                     roastOrSpec: scaleRoast,
                     price: scaleCalculation.unitPrice,
                     barcode:
-                      scaleCalculation.barcodeLabel ||
-                      getProductBarcode(scaleModalProduct, 0),
+                      scaleCalculation.barcodeLabel || getProductBarcode(scaleModalProduct, 0),
                     date: new Date().toLocaleDateString('ar-EG'),
                   });
                 }}
-                className="bg-[#FAF6F0] hover:bg-[#F3ECE1] text-[#231710] border border-[#E8E0D5] px-4 py-3.5 rounded-2xl font-cairo font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                className="bg-[#FAF6F0] hover:bg-[#F3ECE1] text-[#231710] border border-[#E8E0D5] px-3.5 py-3 rounded-xl font-cairo font-bold text-xs flex items-center gap-1.5 cursor-pointer"
               >
                 <Tag className="w-4 h-4 text-[#9A6836]" />
                 <span>استيكر</span>

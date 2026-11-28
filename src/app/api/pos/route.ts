@@ -274,6 +274,12 @@ export async function GET(request: Request) {
         taxPricingMode: db.settings?.taxPricingMode || 'inclusive',
         taxRegistrationNumber: db.settings?.taxRegistrationNumber || '',
       },
+      prepMethods: (db.prepMethods || []).filter((m) => m.active !== false),
+      productAddons: (db.productAddons || []).filter((a) => a.active !== false),
+      diningHalls: (db.diningHalls || []).filter((h) => h.active !== false),
+      deliveryCompanies: (db.deliveryCompanies || []).filter((c) => c.active !== false),
+      expenseCategories: (db.expenseCategories || []).filter((e) => e.active !== false),
+      warehouses: (db.warehouses || []).filter((w) => w.active !== false),
     });
   } catch (error) {
     console.error('GET /api/pos error:', error);
@@ -360,7 +366,7 @@ export async function POST(request: Request) {
           body.cashierId ||
           auth.username ||
           auth.staffId ||
-          'cashier_pos'
+          'cash'
         ).trim();
         const shiftPeriod = body.shiftPeriod || 'الوردية الصباحية';
         const openingCash = Math.max(0, Number(body.openingCash ?? body.startingCash) || 0);
@@ -536,12 +542,7 @@ export async function POST(request: Request) {
           }
           const pureCardAmount = Math.max(
             0,
-            Math.round(
-              ((activeShift.cardSalesTotal ?? activeShift.cardSales ?? 0) -
-                (activeShift.instapayTotal || 0) -
-                (activeShift.vodafoneCashTotal || 0)) *
-                100
-            ) / 100
+            Math.round((activeShift.cardSalesTotal ?? activeShift.cardSales ?? 0) * 100) / 100
           );
           if (pureCardAmount > 0) {
             recordTreasuryTransaction(db, {
@@ -1310,7 +1311,7 @@ export async function POST(request: Request) {
             chairNumber: inv.chairNumber,
             registerId: inv.registerId || activeShift?.registerId || 'reg-1',
             registerName: inv.registerName || activeShift?.registerName,
-            cashierId: auth.username || auth.staffId || activeShift?.cashierId || 'cashier_pos',
+            cashierId: auth.username || auth.staffId || activeShift?.cashierId || 'cash',
             cashierName: inv.cashierName || auth.displayName || activeShift?.cashierName || 'كاشير نقطة البيع',
             shiftId: activeShift?.id,
             customerName: inv.customerName || 'عميل الفرع المباشر',
@@ -1397,12 +1398,8 @@ export async function POST(request: Request) {
               activeShift.cardSales = (activeShift.cardSales || 0) + finalTotal;
               activeShift.cardSalesTotal = (activeShift.cardSalesTotal || 0) + finalTotal;
             } else if (paymentMethod === 'vodafone_cash') {
-              activeShift.cardSales = (activeShift.cardSales || 0) + finalTotal;
-              activeShift.cardSalesTotal = (activeShift.cardSalesTotal || 0) + finalTotal;
               activeShift.vodafoneCashTotal += finalTotal;
             } else if (paymentMethod === 'instapay') {
-              activeShift.cardSales = (activeShift.cardSales || 0) + finalTotal;
-              activeShift.cardSalesTotal = (activeShift.cardSalesTotal || 0) + finalTotal;
               activeShift.instapayTotal += finalTotal;
             }
             // computeExpectedDrawerCash handles starting/cash/riderCodSettledTotal/expenses
@@ -1934,7 +1931,7 @@ export async function POST(request: Request) {
         chairNumber,
         registerId: activeShift?.registerId || body.registerId || 'reg-1',
         registerName: activeShift?.registerName || body.registerName,
-        cashierId: auth.username || auth.staffId || activeShift?.cashierId || 'cashier_pos',
+        cashierId: auth.username || auth.staffId || activeShift?.cashierId || 'cash',
         cashierName:
           body.cashierName ||
           auth.displayName ||
@@ -2017,6 +2014,22 @@ export async function POST(request: Request) {
             prod.stockKg = Math.max(0, Math.round((currentStock - consumedKg) * 1000) / 1000);
             if (prod.stockKg <= 0) prod.inStock = false;
             recordPosLowStockCrossing(prod, currentStock, crossedLowStockAlerts);
+
+            // Auto-deduct BOM raw materials if configured for this product (e.g. 12g coffee per Turkish cup)
+            const bomRecipe = (db.bomRecipes || []).find((r) => r.parentProductId === prod.id);
+            if (bomRecipe && Array.isArray(bomRecipe.ingredients)) {
+              for (const ing of bomRecipe.ingredients) {
+                const rawProd = db.products.find((p) => p.id === ing.rawProductId);
+                if (!rawProd || rawProd.id === prod.id) continue;
+                const rawConsumed = ing.isUnitRaw || isUnitProduct(rawProd)
+                  ? ing.deductGramsOrUnits * qty
+                  : (ing.deductGramsOrUnits * qty) / 1000;
+                const rawPrev = typeof rawProd.stockKg === 'number' ? rawProd.stockKg : 50;
+                rawProd.stockKg = Math.max(0, Math.round((rawPrev - rawConsumed) * 1000) / 1000);
+                if (rawProd.stockKg <= 0) rawProd.inStock = false;
+                recordPosLowStockCrossing(rawProd, rawPrev, crossedLowStockAlerts);
+              }
+            }
           }
         } else if (
           (item.isFlashPromo && item.flashPromoId) ||
@@ -2054,6 +2067,22 @@ export async function POST(request: Request) {
             prod.stockKg = Math.max(0, Math.round((currentStock - consumedKg) * 1000) / 1000);
             if (prod.stockKg <= 0) prod.inStock = false;
             recordPosLowStockCrossing(prod, currentStock, crossedLowStockAlerts);
+
+            // Auto-deduct BOM raw materials if configured for this product (e.g. 12g coffee per Turkish cup)
+            const bomRecipe = (db.bomRecipes || []).find((r) => r.parentProductId === prod.id);
+            if (bomRecipe && Array.isArray(bomRecipe.ingredients)) {
+              for (const ing of bomRecipe.ingredients) {
+                const rawProd = db.products.find((p) => p.id === ing.rawProductId);
+                if (!rawProd || rawProd.id === prod.id) continue;
+                const rawConsumed = ing.isUnitRaw || isUnitProduct(rawProd)
+                  ? ing.deductGramsOrUnits * qty
+                  : (ing.deductGramsOrUnits * qty) / 1000;
+                const rawPrev = typeof rawProd.stockKg === 'number' ? rawProd.stockKg : 50;
+                rawProd.stockKg = Math.max(0, Math.round((rawPrev - rawConsumed) * 1000) / 1000);
+                if (rawProd.stockKg <= 0) rawProd.inStock = false;
+                recordPosLowStockCrossing(rawProd, rawPrev, crossedLowStockAlerts);
+              }
+            }
           }
         }
       }
@@ -2097,12 +2126,8 @@ export async function POST(request: Request) {
               activeShift.cardSales = (activeShift.cardSales || 0) + sp.amount;
               activeShift.cardSalesTotal = (activeShift.cardSalesTotal || 0) + sp.amount;
             } else if (sp.method === 'vodafone_cash') {
-              activeShift.cardSales = (activeShift.cardSales || 0) + sp.amount;
-              activeShift.cardSalesTotal = (activeShift.cardSalesTotal || 0) + sp.amount;
               activeShift.vodafoneCashTotal += sp.amount;
             } else if (sp.method === 'instapay') {
-              activeShift.cardSales = (activeShift.cardSales || 0) + sp.amount;
-              activeShift.cardSalesTotal = (activeShift.cardSalesTotal || 0) + sp.amount;
               activeShift.instapayTotal += sp.amount;
             } else if (sp.method === 'credit') {
               activeShift.creditSalesTotal = (activeShift.creditSalesTotal || 0) + sp.amount;
@@ -2115,12 +2140,8 @@ export async function POST(request: Request) {
           activeShift.cardSales = (activeShift.cardSales || 0) + finalTotal;
           activeShift.cardSalesTotal = (activeShift.cardSalesTotal || 0) + finalTotal;
         } else if (paymentMethod === 'vodafone_cash') {
-          activeShift.cardSales = (activeShift.cardSales || 0) + finalTotal;
-          activeShift.cardSalesTotal = (activeShift.cardSalesTotal || 0) + finalTotal;
           activeShift.vodafoneCashTotal += finalTotal;
         } else if (paymentMethod === 'instapay') {
-          activeShift.cardSales = (activeShift.cardSales || 0) + finalTotal;
-          activeShift.cardSalesTotal = (activeShift.cardSalesTotal || 0) + finalTotal;
           activeShift.instapayTotal += finalTotal;
         } else if (paymentMethod === 'credit') {
           activeShift.creditSalesTotal = (activeShift.creditSalesTotal || 0) + finalTotal;

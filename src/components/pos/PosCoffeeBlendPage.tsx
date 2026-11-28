@@ -408,7 +408,7 @@ export default function PosCoffeeBlendPage({
       {/* TAB 1: READY COFFEE & BLENDS                                        */}
       {/* =================================================================== */}
       {coffeeTab === 'ready' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(215px,1fr))] gap-3">
           {READY_COFFEE_CARDS.map((card) => {
             const effectivePricePerKg = card.pricePerKg + spicingSurchargePerKg;
             return (
@@ -588,7 +588,7 @@ export default function PosCoffeeBlendPage({
           </div>
 
           {/* Bean Cards to Add into Bag by Grams or EGP */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(215px,1fr))] gap-3">
             {COFFEE_ORIGINS_CATALOG.map((origin) => (
               <div
                 key={origin.id}

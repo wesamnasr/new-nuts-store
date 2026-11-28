@@ -5,9 +5,12 @@ import { createPortal } from 'react-dom';
 import { Printer, X, MessageCircle, Usb, Archive } from 'lucide-react';
 import { Order, PosReturnRecord, PosShift, StoreSettings } from '@/types/store';
 import { formatWhatsAppPhone } from '@/lib/validation';
-import { getCityName, getCurrencySymbol } from '@/lib/defaults';
-import { Code128BarcodeSvg, QrCodeSvg } from '@/lib/barcode-svg';
-import { buildTaxReceiptQrValue } from '@/lib/tax';
+import { getCityName, getCurrencySymbol, getResolvedReceiptConfig } from '@/lib/defaults';
+import { Code128BarcodeSvg } from '@/lib/barcode-svg';
+import {
+  ThermalReceiptOrderContent,
+  buildThermalReceiptPrintHtml,
+} from '@/components/receipt/ThermalReceiptDocument';
 import {
   openCashDrawerDirect,
   printReceiptElementEscPos,
@@ -56,19 +59,48 @@ export default function SupermarketReceiptModal({
     setMounted(true);
   }, []);
 
-  const configuredPaperWidthMm = settings?.thermalPaperWidthMm === 58 ? 58 : 80;
+  const receiptConfig = getResolvedReceiptConfig(settings);
+  const configuredPaperWidthMm = receiptConfig.paperWidthMm;
   const isNarrow58 = mode === 'sticker' || configuredPaperWidthMm === 58;
 
   // Print strictly the receipt/sticker/Z-report HTML in an isolated 80mm/58mm auto-height frame
   // so the paper length matches ONLY the items on the receipt (like any supermarket POS).
+  // When running inside MizanPOS Desktop (.exe), prints SILENTLY directly to the configured Windows thermal printer!
   const handlePrintReceipt = () => {
     if (!receiptRef.current) return;
 
     const receiptHtml = receiptRef.current.innerHTML;
     const isSticker = mode === 'sticker';
-    const pageWidth = isSticker || configuredPaperWidthMm === 58 ? '58mm' : '80mm';
-    const bodyWidth = isSticker ? '54mm' : configuredPaperWidthMm === 58 ? '52mm' : '74mm';
-    const baseFontPx = configuredPaperWidthMm === 58 && !isSticker ? '10px' : '11px';
+    const fullHtml = buildThermalReceiptPrintHtml({
+      receiptHtml,
+      title: order
+        ? `فاتورة ${order.orderNumber}`
+        : `بون ${receiptConfig.customStoreName.trim() || settings?.storeName || 'المتجر'}`,
+      config: receiptConfig,
+      isSticker,
+    });
+
+    // Native Hybrid Desktop Silent Print (zero dialog, works with any Windows thermal printer)
+    const desktopBridge = (window as unknown as {
+      mizanDesktop?: {
+        isDesktop?: boolean;
+        printSilent?: (p: { html: string; paperWidthMm?: number }) => Promise<{ ok: boolean; error?: string }>;
+        openCashDrawer?: () => Promise<{ ok: boolean }>;
+      };
+    }).mizanDesktop;
+
+    if (desktopBridge?.isDesktop && desktopBridge.printSilent) {
+      desktopBridge
+        .printSilent({ html: fullHtml, paperWidthMm: isNarrow58 ? 58 : 80 })
+        .then((res) => {
+          setEscPosStatus(
+            res?.ok
+              ? 'تمت الطباعة الحرارية الصامتة مباشرة عبر نسخة الديسك توب'
+              : res?.error || 'تعذر الطباعة الصامتة'
+          );
+        });
+      return;
+    }
 
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
@@ -86,112 +118,7 @@ export default function SupermarketReceiptModal({
     }
 
     doc.open();
-    doc.write(`<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="utf-8" />
-  <title>${order ? `فاتورة ${order.orderNumber}` : `بون ${settings?.storeName || 'المتجر'}`}</title>
-  <style>
-    @page {
-      size: ${pageWidth} auto;
-      margin: 0mm;
-    }
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      color: #000000 !important;
-      background: transparent !important;
-    }
-    html, body {
-      width: ${bodyWidth};
-      max-width: ${bodyWidth};
-      height: fit-content !important;
-      min-height: 0 !important;
-      max-height: fit-content !important;
-      margin: 0 auto !important;
-      padding: 1.5mm 1.5mm 3mm 1.5mm !important;
-      background: #ffffff !important;
-      color: #000000 !important;
-      font-family: 'Tahoma', 'Arial', sans-serif;
-      font-size: ${baseFontPx};
-      line-height: 1.25;
-      direction: rtl;
-      overflow: hidden !important;
-      page-break-inside: avoid;
-      break-inside: avoid;
-    }
-    svg {
-      max-width: 100%;
-      display: block;
-      margin: 0 auto;
-    }
-    .sr-center { text-align: center; }
-    .sr-left { text-align: left; }
-    .sr-right { text-align: right; }
-    .sr-bold { font-weight: 700; }
-    .sr-black { font-weight: 900; }
-    .sr-divider {
-      border: 0;
-      border-top: 1px dashed #000;
-      margin: 4px 0;
-    }
-    .sr-double-divider {
-      border: 0;
-      border-top: 2px solid #000;
-      margin: 4px 0;
-    }
-    .sr-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 4px;
-      margin: 1.5px 0;
-    }
-    table.sr-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 3px 0;
-      font-size: ${baseFontPx};
-    }
-    table.sr-table th {
-      border-top: 1px dashed #000;
-      border-bottom: 1px dashed #000;
-      padding: 2.5px 1px;
-      font-weight: 900;
-      text-align: right;
-    }
-    table.sr-table td {
-      padding: 2.5px 1px;
-      vertical-align: top;
-      border-bottom: 1px dotted #ccc;
-    }
-    table.sr-table tr:last-child td {
-      border-bottom: none;
-    }
-    .sr-sub {
-      font-size: 11px;
-      line-height: 1.25;
-      margin-top: 1px;
-    }
-    .sr-total-box {
-      border-top: 1.5px solid #000;
-      border-bottom: 1.5px solid #000;
-      padding: 3px 0;
-      margin: 4px 0;
-      font-size: 13px;
-      font-weight: 900;
-    }
-    .sr-barcode {
-      text-align: center;
-      margin: 4px 0 2px 0;
-    }
-  </style>
-</head>
-<body>
-  ${receiptHtml}
-</body>
-</html>`);
+    doc.write(fullHtml);
     doc.close();
 
     setTimeout(() => {
@@ -238,6 +165,16 @@ export default function SupermarketReceiptModal({
     setEscPosBusy(true);
     setEscPosStatus('');
     try {
+      const desktopBridge = (window as unknown as {
+        mizanDesktop?: { isDesktop?: boolean; openCashDrawer?: () => Promise<{ ok: boolean }> };
+      }).mizanDesktop;
+      if (desktopBridge?.isDesktop && desktopBridge.openCashDrawer) {
+        const dRes = await desktopBridge.openCashDrawer();
+        setEscPosStatus(
+          dRes?.ok ? 'تم فتح درج النقدية عبر نسخة الديسك توب بنجاح' : 'تعذر فتح درج النقدية'
+        );
+        return;
+      }
       const res = await openCashDrawerDirect();
       if (res.success) {
         setEscPosStatus('تم إرسال نبضة فتح درج النقدية (ESC p) بنجاح');
@@ -285,12 +222,9 @@ export default function SupermarketReceiptModal({
 
   if (!mounted || (!order && !sticker && !shift && !returnRecord)) return null;
 
-  const totalItemsQty = order
-    ? order.items.reduce((sum, item) => sum + (item.quantity || 1), 0)
-    : 0;
-
   const storePhone = settings?.supportPhone || settings?.whatsappNumber || '01107677672';
-  const storeName = settings?.storeName || 'محمصة حفصة للبن والمكسرات';
+  const storeName =
+    receiptConfig.customStoreName.trim() || settings?.storeName || 'محمصة حفصة للبن والمكسرات';
   const storeAddress = settings?.address || 'مركز بني مزار — أمام مسجد الزراعيين مباشرة';
   const cityName = getCityName(settings);
   const currency = getCurrencySymbol(settings);
@@ -298,31 +232,6 @@ export default function SupermarketReceiptModal({
   const isTaxReceipt = Boolean(
     settings?.enableTax || (order?.taxAmount && order.taxAmount > 0)
   );
-
-  const paymentLabel =
-    order?.paymentMethod === 'cod'
-      ? 'نقدي (كاش)'
-      : order?.paymentMethod === 'card'
-      ? 'فيزا ماكينة الفرع'
-      : order?.paymentMethod === 'vodafone_cash'
-        ? 'فودافون كاش'
-        : order?.paymentMethod === 'instapay'
-          ? 'إنستا باي'
-          : order?.paymentMethod === 'split'
-            ? 'دفع مقسم'
-            : order?.paymentMethod === 'credit'
-              ? 'بيع آجل (ذمم)'
-              : 'محفظة VIP';
-
-  const splitMethodLabel = (m: string) => {
-    if (m === 'cod') return 'كاش';
-    if (m === 'card') return 'فيزا الفرع';
-    if (m === 'vodafone_cash') return 'فودافون كاش';
-    if (m === 'instapay') return 'إنستاباي';
-    if (m === 'vip_wallet') return 'محفظة VIP';
-    if (m === 'credit') return 'آجل بذمة العميل';
-    return m;
-  };
 
   const modalContent = (
     <div
@@ -633,250 +542,13 @@ export default function SupermarketReceiptModal({
               </div>
             ) : (
               order && (
-                /* COMPACT 80mm SUPERMARKET THERMAL RECEIPT */
-                <div>
-                  {/* 1. Supermarket Header */}
-                  <div className="sr-center">
-                    <img
-                      src="/images/brand/hafsa-logo-icon.png"
-                      alt={storeName}
-                      className="w-12 h-12 mx-auto mb-1 object-contain grayscale contrast-125"
-                    />
-                    <div className="sr-black text-sm">{storeName}</div>
-                    <div className="text-[11px] sr-bold">{storeAddress}</div>
-                    <div className="text-[11px]">ت / واتساب: {storePhone}</div>
-                    {isTaxReceipt && settings?.taxRegistrationNumber && (
-                      <div className="text-[11px] sr-black mt-0.5">
-                        إيصال ضريبي مبسط • ر.ت.ض: {settings.taxRegistrationNumber}
-                        {settings.taxBranchId ? ` • فرع: ${settings.taxBranchId}` : ''}
-                      </div>
-                    )}
-                  </div>
-
-                  <hr className="sr-divider" />
-
-                  {/* 2. Compact Receipt Meta */}
-                  <div className="text-[11px]">
-                    <div className="sr-row">
-                      <span className="sr-black">بون: #{order.orderNumber}</span>
-                      <span>
-                        {new Date(order.createdAt).toLocaleString('ar-EG', {
-                          month: '2-digit',
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
-                    </div>
-                    <div className="sr-row">
-                      <span>العميل: {order.customerName}</span>
-                      <span>الدفع: {paymentLabel}</span>
-                    </div>
-                    {order.customerPhone && order.customerPhone !== '01000000000' && (
-                      <div className="sr-row">
-                        <span>هاتف: {order.customerPhone}</span>
-                        {order.governorate && <span>{order.governorate}</span>}
-                      </div>
-                    )}
-                    {order.address &&
-                      !order.address.includes('استلام فوري من كاونتر') && (
-                        <div className="text-[11px] sr-bold mt-0.5">
-                          العنوان: {order.address}
-                        </div>
-                      )}
-                  </div>
-
-                  {/* 3. Supermarket Items Table (Height grows ONLY by items) */}
-                  <table className="sr-table">
-                    <thead>
-                      <tr>
-                        <th style={{ width: '54%' }}>الصنف</th>
-                        <th style={{ width: '12%', textAlign: 'center' }}>كمية</th>
-                        <th style={{ width: '16%', textAlign: 'left' }}>سعر</th>
-                        <th style={{ width: '18%', textAlign: 'left' }}>إجمالي</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {order.items.map((it, idx) => {
-                        const lineTotal = Math.round(it.unitPrice * it.quantity * 10) / 10;
-                        return (
-                          <tr key={idx}>
-                            <td>
-                              <div className="sr-black">
-                                {it.productName}
-                                {it.weightLabel ? ` (${it.weightLabel})` : ''}
-                              </div>
-                              {it.roastOption && (
-                                <div className="sr-sub">
-                                  {it.roastOption}
-                                  {it.workerNotes ? ` - ${it.workerNotes}` : ''}
-                                </div>
-                              )}
-                              {it.isPartitionedBox && it.partitionedSlots && (
-                                <div className="sr-sub">
-                                  {it.partitionedSlots
-                                    .map((s) => `${s.productName} (${s.slotGrams}جم)`)
-                                    .join(' + ')}
-                                </div>
-                              )}
-                              {it.isCoffeeBlend && it.coffeeBlendSpec && (
-                                <div className="sr-sub">
-                                  {it.coffeeBlendSpec.baristaLabel}
-                                </div>
-                              )}
-                              {it.isCustomMix && it.customBreakdown && it.customBreakdown.length > 0 && (
-                                <div className="sr-sub">
-                                  {it.customBreakdown
-                                    .map((b) => `${b.productName} (${b.roastOption} • ${b.percentage}% • ${b.weightGrams}جم)`)
-                                    .join(' + ')}
-                                </div>
-                              )}
-                            </td>
-                            <td style={{ textAlign: 'center' }} className="sr-bold">
-                              {it.quantity}
-                            </td>
-                            <td style={{ textAlign: 'left' }}>{it.unitPrice}</td>
-                            <td style={{ textAlign: 'left' }} className="sr-black">
-                              {lineTotal}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-
-                  <hr className="sr-divider" />
-
-                  {/* 4. Compact Supermarket Totals */}
-                  <div className="text-[11px]">
-                    <div className="sr-row">
-                      <span>عدد القطع: {totalItemsQty}</span>
-                      <span>المجموع: {order.subtotal} ج.م</span>
-                    </div>
-
-                    {order.discountAmount > 0 && (
-                      <div className="sr-row">
-                        <span>
-                          الخصم{order.couponCode ? ` (${order.couponCode})` : ''}:
-                        </span>
-                        <span>-{order.discountAmount} ج.م</span>
-                      </div>
-                    )}
-
-                    {(order.vipWalletRedeemed || 0) > 0 && (
-                      <div className="sr-row sr-bold">
-                        <span>خصم محفظة VIP:</span>
-                        <span>-{order.vipWalletRedeemed} ج.م</span>
-                      </div>
-                    )}
-
-                    {isTaxReceipt && (order.taxAmount || 0) > 0 && (
-                      <div className="sr-row">
-                        <span>
-                          ض.ق.م ({order.taxRatePercent ?? settings?.taxRatePercent ?? 14}%{' '}
-                          {order.taxInclusive !== false ? 'شامل' : 'مضاف'}):
-                        </span>
-                        <span>{order.taxAmount} ج.م</span>
-                      </div>
-                    )}
-
-                    {order.shippingCost > 0 && (
-                      <div className="sr-row">
-                        <span>التوصيل:</span>
-                        <span>+{order.shippingCost} ج.م</span>
-                      </div>
-                    )}
-
-                    {shift && (shift.riderCodSettledTotal || 0) > 0 && (
-                      <div className="sr-row">
-                        <span>توريدات عهدة المناديب (COD):</span>
-                        <span className="sr-bold">+{shift.riderCodSettledTotal} ج.م</span>
-                      </div>
-                    )}
-
-                    <div className="sr-total-box sr-row">
-                      <span>الإجمالي المطلوب:</span>
-                      <span>{order.total} ج.م</span>
-                    </div>
-
-                    {/* Split Payments Breakdown */}
-                    {Array.isArray(order.paymentSplits) && order.paymentSplits.length > 0 && (
-                      <div className="text-[11px] border border-dashed border-black/40 rounded p-1 my-1 space-y-0.5">
-                        <div className="sr-bold">تفصيل الدفع المقسم:</div>
-                        {order.paymentSplits.map((sp, i) => (
-                          <div key={i} className="sr-row">
-                            <span>• {splitMethodLabel(sp.method)}:</span>
-                            <span className="sr-bold">{sp.amount} ج.م</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Credit Due Breakdown */}
-                    {(order.creditDueAmount || 0) > 0 && (
-                      <div className="sr-row text-[11px] sr-black">
-                        <span>مسجل آجل بذمة العميل:</span>
-                        <span>{order.creditDueAmount} ج.م</span>
-                      </div>
-                    )}
-
-                    {order.cashTendered !== undefined && order.cashTendered > 0 && (
-                      <div className="sr-row text-[11px]">
-                        <span>المدفوع: {order.cashTendered} ج.م</span>
-                        <span className="sr-black">
-                          الباقي: {order.changeDue || 0} ج.م
-                        </span>
-                      </div>
-                    )}
-
-                    {(order.vipCashbackEarned || 0) > 0 && (
-                      <div className="sr-row text-[11px] sr-bold mt-0.5">
-                        <span>كاش باك VIP المضاف (5%):</span>
-                        <span>+{order.vipCashbackEarned} ج.م</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <hr className="sr-divider" />
-
-                  {/* 5. Scannable 1D Barcode + Optional ETA Tax QR Code & Footer */}
-                  <div className="sr-barcode">
-                    <Code128BarcodeSvg
-                      value={order.orderNumber}
-                      height={34}
-                      showText={true}
-                    />
-                  </div>
-
-                  {isTaxReceipt ? (
-                    <div className="my-1.5 flex flex-col items-center">
-                      <QrCodeSvg
-                        value={buildTaxReceiptQrValue(order, settings)}
-                        size={84}
-                        caption={
-                          order.etaReceiptUuid
-                            ? `ETA UUID: ${order.etaReceiptUuid.slice(0, 18)}...`
-                            : 'رمز التحقق الضريبي الإلكتروني (ETA QR)'
-                        }
-                      />
-                    </div>
-                  ) : (
-                    <div className="my-1.5 flex flex-col items-center">
-                      <QrCodeSvg
-                        value="https://hafsahnuts.com"
-                        size={72}
-                        caption="امسح الكود للطلب الأونلاين — hafsahnuts.com"
-                      />
-                    </div>
-                  )}
-
-                  <div className="sr-center text-[11px] sr-bold mt-1">
-                    اطلب أونلاين من hafsahnuts.com وخد 5% كاش باك في محفظتك!
-                  </div>
-                  <div className="sr-center text-[10px] mt-0.5">
-                    شكراً لتسوقكم من {storeName} • نتشرف بخدمتكم دائماً
-                  </div>
-                </div>
+                /* DYNAMIC THERMAL RECEIPT POWERED BY ADMIN RECEIPT STUDIO CONFIG */
+                <ThermalReceiptOrderContent
+                  order={order}
+                  settings={settings}
+                  receiptConfig={receiptConfig}
+                  shift={shift}
+                />
               )
             )}
           </div>

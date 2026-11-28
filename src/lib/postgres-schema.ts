@@ -683,7 +683,7 @@ export function buildRelationalSyncStatements(
              SELECT
                elem->>'id',
                COALESCE(elem->>'invoiceNumber', elem->>'id'),
-               COALESCE(elem->>'supplierId', 'supplier_arafat'),
+               COALESCE(elem->>'supplierId', 'sup'),
                COALESCE(elem->>'supplierName', ''),
                COALESCE(elem->>'status', 'pending'),
                COALESCE(NULLIF(elem->>'totalAmount', '')::numeric, 0),

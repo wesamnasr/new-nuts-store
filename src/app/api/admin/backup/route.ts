@@ -102,9 +102,9 @@ export async function POST(request: NextRequest) {
     const summaryStats = await withDbTransaction(async (db) => {
       // Preserve current super_admin login credentials if backup omitted them
       const safeAdminUsername =
-        candidate.settings?.adminUsername?.trim() || db.settings.adminUsername || 'admin_hafsa';
+        candidate.settings?.adminUsername?.trim() || db.settings.adminUsername || 'admin';
       const safeAdminPassword =
-        candidate.settings?.adminPassword?.trim() || db.settings.adminPassword || 'Hafsa@Admin2026';
+        candidate.settings?.adminPassword?.trim() || db.settings.adminPassword || '123456';
 
       db.settings = {
         ...db.settings,
@@ -135,6 +135,15 @@ export async function POST(request: NextRequest) {
       if (Array.isArray(candidate.staffAccounts) && candidate.staffAccounts.length > 0) {
         db.staffAccounts = candidate.staffAccounts;
       }
+      if (Array.isArray(candidate.warehouses)) db.warehouses = candidate.warehouses;
+      if (Array.isArray(candidate.warehouseTransfers)) db.warehouseTransfers = candidate.warehouseTransfers;
+      if (Array.isArray(candidate.bomRecipes)) db.bomRecipes = candidate.bomRecipes;
+      if (Array.isArray(candidate.prepMethods)) db.prepMethods = candidate.prepMethods;
+      if (Array.isArray(candidate.productAddons)) db.productAddons = candidate.productAddons;
+      if (Array.isArray(candidate.deliveryCompanies)) db.deliveryCompanies = candidate.deliveryCompanies;
+      if (Array.isArray(candidate.employees)) db.employees = candidate.employees;
+      if (Array.isArray(candidate.diningHalls)) db.diningHalls = candidate.diningHalls;
+      if (Array.isArray(candidate.expenseCategories)) db.expenseCategories = candidate.expenseCategories;
 
       appendAuditLog(db, {
         action: 'system_restore',

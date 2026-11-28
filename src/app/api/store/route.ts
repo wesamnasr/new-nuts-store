@@ -6,10 +6,15 @@ import {
   sanitizePublicStoreData,
   sanitizeStoreDataForRole,
   generateAdminToken,
+  getResolvedCustomRoles,
   getResolvedRolePermissions,
   hasRolePermission,
 } from '@/lib/auth';
-import { getResolvedPageContent, getResolvedThemeConfig } from '@/lib/defaults';
+import {
+  getResolvedPageContent,
+  getResolvedReceiptConfig,
+  getResolvedThemeConfig,
+} from '@/lib/defaults';
 import { appendAuditLog } from '@/lib/audit-log';
 import { Product } from '@/types/store';
 
@@ -220,6 +225,37 @@ export async function PUT(request: NextRequest) {
             }
           : getResolvedThemeConfig(db.settings);
 
+        const incomingReceiptConfig = body.settings.receiptConfig
+          ? getResolvedReceiptConfig({
+              ...db.settings,
+              ...body.settings,
+              receiptConfig: {
+                ...getResolvedReceiptConfig(db.settings),
+                ...body.settings.receiptConfig,
+              },
+            })
+          : getResolvedReceiptConfig({
+              ...db.settings,
+              ...(body.settings.thermalPaperWidthMm === 58 || body.settings.thermalPaperWidthMm === 80
+                ? {
+                    thermalPaperWidthMm: body.settings.thermalPaperWidthMm,
+                    receiptConfig: {
+                      ...getResolvedReceiptConfig(db.settings),
+                      paperWidthMm: body.settings.thermalPaperWidthMm,
+                    },
+                  }
+                : {}),
+            });
+
+        const resolvedPaperWidthMm: 58 | 80 =
+          body.settings.receiptConfig?.paperWidthMm === 58 ||
+          body.settings.receiptConfig?.paperWidthMm === 80
+            ? body.settings.receiptConfig.paperWidthMm
+            : body.settings.thermalPaperWidthMm === 58 ||
+                body.settings.thermalPaperWidthMm === 80
+              ? body.settings.thermalPaperWidthMm
+              : incomingReceiptConfig.paperWidthMm;
+
         const incomingRolePermissions =
           role === 'super_admin' && body.settings.rolePermissions
             ? getResolvedRolePermissions({
@@ -228,77 +264,94 @@ export async function PUT(request: NextRequest) {
               })
             : getResolvedRolePermissions(db.settings);
 
+        const incomingCustomRoles =
+          role === 'super_admin' && Array.isArray(body.settings.customRoles)
+            ? getResolvedCustomRoles({
+                ...db.settings,
+                customRoles: body.settings.customRoles,
+              })
+            : getResolvedCustomRoles(db.settings);
+
+        if (role === 'super_admin' && Array.isArray(body.settings.customRoles) && Array.isArray(db.staffAccounts)) {
+          const validCustomRoleIds = new Set(incomingCustomRoles.map((r) => r.id));
+          for (const acc of db.staffAccounts) {
+            if (acc.customRoleId && !validCustomRoleIds.has(acc.customRoleId)) {
+              acc.customRoleId = undefined;
+            }
+          }
+        }
+
         const newAdminUsername =
           role === 'super_admin' &&
           typeof body.settings.adminUsername === 'string' &&
           body.settings.adminUsername.trim()
             ? body.settings.adminUsername.trim()
-            : db.settings.adminUsername || 'admin_hafsa';
+            : db.settings.adminUsername || 'admin';
 
         const newPassword =
           role === 'super_admin' &&
           typeof body.settings.adminPassword === 'string' &&
           body.settings.adminPassword.trim()
             ? body.settings.adminPassword.trim()
-            : db.settings.adminPassword || 'Hafsa@Admin2026';
+            : db.settings.adminPassword || '123456';
 
         const newSupplierUsername =
           role === 'super_admin' &&
           typeof body.settings.supplierUsername === 'string' &&
           body.settings.supplierUsername.trim()
             ? body.settings.supplierUsername.trim()
-            : db.settings.supplierUsername || 'supplier_arafat';
+            : db.settings.supplierUsername || 'sup';
 
         const newSupplierPassword =
           role === 'super_admin' &&
           typeof body.settings.supplierPassword === 'string' &&
           body.settings.supplierPassword.trim()
             ? body.settings.supplierPassword.trim()
-            : db.settings.supplierPassword || 'Sup#Arafat2026';
+            : db.settings.supplierPassword || '123456';
 
         const newCashierUsername =
           role === 'super_admin' &&
           typeof body.settings.cashierUsername === 'string' &&
           body.settings.cashierUsername.trim()
             ? body.settings.cashierUsername.trim()
-            : db.settings.cashierUsername || 'cashier_pos';
+            : db.settings.cashierUsername || 'cash';
 
         const newCashierPassword =
           role === 'super_admin' &&
           typeof body.settings.cashierPassword === 'string' &&
           body.settings.cashierPassword.trim()
             ? body.settings.cashierPassword.trim()
-            : db.settings.cashierPassword || 'Cash#Pos2026';
+            : db.settings.cashierPassword || '123456';
 
         const newAccountantUsername =
           role === 'super_admin' &&
           typeof body.settings.accountantUsername === 'string' &&
           body.settings.accountantUsername.trim()
             ? body.settings.accountantUsername.trim()
-            : db.settings.accountantUsername || 'accountant_fin';
+            : db.settings.accountantUsername || 'acc';
 
         const newAccountantPassword =
           role === 'super_admin' &&
           typeof body.settings.accountantPassword === 'string' &&
           body.settings.accountantPassword.trim()
             ? body.settings.accountantPassword.trim()
-            : db.settings.accountantPassword || 'Acc#Fin2026';
+            : db.settings.accountantPassword || '123456';
 
         const newRiderUsername =
           role === 'super_admin' &&
           typeof body.settings.riderUsername === 'string' &&
           body.settings.riderUsername.trim()
             ? body.settings.riderUsername.trim()
-            : db.settings.riderUsername || 'rider_delivery';
+            : db.settings.riderUsername || 'rider';
 
         const newRiderPassword =
           role === 'super_admin' &&
           typeof body.settings.riderPassword === 'string' &&
           body.settings.riderPassword.trim()
             ? body.settings.riderPassword.trim()
-            : db.settings.riderPassword || 'Rider#Hafsa2026';
+            : db.settings.riderPassword || '123456';
 
-        if (role === 'super_admin' && newPassword !== (db.settings.adminPassword || 'Hafsa@Admin2026')) {
+        if (role === 'super_admin' && newPassword !== (db.settings.adminPassword || '123456')) {
           rotatedToken = generateAdminToken(newPassword).token;
         }
 
@@ -321,7 +374,13 @@ export async function PUT(request: NextRequest) {
           riderPassword: newRiderPassword,
           pageContent: incomingPageContent,
           themeConfig: incomingThemeConfig,
+          receiptConfig: {
+            ...incomingReceiptConfig,
+            paperWidthMm: resolvedPaperWidthMm,
+          },
+          thermalPaperWidthMm: resolvedPaperWidthMm,
           rolePermissions: incomingRolePermissions,
+          customRoles: incomingCustomRoles,
         };
 
         appendAuditLog(db, {

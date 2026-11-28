@@ -22,6 +22,8 @@ interface PosShiftSummaryPageProps {
   posShifts: PosShift[];
   posExpenses: PosExpense[];
   canSeeProfits: boolean;
+  enableBlindShiftClose?: boolean;
+  expenseCategories?: Array<{ key: string; label: string }>;
   posLoading: boolean;
   defaultCashierName?: string;
   onOpenNewShift: (
@@ -38,7 +40,7 @@ interface PosShiftSummaryPageProps {
   onAddExpense: (
     title: string,
     amount: number,
-    category: 'raw_materials' | 'packaging' | 'utilities' | 'delivery_rider' | 'other'
+    category: string
   ) => Promise<void>;
   onPrintShiftZReport: (shift: PosShift) => void;
 }
@@ -52,6 +54,8 @@ export default function PosShiftSummaryPage({
   posShifts,
   posExpenses,
   canSeeProfits,
+  enableBlindShiftClose = false,
+  expenseCategories = [],
   posLoading,
   defaultCashierName,
   onOpenNewShift,
@@ -59,6 +63,7 @@ export default function PosShiftSummaryPage({
   onAddExpense,
   onPrintShiftZReport,
 }: PosShiftSummaryPageProps) {
+  const isBlindCloseActive = Boolean(enableBlindShiftClose && !canSeeProfits);
   const [newShiftCashier, setNewShiftCashier] = useState<string>(
     defaultCashierName || 'كاشير الفرع الرئيسي'
   );
@@ -75,10 +80,10 @@ export default function PosShiftSummaryPage({
   const [newShiftCupsOpening, setNewShiftCupsOpening] = useState<number>(0);
 
   const [closingActualCash, setClosingActualCash] = useState<number>(
-    activeShift?.expectedCashInDrawer ?? 1000
+    isBlindCloseActive ? 0 : (activeShift?.expectedCashInDrawer ?? 1000)
   );
   const [closingActualCups, setClosingActualCups] = useState<number | ''>(() =>
-    activeShift && ((activeShift.cupsOpeningCount || 0) > 0 || (activeShift.cupsSoldCount || 0) > 0)
+    !isBlindCloseActive && activeShift && ((activeShift.cupsOpeningCount || 0) > 0 || (activeShift.cupsSoldCount || 0) > 0)
       ? Math.max(0, (activeShift.cupsOpeningCount || 0) - (activeShift.cupsSoldCount || 0))
       : ''
   );
@@ -86,14 +91,12 @@ export default function PosShiftSummaryPage({
 
   const [expenseTitle, setExpenseTitle] = useState<string>('');
   const [expenseAmount, setExpenseAmount] = useState<number>(50);
-  const [expenseCategory, setExpenseCategory] = useState<
-    'raw_materials' | 'packaging' | 'utilities' | 'delivery_rider' | 'other'
-  >('packaging');
+  const [expenseCategory, setExpenseCategory] = useState<string>('packaging');
 
   React.useEffect(() => {
     if (activeShift) {
-      setClosingActualCash(activeShift.expectedCashInDrawer);
-      if ((activeShift.cupsOpeningCount || 0) > 0 || (activeShift.cupsSoldCount || 0) > 0) {
+      setClosingActualCash(isBlindCloseActive ? 0 : activeShift.expectedCashInDrawer);
+      if (!isBlindCloseActive && ((activeShift.cupsOpeningCount || 0) > 0 || (activeShift.cupsSoldCount || 0) > 0)) {
         setClosingActualCups(
           Math.max(0, (activeShift.cupsOpeningCount || 0) - (activeShift.cupsSoldCount || 0))
         );
@@ -103,7 +106,7 @@ export default function PosShiftSummaryPage({
     } else {
       setClosingActualCups('');
     }
-  }, [activeShift]);
+  }, [activeShift, isBlindCloseActive]);
 
   const isCupsTracked = Boolean(
     activeShift && ((activeShift.cupsOpeningCount || 0) > 0 || (activeShift.cupsSoldCount || 0) > 0)
@@ -125,64 +128,13 @@ export default function PosShiftSummaryPage({
     : 0;
 
   const selectedRegObj = posRegisters.find((r) => r.id === selectedRegisterId);
+  void selectedRegObj;
+  void onSelectRegisterId;
+  void openShifts;
 
   return (
     <div className="space-y-5">
-      {/* 0. Multi-Register Switcher Bar */}
-      {posRegisters.length > 0 && onSelectRegisterId && (
-        <div className="bg-white rounded-2xl p-4 border border-[#E8E0D5] flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Monitor className="w-4 h-4 text-[#9A6836]" />
-            <div>
-              <h3 className="font-cairo font-bold text-sm text-[#231710]">
-                ماكينات الكاشير ونقاط البيع المتزامنة (Multi-Register)
-              </h3>
-              <p className="text-[11px] text-[#6B5B4E]">
-                يمكن تشغيل أكثر من ماكينة كاشير بوردية مستقلة ودرج منفصل في نفس الفرع دون إغلاق وردية زميلك
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {posRegisters.map((reg) => {
-              const regOpenShift = openShifts.find(
-                (s) => (s.registerId || 'reg-1') === reg.id && s.status === 'open'
-              );
-              const isSelected = selectedRegisterId === reg.id;
-              return (
-                <button
-                  key={reg.id}
-                  type="button"
-                  onClick={() => onSelectRegisterId(reg.id)}
-                  className={`min-h-[40px] px-3.5 py-2 rounded-xl text-xs font-cairo font-bold border flex items-center gap-2 transition cursor-pointer ${
-                    isSelected
-                      ? 'bg-[#231710] text-white border-[#231710]'
-                      : 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5] hover:border-[#231710]'
-                  }`}
-                >
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      regOpenShift ? 'bg-emerald-500' : 'bg-amber-400'
-                    }`}
-                  />
-                  <span>{reg.name}</span>
-                  <span
-                    className={`text-[11px] px-1.5 py-0.5 rounded-md ${
-                      isSelected
-                        ? 'bg-white/15 text-white'
-                        : regOpenShift
-                          ? 'bg-emerald-50 text-emerald-800'
-                          : 'bg-amber-50 text-amber-800'
-                    }`}
-                  >
-                    {regOpenShift ? `مفتوحة (${regOpenShift.cashierName})` : 'مغلقة'}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* Single-Register System: Multi-register switcher intentionally hidden */}
 
       {/* 1. Active Shift Live Summary Card & Cash Drawer Equation */}
       {activeShift ? (
@@ -270,12 +222,14 @@ export default function PosShiftSummaryPage({
                 5. النقدية المتوقعة بالدرج
               </span>
               <span className="font-cairo font-bold text-xl text-[#231710]">
-                {activeShift.expectedCashInDrawer} ج.م
+                {isBlindCloseActive ? 'مخفي (تقفيل أعمى)' : `${activeShift.expectedCashInDrawer} ج.م`}
               </span>
               <span className="text-[11px] text-[#6B5B4E] block">
-                {(activeShift.riderCodSettledTotal || 0) > 0
-                  ? `(العهدة + الكاش + توريد المناديب ${activeShift.riderCodSettledTotal}ج - المصروفات والمرتجعات)`
-                  : '(العهدة + الكاش + تحصيل الآجل - المصروفات والمرتجعات)'}
+                {isBlindCloseActive
+                  ? 'أدخل جرد الدرج الفعلي بالأسفل ليظهر التقرير للمدير'
+                  : (activeShift.riderCodSettledTotal || 0) > 0
+                    ? `(العهدة + الكاش + توريد المناديب ${activeShift.riderCodSettledTotal}ج - المصروفات والمرتجعات)`
+                    : '(العهدة + الكاش + تحصيل الآجل - المصروفات والمرتجعات)'}
               </span>
             </div>
 
@@ -397,11 +351,17 @@ export default function PosShiftSummaryPage({
               <span>تقفيل الوردية الحالية وجرد النقدية بالدرج</span>
             </h3>
             <p className="text-xs text-[#6B5B4E]">
-              عدّ النقدية الفعلية الموجودة في درج الكاشير الآن لمطابقتها مع الرصيد المتوقع وتوريد الحصيلة للخزينة (
-              <strong className="text-[#231710] tabular-nums">
-                {activeShift?.expectedCashInDrawer || 0} ج.م
-              </strong>
-              )
+              {isBlindCloseActive ? (
+                'وضع التقفيل الأعمى مفعّل: عدّ النقدية الفعلية في الدرج وأدخلها أولاً ثم اضغط تقفيل الوردية لإصدار تقرير المطابقة.'
+              ) : (
+                <>
+                  عدّ النقدية الفعلية الموجودة في درج الكاشير الآن لمطابقتها مع الرصيد المتوقع وتوريد الحصيلة للخزينة (
+                  <strong className="text-[#231710] tabular-nums">
+                    {activeShift?.expectedCashInDrawer || 0} ج.م
+                  </strong>
+                  )
+                </>
+              )}
             </p>
 
             <div>
@@ -416,7 +376,7 @@ export default function PosShiftSummaryPage({
               />
             </div>
 
-            {activeShift && (
+            {activeShift && !isBlindCloseActive && (
               <div
                 className={`p-2.5 rounded-xl text-xs font-bold flex items-center justify-between tabular-nums border ${
                   cashDiff === 0
@@ -650,14 +610,24 @@ export default function PosShiftSummaryPage({
                 <label className="text-xs font-bold block mb-1 text-[#231710]">التصنيف:</label>
                 <select
                   value={expenseCategory}
-                  onChange={(e) => setExpenseCategory(e.target.value as any)}
+                  onChange={(e) => setExpenseCategory(e.target.value)}
                   className="w-full bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-2.5 py-2 text-xs font-bold outline-none"
                 >
-                  <option value="packaging">أكياس وتغليف واستيكرات</option>
-                  <option value="raw_materials">خامات ومستلزمات بار القهوة</option>
-                  <option value="delivery_rider">حساب طيار دليفري</option>
-                  <option value="utilities">كهرباء / مياه / نظافة</option>
-                  <option value="other">مصروفات أخرى</option>
+                  {expenseCategories.length > 0 ? (
+                    expenseCategories.map((ec) => (
+                      <option key={ec.key} value={ec.key}>
+                        {ec.label}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="packaging">أكياس وتغليف واستيكرات</option>
+                      <option value="raw_materials">خامات ومستلزمات بار القهوة</option>
+                      <option value="delivery_rider">حساب طيار دليفري</option>
+                      <option value="utilities">كهرباء / مياه / نظافة</option>
+                      <option value="other">مصروفات أخرى</option>
+                    </>
+                  )}
                 </select>
               </div>
             </div>

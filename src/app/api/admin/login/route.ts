@@ -5,6 +5,8 @@ import {
   generateAdminToken,
   verifyAdminRequest,
   extractAdminToken,
+  getEffectiveRolePermissions,
+  getResolvedCustomRoles,
   getResolvedRolePermissions,
   getRolePasswordFromSettings,
   getRoleUsernameFromSettings,
@@ -87,18 +89,27 @@ export async function GET(request: NextRequest) {
   }
   const role = auth.role || 'super_admin';
   const rolePermissions = getResolvedRolePermissions(db.settings);
+  const customRoles = getResolvedCustomRoles(db.settings);
+  const customRole = auth.customRoleId
+    ? customRoles.find((r) => r.id === auth.customRoleId)
+    : undefined;
   const username = auth.username || getRoleUsernameFromSettings(db.settings, role);
+  const permissions = customRole
+    ? getEffectiveRolePermissions(role, db.settings, customRole.id)
+    : getPermissionsForRole(role, rolePermissions);
   return NextResponse.json({
     success: true,
     authenticated: true,
     token,
     role,
+    customRoleId: customRole?.id,
+    customRoleName: customRole?.name,
     staffId: auth.staffId,
     username,
     displayName: auth.displayName || username,
-    redirectTo: getRoleRedirectPath(role),
+    redirectTo: customRole ? '/admin' : getRoleRedirectPath(role),
     unifiedDashboard: '/admin',
-    permissions: getPermissionsForRole(role, rolePermissions),
+    permissions,
     rolePermissions,
   });
 }
@@ -196,7 +207,11 @@ export async function POST(request: NextRequest) {
         displayName: matchedStaffAccount.displayName,
       });
 
-      const redirectTo = getRoleRedirectPath(adminRole);
+      const customRoles = getResolvedCustomRoles(db.settings);
+      const customRole = matchedStaffAccount.customRoleId
+        ? customRoles.find((r) => r.id === matchedStaffAccount.customRoleId)
+        : undefined;
+      const redirectTo = customRole ? '/admin' : getRoleRedirectPath(adminRole);
 
       try {
         matchedStaffAccount.lastLoginAt = new Date().toISOString();
@@ -216,18 +231,23 @@ export async function POST(request: NextRequest) {
       }
 
       const rolePermissions = getResolvedRolePermissions(db.settings);
+      const effectivePermissions = customRole
+        ? getEffectiveRolePermissions(adminRole, db.settings, customRole.id)
+        : getPermissionsForRole(adminRole, rolePermissions);
 
       const response = NextResponse.json({
         success: true,
         token: session.token,
         expiresAt: session.expiresAt,
         role: adminRole,
+        customRoleId: customRole?.id,
+        customRoleName: customRole?.name,
         staffId: matchedStaffAccount.id,
         username: matchedStaffAccount.username,
         displayName: matchedStaffAccount.displayName,
         redirectTo,
         unifiedDashboard: '/admin',
-        permissions: getPermissionsForRole(adminRole, rolePermissions),
+        permissions: effectivePermissions,
         rolePermissions,
       });
 
@@ -267,7 +287,7 @@ export async function POST(request: NextRequest) {
           const userOk =
             !hasUsernameInput ||
             normalizedInputUser === adminUser ||
-            normalizedInputUser === 'admin_hafsa';
+            normalizedInputUser === 'admin';
           const passOk = verifyPasswordConstantTime(password, configuredPassword);
           return userOk && passOk;
         }
@@ -275,7 +295,7 @@ export async function POST(request: NextRequest) {
           const userOk =
             !hasUsernameInput ||
             normalizedInputUser === supplierUser ||
-            normalizedInputUser === 'supplier_arafat';
+            normalizedInputUser === 'sup';
           const passOk = verifyPasswordConstantTime(password, supplierPass);
           return userOk && passOk;
         }
@@ -283,7 +303,7 @@ export async function POST(request: NextRequest) {
           const userOk =
             !hasUsernameInput ||
             normalizedInputUser === cashierUser ||
-            normalizedInputUser === 'cashier_pos';
+            normalizedInputUser === 'cash';
           const passOk = verifyPasswordConstantTime(password, cashierPass);
           return userOk && passOk;
         }
@@ -291,7 +311,7 @@ export async function POST(request: NextRequest) {
           const userOk =
             !hasUsernameInput ||
             normalizedInputUser === accountantUser ||
-            normalizedInputUser === 'accountant_fin';
+            normalizedInputUser === 'acc';
           const passOk = verifyPasswordConstantTime(password, accountantPass);
           return userOk && passOk;
         }
@@ -299,7 +319,7 @@ export async function POST(request: NextRequest) {
           const userOk =
             !hasUsernameInput ||
             normalizedInputUser === riderUser ||
-            normalizedInputUser === 'rider_delivery';
+            normalizedInputUser === 'rider';
           const passOk = verifyPasswordConstantTime(password, riderPass);
           return userOk && passOk;
         }

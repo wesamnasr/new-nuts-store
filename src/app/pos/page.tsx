@@ -18,8 +18,12 @@ import {
   WifiOff,
   Volume2,
   VolumeX,
-  Monitor,
   Printer,
+  Maximize2,
+  Minimize2,
+  GripVertical,
+  Plus,
+  X,
 } from 'lucide-react';
 import { playOrderAlertChime, isAudioMuted, toggleAudioMuted } from '@/lib/audio-chime';
 import { useStore } from '@/context/StoreContext';
@@ -38,7 +42,9 @@ import {
   PosReturnItem,
   PosReturnRecord,
   PosShift,
+  PrepMethodOption,
   Product,
+  ProductAddonOption,
   VipMember,
 } from '@/types/store';
 import {
@@ -87,6 +93,7 @@ import {
 const ADMIN_SESSION_STORAGE_KEY = 'nuts_admin_session';
 const HELD_INVOICES_STORAGE_KEY = 'nuts_pos_held_invoices';
 const POS_CART_WIDTH_STORAGE_KEY = 'nuts_pos_cart_width';
+const POS_SPLIT_PCT_STORAGE_KEY = 'mizan_pos_catalog_split_pct';
 const POS_REGISTER_STORAGE_KEY = 'mizan_pos_register_id';
 const POS_AUTO_PRINT_STORAGE_KEY = 'mizan_pos_auto_print';
 
@@ -101,6 +108,14 @@ export type PosPageId =
 export default function HafsaPosCashierPage() {
   const pathname = usePathname();
   const isEmbeddedInAdmin = pathname?.startsWith('/admin') ?? false;
+  const syncPosUrl = useCallback(
+    (updates: Record<string, string | null>) => {
+      updateUrlQueryParams(
+        isEmbeddedInAdmin ? { tab: 'cashier_portal', subtab: null, ...updates } : updates
+      );
+    },
+    [isEmbeddedInAdmin]
+  );
   const { storeData, refreshStore, showToast } = useStore();
   const [offlineCatalogProducts, setOfflineCatalogProducts] = useState<Product[]>([]);
   const [offlineCatalogCategories, setOfflineCatalogCategories] = useState<Category[]>([]);
@@ -202,6 +217,9 @@ export default function HafsaPosCashierPage() {
   const [openShifts, setOpenShifts] = useState<PosShift[]>([]);
   const [posShifts, setPosShifts] = useState<PosShift[]>([]);
   const [posExpenses, setPosExpenses] = useState<PosExpense[]>([]);
+  const [posPrepMethods, setPosPrepMethods] = useState<PrepMethodOption[]>([]);
+  const [posProductAddons, setPosProductAddons] = useState<ProductAddonOption[]>([]);
+  const [posExpenseCategories, setPosExpenseCategories] = useState<Array<{ key: string; label: string }>>([]);
   const [posReturns, setPosReturns] = useState<PosReturnRecord[]>([]);
   const [posCoupons, setPosCoupons] = useState<Coupon[]>([]);
   const [posVipMembers, setPosVipMembers] = useState<VipMember[]>([]);
@@ -219,8 +237,215 @@ export default function HafsaPosCashierPage() {
   const [onlineQueueOrders, setOnlineQueueOrders] = useState<Order[]>([]);
   const [isPosAudioMuted, setIsPosAudioMuted] = useState(false);
   const [isPosAutoPrint, setIsPosAutoPrint] = useState(false);
+  const [isAdminFocusMode, setIsAdminFocusMode] = useState(false);
+  const [catalogWidthPct, setCatalogWidthPct] = useState<number>(48);
+  const [isDraggingSplit, setIsDraggingSplit] = useState<boolean>(false);
+  const splitContainerRef = useRef<HTMLDivElement | null>(null);
+  const [showQuickAddProduct, setShowQuickAddProduct] = useState<boolean>(false);
+  const [quickProdName, setQuickProdName] = useState<string>('');
+  const [quickProdCategoryId, setQuickProdCategoryId] = useState<string>('');
+  const [quickProdSellingMode, setQuickProdSellingMode] = useState<'weight' | 'unit'>('weight');
+  const [quickProdUnitLabel, setQuickProdUnitLabel] = useState<string>('قطعة');
+  const [quickProdPrice, setQuickProdPrice] = useState<string>('');
+  const [quickProdCost, setQuickProdCost] = useState<string>('');
+  const [quickProdStock, setQuickProdStock] = useState<string>('50');
+  const [quickProdBarcode, setQuickProdBarcode] = useState<string>('');
+  const [quickProdSaving, setQuickProdSaving] = useState<boolean>(false);
+  const [lastScanNotice, setLastScanNotice] = useState<{
+    ok: boolean;
+    title: string;
+    subtitle: string;
+  } | null>(null);
+  const lastScanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevOnlineOrderIdsRef = useRef<Set<string>>(new Set());
   const isInitialPosFetchRef = useRef<boolean>(true);
+
+  useEffect(() => {
+    try {
+      const savedPct = Number(localStorage.getItem(POS_SPLIT_PCT_STORAGE_KEY));
+      if (Number.isFinite(savedPct) && savedPct >= 28 && savedPct <= 72) {
+        setCatalogWidthPct(Math.round(savedPct));
+      }
+    } catch {}
+  }, []);
+
+  const updateCatalogSplitPct = useCallback((nextPct: number) => {
+    const clamped = Math.min(72, Math.max(28, Math.round(nextPct)));
+    setCatalogWidthPct(clamped);
+    try {
+      localStorage.setItem(POS_SPLIT_PCT_STORAGE_KEY, String(clamped));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (!isDraggingSplit) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const el = splitContainerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.width <= 0) return;
+      // RTL: Catalog is on the RIGHT, Invoice is on the LEFT
+      const pctFromRight = ((rect.right - e.clientX) / rect.width) * 100;
+      updateCatalogSplitPct(pctFromRight);
+    };
+    const handleMouseUp = () => {
+      setIsDraggingSplit(false);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDraggingSplit, updateCatalogSplitPct]);
+
+  const handleOpenQuickAddProductModal = useCallback(() => {
+    setQuickProdName('');
+    setQuickProdCategoryId(categories[0]?.id || '');
+    setQuickProdSellingMode('weight');
+    setQuickProdUnitLabel('قطعة');
+    setQuickProdPrice('');
+    setQuickProdCost('');
+    setQuickProdStock('50');
+    setQuickProdBarcode('');
+    setShowQuickAddProduct(true);
+  }, [categories]);
+
+  const handleSaveQuickProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanName = quickProdName.trim();
+    const numericPrice = Number(quickProdPrice);
+    if (!cleanName || !Number.isFinite(numericPrice) || numericPrice <= 0) {
+      showToast('بيانات غير مكتملة', 'يرجى إدخال اسم المنتج وسعر بيع صحيح أكبر من صفر');
+      return;
+    }
+    setQuickProdSaving(true);
+    try {
+      const stockNum = Math.max(0, Number(quickProdStock) || 0);
+      const costNum =
+        quickProdCost.trim() !== '' && Number.isFinite(Number(quickProdCost))
+          ? Math.max(0, Number(quickProdCost))
+          : Math.round(numericPrice * 0.72);
+      const newId = `prod-pos-${Date.now()}`;
+      const catId = quickProdCategoryId || categories[0]?.id || 'cat-general';
+      const newProduct: Product =
+        quickProdSellingMode === 'unit'
+          ? {
+              id: newId,
+              slug: newId,
+              name: cleanName,
+              subtitle: quickProdUnitLabel.trim() || 'قطعة',
+              categoryId: catId,
+              description: '',
+              image: '/images/products/royal-mix.jpg',
+              origin: 'مختار بعناية',
+              nutritionalHighlight: '',
+              caloriesPer100g: 0,
+              proteinPer100g: '0g',
+              sellingMode: 'unit',
+              unitLabel: quickProdUnitLabel.trim() || 'قطعة',
+              unitPrice: numericPrice,
+              unitCost: costNum,
+              pricePerKg: numericPrice,
+              costPerKg: costNum,
+              weights: [
+                {
+                  id: 'u-1',
+                  label: quickProdUnitLabel.trim() || 'قطعة',
+                  weightGrams: 1000,
+                  grams: 1000,
+                  unitsCount: 1,
+                  price: numericPrice,
+                },
+              ],
+              roastOptions: [],
+              inStock: stockNum > 0,
+              featured: false,
+              stockKg: stockNum,
+              showInPos: true,
+              showOnline: true,
+              rating: 5,
+              reviewsCount: 0,
+              barcode: quickProdBarcode.trim() || undefined,
+            }
+          : {
+              id: newId,
+              slug: newId,
+              name: cleanName,
+              subtitle: 'تحميص يومي طازج',
+              categoryId: catId,
+              description: '',
+              image: '/images/products/royal-mix.jpg',
+              origin: 'نخب أول',
+              nutritionalHighlight: '',
+              caloriesPer100g: 0,
+              proteinPer100g: '0g',
+              sellingMode: 'weight',
+              pricePerKg: numericPrice,
+              costPerKg: costNum,
+              weights: [
+                { id: 'w-125', label: 'ثمن 125 جم', weightGrams: 125, grams: 125, price: Math.round(numericPrice * 0.125) },
+                { id: 'w-250', label: 'ربع 250 جم', weightGrams: 250, grams: 250, price: Math.round(numericPrice * 0.25) },
+                { id: 'w-500', label: 'نصف 500 جم', weightGrams: 500, grams: 500, price: Math.round(numericPrice * 0.5) },
+                { id: 'w-1000', label: 'كيلو 1000 جم', weightGrams: 1000, grams: 1000, price: Math.round(numericPrice) },
+              ],
+              roastOptions: ['محمص مملح', 'محمص بدون ملح', 'نيء طبيعي'],
+              inStock: stockNum > 0,
+              featured: false,
+              stockKg: stockNum,
+              showInPos: true,
+              showOnline: true,
+              rating: 5,
+              reviewsCount: 0,
+              barcode: quickProdBarcode.trim() || undefined,
+            };
+
+      const res = await fetch('/api/store', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(posToken ? { Authorization: `Bearer ${posToken}` } : {}),
+        },
+        body: JSON.stringify({
+          products: [newProduct, ...rawProductsSource],
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast('تعذر إضافة المنتج', data?.error || 'تأكد من صلاحيات تعديل المنتجات');
+        return;
+      }
+      await refreshStore();
+      setShowQuickAddProduct(false);
+      showToast('تمت إضافة المنتج بنجاح', `أصبح "${cleanName}" جاهزاً للبيع فوراً في الكاشير`);
+    } catch {
+      showToast('خطأ في الاتصال أثناء حفظ المنتج');
+    } finally {
+      setQuickProdSaving(false);
+    }
+  };
+
+  const toggleAdminFocusMode = useCallback(() => {
+    setIsAdminFocusMode((prev) => !prev);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isEmbeddedInAdmin) return;
+    window.dispatchEvent(
+      new CustomEvent('hafsa:admin-pos-focus', { detail: { focus: isAdminFocusMode } })
+    );
+  }, [isAdminFocusMode, isEmbeddedInAdmin]);
+
+  const flashScanNotice = useCallback(
+    (notice: { ok: boolean; title: string; subtitle: string }) => {
+      setLastScanNotice(notice);
+      if (lastScanTimerRef.current) clearTimeout(lastScanTimerRef.current);
+      lastScanTimerRef.current = setTimeout(() => {
+        setLastScanNotice(null);
+      }, 4500);
+    },
+    []
+  );
 
   useEffect(() => {
     setIsPosAudioMuted(isAudioMuted());
@@ -374,6 +599,9 @@ export default function HafsaPosCashierPage() {
           setPosVipMembers(data.vipMembers || []);
           if (data.creditConfig) setCreditConfig(data.creditConfig);
           if (data.taxConfig) setTaxConfig(data.taxConfig);
+          if (Array.isArray(data.prepMethods)) setPosPrepMethods(data.prepMethods);
+          if (Array.isArray(data.productAddons)) setPosProductAddons(data.productAddons);
+          if (Array.isArray(data.expenseCategories)) setPosExpenseCategories(data.expenseCategories);
           setRecentPosOrders(data.recentPosOrders || []);
           const incoming = data.onlineQueueOrders || [];
           if (!isInitialPosFetchRef.current) {
@@ -948,8 +1176,8 @@ export default function HafsaPosCashierPage() {
             }
           : {}),
         total: posNetTotal,
-        cashTendered: effectiveCashTendered,
-        changeDue,
+        cashTendered: chosenPaymentMethod === 'cod' ? effectiveCashTendered : undefined,
+        changeDue: chosenPaymentMethod === 'cod' ? changeDue : 0,
         paymentMethod: chosenPaymentMethod,
         ...(chosenPaymentMethod === 'split' ? { paymentSplits } : {}),
         paymentReference: paymentReference.trim() || undefined,
@@ -969,9 +1197,14 @@ export default function HafsaPosCashierPage() {
       setCashierDiscount(0);
       setCouponCode('');
       setPaymentSplits([]);
+      setPaymentReference('');
+      setCustomerPhone('');
+      setCustomerName('');
+      setDeliveryAddress('');
       setCashTenderedInput('');
       setInvoiceNotes('');
       setUseVipWallet(false);
+      setPaymentMethod('cod');
       setPosOrderType('counter_takeaway');
       showToast(
         `وضع الطوارئ (أوفلاين): تم حفظ الفاتورة ${offlineOrderNumber} محلياً وجاهزة للطباعة`,
@@ -1013,7 +1246,7 @@ export default function HafsaPosCashierPage() {
           paymentMethod: chosenPaymentMethod,
           paymentSplits: chosenPaymentMethod === 'split' ? paymentSplits : undefined,
           paymentReference: paymentReference.trim() || undefined,
-          cashTendered: effectiveCashTendered,
+          cashTendered: chosenPaymentMethod === 'cod' ? effectiveCashTendered : undefined,
         }),
       });
       clearTimeout(timeoutId);
@@ -1031,9 +1264,11 @@ export default function HafsaPosCashierPage() {
         setCashierDiscount(0);
         setCouponCode('');
         setPaymentSplits([]);
-        if (chosenPaymentMethod === 'split' || chosenPaymentMethod === 'credit') {
-          setPaymentMethod('cod');
-        }
+        setPaymentReference('');
+        setCustomerPhone('');
+        setCustomerName('');
+        setDeliveryAddress('');
+        setPaymentMethod('cod');
         setCashTenderedInput('');
         setInvoiceNotes('');
         setUseVipWallet(false);
@@ -1131,6 +1366,13 @@ export default function HafsaPosCashierPage() {
         handleHoldCurrentInvoice();
         return;
       }
+      if (e.key === 'F9') {
+        e.preventDefault();
+        if (posItems.length > 0 && !posLoading) {
+          void handleCompletePosInvoice();
+        }
+        return;
+      }
 
       // 3. Global HID USB/Bluetooth 20-Beam Barcode Scanner Detector
       // Layout-independent (uses physical e.code so Windows Arabic keyboard never corrupts barcodes)
@@ -1196,8 +1438,8 @@ export default function HafsaPosCashierPage() {
             return;
           }
 
-          // Parse scale barcode (Prefix 20 weight / Prefix 21-22 price) or SKU barcode
-          const parsed = parseScaleBarcode(scanned, products);
+          // Parse scale barcode/QR (Prefix 20 weight / Prefix 21-22 price / JSON-KV QR) or item QR/SKU
+          const parsed = parseScaleBarcode(rawScanned || scanned, products);
           if (parsed) {
             const { product, calc, barcodeKind } = parsed;
             const isDeterministicSku = barcodeKind === 'sku' || isUnitProduct(product);
@@ -1220,13 +1462,23 @@ export default function HafsaPosCashierPage() {
               customWeightGrams: calc.weightGrams,
               barcodeLabel: calc.barcodeLabel,
             });
+            flashScanNotice({
+              ok: true,
+              title: `تم مسح: ${product.name}`,
+              subtitle: `${calc.weightLabel} • ${calc.unitPrice} ${currency}`,
+            });
             showToast(
               `تمت إضافة "${product.name}" بالماسح`,
-              `${calc.weightLabel} • ${calc.unitPrice} ج.م`
+              `${calc.weightLabel} • ${calc.unitPrice} ${currency}`
             );
           } else {
             playCashierBeep(320, 0.25);
-            showToast('باركود غير معروف', `لم يتم العثور على الصنف: ${scanned}`);
+            flashScanNotice({
+              ok: false,
+              title: 'كود غير معروف',
+              subtitle: scanned || rawScanned,
+            });
+            showToast('باركود غير معروف', `لم يتم العثور على الصنف: ${scanned || rawScanned}`);
           }
         }
         return;
@@ -1353,7 +1605,7 @@ export default function HafsaPosCashierPage() {
   const handleAddExpense = async (
     title: string,
     amount: number,
-    category: 'raw_materials' | 'packaging' | 'utilities' | 'delivery_rider' | 'other'
+    category: string
   ) => {
     setPosLoading(true);
     try {
@@ -1534,6 +1786,86 @@ export default function HafsaPosCashierPage() {
     }
   };
 
+  const handleManualOrInputScan = useCallback(
+    (rawCode: string): boolean => {
+      const trimmed = (rawCode || '').trim();
+      if (!trimmed) return false;
+
+      const normalized = normalizeBarcodeScanInput(trimmed);
+      const cleanUpper = (normalized || trimmed).replace(/^\*|\*$/g, '').toUpperCase();
+      const allKnownOrders = [...recentPosOrders, ...onlineQueueOrders];
+      const matchedOrder = allKnownOrders.find(
+        (o) =>
+          o.orderNumber.toUpperCase() === cleanUpper || o.id.toUpperCase() === cleanUpper
+      );
+      if (matchedOrder) {
+        playCashierBeep(880, 0.14);
+        setInitialReturnOrder(matchedOrder);
+        setActivePage('invoices_table');
+        flashScanNotice({
+          ok: true,
+          title: `فاتورة مرتجع #${matchedOrder.orderNumber}`,
+          subtitle: 'تم فتح نافذة الاسترجاع',
+        });
+        showToast(
+          `تم مسح باركود الفاتورة #${matchedOrder.orderNumber}`,
+          'تم فتح نافذة الاسترجاع السريع للفاتورة'
+        );
+        return true;
+      }
+
+      const parsed = parseScaleBarcode(trimmed, products);
+      if (!parsed) {
+        playCashierBeep(320, 0.25);
+        flashScanNotice({
+          ok: false,
+          title: 'كود غير معروف',
+          subtitle: trimmed,
+        });
+        showToast('كود غير معروف', `لم يتم العثور على صنف مطابق لـ: ${trimmed}`);
+        return false;
+      }
+
+      const { product, calc, barcodeKind } = parsed;
+      const isDeterministicSku = barcodeKind === 'sku' || isUnitProduct(product);
+      const weightId = isUnitProduct(product) ? 'u-1' : `scale-${calc.weightGrams}`;
+      const cartItemId = isDeterministicSku
+        ? `pos-sku-${product.id}-${weightId}`
+        : `pos-bc-${product.id}-${calc.weightGrams}-${calc.unitPrice}-${Date.now()}`;
+
+      addPosItem({
+        cartItemId,
+        productId: product.id,
+        productName: product.name,
+        productImage: getSafeImageUrl(product.image),
+        weightId,
+        weightLabel: calc.weightLabel,
+        roastOption: product.roastOptions?.[0] || '',
+        unitPrice: calc.unitPrice,
+        quantity: 1,
+        rawCostEgp: calc.rawCostEgp,
+        customWeightGrams: calc.weightGrams,
+        barcodeLabel: calc.barcodeLabel,
+      });
+      flashScanNotice({
+        ok: true,
+        title: `تم مسح: ${product.name}`,
+        subtitle: `${calc.weightLabel} • ${calc.unitPrice} ${currency}`,
+      });
+      return true;
+    },
+    [
+      recentPosOrders,
+      onlineQueueOrders,
+      products,
+      addPosItem,
+      playCashierBeep,
+      showToast,
+      flashScanNotice,
+      currency,
+    ]
+  );
+
   const handleOpenStickerModal = (sticker: StickerPreviewData) => {
     setStickerPreviewItem(sticker);
     setPrintedOrder(null);
@@ -1674,17 +2006,17 @@ export default function HafsaPosCashierPage() {
   const showBoxesOrCoffeeChoice = featureFlags.enableCustomBoxes || featureFlags.enableCoffeeBlender;
 
   return (
-    <div className="min-h-screen bg-[#FAF6F0] text-[#231710] pb-10">
+    <div className={isEmbeddedInAdmin ? 'bg-[#FAF6F0] text-[#231710] pb-4' : 'min-h-screen bg-[#FAF6F0] text-[#231710] pb-6'}>
       <div className="flex flex-col print:hidden">
         {/* =================================================================== */}
-        {/* SLIM POS TOP BAR — HICK'S LAW (4 PRIMARY TOP-LEVEL CHOICES)         */}
+        {/* SLIM UNIFIED SINGLE-ROW POS TOP BAR                                 */}
         {/* =================================================================== */}
         <header
           ref={topBarRef}
           className={
             isEmbeddedInAdmin
-              ? 'mx-3 sm:mx-4 mt-3 bg-white text-[#231710] rounded-2xl border border-[#E8E0D5] px-3 py-2.5 shadow-2xs relative z-30'
-              : 'sticky top-0 z-30 bg-white/95 backdrop-blur-xs text-[#231710] border-b border-[#E8E0D5] px-3 sm:px-4 py-2 shadow-2xs'
+              ? 'bg-white text-[#231710] border-b border-[#E8E0D5] px-2.5 sm:px-3 py-1.5 relative z-30'
+              : 'sticky top-0 z-30 bg-white/95 backdrop-blur-xs text-[#231710] border-b border-[#E8E0D5] px-3 py-1.5 shadow-2xs'
           }
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1707,7 +2039,7 @@ export default function HafsaPosCashierPage() {
                 onClick={() => {
                   setOpenNavMenu(null);
                   setActivePage('direct_sales');
-                  updateUrlQueryParams({ posPage: null, posSub: null });
+                  syncPosUrl({ posPage: null, posSub: null });
                 }}
                 title="البيع المباشر (F1)"
                 className={`min-h-[40px] sm:min-h-[44px] px-3 py-2 rounded-xl text-xs font-cairo font-bold flex items-center gap-1.5 transition cursor-pointer ${
@@ -1756,7 +2088,7 @@ export default function HafsaPosCashierPage() {
                               setActivePage('boxes');
                               setBoxTab('ready');
                               setOpenNavMenu(null);
-                              updateUrlQueryParams({ posPage: 'boxes', posSub: 'ready' });
+                              syncPosUrl({ posPage: 'boxes', posSub: 'ready' });
                             }}
                             className={`w-full min-h-[40px] px-3 py-2 rounded-xl text-xs font-cairo font-bold flex items-center gap-2 transition cursor-pointer text-right ${
                               activePage === 'boxes' && boxTab === 'ready'
@@ -1773,7 +2105,7 @@ export default function HafsaPosCashierPage() {
                               setActivePage('boxes');
                               setBoxTab('touch_builder');
                               setOpenNavMenu(null);
-                              updateUrlQueryParams({
+                              syncPosUrl({
                                 posPage: 'boxes',
                                 posSub: 'touch_builder',
                               });
@@ -1798,7 +2130,7 @@ export default function HafsaPosCashierPage() {
                               setActivePage('coffee_blend');
                               setCoffeeTab('ready');
                               setOpenNavMenu(null);
-                              updateUrlQueryParams({
+                              syncPosUrl({
                                 posPage: 'coffee_blend',
                                 posSub: 'ready',
                               });
@@ -1818,7 +2150,7 @@ export default function HafsaPosCashierPage() {
                               setActivePage('coffee_blend');
                               setCoffeeTab('custom_bag');
                               setOpenNavMenu(null);
-                              updateUrlQueryParams({
+                              syncPosUrl({
                                 posPage: 'coffee_blend',
                                 posSub: 'custom_bag',
                               });
@@ -1876,7 +2208,7 @@ export default function HafsaPosCashierPage() {
                       onClick={() => {
                         setActivePage('invoices_table');
                         setOpenNavMenu(null);
-                        updateUrlQueryParams({ posPage: 'invoices_table', posSub: null });
+                        syncPosUrl({ posPage: 'invoices_table', posSub: null });
                       }}
                       className={`w-full min-h-[40px] px-3 py-2 rounded-xl text-xs font-cairo font-bold flex items-center justify-between gap-2 transition cursor-pointer ${
                         activePage === 'invoices_table'
@@ -1896,7 +2228,7 @@ export default function HafsaPosCashierPage() {
                       onClick={() => {
                         setActivePage('online_orders');
                         setOpenNavMenu(null);
-                        updateUrlQueryParams({ posPage: 'online_orders', posSub: null });
+                        syncPosUrl({ posPage: 'online_orders', posSub: null });
                       }}
                       className={`w-full min-h-[40px] px-3 py-2 rounded-xl text-xs font-cairo font-bold flex items-center justify-between gap-2 transition cursor-pointer ${
                         activePage === 'online_orders'
@@ -1926,7 +2258,7 @@ export default function HafsaPosCashierPage() {
                 onClick={() => {
                   setOpenNavMenu(null);
                   setActivePage('shift_summary');
-                  updateUrlQueryParams({ posPage: 'shift_summary', posSub: null });
+                  syncPosUrl({ posPage: 'shift_summary', posSub: null });
                 }}
                 title="الوردية والدرج (F5)"
                 className={`min-h-[40px] sm:min-h-[44px] px-3 py-2 rounded-xl text-xs font-cairo font-bold flex items-center gap-1.5 transition cursor-pointer ${
@@ -1940,48 +2272,71 @@ export default function HafsaPosCashierPage() {
               </button>
             </div>
 
-            {/* Left Side: Register, Sound Mute, Shift Drawer Pill, Cart Jump, Admin/Logout */}
+            {/* Left Side: Width Presets, Add Product, Single Bell (no duplicate), Auto-Print, Shift Cash, Focus Mode */}
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              {posRegisters.length > 0 && (
-                <div className="min-h-[40px] sm:min-h-[44px] bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-2.5 py-1.5 flex items-center gap-1.5">
-                  <Monitor className="w-3.5 h-3.5 text-[#9A6836] shrink-0" />
-                  <select
-                    aria-label="اختيار جهاز الكاشير"
-                    value={selectedRegisterId}
-                    onChange={(e) => handleSelectRegisterId(e.target.value)}
-                    className="bg-transparent text-xs font-cairo font-bold text-[#231710] outline-none cursor-pointer max-w-[150px]"
-                  >
-                    {posRegisters.map((reg) => (
-                      <option key={reg.id} value={reg.id}>
-                        {reg.name}
-                      </option>
-                    ))}
-                  </select>
+              {activePage === 'direct_sales' && (
+                <div
+                  title="تحكم سريع في عرض منطقة المنتجات والفاتورة"
+                  className="hidden xl:flex items-center bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl p-0.5 gap-0.5"
+                >
+                  {[
+                    { pct: 38, label: 'فاتورة عريضة' },
+                    { pct: 50, label: '50 / 50' },
+                    { pct: 62, label: 'منتجات عريضة' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.pct}
+                      type="button"
+                      onClick={() => updateCatalogSplitPct(opt.pct)}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
+                        Math.abs(catalogWidthPct - opt.pct) <= 4
+                          ? 'bg-[#231710] text-white'
+                          : 'text-[#6B5A4E] hover:text-[#231710]'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
               )}
 
-              <button
-                type="button"
-                onClick={() => {
-                  const next = toggleAudioMuted();
-                  setIsPosAudioMuted(next);
-                }}
-                title={isPosAudioMuted ? 'تفعيل جرس تنبيهات الطلبات' : 'كتم جرس تنبيهات الطلبات'}
-                className={`min-h-[40px] sm:min-h-[44px] py-2 px-2.5 rounded-xl text-xs font-cairo font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                  isPosAudioMuted
-                    ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                    : 'bg-[#FAF6F0] hover:bg-[#F2EAE0] text-[#231710] border border-[#E8E0D5]'
-                }`}
-              >
-                {isPosAudioMuted ? (
-                  <VolumeX className="w-4 h-4 text-rose-600 shrink-0" />
-                ) : (
-                  <Volume2 className="w-4 h-4 text-[#9A6836] shrink-0" />
-                )}
-                <span className="hidden md:inline">
-                  {isPosAudioMuted ? 'الصوت مكتوم' : 'الجرس نشط'}
-                </span>
-              </button>
+              {activePage !== 'direct_sales' && (posRole === 'super_admin' || posRole === 'admin') && (
+                <button
+                  type="button"
+                  onClick={handleOpenQuickAddProductModal}
+                  title="إضافة منتج جديد مباشرة من شاشة الكاشير"
+                  className="min-h-[38px] py-1.5 px-2.5 rounded-xl text-xs font-cairo font-bold bg-[#3B6E4C] hover:bg-[#2f5a3d] text-white flex items-center gap-1 cursor-pointer transition"
+                >
+                  <Plus className="w-3.5 h-3.5 shrink-0" />
+                  <span>إضافة منتج</span>
+                </button>
+              )}
+
+              {/* Show bell button ONLY when standalone OR in Admin Focus Mode (prevents duplicate bell in Admin) */}
+              {(!isEmbeddedInAdmin || isAdminFocusMode) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = toggleAudioMuted();
+                    setIsPosAudioMuted(next);
+                  }}
+                  title={isPosAudioMuted ? 'تفعيل جرس تنبيهات الطلبات' : 'كتم جرس تنبيهات الطلبات'}
+                  className={`min-h-[38px] py-1.5 px-2.5 rounded-xl text-xs font-cairo font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                    isPosAudioMuted
+                      ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                      : 'bg-[#FAF6F0] hover:bg-[#F2EAE0] text-[#231710] border border-[#E8E0D5]'
+                  }`}
+                >
+                  {isPosAudioMuted ? (
+                    <VolumeX className="w-4 h-4 text-rose-600 shrink-0" />
+                  ) : (
+                    <Volume2 className="w-4 h-4 text-[#9A6836] shrink-0" />
+                  )}
+                  <span className="hidden md:inline">
+                    {isPosAudioMuted ? 'الصوت مكتوم' : 'الجرس نشط'}
+                  </span>
+                </button>
+              )}
 
               <button
                 type="button"
@@ -2019,7 +2374,7 @@ export default function HafsaPosCashierPage() {
                   onClick={() => {
                     setOpenNavMenu(null);
                     setActivePage('shift_summary');
-                    updateUrlQueryParams({ posPage: 'shift_summary', posSub: null });
+                    syncPosUrl({ posPage: 'shift_summary', posSub: null });
                   }}
                   title={`درج الوردية: ${activeShift.expectedCashInDrawer} ${currency}`}
                   className="min-h-[40px] sm:min-h-[44px] bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl py-2 px-3 text-xs font-cairo font-bold flex items-center gap-1.5 cursor-pointer transition tabular-nums"
@@ -2036,7 +2391,7 @@ export default function HafsaPosCashierPage() {
                   onClick={() => {
                     setOpenNavMenu(null);
                     setActivePage('shift_summary');
-                    updateUrlQueryParams({ posPage: 'shift_summary', posSub: null });
+                    syncPosUrl({ posPage: 'shift_summary', posSub: null });
                   }}
                   className="min-h-[40px] sm:min-h-[44px] bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-cairo font-bold py-2 px-3 rounded-xl flex items-center gap-1.5 cursor-pointer"
                 >
@@ -2051,13 +2406,39 @@ export default function HafsaPosCashierPage() {
                   onClick={() => {
                     setOpenNavMenu(null);
                     setActivePage('direct_sales');
-                    updateUrlQueryParams({ posPage: null, posSub: null });
+                    syncPosUrl({ posPage: null, posSub: null });
                   }}
                   className="min-h-[40px] sm:min-h-[44px] bg-[#231710] text-white py-2 px-3 rounded-xl text-xs font-cairo font-bold flex items-center gap-1.5 cursor-pointer"
                 >
                   <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
                   <span>
                     الفاتورة ({posNetTotal} {currency})
+                  </span>
+                </button>
+              )}
+
+              {isEmbeddedInAdmin && (
+                <button
+                  type="button"
+                  onClick={toggleAdminFocusMode}
+                  title={
+                    isAdminFocusMode
+                      ? 'إظهار القائمة الجانبية للوحة الإدارة'
+                      : 'وضع ملء الشاشة (إخفاء قائمة الإدارة)'
+                  }
+                  className={`min-h-[38px] py-1.5 px-2.5 rounded-xl text-xs font-cairo font-bold flex items-center gap-1.5 cursor-pointer transition border ${
+                    isAdminFocusMode
+                      ? 'bg-[#231710] text-white border-[#231710]'
+                      : 'bg-[#FAF6F0] hover:bg-[#EFE6D8] text-[#231710] border-[#E8E0D5]'
+                  }`}
+                >
+                  {isAdminFocusMode ? (
+                    <Minimize2 className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
+                  ) : (
+                    <Maximize2 className="w-3.5 h-3.5 text-[#9A6836] shrink-0" />
+                  )}
+                  <span className="hidden md:inline">
+                    {isAdminFocusMode ? 'إظهار القائمة' : 'ملء الشاشة'}
                   </span>
                 </button>
               )}
@@ -2123,10 +2504,19 @@ export default function HafsaPosCashierPage() {
             </div>
           )}
           {isSellingPage ? (
-            <div className="flex flex-col lg:flex-row gap-3.5 items-start">
-              {/* CENTER/MAIN AREA (Flex-1): Large Simplified Cards */}
-              <div className="flex-1 min-w-0 w-full">
-                {activePage === 'direct_sales' && (
+            activePage === 'direct_sales' ? (
+              /* RESIZABLE SPLIT: PRODUCTS CATALOG (RIGHT) + DRAG HANDLE + STICKY INVOICE PANEL (LEFT) */
+              <div
+                ref={splitContainerRef}
+                className={`flex flex-col lg:flex-row gap-2.5 lg:gap-0 items-start ${
+                  isDraggingSplit ? 'select-none cursor-ew-resize' : ''
+                }`}
+              >
+                {/* RIGHT PANEL: Products Quick Catalog (Search -> Categories -> Weights -> Grid) */}
+                <div
+                  style={{ '--pos-catalog-w': `${catalogWidthPct}%` } as React.CSSProperties}
+                  className="w-full lg:w-[var(--pos-catalog-w)] min-w-0 lg:pl-1.5"
+                >
                   <PosDirectSalesPage
                     products={products}
                     categories={categories}
@@ -2139,100 +2529,206 @@ export default function HafsaPosCashierPage() {
                     onSelectCategoryId={setSelectedCategoryId}
                     enableWeightScale={featureFlags.enableWeightScale}
                     currencySymbol={currency}
+                    prepMethods={posPrepMethods}
+                    productAddons={posProductAddons}
+                    canAddProduct={posRole === 'super_admin' || posRole === 'admin'}
+                    onOpenQuickAddProduct={handleOpenQuickAddProductModal}
                   />
-                )}
+                </div>
 
-                {activePage === 'boxes' && (
-                  <PosBoxesPage
-                    products={products}
-                    promotions={promotions}
+                {/* CENTER INTERACTIVE DRAG-TO-RESIZE DIVIDER (Desktop lg+) */}
+                <div
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label="سحب لتغيير عرض منطقة المنتجات ومنطقة الفاتورة"
+                  title="اسحب لتغيير عرض منطقة المنتجات والفاتورة — انقر مرتين للتوسيط 50/50"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setIsDraggingSplit(true);
+                  }}
+                  onDoubleClick={() => updateCatalogSplitPct(50)}
+                  className={`hidden lg:flex flex-col items-center justify-center w-3 shrink-0 self-stretch cursor-ew-resize group z-20`}
+                >
+                  <div
+                    className={`sticky top-1/2 -translate-y-1/2 w-2.5 h-20 rounded-full border flex items-center justify-center transition ${
+                      isDraggingSplit
+                        ? 'bg-[#231710] text-white border-[#231710] scale-110 shadow'
+                        : 'bg-white text-[#8C7A6B] border-[#E0D5C6] group-hover:bg-[#231710] group-hover:text-white group-hover:border-[#231710]'
+                    }`}
+                  >
+                    <GripVertical className="w-3 h-3" />
+                  </div>
+                </div>
+
+                {/* LEFT PANEL (FIXED STICKY ON FULL-PAGE SCROLL): Live Invoice Register + Smart Checkout */}
+                <div
+                  style={{ '--pos-invoice-w': `${100 - catalogWidthPct}%` } as React.CSSProperties}
+                  className={`w-full lg:w-[var(--pos-invoice-w)] min-w-0 lg:pr-1.5 lg:sticky ${
+                    isEmbeddedInAdmin && !isAdminFocusMode ? 'lg:top-[64px]' : 'lg:top-[52px]'
+                  } z-10`}
+                >
+                  <PosActiveInvoiceSidebar
+                    posItems={posItems}
+                    setPosItems={setPosItems}
+                    posOrderType={posOrderType}
+                    setPosOrderType={setPosOrderType}
+                    chairNumber={chairNumber}
+                    setChairNumber={setChairNumber}
+                    customerPhone={customerPhone}
+                    setCustomerPhone={setCustomerPhone}
+                    customerName={customerName}
+                    setCustomerName={setCustomerName}
+                    deliveryAddress={deliveryAddress}
+                    setDeliveryAddress={setDeliveryAddress}
+                    invoiceNotes={invoiceNotes}
+                    setInvoiceNotes={setInvoiceNotes}
+                    cashierDiscount={cashierDiscount}
+                    setCashierDiscount={setCashierDiscount}
+                    couponCode={couponCode}
+                    setCouponCode={setCouponCode}
+                    couponDiscount={couponValidation.discountAmount}
+                    couponError={couponValidation.error}
+                    coupons={activeCouponsList}
+                    useVipWallet={useVipWallet}
+                    setUseVipWallet={setUseVipWallet}
+                    paymentMethod={paymentMethod}
+                    setPaymentMethod={setPaymentMethod}
+                    paymentSplits={paymentSplits}
+                    setPaymentSplits={setPaymentSplits}
+                    paymentReference={paymentReference}
+                    setPaymentReference={setPaymentReference}
+                    cashTenderedInput={cashTenderedInput}
+                    setCashTenderedInput={setCashTenderedInput}
+                    matchedVipMember={matchedVipMember}
+                    creditConfig={creditConfig}
+                    taxConfig={taxConfig}
+                    posTaxAmount={posTaxBreakdown.taxAmount}
+                    onCollectCustomerDebt={handleCollectCustomerDebt}
+                    posSubtotal={posSubtotal}
+                    posShipping={posShipping}
+                    vipWalletRedeemable={vipWalletRedeemable}
+                    posNetTotal={posNetTotal}
+                    posRawCostTotal={posRawCostTotal}
+                    posNetProfit={posNetProfit}
+                    posProfitMargin={posProfitMargin}
+                    posVipCashbackEarned={posVipCashbackEarned}
+                    changeDue={changeDue}
                     canSeeProfits={canSeeProfits}
-                    onAddPosItem={addPosItem}
-                    onPrintSticker={handleOpenStickerModal}
-                    showToast={showToast}
-                    boxTab={boxTab}
-                    onChangeBoxTab={setBoxTab}
+                    posLoading={posLoading}
+                    onCompleteInvoice={handleCompletePosInvoice}
+                    onPrintItemSticker={handleOpenStickerModal}
+                    heldInvoices={heldInvoices}
+                    onHoldCurrentInvoice={handleHoldCurrentInvoice}
+                    onRestoreHeldInvoice={handleRestoreHeldInvoice}
+                    onDeleteHeldInvoice={handleDeleteHeldInvoice}
+                    cartWidth={cartWidth}
+                    onChangeCartWidth={handleChangeCartWidth}
+                    embeddedInAdmin={isEmbeddedInAdmin && !isAdminFocusMode}
+                    onScanCode={handleManualOrInputScan}
+                    lastScanNotice={lastScanNotice}
+                    currencySymbol={currency}
                   />
-                )}
+                </div>
+              </div>
+            ) : (
+              /* BOXES & COFFEE BLEND TOUCH STUDIOS (RIGHT) + STICKY REGISTER (LEFT) */
+              <div className="flex flex-col lg:flex-row gap-3 items-start">
+                <div className="flex-1 min-w-0 w-full">
+                  {activePage === 'boxes' && (
+                    <PosBoxesPage
+                      products={products}
+                      promotions={promotions}
+                      canSeeProfits={canSeeProfits}
+                      onAddPosItem={addPosItem}
+                      onPrintSticker={handleOpenStickerModal}
+                      showToast={showToast}
+                      boxTab={boxTab}
+                      onChangeBoxTab={setBoxTab}
+                    />
+                  )}
 
-                {activePage === 'coffee_blend' && (
-                  <PosCoffeeBlendPage
-                    products={products}
+                  {activePage === 'coffee_blend' && (
+                    <PosCoffeeBlendPage
+                      products={products}
+                      canSeeProfits={canSeeProfits}
+                      onAddPosItem={addPosItem}
+                      onPrintSticker={handleOpenStickerModal}
+                      showToast={showToast}
+                      coffeeTab={coffeeTab}
+                      onChangeCoffeeTab={setCoffeeTab}
+                    />
+                  )}
+                </div>
+
+                <div
+                  className={`w-full lg:w-[44%] lg:shrink-0 min-w-0 lg:sticky ${
+                    isEmbeddedInAdmin && !isAdminFocusMode ? 'lg:top-[64px]' : 'lg:top-[52px]'
+                  } z-10`}
+                >
+                  <PosActiveInvoiceSidebar
+                    posItems={posItems}
+                    setPosItems={setPosItems}
+                    posOrderType={posOrderType}
+                    setPosOrderType={setPosOrderType}
+                    chairNumber={chairNumber}
+                    setChairNumber={setChairNumber}
+                    customerPhone={customerPhone}
+                    setCustomerPhone={setCustomerPhone}
+                    customerName={customerName}
+                    setCustomerName={setCustomerName}
+                    deliveryAddress={deliveryAddress}
+                    setDeliveryAddress={setDeliveryAddress}
+                    invoiceNotes={invoiceNotes}
+                    setInvoiceNotes={setInvoiceNotes}
+                    cashierDiscount={cashierDiscount}
+                    setCashierDiscount={setCashierDiscount}
+                    couponCode={couponCode}
+                    setCouponCode={setCouponCode}
+                    couponDiscount={couponValidation.discountAmount}
+                    couponError={couponValidation.error}
+                    coupons={activeCouponsList}
+                    useVipWallet={useVipWallet}
+                    setUseVipWallet={setUseVipWallet}
+                    paymentMethod={paymentMethod}
+                    setPaymentMethod={setPaymentMethod}
+                    paymentSplits={paymentSplits}
+                    setPaymentSplits={setPaymentSplits}
+                    paymentReference={paymentReference}
+                    setPaymentReference={setPaymentReference}
+                    cashTenderedInput={cashTenderedInput}
+                    setCashTenderedInput={setCashTenderedInput}
+                    matchedVipMember={matchedVipMember}
+                    creditConfig={creditConfig}
+                    taxConfig={taxConfig}
+                    posTaxAmount={posTaxBreakdown.taxAmount}
+                    onCollectCustomerDebt={handleCollectCustomerDebt}
+                    posSubtotal={posSubtotal}
+                    posShipping={posShipping}
+                    vipWalletRedeemable={vipWalletRedeemable}
+                    posNetTotal={posNetTotal}
+                    posRawCostTotal={posRawCostTotal}
+                    posNetProfit={posNetProfit}
+                    posProfitMargin={posProfitMargin}
+                    posVipCashbackEarned={posVipCashbackEarned}
+                    changeDue={changeDue}
                     canSeeProfits={canSeeProfits}
-                    onAddPosItem={addPosItem}
-                    onPrintSticker={handleOpenStickerModal}
-                    showToast={showToast}
-                    coffeeTab={coffeeTab}
-                    onChangeCoffeeTab={setCoffeeTab}
+                    posLoading={posLoading}
+                    onCompleteInvoice={handleCompletePosInvoice}
+                    onPrintItemSticker={handleOpenStickerModal}
+                    heldInvoices={heldInvoices}
+                    onHoldCurrentInvoice={handleHoldCurrentInvoice}
+                    onRestoreHeldInvoice={handleRestoreHeldInvoice}
+                    onDeleteHeldInvoice={handleDeleteHeldInvoice}
+                    cartWidth={cartWidth}
+                    onChangeCartWidth={handleChangeCartWidth}
+                    embeddedInAdmin={isEmbeddedInAdmin && !isAdminFocusMode}
+                    onScanCode={handleManualOrInputScan}
+                    lastScanNotice={lastScanNotice}
+                    currencySymbol={currency}
                   />
-                )}
+                </div>
               </div>
-
-              {/* LEFT AREA: Sticky & Resizable Compact Cart Sidebar */}
-              <div
-                className="w-full lg:w-[var(--pos-cart-width)] lg:shrink-0"
-                style={{ '--pos-cart-width': `${cartWidth}px` } as React.CSSProperties}
-              >
-                <PosActiveInvoiceSidebar
-                  posItems={posItems}
-                  setPosItems={setPosItems}
-                  posOrderType={posOrderType}
-                  setPosOrderType={setPosOrderType}
-                  chairNumber={chairNumber}
-                  setChairNumber={setChairNumber}
-                  customerPhone={customerPhone}
-                  setCustomerPhone={setCustomerPhone}
-                  customerName={customerName}
-                  setCustomerName={setCustomerName}
-                  deliveryAddress={deliveryAddress}
-                  setDeliveryAddress={setDeliveryAddress}
-                  invoiceNotes={invoiceNotes}
-                  setInvoiceNotes={setInvoiceNotes}
-                  cashierDiscount={cashierDiscount}
-                  setCashierDiscount={setCashierDiscount}
-                  couponCode={couponCode}
-                  setCouponCode={setCouponCode}
-                  couponDiscount={couponValidation.discountAmount}
-                  couponError={couponValidation.error}
-                  coupons={activeCouponsList}
-                  useVipWallet={useVipWallet}
-                  setUseVipWallet={setUseVipWallet}
-                  paymentMethod={paymentMethod}
-                  setPaymentMethod={setPaymentMethod}
-                  paymentSplits={paymentSplits}
-                  setPaymentSplits={setPaymentSplits}
-                  paymentReference={paymentReference}
-                  setPaymentReference={setPaymentReference}
-                  cashTenderedInput={cashTenderedInput}
-                  setCashTenderedInput={setCashTenderedInput}
-                  matchedVipMember={matchedVipMember}
-                  creditConfig={creditConfig}
-                  taxConfig={taxConfig}
-                  posTaxAmount={posTaxBreakdown.taxAmount}
-                  onCollectCustomerDebt={handleCollectCustomerDebt}
-                  posSubtotal={posSubtotal}
-                  posShipping={posShipping}
-                  vipWalletRedeemable={vipWalletRedeemable}
-                  posNetTotal={posNetTotal}
-                  posRawCostTotal={posRawCostTotal}
-                  posNetProfit={posNetProfit}
-                  posProfitMargin={posProfitMargin}
-                  posVipCashbackEarned={posVipCashbackEarned}
-                  changeDue={changeDue}
-                  canSeeProfits={canSeeProfits}
-                  posLoading={posLoading}
-                  onCompleteInvoice={handleCompletePosInvoice}
-                  onPrintItemSticker={handleOpenStickerModal}
-                  heldInvoices={heldInvoices}
-                  onHoldCurrentInvoice={handleHoldCurrentInvoice}
-                  onRestoreHeldInvoice={handleRestoreHeldInvoice}
-                  onDeleteHeldInvoice={handleDeleteHeldInvoice}
-                  cartWidth={cartWidth}
-                  onChangeCartWidth={handleChangeCartWidth}
-                  embeddedInAdmin={isEmbeddedInAdmin}
-                />
-              </div>
-            </div>
+            )
           ) : (
             /* FULL-WIDTH WORKSPACE FOR INVOICES TABLE, SHIFT SUMMARY & ONLINE ORDERS */
             <div>
@@ -2265,6 +2761,8 @@ export default function HafsaPosCashierPage() {
                   posShifts={posShifts}
                   posExpenses={posExpenses}
                   canSeeProfits={canSeeProfits}
+                  enableBlindShiftClose={featureFlags.enableBlindShiftClose}
+                  expenseCategories={posExpenseCategories}
                   posLoading={posLoading}
                   defaultCashierName={posStaffDisplayName || undefined}
                   onOpenNewShift={handleOpenNewShift}
@@ -2293,6 +2791,190 @@ export default function HafsaPosCashierPage() {
           )}
         </main>
       </div>
+
+      {/* ===================================================================== */}
+      {/* QUICK ADD PRODUCT MODAL DIRECTLY FROM CASHIER POS                     */}
+      {/* ===================================================================== */}
+      {showQuickAddProduct && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <form
+            onSubmit={handleSaveQuickProduct}
+            className="bg-white rounded-2xl max-w-md w-full p-5 border border-[#E8E0D5] shadow-xl space-y-3.5"
+          >
+            <div className="flex items-center justify-between border-b border-[#E8E0D5] pb-2.5">
+              <div>
+                <h3 className="font-cairo font-bold text-sm text-[#231710]">
+                  إضافة منتج جديد من الكاشير
+                </h3>
+                <p className="text-[11px] text-[#6B5B4E]">
+                  يُضاف فوراً للكتالوج ويظهر للبيع في نفس اللحظة
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowQuickAddProduct(false)}
+                className="w-8 h-8 rounded-lg bg-[#FAF6F0] hover:bg-red-50 text-[#231710] flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-[#231710] mb-1">اسم المنتج</label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  value={quickProdName}
+                  onChange={(e) => setQuickProdName(e.target.value)}
+                  placeholder="مثال: لوز محمص جامبو أو علبة شوكولاتة"
+                  className="w-full bg-[#FAF6F0] focus:bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-xs font-bold text-[#231710] mb-1">نوع البيع</label>
+                  <div className="grid grid-cols-2 gap-1 bg-[#FAF6F0] p-1 rounded-xl border border-[#E8E0D5]">
+                    <button
+                      type="button"
+                      onClick={() => setQuickProdSellingMode('weight')}
+                      className={`py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition ${
+                        quickProdSellingMode === 'weight'
+                          ? 'bg-[#231710] text-white'
+                          : 'text-[#6B5A4E]'
+                      }`}
+                    >
+                      بالوزن (ميزان)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setQuickProdSellingMode('unit')}
+                      className={`py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition ${
+                        quickProdSellingMode === 'unit'
+                          ? 'bg-[#231710] text-white'
+                          : 'text-[#6B5A4E]'
+                      }`}
+                    >
+                      بالقطعة (QR)
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#231710] mb-1">القسم</label>
+                  <select
+                    value={quickProdCategoryId}
+                    onChange={(e) => setQuickProdCategoryId(e.target.value)}
+                    className="w-full min-h-[38px] bg-[#FAF6F0] border border-[#E8E0D5] rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#231710] outline-none"
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {formatCategoryName(cat.name)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="block text-xs font-bold text-[#231710] mb-1">
+                    {quickProdSellingMode === 'unit' ? `سعر القطعة (${currency})` : `سعر الكيلو (${currency})`}
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min={1}
+                    step="0.5"
+                    value={quickProdPrice}
+                    onChange={(e) => setQuickProdPrice(e.target.value)}
+                    placeholder="250"
+                    className="w-full bg-[#FAF6F0] focus:bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-2.5 py-2 text-xs font-bold tabular-nums outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#231710] mb-1">
+                    التكلفة (اختياري)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.5"
+                    value={quickProdCost}
+                    onChange={(e) => setQuickProdCost(e.target.value)}
+                    placeholder="تلقائي"
+                    className="w-full bg-[#FAF6F0] focus:bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-2.5 py-2 text-xs tabular-nums outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#231710] mb-1">
+                    {quickProdSellingMode === 'unit' ? 'المخزون (قطعة)' : 'المخزون (كجم)'}
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.5"
+                    value={quickProdStock}
+                    onChange={(e) => setQuickProdStock(e.target.value)}
+                    className="w-full bg-[#FAF6F0] focus:bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-2.5 py-2 text-xs font-bold tabular-nums outline-none"
+                  />
+                </div>
+              </div>
+
+              {quickProdSellingMode === 'unit' && (
+                <div>
+                  <label className="block text-xs font-bold text-[#231710] mb-1">
+                    مسمى العبوة (قطعة / علبة / برطمان / كيس)
+                  </label>
+                  <input
+                    type="text"
+                    value={quickProdUnitLabel}
+                    onChange={(e) => setQuickProdUnitLabel(e.target.value)}
+                    placeholder="قطعة"
+                    className="w-full bg-[#FAF6F0] focus:bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs outline-none"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-[#231710] mb-1">
+                  كود الباركود أو QR الخاص بالمنتج (امسحه مباشرة هنا أو اتركه فارغاً)
+                </label>
+                <input
+                  type="text"
+                  dir="ltr"
+                  value={quickProdBarcode}
+                  onChange={(e) => setQuickProdBarcode(e.target.value)}
+                  placeholder="امسح كود القطعة أو اكتب الكود يدوياً..."
+                  className="w-full bg-[#FAF6F0] focus:bg-white border border-[#E8E0D5] focus:border-[#231710] rounded-xl px-3 py-2 text-xs font-mono outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E8E0D5]">
+              <button
+                type="button"
+                onClick={() => setShowQuickAddProduct(false)}
+                className="px-4 py-2 rounded-xl bg-[#FAF6F0] hover:bg-[#EFE6D8] text-xs font-bold text-[#6B5A4E] cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button
+                type="submit"
+                disabled={quickProdSaving}
+                className="px-5 py-2 rounded-xl bg-[#3B6E4C] hover:bg-[#2f5a3d] disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{quickProdSaving ? 'جاري الحفظ...' : 'حفظ وإضافة للكاشير'}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* ===================================================================== */}
       {/* SUPERMARKET 80MM THERMAL RECEIPT, Z-REPORT, RETURN & 58MM STICKER     */}

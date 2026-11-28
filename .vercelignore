@@ -8,3 +8,5 @@ package-lock.json
 scripts
 test_*.mjs
 stress_*.mjs
+desktop
+dist-desktop

@@ -339,6 +339,9 @@ html[data-ops-density="compact"] .min-w-\[32px\] {
 html[data-ops-density="compact"] .min-w-\[210px\] {
   min-width: 168px;
 }
+html[data-ops-density="compact"] .min-w-\[200px\] {
+  min-width: 160px;
+}
 html[data-ops-density="compact"] .min-w-\[180px\] {
   min-width: 144px;
 }
@@ -350,11 +353,17 @@ html[data-ops-density="compact"] .text-\[11px\] {
 
 html[data-ops-density="compact"] .ds-table-wrap thead th {
   font-size: 9.5px;
-  padding: 0.5rem 0.65rem;
+  padding: 0.45rem 0.6rem;
 }
 
 html[data-ops-density="compact"] .ds-table-wrap tbody td {
-  padding: 0.5rem 0.65rem;
+  padding: 0.45rem 0.6rem;
+}
+
+/* Override inline Tailwind p-3/px-3 on operational tables so every row is crisp & compact */
+html[data-ops-density="compact"] .ds-table-wrap table th,
+html[data-ops-density="compact"] .ds-table-wrap table td {
+  padding: 0.45rem 0.6rem;
 }
 
 body {

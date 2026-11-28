@@ -126,11 +126,15 @@ import AuditLogsViewer from '@/components/admin/AuditLogsViewer';
 import SupplierIsolationPortal from '@/components/admin/SupplierIsolationPortal';
 import AccountantIsolationPortal from '@/components/admin/AccountantIsolationPortal';
 import SupermarketReceiptModal from '@/components/SupermarketReceiptModal';
-import RolePermissionsManager from '@/components/admin/RolePermissionsManager';
-import StaffAccountsManager from '@/components/admin/StaffAccountsManager';
+import AccountsAndPermissionsWorkspace from '@/components/admin/AccountsAndPermissionsWorkspace';
+import ReceiptSettingsStudio from '@/components/admin/ReceiptSettingsStudio';
 import SupplyInvoicesApprovalModule from '@/components/admin/SupplyInvoicesApprovalModule';
 import dynamic from 'next/dynamic';
-import { getResolvedRolePermissions, hasRolePermission } from '@/lib/permissions';
+import {
+  getResolvedCustomRoles,
+  getResolvedRolePermissions,
+  hasRolePermission,
+} from '@/lib/permissions';
 import {
   updateUrlQueryParams,
   buildUrlWithParams,
@@ -321,10 +325,27 @@ export default function AdminDashboardPage() {
   const { storeData, refreshStore, showToast, setThemeOverride } = useStore();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [settingsSubTab, setSettingsSubTab] = useState<
-    'branch' | 'blueprint' | 'payment' | 'security' | 'telegram' | 'backup'
+    'branch' | 'receipt' | 'blueprint' | 'payment' | 'security' | 'telegram' | 'backup'
   >('branch');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [posFocusMode, setPosFocusMode] = useState(false);
   const [moreNavOpen, setMoreNavOpen] = useState(false);
+
+  // Sync POS Focus Mode (Full-Screen Cashier toggle from embedded HafsaPosCashierPage)
+  useEffect(() => {
+    const onPosFocusEvent = (e: Event) => {
+      const detail = (e as CustomEvent<{ focus?: boolean }>).detail;
+      setPosFocusMode(Boolean(detail?.focus));
+    };
+    window.addEventListener('hafsa:admin-pos-focus', onPosFocusEvent);
+    return () => window.removeEventListener('hafsa:admin-pos-focus', onPosFocusEvent);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab !== 'cashier_portal' && posFocusMode) {
+      setPosFocusMode(false);
+    }
+  }, [activeTab, posFocusMode]);
   const moreNavRef = useRef<HTMLDivElement | null>(null);
   const [overviewDetailsOpen, setOverviewDetailsOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -335,6 +356,8 @@ export default function AdminDashboardPage() {
   const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [adminToken, setAdminToken] = useState<string>('');
   const [currentRole, setCurrentRole] = useState<AdminRole>('super_admin');
+  const [currentCustomRoleId, setCurrentCustomRoleId] = useState<string>('');
+  const [currentCustomRoleName, setCurrentCustomRoleName] = useState<string>('');
   const [currentUsername, setCurrentUsername] = useState<string>('');
   const [loginUsername, setLoginUsername] = useState<string>('');
   const [loginPassword, setLoginPassword] = useState<string>('');
@@ -479,32 +502,37 @@ export default function AdminDashboardPage() {
 
 
   const [showPasswordText, setShowPasswordText] = useState(false);
+  const lastSyncedSettingsSigRef = useRef<string>('');
 
-  // Sync CMS, Theme & Blueprint drafts when storeData loads/updates
+  // Sync CMS, Theme & Blueprint drafts ONLY when storeData.settings content actually changes
+  // (prevents background 20s polling from wiping unsaved settings/theme/receipt edits)
   useEffect(() => {
-    if (storeData?.settings) {
-      setCmsDraft(getResolvedPageContent(storeData.settings));
-      setThemeDraft(getResolvedThemeConfig(storeData.settings));
-      setFeatureFlagsDraft(getResolvedFeatureFlags(storeData.settings));
-      setCurrencySymbolDraft(getCurrencySymbol(storeData.settings));
-      setOrderPrefixDraft(getOrderPrefix(storeData.settings));
-      setCityNameDraft(getCityName(storeData.settings));
-      setBandarShippingCostDraft(storeData.settings.bandarShippingCost ?? 15);
-      setVillagesShippingCostDraft(storeData.settings.villagesShippingCost ?? 25);
-      setMinOrderVillagesDraft(
-        storeData.settings.minOrderVillages ?? storeData.settings.villageMinOrderAmount ?? 200
-      );
-      setBandarZonesText(getResolvedBandarZones(storeData.settings).join('\n'));
-      setVillageZonesText(getResolvedVillageZones(storeData.settings).join('\n'));
-      setDeliveryBatchesText(
-        getResolvedDeliveryBatches(storeData.settings).join('\n')
-      );
-      setAnnouncementDraft(storeData.settings.announcementText || '');
-      setNewAdminUsername(storeData.settings.adminUsername || '');
-      setNewSupplierUsername(storeData.settings.supplierUsername || '');
-      setNewCashierUsername(storeData.settings.cashierUsername || '');
-      setNewAccountantUsername(storeData.settings.accountantUsername || '');
-    }
+    if (!storeData?.settings) return;
+    const nextSig = JSON.stringify(storeData.settings);
+    if (nextSig === lastSyncedSettingsSigRef.current) return;
+    lastSyncedSettingsSigRef.current = nextSig;
+
+    setCmsDraft(getResolvedPageContent(storeData.settings));
+    setThemeDraft(getResolvedThemeConfig(storeData.settings));
+    setFeatureFlagsDraft(getResolvedFeatureFlags(storeData.settings));
+    setCurrencySymbolDraft(getCurrencySymbol(storeData.settings));
+    setOrderPrefixDraft(getOrderPrefix(storeData.settings));
+    setCityNameDraft(getCityName(storeData.settings));
+    setBandarShippingCostDraft(storeData.settings.bandarShippingCost ?? 15);
+    setVillagesShippingCostDraft(storeData.settings.villagesShippingCost ?? 25);
+    setMinOrderVillagesDraft(
+      storeData.settings.minOrderVillages ?? storeData.settings.villageMinOrderAmount ?? 200
+    );
+    setBandarZonesText(getResolvedBandarZones(storeData.settings).join('\n'));
+    setVillageZonesText(getResolvedVillageZones(storeData.settings).join('\n'));
+    setDeliveryBatchesText(
+      getResolvedDeliveryBatches(storeData.settings).join('\n')
+    );
+    setAnnouncementDraft(storeData.settings.announcementText || '');
+    setNewAdminUsername(storeData.settings.adminUsername || '');
+    setNewSupplierUsername(storeData.settings.supplierUsername || '');
+    setNewCashierUsername(storeData.settings.cashierUsername || '');
+    setNewAccountantUsername(storeData.settings.accountantUsername || '');
   }, [storeData?.settings]);
 
   // Check admin session on mount via lightweight GET /api/admin/login
@@ -555,34 +583,49 @@ export default function AdminDashboardPage() {
                 })
               );
             }
-            if (resolvedRole === 'supplier') {
+            const resolvedCustomRoleId = typeof data.customRoleId === 'string' ? data.customRoleId : '';
+            const resolvedCustomRoleName = typeof data.customRoleName === 'string' ? data.customRoleName : '';
+            if (!resolvedCustomRoleId && resolvedRole === 'supplier') {
               window.location.replace('/supplier');
               return;
             }
-            if (resolvedRole === 'cashier') {
+            if (!resolvedCustomRoleId && resolvedRole === 'cashier') {
               window.location.replace('/pos');
               return;
             }
+            if (!resolvedCustomRoleId && resolvedRole === 'delivery_rider') {
+              window.location.replace('/rider');
+              return;
+            }
             setCurrentRole(resolvedRole);
+            setCurrentCustomRoleId(resolvedCustomRoleId);
+            setCurrentCustomRoleName(resolvedCustomRoleName);
             if (data.username) setCurrentUsername(data.username);
+            const serverPerms: AdminPermissionId[] = Array.isArray(data.permissions)
+              ? data.permissions
+              : [];
             const requestedUrlTab = getRequestedTabFromUrl();
             const isRequestedAllowed =
               requestedUrlTab &&
-              (resolvedRole === 'super_admin' ||
-                resolvedRole === 'admin' ||
+              ((!resolvedCustomRoleId && (resolvedRole === 'super_admin' || resolvedRole === 'admin')) ||
                 (requestedUrlTab !== 'permissions' &&
-                  hasRolePermission(
-                    resolvedRole,
-                    requestedUrlTab as AdminPermissionId,
-                    storeData?.settings
-                  )));
-            const fallbackDefaultTab = getDefaultTabForRole(resolvedRole);
+                  (serverPerms.includes(requestedUrlTab as AdminPermissionId) ||
+                    hasRolePermission(
+                      resolvedRole,
+                      requestedUrlTab as AdminPermissionId,
+                      storeData?.settings,
+                      resolvedCustomRoleId || undefined
+                    ))));
+            const fallbackDefaultTab: AdminTab = resolvedCustomRoleId
+              ? ((serverPerms[0] as AdminTab) || getDefaultTabForRole(resolvedRole))
+              : getDefaultTabForRole(resolvedRole);
             const initialTab = isRequestedAllowed
               ? requestedUrlTab
-              : resolvedRole === 'accountant' &&
-                !hasRolePermission('accountant', fallbackDefaultTab as AdminPermissionId, storeData?.settings)
-              ? 'accounting_portal'
-              : fallbackDefaultTab;
+              : !resolvedCustomRoleId &&
+                  resolvedRole === 'accountant' &&
+                  !hasRolePermission('accountant', fallbackDefaultTab as AdminPermissionId, storeData?.settings)
+                ? 'accounting_portal'
+                : fallbackDefaultTab;
             setActiveTab(initialTab);
             updateUrlQueryParams({ tab: initialTab }, { replace: true });
             setIsAuthenticated(true);
@@ -666,11 +709,14 @@ export default function AdminDashboardPage() {
           sessionStorage.setItem('hafsa_pos_token_v1', data.token);
           sessionStorage.setItem('hafsa_pos_role_v1', resolvedRole);
 
-          if (resolvedRole === 'supplier') {
+          const resolvedCustomRoleId = typeof data.customRoleId === 'string' ? data.customRoleId : '';
+          const resolvedCustomRoleName = typeof data.customRoleName === 'string' ? data.customRoleName : '';
+
+          if (!resolvedCustomRoleId && resolvedRole === 'supplier') {
             window.location.href = '/supplier';
             return;
           }
-          if (resolvedRole === 'cashier') {
+          if (!resolvedCustomRoleId && resolvedRole === 'cashier') {
             window.location.href = '/pos';
             return;
           }
@@ -681,25 +727,34 @@ export default function AdminDashboardPage() {
 
           setAdminToken(data.token);
           setCurrentRole(resolvedRole);
+          setCurrentCustomRoleId(resolvedCustomRoleId);
+          setCurrentCustomRoleName(resolvedCustomRoleName);
           if (data.username) setCurrentUsername(data.username);
+          const serverPerms: AdminPermissionId[] = Array.isArray(data.permissions)
+            ? data.permissions
+            : [];
           const requestedUrlTab = getRequestedTabFromUrl();
           const isRequestedAllowed =
             requestedUrlTab &&
-            (resolvedRole === 'super_admin' ||
-              resolvedRole === 'admin' ||
+            ((!resolvedCustomRoleId && (resolvedRole === 'super_admin' || resolvedRole === 'admin')) ||
               (requestedUrlTab !== 'permissions' &&
-                hasRolePermission(
-                  resolvedRole,
-                  requestedUrlTab as AdminPermissionId,
-                  storeData?.settings
-                )));
-          const fallbackDefaultTab = getDefaultTabForRole(resolvedRole);
+                (serverPerms.includes(requestedUrlTab as AdminPermissionId) ||
+                  hasRolePermission(
+                    resolvedRole,
+                    requestedUrlTab as AdminPermissionId,
+                    storeData?.settings,
+                    resolvedCustomRoleId || undefined
+                  ))));
+          const fallbackDefaultTab: AdminTab = resolvedCustomRoleId
+            ? ((serverPerms[0] as AdminTab) || getDefaultTabForRole(resolvedRole))
+            : getDefaultTabForRole(resolvedRole);
           const initialTab = isRequestedAllowed
             ? requestedUrlTab
-            : resolvedRole === 'accountant' &&
-              !hasRolePermission('accountant', fallbackDefaultTab as AdminPermissionId, storeData?.settings)
-            ? 'accounting_portal'
-            : fallbackDefaultTab;
+            : !resolvedCustomRoleId &&
+                resolvedRole === 'accountant' &&
+                !hasRolePermission('accountant', fallbackDefaultTab as AdminPermissionId, storeData?.settings)
+              ? 'accounting_portal'
+              : fallbackDefaultTab;
           setActiveTab(initialTab);
           updateUrlQueryParams({ tab: initialTab }, { replace: true });
           setIsAuthenticated(true);
@@ -974,9 +1029,21 @@ export default function AdminDashboardPage() {
       }
       if (nextTab === 'settings') {
         const sSub = extraParams?.subtab;
-        if (sSub && ['branch', 'blueprint', 'payment', 'security', 'telegram', 'backup'].includes(sSub)) {
+        if (
+          sSub &&
+          ['branch', 'receipt', 'blueprint', 'payment', 'security', 'telegram', 'backup'].includes(
+            sSub
+          )
+        ) {
           setSettingsSubTab(
-            sSub as 'branch' | 'blueprint' | 'payment' | 'security' | 'telegram' | 'backup'
+            sSub as
+              | 'branch'
+              | 'receipt'
+              | 'blueprint'
+              | 'payment'
+              | 'security'
+              | 'telegram'
+              | 'backup'
           );
         } else {
           setSettingsSubTab('branch');
@@ -989,6 +1056,9 @@ export default function AdminDashboardPage() {
         invoice: null,
         productModal: null,
         invStatus: null,
+        posPage: null,
+        posSub: null,
+        cat: null,
         ...extraParams,
       });
     },
@@ -1017,16 +1087,30 @@ export default function AdminDashboardPage() {
       (currentRole === 'super_admin' ||
         currentRole === 'admin' ||
         (resolvedTab !== 'permissions' &&
-          hasRolePermission(currentRole, resolvedTab as AdminPermissionId, settings)))
+          hasRolePermission(
+            currentRole,
+            resolvedTab as AdminPermissionId,
+            settings,
+            currentCustomRoleId || undefined
+          )))
     ) {
       setActiveTab(resolvedTab);
       if (resolvedTab === 'settings') {
         if (
           subParam &&
-          ['branch', 'blueprint', 'payment', 'security', 'telegram', 'backup'].includes(subParam)
+          ['branch', 'receipt', 'blueprint', 'payment', 'security', 'telegram', 'backup'].includes(
+            subParam
+          )
         ) {
           setSettingsSubTab(
-            subParam as 'branch' | 'blueprint' | 'payment' | 'security' | 'telegram' | 'backup'
+            subParam as
+              | 'branch'
+              | 'receipt'
+              | 'blueprint'
+              | 'payment'
+              | 'security'
+              | 'telegram'
+              | 'backup'
           );
         } else {
           setSettingsSubTab('branch');
@@ -1438,6 +1522,10 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     if (!settings) return;
     if (currentRole === 'super_admin' || currentRole === 'admin') return;
+    if (!currentCustomRoleId && currentRole === 'delivery_rider') {
+      window.location.replace('/rider');
+      return;
+    }
     if (activeTab === 'permissions') {
       const fallbackTab = getDefaultTabForRole(currentRole);
       setActiveTab(fallbackTab);
@@ -1835,12 +1923,15 @@ export default function AdminDashboardPage() {
         ? cleanedWeights.map((w, idx) => {
             const units =
               typeof w.unitsCount === 'number' && w.unitsCount > 0 ? w.unitsCount : 1;
+            const syncedPrice =
+              cleanedWeights.length === 1 && units === 1 ? resolvedUnitPrice : w.price;
             return {
               ...w,
               id: w.id || `u-${idx + 1}`,
               unitsCount: units,
               weightGrams: units * 1000,
               grams: units * 1000,
+              price: syncedPrice,
             };
           })
         : [
@@ -1853,6 +1944,20 @@ export default function AdminDashboardPage() {
               price: resolvedUnitPrice,
             },
           ];
+
+    const kiloVariant = cleanedWeights.find((w) => (w.weightGrams || w.grams) === 1000);
+    const derivedWeightPricePerKg =
+      kiloVariant?.price ||
+      (cleanedWeights[0] && (cleanedWeights[0].weightGrams || cleanedWeights[0].grams || 0) > 0
+        ? Math.round(
+            (cleanedWeights[0].price * 1000) /
+              (cleanedWeights[0].weightGrams || cleanedWeights[0].grams || 250)
+          )
+        : editingProduct.pricePerKg || 680);
+    const derivedWeightCostPerKg =
+      typeof editingProduct.costPerKg === 'number' && editingProduct.costPerKg > 0
+        ? editingProduct.costPerKg
+        : Math.round(derivedWeightPricePerKg * 0.65);
 
     const cleanPrimaryImg = (editingProduct.image || '').trim();
     const cleanedGallery = Array.from(
@@ -1891,7 +1996,10 @@ export default function AdminDashboardPage() {
             pricePerKg: resolvedUnitPrice,
             costPerKg: resolvedUnitCost,
           }
-        : {}),
+        : {
+            pricePerKg: derivedWeightPricePerKg,
+            costPerKg: derivedWeightCostPerKg,
+          }),
       slug:
         editingProduct.slug.trim() ||
         editingProduct.name.trim().toLowerCase().replace(/\s+/g, '-') +
@@ -1927,6 +2035,7 @@ export default function AdminDashboardPage() {
 
     setEditingProduct(null);
     setIsCreatingProduct(false);
+    updateUrlQueryParams({ tab: 'products', productModal: null }, { replace: true });
   };
 
   const handleDuplicateProduct = async (prod: Product) => {
@@ -2188,8 +2297,8 @@ export default function AdminDashboardPage() {
   };
 
   const isFullAdmin =
-    currentRole === 'super_admin' ||
-    currentRole === 'admin';
+    !currentCustomRoleId &&
+    (currentRole === 'super_admin' || currentRole === 'admin');
 
   // Sidebar navigation config grouped into 4 logical sections, isolated strictly by role
   const NAV_GROUPS: Array<{
@@ -2236,7 +2345,7 @@ export default function AdminDashboardPage() {
       group: 'sales',
       label: 'نقطة البيع (الكاشير)',
       icon: <Scale className="w-4 h-4" />,
-      roles: ['cashier'],
+      roles: ['super_admin', 'admin', 'cashier'],
     },
     {
       id: 'coupons',
@@ -2327,11 +2436,20 @@ export default function AdminDashboardPage() {
   const canAccessTab = (tabId: AdminTab): boolean => {
     if (isFullAdmin) return true;
     if (tabId === 'permissions') return isFullAdmin;
-    return hasRolePermission(currentRole, tabId as AdminPermissionId, settings);
+    return hasRolePermission(
+      currentRole,
+      tabId as AdminPermissionId,
+      settings,
+      currentCustomRoleId || undefined
+    );
   };
 
   const navItems = allNavItems.filter((item) =>
-    item.id === 'cashier_portal' ? currentRole === 'cashier' : canAccessTab(item.id)
+    item.id === 'cashier_portal'
+      ? isFullAdmin ||
+        currentRole === 'cashier' ||
+        (Boolean(currentCustomRoleId) && canAccessTab('cashier_portal'))
+      : canAccessTab(item.id)
   );
 
   const PRIMARY_NAV_PRIORITY: AdminTab[] = [
@@ -2356,14 +2474,17 @@ export default function AdminDashboardPage() {
 
   const currentNav = allNavItems.find((n) => n.id === activeTab) || navItems[0];
 
-  const roleHeaderBadge =
-    currentRole === 'supplier'
+  const roleHeaderBadge = currentCustomRoleName
+    ? { label: currentCustomRoleName, cls: 'bg-amber-50 text-[#9A6836] border-amber-200' }
+    : currentRole === 'supplier'
       ? { label: 'المورد', cls: 'bg-[#FAF6F0] text-[#9A6836] border-[#E8E0D5]' }
       : currentRole === 'accountant'
         ? { label: 'المحاسب', cls: 'bg-[#FAF6F0] text-[#3B6E4C] border-[#E8E0D5]' }
         : currentRole === 'cashier'
           ? { label: 'الكاشير', cls: 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]' }
-          : { label: 'المدير العام', cls: 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]' };
+          : currentRole === 'delivery_rider'
+            ? { label: 'مندوب التوصيل', cls: 'bg-blue-50 text-blue-800 border-blue-200' }
+            : { label: 'المدير العام', cls: 'bg-[#FAF6F0] text-[#231710] border-[#E8E0D5]' };
 
   return (
     <div className="min-h-screen bg-[#FAF6F0] text-[#231710] flex flex-col lg:flex-row">
@@ -2377,7 +2498,9 @@ export default function AdminDashboardPage() {
 
       {/* RIGHT-HAND CLEAN LIGHT ERP RTL SIDEBAR */}
       <aside
-        className={`fixed lg:sticky top-0 right-0 z-50 lg:z-30 h-screen w-60 bg-white text-[#231710] border-l border-[#E8E0D5] flex flex-col justify-between transition-transform duration-300 ${
+        className={`${
+          activeTab === 'cashier_portal' && posFocusMode ? 'hidden' : 'flex'
+        } fixed lg:sticky top-0 right-0 z-50 lg:z-30 h-screen w-60 bg-white text-[#231710] border-l border-[#E8E0D5] flex-col justify-between transition-transform duration-300 ${
           sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
         }`}
       >
@@ -2502,7 +2625,11 @@ export default function AdminDashboardPage() {
       {/* MAIN WORKSPACE CONTENT AREA */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Sticky Clean Light Topbar */}
-        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#E8E0D5]">
+        <header
+          className={`${
+            activeTab === 'cashier_portal' && posFocusMode ? 'hidden' : 'block'
+          } sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#E8E0D5]`}
+        >
           <div className="px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
               <button
@@ -2679,8 +2806,16 @@ export default function AdminDashboardPage() {
           </div>
         </header>
 
-        {/* Dynamic Module Container */}
-        <main className="p-4 sm:p-6 space-y-5 max-w-7xl w-full mx-auto">
+        {/* Dynamic Module Container — Full Fluid Width (No Wasted Side Margins) */}
+        <main
+          className={
+            activeTab === 'cashier_portal'
+              ? posFocusMode
+                ? 'p-1.5 sm:p-2 w-full max-w-none'
+                : 'p-2 sm:p-3 w-full max-w-none'
+              : 'p-3 sm:p-4 lg:px-5 space-y-4 w-full max-w-none'
+          }
+        >
           {/* ROLE PORTAL 1: SUPPLIER ISOLATION PORTAL */}
           {activeTab === 'supply_portal' &&
             canAccessTab('supply_portal') && (
@@ -2738,41 +2873,9 @@ export default function AdminDashboardPage() {
               />
             )}
 
-          {/* ROLE PORTAL 3: CASHIER ISOLATION PORTAL */}
+          {/* ROLE PORTAL 3: UNIFIED CASHIER POS WORKSPACE (overflow-x-clip keeps sticky invoice working on full-page scroll) */}
           {activeTab === 'cashier_portal' && canAccessTab('cashier_portal') && (
-            <div className="bg-white p-5 rounded-2xl border border-[#E8E0D5] space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <span className="inline-block text-xs font-bold text-[#9A6836]">
-                    نقطة البيع والكاشير
-                  </span>
-                  <h2 className="font-cairo text-lg font-bold text-[#231710]">
-                    شاشة الكاشير والميزان وتجهيز الطلبات
-                  </h2>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <Link
-                    href="/pos"
-                    className="bg-[#231710] hover:bg-[#3A2519] text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 transition"
-                  >
-                    <span>فتح شاشة الكاشير POS</span>
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => selectTab('orders')}
-                    className="bg-[#FAF6F0] hover:bg-[#F4EFE6] border border-[#E8E0D5] text-[#231710] font-bold text-xs px-4 py-2.5 rounded-xl transition cursor-pointer"
-                  >
-                    تجهيز طلبات الأونلاين ({activeOrdersCount} جاري)
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'cashier_portal' && canAccessTab('cashier_portal') && (
-            <div className="rounded-2xl overflow-hidden border border-[#E8E0D5] bg-white">
+            <div className="rounded-2xl overflow-x-clip border border-[#E8E0D5] bg-[#FAF6F0]">
               <HafsaPosCashierPage />
             </div>
           )}
@@ -4614,7 +4717,7 @@ export default function AdminDashboardPage() {
                         </div>
                       </div>
 
-                      {editingProduct.sellingMode === 'unit' && (
+                      {editingProduct.sellingMode === 'unit' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#FAF6F0] p-3.5 rounded-xl border border-[#E8E0D5]">
                           <div>
                             <label className="block text-[11px] font-bold mb-1 text-[#231710]">
@@ -4667,6 +4770,62 @@ export default function AdminDashboardPage() {
                                 setEditingProduct({
                                   ...editingProduct,
                                   unitCost: nextCost,
+                                  costPerKg: nextCost,
+                                });
+                              }}
+                              className="w-full min-h-[40px] bg-white border border-[#E8E0D5] rounded-lg px-3 py-1.5 text-xs font-bold text-[#9A6836]"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                          <div>
+                            <label className="block text-[11px] font-bold mb-1 text-[#231710]">
+                              سعر بيع الكيلو المرجعي ({currencySymbolDraft} / كجم)
+                            </label>
+                            <input
+                              type="number"
+                              min={1}
+                              value={
+                                editingProduct.weights.find(
+                                  (w) => (w.weightGrams || w.grams) === 1000
+                                )?.price ??
+                                editingProduct.pricePerKg ??
+                                680
+                              }
+                              onChange={(e) => {
+                                const nextKilo = Math.max(0, Number(e.target.value) || 0);
+                                const syncedWeights = editingProduct.weights.map((w) => {
+                                  const g = w.weightGrams || w.grams || 0;
+                                  if (g > 0 && nextKilo > 0) {
+                                    return {
+                                      ...w,
+                                      price: Math.round((nextKilo * g) / 1000),
+                                    };
+                                  }
+                                  return w;
+                                });
+                                setEditingProduct({
+                                  ...editingProduct,
+                                  pricePerKg: nextKilo,
+                                  weights: syncedWeights,
+                                });
+                              }}
+                              className="w-full min-h-[40px] bg-white border border-[#E8E0D5] rounded-lg px-3 py-1.5 text-xs font-bold text-pistachio-700"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold mb-1 text-[#231710]">
+                              تكلفة جملة الكيلو — لحساب الأرباح ({currencySymbolDraft} / كجم)
+                            </label>
+                            <input
+                              type="number"
+                              min={0}
+                              value={editingProduct.costPerKg ?? 0}
+                              onChange={(e) => {
+                                const nextCost = Math.max(0, Number(e.target.value) || 0);
+                                setEditingProduct({
+                                  ...editingProduct,
                                   costPerKg: nextCost,
                                 });
                               }}
@@ -6752,32 +6911,34 @@ export default function AdminDashboardPage() {
           {/* MODULE 9: STORE SETTINGS, SECURITY & BACKUP                       */}
           {/* ================================================================= */}
           {activeTab === 'permissions' && isFullAdmin && (
-            <>
-              <StaffAccountsManager adminToken={adminToken} onNotify={showToast} />
-              <RolePermissionsManager
-                rolePermissions={getResolvedRolePermissions(settings)}
-                isSaving={saving}
-                onSaveRolePermissions={async (updated) => {
-                  await updateStorePayload(
-                    {
-                      settings: {
-                        ...settings,
-                        rolePermissions: updated,
-                      },
+            <AccountsAndPermissionsWorkspace
+              adminToken={adminToken}
+              rolePermissions={getResolvedRolePermissions(settings)}
+              customRoles={getResolvedCustomRoles(settings)}
+              isSavingPermissions={saving}
+              onNotify={showToast}
+              onSaveRolesAndPermissions={async (updatedPerms, updatedCustomRoles, msg) => {
+                await updateStorePayload(
+                  {
+                    settings: {
+                      ...settings,
+                      rolePermissions: updatedPerms,
+                      customRoles: updatedCustomRoles,
                     },
-                    'تم حفظ وتطبيق صلاحيات المستخدمين بنجاح'
-                  );
-                }}
-              />
-            </>
+                  },
+                  msg || 'تم حفظ وتطبيق الأدوار والصلاحيات بنجاح'
+                );
+              }}
+            />
           )}
 
           {activeTab === 'settings' && canAccessTab('settings') && (
-            <div className="max-w-4xl space-y-5">
-              {/* 6 Clean Settings Sub-Tabs Bar */}
+            <div className="w-full max-w-none space-y-4">
+              {/* 7 Clean Settings Sub-Tabs Bar */}
               <div className="bg-white p-1.5 rounded-2xl border border-[#E8E0D5] flex flex-wrap items-center gap-1.5">
                 {[
                   { id: 'branch' as const, label: 'بيانات الفرع' },
+                  { id: 'receipt' as const, label: 'إعدادات وتصميم الفاتورة' },
                   { id: 'blueprint' as const, label: 'الهوية والثيمات والموديولات' },
                   { id: 'payment' as const, label: 'الدفع والشحن' },
                   { id: 'security' as const, label: 'الحسابات والأمان' },
@@ -6789,7 +6950,10 @@ export default function AdminDashboardPage() {
                     type="button"
                     onClick={() => {
                       setSettingsSubTab(sub.id);
-                      updateUrlQueryParams({ subtab: sub.id === 'branch' ? null : sub.id });
+                      updateUrlQueryParams({
+                        tab: 'settings',
+                        subtab: sub.id === 'branch' ? null : sub.id,
+                      });
                     }}
                     className={`min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                       settingsSubTab === sub.id
@@ -6904,6 +7068,16 @@ export default function AdminDashboardPage() {
                       : settings.thermalPaperWidthMm === 58
                         ? 58
                         : 80,
+                    receiptConfig: settings.receiptConfig
+                      ? {
+                          ...settings.receiptConfig,
+                          paperWidthMm: formData.get('taxFormPresent')
+                            ? (Number(getStr('thermalPaperWidthMm', '80')) === 58 ? 58 : 80)
+                            : settings.receiptConfig.paperWidthMm === 58
+                              ? 58
+                              : 80,
+                        }
+                      : undefined,
                     requireElectronicPaymentRef: formData.get('taxFormPresent')
                       ? formData.get('requireElectronicPaymentRef') === 'on'
                       : Boolean(settings.requireElectronicPaymentRef),
@@ -6967,7 +7141,7 @@ export default function AdminDashboardPage() {
                   setNewAccountantPassword('');
                 }}
                 className={
-                  settingsSubTab === 'backup'
+                  settingsSubTab === 'backup' || settingsSubTab === 'receipt'
                     ? 'hidden'
                     : 'bg-white p-5 sm:p-6 rounded-2xl border border-[#E8E0D5] space-y-5'
                 }
@@ -6983,7 +7157,7 @@ export default function AdminDashboardPage() {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-[#231710] mb-1.5">
                         الاسم التجاري للمتجر
@@ -6991,7 +7165,7 @@ export default function AdminDashboardPage() {
                       <input
                         name="storeName"
                         defaultValue={settings.storeName}
-                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm font-medium text-[#231710] focus:outline-none focus:border-[#231710]"
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2 text-sm font-medium text-[#231710] focus:outline-none focus:border-[#231710]"
                       />
                     </div>
 
@@ -7002,33 +7176,10 @@ export default function AdminDashboardPage() {
                       <input
                         name="tagline"
                         defaultValue={settings.tagline}
-                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm font-medium text-[#231710] focus:outline-none focus:border-[#231710]"
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2 text-sm font-medium text-[#231710] focus:outline-none focus:border-[#231710]"
                       />
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-[#231710] mb-1.5">
-                      نص الشريط العلوي للمتجر
-                    </label>
-                    <input
-                      name="announcementText"
-                      defaultValue={settings.announcementText}
-                      className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm font-medium text-[#231710] focus:outline-none focus:border-[#231710]"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-[#231710] mb-1.5">
-                        عنوان الفرع الرئيسي
-                      </label>
-                      <input
-                        name="address"
-                        defaultValue={settings.address}
-                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm text-[#231710] focus:outline-none focus:border-[#231710]"
-                      />
-                    </div>
                     <div>
                       <label className="block text-xs font-bold text-[#231710] mb-1.5">
                         مواعيد العمل اليومية
@@ -7036,12 +7187,32 @@ export default function AdminDashboardPage() {
                       <input
                         name="workingHours"
                         defaultValue={settings.workingHours}
-                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm text-[#231710] focus:outline-none focus:border-[#231710]"
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2 text-sm text-[#231710] focus:outline-none focus:border-[#231710]"
                       />
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="md:col-span-2 xl:col-span-3">
+                      <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                        نص الشريط العلوي للمتجر
+                      </label>
+                      <input
+                        name="announcementText"
+                        defaultValue={settings.announcementText}
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2 text-sm font-medium text-[#231710] focus:outline-none focus:border-[#231710]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                        عنوان الفرع الرئيسي
+                      </label>
+                      <input
+                        name="address"
+                        defaultValue={settings.address}
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2 text-sm text-[#231710] focus:outline-none focus:border-[#231710]"
+                      />
+                    </div>
+
                     <div>
                       <label className="block text-xs font-bold text-[#231710] mb-1.5">
                         رقم واتساب لاستقبال الطلبات (بكود الدولة 20)
@@ -7049,9 +7220,10 @@ export default function AdminDashboardPage() {
                       <input
                         name="whatsappNumber"
                         defaultValue={settings.whatsappNumber}
-                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm font-mono text-[#231710] focus:outline-none focus:border-[#231710]"
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2 text-sm font-mono text-[#231710] focus:outline-none focus:border-[#231710]"
                       />
                     </div>
+
                     <div>
                       <label className="block text-xs font-bold text-[#231710] mb-1.5">
                         رقم هاتف خدمة العملاء
@@ -7059,22 +7231,22 @@ export default function AdminDashboardPage() {
                       <input
                         name="supportPhone"
                         defaultValue={settings.supportPhone}
-                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm font-mono text-[#231710] focus:outline-none focus:border-[#231710]"
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2 text-sm font-mono text-[#231710] focus:outline-none focus:border-[#231710]"
                       />
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-[#231710] mb-1.5">
-                      رابط موقع الفرع على خرائط جوجل
-                    </label>
-                    <input
-                      name="googleMapsUrl"
-                      dir="ltr"
-                      defaultValue={settings.googleMapsUrl || ''}
-                      placeholder="https://maps.google.com/?q=Cairo+Egypt"
-                      className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2.5 text-sm font-mono text-[#231710] focus:outline-none focus:border-[#231710]"
-                    />
+                    <div className="md:col-span-2 xl:col-span-3">
+                      <label className="block text-xs font-bold text-[#231710] mb-1.5">
+                        رابط موقع الفرع على خرائط جوجل
+                      </label>
+                      <input
+                        name="googleMapsUrl"
+                        dir="ltr"
+                        defaultValue={settings.googleMapsUrl || ''}
+                        placeholder="https://maps.google.com/?q=Cairo+Egypt"
+                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3.5 py-2 text-sm font-mono text-[#231710] focus:outline-none focus:border-[#231710]"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -7765,27 +7937,6 @@ export default function AdminDashboardPage() {
                         <span>تحميل مشغّل الكاشير (Windows .bat)</span>
                       </button>
                     </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#231710] mb-1">
-                        نقاط وماكينات الكاشير المتاحة بالفرع (كل ماكينة في سطر بصيغة المعرف:الاسم)
-                      </label>
-                      <textarea
-                        name="posRegistersRaw"
-                        rows={3}
-                        defaultValue={(
-                          settings.posRegisters && settings.posRegisters.length > 0
-                            ? settings.posRegisters
-                            : [
-                                { id: 'reg-1', name: 'ماكينة كاشير 1 (الرئيسية)' },
-                                { id: 'reg-2', name: 'ماكينة كاشير 2 (الفرعية)' },
-                              ]
-                        )
-                          .map((r) => `${r.id}:${r.name}`)
-                          .join('\n')}
-                        className="w-full bg-white border border-[#E8E0D5] rounded-xl px-3 py-2 text-xs text-[#231710]"
-                      />
-                    </div>
                   </div>
                 </div>
 
@@ -7831,7 +7982,7 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
                     {/* Role 1: Super Admin */}
                     <div className="p-4 rounded-xl bg-white border border-[#E8E0D5] space-y-2.5">
                       <label className="block text-xs font-bold text-[#231710]">
@@ -8092,6 +8243,34 @@ export default function AdminDashboardPage() {
                   </button>
                 </div>
               </form>
+
+              {/* Sub-Tab: إعدادات وتصميم الفاتورة الحية */}
+              {settingsSubTab === 'receipt' && (
+                <ReceiptSettingsStudio
+                  settings={settings}
+                  saving={saving}
+                  onNotify={(msg) => showToast(msg)}
+                  onSaveReceiptSettings={async ({
+                    receiptConfig,
+                    thermalPaperWidthMm,
+                    enableDirectEscPosPrint,
+                    autoOpenCashDrawer,
+                  }) => {
+                    await updateStorePayload(
+                      {
+                        settings: {
+                          ...settings,
+                          receiptConfig,
+                          thermalPaperWidthMm,
+                          enableDirectEscPosPrint,
+                          autoOpenCashDrawer,
+                        },
+                      },
+                      'تم حفظ إعدادات وتصميم الفاتورة بنجاح'
+                    );
+                  }}
+                />
+              )}
 
               {/* Sub-Tab 5: النسخ الاحتياطي والنظام */}
               {settingsSubTab === 'backup' && (

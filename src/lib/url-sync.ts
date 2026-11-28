@@ -33,13 +33,27 @@ export function updateUrlQueryParams(
 
     if (nextRelativeUrl === currentRelativeUrl) return;
 
+    // Use native History.prototype methods so URL updates apply synchronously
+    // without triggering Next.js 15 App Router async transition rollbacks.
     if (options.replace) {
-      window.history.replaceState(window.history.state, '', nextRelativeUrl);
+      if (typeof History !== 'undefined' && typeof History.prototype.replaceState === 'function') {
+        History.prototype.replaceState.call(window.history, window.history.state, '', nextRelativeUrl);
+      } else {
+        window.history.replaceState(window.history.state, '', nextRelativeUrl);
+      }
     } else {
-      window.history.pushState(window.history.state, '', nextRelativeUrl);
+      if (typeof History !== 'undefined' && typeof History.prototype.pushState === 'function') {
+        History.prototype.pushState.call(window.history, window.history.state, '', nextRelativeUrl);
+      } else {
+        window.history.pushState(window.history.state, '', nextRelativeUrl);
+      }
     }
 
-    window.dispatchEvent(new CustomEvent(URL_SYNC_CUSTOM_EVENT));
+    window.dispatchEvent(
+      new CustomEvent(URL_SYNC_CUSTOM_EVENT, {
+        detail: { search: url.search, pathname: url.pathname },
+      })
+    );
   } catch (err) {
     console.error('Failed to update URL query params:', err);
   }
@@ -80,9 +94,12 @@ export function useBrowserUrlSync(
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const handleSync = () => {
-      const params = new URLSearchParams(window.location.search);
-      callbackRef.current(params, window.location.pathname);
+    const handleSync = (evt?: Event) => {
+      const detail = (evt as CustomEvent<{ search?: string; pathname?: string }> | undefined)?.detail;
+      const searchStr = typeof detail?.search === 'string' ? detail.search : window.location.search;
+      const pathStr = typeof detail?.pathname === 'string' ? detail.pathname : window.location.pathname;
+      const params = new URLSearchParams(searchStr);
+      callbackRef.current(params, pathStr);
     };
 
     // Run once on mount to initialize from current URL

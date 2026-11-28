@@ -943,8 +943,19 @@ export default function PosInvoicesTablePage({
           0,
           Math.round((returnTargetOrder.total - (returnTargetOrder.returnedAmountTotal || 0)) * 100) / 100
         );
+        const netOrderGoods = Math.max(
+          0,
+          (returnTargetOrder.total || 0) - (returnTargetOrder.shippingCost || 0)
+        );
+        const prorationRatio =
+          returnTargetOrder.subtotal > 0
+            ? Math.min(1, Math.max(0, netOrderGoods / returnTargetOrder.subtotal))
+            : 1;
         const rawDraftRefund = Math.round(
-          returnDraftRows.reduce((sum, r) => sum + r.returnQty * r.unitPrice, 0) * 100
+          returnDraftRows.reduce(
+            (sum, r) => sum + r.returnQty * r.unitPrice * prorationRatio,
+            0
+          ) * 100
         ) / 100;
         const effectiveRefund = Math.min(maxOrderRefund, rawDraftRefund);
 
@@ -1147,6 +1158,14 @@ export default function PosInvoicesTablePage({
                 type="button"
                 disabled={returnSubmitting || effectiveRefund <= 0}
                 onClick={async () => {
+                  const netOrderGoods = Math.max(
+                    0,
+                    (returnTargetOrder.total || 0) - (returnTargetOrder.shippingCost || 0)
+                  );
+                  const prorationRatio =
+                    returnTargetOrder.subtotal > 0
+                      ? Math.min(1, Math.max(0, netOrderGoods / returnTargetOrder.subtotal))
+                      : 1;
                   const selectedItems: PosReturnItem[] = returnDraftRows
                     .filter((r) => r.returnQty > 0)
                     .map((r) => ({
@@ -1156,7 +1175,8 @@ export default function PosInvoicesTablePage({
                       returnQty: r.returnQty,
                       weightGrams: r.weightGrams,
                       unitLabel: r.unitLabel,
-                      refundAmount: Math.round(r.returnQty * r.unitPrice * 100) / 100,
+                      refundAmount:
+                        Math.round(r.returnQty * r.unitPrice * prorationRatio * 100) / 100,
                       condition: r.condition,
                     }));
                   if (selectedItems.length === 0) return;

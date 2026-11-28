@@ -18,6 +18,7 @@ import {
 import {
   PARTITIONED_BOX_TIERS,
   calculatePartitionedBoxValuation,
+  isUnitProduct,
 } from '@/lib/pricing';
 import { getSafeImageUrl, stripUiEmojis } from '@/lib/defaults';
 import { StickerPreviewData } from '@/components/SupermarketReceiptModal';
@@ -290,7 +291,7 @@ export default function PosBoxesPage({
       {/* TAB 1: READY 1-CLICK BOXES                                          */}
       {/* =================================================================== */}
       {boxTab === 'ready' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-3">
           {readyBoxes.map((preset) => {
             const tier =
               PARTITIONED_BOX_TIERS.find((t) => t.id === preset.tierId) ||
@@ -534,9 +535,9 @@ export default function PosBoxesPage({
             </div>
           </div>
 
-          {/* Step 3: Simple Touch Product Cards Grid to Fill Slots */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-5 gap-2.5">
-            {products.map((prod) => {
+          {/* Step 3: Simple Touch Product Cards Grid to Fill Slots (Weight products only) */}
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
+            {products.filter((p) => !isUnitProduct(p)).map((prod) => {
               const slotCost = Math.round(
                 ((prod.pricePerKg || 400) * activeTier.gramsPerSlot) / 1000
               );

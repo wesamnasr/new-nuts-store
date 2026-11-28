@@ -13,6 +13,7 @@ import {
   Info,
 } from 'lucide-react';
 import { Product, InventoryAdjustment, InventoryAdjustmentReason } from '@/types/store';
+import { getProductStockUnitLabel, isUnitProduct } from '@/lib/pricing';
 
 interface InventoryAdjustmentModalProps {
   isOpen: boolean;
@@ -69,6 +70,8 @@ export default function InventoryAdjustmentModal({
   const [activeTab, setActiveTab] = useState<'adjust' | 'history'>('adjust');
 
   const selectedProduct = products.find((p) => p.id === selectedProductId) || products[0];
+  const selectedIsUnit = isUnitProduct(selectedProduct);
+  const stockUnitLabel = getProductStockUnitLabel(selectedProduct);
   const currentStockKg = typeof selectedProduct?.stockKg === 'number' ? selectedProduct.stockKg : 0;
   const unitCost = typeof selectedProduct?.costPerKg === 'number' && selectedProduct.costPerKg > 0
     ? selectedProduct.costPerKg
@@ -110,11 +113,15 @@ export default function InventoryAdjustmentModal({
   const handleAdjustSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidNumber) {
-      setError('يرجى إدخال وزن فعلي صحيح بالكيلوجرام (>= 0)');
+      setError(
+        selectedIsUnit
+          ? `يرجى إدخال عدد فعلي صحيح بـ (${stockUnitLabel}) (>= 0)`
+          : 'يرجى إدخال وزن فعلي صحيح بالكيلوجرام (>= 0)'
+      );
       return;
     }
     if (differenceKg === 0) {
-      setError('الوزن الفعلي المدخل مطابق تماماً لرصيد السيستم الحالي (لا يوجد فارق للتسوية)');
+      setError('الرصيد الفعلي المدخل مطابق تماماً لرصيد السيستم الحالي (لا يوجد فارق للتسوية)');
       return;
     }
 
@@ -241,7 +248,7 @@ export default function InventoryAdjustmentModal({
                 >
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name} (الرصيد الدفتري الحالي: {p.stockKg || 0} كجم)
+                      {p.name} (الرصيد الدفتري الحالي: {p.stockKg || 0} {getProductStockUnitLabel(p)})
                     </option>
                   ))}
                 </select>
@@ -252,13 +259,13 @@ export default function InventoryAdjustmentModal({
                 <div>
                   <span className="text-gray-500 block text-[11px]">الرصيد الدفتري الحالي:</span>
                   <span className="font-black text-sm text-[#231710]">
-                    {currentStockKg} كجم
+                    {currentStockKg} {stockUnitLabel}
                   </span>
                 </div>
                 <div>
                   <span className="text-gray-500 block text-[11px]">متوسط التكلفة (WAC):</span>
                   <span className="font-black text-sm text-[#231710]">
-                    {unitCost} ج.م / كجم
+                    {unitCost} ج.م / {stockUnitLabel}
                   </span>
                 </div>
                 <div>
@@ -269,24 +276,26 @@ export default function InventoryAdjustmentModal({
                 </div>
               </div>
 
-              {/* Physical Weight Input */}
+              {/* Physical Stock Input */}
               <div>
                 <label className="block font-bold text-xs mb-1 text-gray-700">
-                  الوزن الفعلي الحقيقي بعد الوزن على الميزان (كجم):
+                  {selectedIsUnit
+                    ? `العدد الفعلي الحقيقي بعد الجرد (${stockUnitLabel}):`
+                    : 'الوزن الفعلي الحقيقي بعد الوزن على الميزان (كجم):'}
                 </label>
                 <div className="relative">
                   <input
                     type="number"
-                    step="0.001"
+                    step={selectedIsUnit ? '1' : '0.001'}
                     min="0"
                     required
                     value={physicalStockInput}
                     onChange={(e) => setPhysicalStockInput(e.target.value)}
-                    placeholder="مثلاً: 24.500"
+                    placeholder={selectedIsUnit ? 'مثلاً: 15' : 'مثلاً: 24.500'}
                     className="w-full min-h-[40px] bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm font-black text-left pl-14 focus:ring-2 focus:ring-[#C88A4B] focus:border-[#C88A4B] outline-none dir-ltr"
                   />
                   <span className="absolute left-3 top-2.5 text-xs text-gray-400 font-bold">
-                    كجم
+                    {stockUnitLabel}
                   </span>
                 </div>
               </div>
@@ -311,9 +320,13 @@ export default function InventoryAdjustmentModal({
                     <div>
                       <div className="font-bold">
                         {differenceKg < 0
-                          ? `عجز جرد / هالك: ${Math.abs(differenceKg)} كجم (${Math.round(Math.abs(differenceKg) * 1000)} جم)`
+                          ? selectedIsUnit
+                            ? `عجز جرد / هالك: ${Math.abs(differenceKg)} ${stockUnitLabel}`
+                            : `عجز جرد / هالك: ${Math.abs(differenceKg)} كجم (${Math.round(Math.abs(differenceKg) * 1000)} جم)`
                           : differenceKg > 0
-                            ? `فائض جرد: +${differenceKg} كجم (${Math.round(differenceKg * 1000)} جم)`
+                            ? selectedIsUnit
+                              ? `فائض جرد: +${differenceKg} ${stockUnitLabel}`
+                              : `فائض جرد: +${differenceKg} كجم (${Math.round(differenceKg * 1000)} جم)`
                             : 'الرصيد متطابق تماماً'}
                       </div>
                       <div className="text-[11px] opacity-80">
@@ -416,29 +429,43 @@ export default function InventoryAdjustmentModal({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {adjustments.map((adj) => (
-                        <tr key={adj.id} className="hover:bg-gray-50">
-                          <td className="py-2 px-3 font-mono font-bold">{adj.adjustmentNumber}</td>
-                          <td className="py-2 px-3 font-bold">{adj.productName}</td>
-                          <td className="py-2 px-3 text-gray-600">{adj.previousStockKg} كجم</td>
-                          <td className="py-2 px-3 font-bold">{adj.newStockKg} كجم</td>
-                          <td
-                            className={`py-2 px-3 font-bold ${
-                              adj.differenceKg < 0 ? 'text-amber-600' : 'text-blue-600'
-                            }`}
-                          >
-                            {adj.differenceKg > 0 ? `+${adj.differenceKg}` : adj.differenceKg} كجم
-                          </td>
-                          <td className="py-2 px-3 font-bold">
-                            {adj.totalCostImpact > 0 ? `+${adj.totalCostImpact}` : adj.totalCostImpact} ج.م
-                          </td>
-                          <td className="py-2 px-3 text-[11px] text-gray-700">{adj.reasonLabel || adj.reason}</td>
-                          <td className="py-2 px-3 text-[11px] text-gray-600">{adj.adjustedBy}</td>
-                          <td className="py-2 px-3 text-[11px] text-gray-600">
-                            {new Date(adj.createdAt).toLocaleDateString('ar-EG')}
-                          </td>
-                        </tr>
-                      ))}
+                      {adjustments.map((adj) => {
+                        const matchedProd = products.find((p) => p.id === adj.productId);
+                        const rowUnit = getProductStockUnitLabel(matchedProd);
+                        return (
+                          <tr key={adj.id} className="hover:bg-gray-50">
+                            <td className="py-2 px-3 font-mono font-bold">{adj.adjustmentNumber}</td>
+                            <td className="py-2 px-3 font-bold">{adj.productName}</td>
+                            <td className="py-2 px-3 text-gray-600">
+                              {adj.previousStockKg} {rowUnit}
+                            </td>
+                            <td className="py-2 px-3 font-bold">
+                              {adj.newStockKg} {rowUnit}
+                            </td>
+                            <td
+                              className={`py-2 px-3 font-bold ${
+                                adj.differenceKg < 0 ? 'text-amber-600' : 'text-blue-600'
+                              }`}
+                            >
+                              {adj.differenceKg > 0 ? `+${adj.differenceKg}` : adj.differenceKg}{' '}
+                              {rowUnit}
+                            </td>
+                            <td className="py-2 px-3 font-bold">
+                              {adj.totalCostImpact > 0
+                                ? `+${adj.totalCostImpact}`
+                                : adj.totalCostImpact}{' '}
+                              ج.م
+                            </td>
+                            <td className="py-2 px-3 text-[11px] text-gray-700">
+                              {adj.reasonLabel || adj.reason}
+                            </td>
+                            <td className="py-2 px-3 text-[11px] text-gray-600">{adj.adjustedBy}</td>
+                            <td className="py-2 px-3 text-[11px] text-gray-600">
+                              {new Date(adj.createdAt).toLocaleDateString('ar-EG')}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

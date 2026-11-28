@@ -10,3 +10,4 @@ stress_*.mjs
 .vercel
 .env*
 .neon
+dist-desktop/

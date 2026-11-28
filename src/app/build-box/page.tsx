@@ -17,6 +17,7 @@ import {
   PARTITIONED_BOX_PRESETS,
   calculatePartitionedBox,
   buildDefaultPartitionedBoxSlots,
+  isUnitProduct,
 } from '@/lib/pricing';
 import {
   BoxSlotSelection,
@@ -101,6 +102,7 @@ function BuildBoxStudioContent() {
     const all = storeData?.products || [];
     return all.filter(
       (p) =>
+        !isUnitProduct(p) &&
         ![
           'cat-coffee-espresso',
           'cat-coffee-bar',

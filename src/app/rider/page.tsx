@@ -407,7 +407,7 @@ export default function DeliveryRiderPage() {
     <div className="min-h-screen bg-[#FAF6F0] text-[#231710] pb-20" dir="rtl">
       {/* Top Sticky Header */}
       <header className="sticky top-0 z-30 bg-white text-[#231710] border-b border-[#E8E0D5] px-4 py-3">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
+        <div className="w-full max-w-none flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-[#FAF6F0] text-[#231710] border border-[#E8E0D5] flex items-center justify-center shrink-0">
               <Bike className="w-5 h-5" />
@@ -467,8 +467,8 @@ export default function DeliveryRiderPage() {
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="max-w-4xl mx-auto p-3 sm:p-4 space-y-4">
+      {/* Main Container — Full Fluid Width */}
+      <main className="w-full max-w-none p-3 sm:p-4 lg:px-5 space-y-4">
         {/* Feedback Alert */}
         {feedback && (
           <div

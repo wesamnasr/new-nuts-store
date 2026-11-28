@@ -603,6 +603,16 @@ export type NonAdminStaffRole = 'supplier' | 'accountant' | 'cashier';
 
 export type RolePermissionsConfig = Record<NonAdminStaffRole, AdminPermissionId[]>;
 
+export interface CustomRoleDefinition {
+  id: string;
+  name: string;
+  description?: string;
+  baseRole: NonAdminStaffRole;
+  permissions: AdminPermissionId[];
+  color?: 'amber' | 'emerald' | 'sky' | 'purple' | 'rose' | 'stone';
+  createdAt?: string;
+}
+
 export type AdminRole =
   | 'super_admin'
   | 'admin'
@@ -791,6 +801,7 @@ export interface StoreSettings {
   autoOpenCashDrawer?: boolean;
   thermalPaperWidthMm?: 58 | 80;
   requireElectronicPaymentRef?: boolean;
+  receiptConfig?: ReceiptConfig;
 
   // Credit Sales (البيع الآجل) Master Admin Controls
   enableCreditSales?: boolean;       // Master Admin switch: false = completely locked/disabled
@@ -799,6 +810,74 @@ export interface StoreSettings {
   pageContent?: StorePageContent;
   themeConfig?: StoreThemeConfig;
   rolePermissions?: RolePermissionsConfig;
+  customRoles?: CustomRoleDefinition[];
+}
+
+export type ReceiptHeaderStyle = 'classic' | 'boxed' | 'minimal';
+export type ReceiptDividerStyle = 'dashed' | 'solid' | 'double';
+export type ReceiptFontSizeMode = 'compact' | 'normal' | 'large';
+
+export interface ReceiptConfig {
+  paperWidthMm?: 58 | 80;
+  headerStyle?: ReceiptHeaderStyle;
+  dividerStyle?: ReceiptDividerStyle;
+  fontSizeMode?: ReceiptFontSizeMode;
+
+  // Header lines
+  showLogo?: boolean;
+  logoUrl?: string;
+  logoSizePx?: number;
+  showStoreName?: boolean;
+  customStoreName?: string;
+  showHeaderSubtitle?: boolean;
+  headerSubtitle?: string;
+  showInvoiceTitle?: boolean;
+  invoiceTitle?: string;
+  showAddress?: boolean;
+  customAddress?: string;
+  showPhone?: boolean;
+  customPhone?: string;
+
+  // Receipt & customer meta lines
+  showOrderNumber?: boolean;
+  showOrderTime?: boolean;
+  showCashierName?: boolean;
+  showCustomerInfo?: boolean;
+  showCustomerName?: boolean;
+  showPaymentMethod?: boolean;
+  showCustomerPhone?: boolean;
+  showCustomerGovernorate?: boolean;
+  showCustomerAddress?: boolean;
+
+  // Items table columns & details
+  showItemWeight?: boolean;
+  showItemDetails?: boolean;
+  showQuantityColumn?: boolean;
+  showUnitPriceColumn?: boolean;
+
+  // Totals & payment summary lines
+  showItemCount?: boolean;
+  showSubtotal?: boolean;
+  showDiscount?: boolean;
+  showVipRedeemed?: boolean;
+  showShippingCost?: boolean;
+  totalLabel?: string;
+  showPaymentBreakdown?: boolean;
+  showCashTenderedAndChange?: boolean;
+  showVipCashback?: boolean;
+  showTaxDetails?: boolean;
+
+  // Bottom / barcode / QR / footer lines
+  showReturnPolicy?: boolean;
+  returnPolicyText?: string;
+  showBarcode?: boolean;
+  showQrCode?: boolean;
+  qrCodeUrl?: string;
+  qrCodeCaption?: string;
+  showPromoLine?: boolean;
+  promoLine?: string;
+  showFooterMessage?: boolean;
+  footerMessage?: string;
 }
 
 export interface PosExpense {
@@ -1063,6 +1142,7 @@ export interface StaffAccount {
   username: string;
   passwordHash: string;
   role: AdminRole;
+  customRoleId?: string;
   displayName: string;
   phone?: string;
   active: boolean;

@@ -1,6 +1,7 @@
 import {
   AdminPermissionId,
   AdminRole,
+  CustomRoleDefinition,
   NonAdminStaffRole,
   RolePermissionsConfig,
   StoreSettings,
@@ -182,14 +183,62 @@ export function getResolvedRolePermissions(
   };
 }
 
+export function getResolvedCustomRoles(
+  settings?: StoreSettings | null
+): CustomRoleDefinition[] {
+  const raw = settings?.customRoles;
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const result: CustomRoleDefinition[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const id = typeof item.id === 'string' ? item.id.trim() : '';
+    const name = typeof item.name === 'string' ? item.name.trim() : '';
+    if (!id || !name || seen.has(id)) continue;
+    seen.add(id);
+    const baseRole: NonAdminStaffRole =
+      item.baseRole === 'cashier' || item.baseRole === 'supplier' || item.baseRole === 'accountant'
+        ? item.baseRole
+        : 'accountant';
+    const perms = Array.isArray(item.permissions)
+      ? Array.from(
+          new Set(
+            item.permissions.filter(
+              (p): p is AdminPermissionId =>
+                typeof p === 'string' &&
+                ALL_DASHBOARD_PERMISSIONS.includes(p as AdminPermissionId)
+            )
+          )
+        )
+      : [];
+    result.push({
+      id,
+      name,
+      description: typeof item.description === 'string' ? item.description.trim() : undefined,
+      baseRole,
+      permissions: perms,
+      color: item.color || 'amber',
+      createdAt: item.createdAt,
+    });
+  }
+  return result;
+}
+
 export function hasRolePermission(
   role: AdminRole | string | null | undefined,
   permission: AdminPermissionId,
-  settings?: StoreSettings | null
+  settings?: StoreSettings | null,
+  customRoleId?: string | null
 ): boolean {
   const normalized = normalizeClientAdminRole(role);
-  if (normalized === 'super_admin') {
+  if (normalized === 'super_admin' && !customRoleId) {
     return true;
+  }
+  if (customRoleId) {
+    const custom = getResolvedCustomRoles(settings).find((r) => r.id === customRoleId);
+    if (custom) {
+      return custom.permissions.includes(permission);
+    }
   }
   const resolved = getResolvedRolePermissions(settings);
   if (
@@ -218,11 +267,18 @@ export function getAllowedRolesForPermission(
 
 export function getEffectiveRolePermissions(
   role: AdminRole | string | null | undefined,
-  settings?: StoreSettings | null
+  settings?: StoreSettings | null,
+  customRoleId?: string | null
 ): AdminPermissionId[] {
   const normalized = normalizeClientAdminRole(role);
-  if (normalized === 'super_admin') {
+  if (normalized === 'super_admin' && !customRoleId) {
     return [...ALL_DASHBOARD_PERMISSIONS];
+  }
+  if (customRoleId) {
+    const custom = getResolvedCustomRoles(settings).find((r) => r.id === customRoleId);
+    if (custom) {
+      return [...custom.permissions];
+    }
   }
   const resolved = getResolvedRolePermissions(settings);
   if (

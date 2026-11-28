@@ -21,6 +21,7 @@ import {
   DEFAULT_ROLE_PERMISSIONS,
   DASHBOARD_PERMISSION_META,
   getResolvedRolePermissions,
+  getResolvedCustomRoles,
   hasRolePermission,
   getAllowedRolesForPermission,
   getEffectiveRolePermissions,
@@ -31,6 +32,7 @@ export {
   DEFAULT_ROLE_PERMISSIONS,
   DASHBOARD_PERMISSION_META,
   getResolvedRolePermissions,
+  getResolvedCustomRoles,
   hasRolePermission,
   getAllowedRolesForPermission,
   getEffectiveRolePermissions,
@@ -91,17 +93,17 @@ export function getRoleUsernameFromSettings(
 ): string {
   switch (role) {
     case 'supplier':
-      return settings?.supplierUsername || 'supplier_arafat';
+      return settings?.supplierUsername || 'sup';
     case 'cashier':
-      return settings?.cashierUsername || 'cashier_pos';
+      return settings?.cashierUsername || 'cash';
     case 'accountant':
-      return settings?.accountantUsername || 'accountant_fin';
+      return settings?.accountantUsername || 'acc';
     case 'delivery_rider':
-      return settings?.riderUsername || 'rider_delivery';
+      return settings?.riderUsername || 'rider';
     case 'admin':
     case 'super_admin':
     default:
-      return settings?.adminUsername || 'admin_hafsa';
+      return settings?.adminUsername || 'admin';
   }
 }
 
@@ -114,17 +116,17 @@ export function getRolePasswordFromSettings(
 ): string {
   switch (role) {
     case 'supplier':
-      return settings?.supplierPassword || 'Sup#Arafat2026';
+      return settings?.supplierPassword || '123456';
     case 'cashier':
-      return settings?.cashierPassword || 'Cash#Pos2026';
+      return settings?.cashierPassword || '123456';
     case 'accountant':
-      return settings?.accountantPassword || 'Acc#Fin2026';
+      return settings?.accountantPassword || '123456';
     case 'delivery_rider':
-      return settings?.riderPassword || 'Rider#Hafsa2026';
+      return settings?.riderPassword || '123456';
     case 'admin':
     case 'super_admin':
     default:
-      return settings?.adminPassword || 'Hafsa@Admin2026';
+      return settings?.adminPassword || '123456';
   }
 }
 
@@ -312,6 +314,7 @@ export function extractTokenStaffMeta(token: string | null | undefined): {
   staffId?: string;
   username?: string;
   displayName?: string;
+  customRoleId?: string;
 } {
   if (!token || typeof token !== 'string') {
     return { role: 'super_admin' };
@@ -335,6 +338,7 @@ export function extractTokenStaffMeta(token: string | null | undefined): {
         staffId: liveAccount?.id || parsed.staffId,
         username: liveAccount?.username || parsed.username,
         displayName: liveAccount?.displayName || parsed.displayName || parsed.username,
+        customRoleId: liveAccount?.customRoleId || undefined,
       };
     }
 
@@ -404,6 +408,7 @@ export function verifyAdminRequest(
   staffId?: string;
   username?: string;
   displayName?: string;
+  customRoleId?: string;
   statusCode?: number;
   error?: string;
 } {
@@ -449,6 +454,7 @@ export function verifyAdminRequest(
     staffId: meta.staffId,
     username: meta.username,
     displayName: meta.displayName,
+    customRoleId: meta.customRoleId,
     statusCode: 200,
   };
 }

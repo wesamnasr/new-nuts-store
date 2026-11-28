@@ -3,6 +3,10 @@ import {
   CardStyle,
   HeroLayoutStyle,
   NavbarStyle,
+  ReceiptConfig,
+  ReceiptDividerStyle,
+  ReceiptFontSizeMode,
+  ReceiptHeaderStyle,
   StoreFeatureFlags,
   StorePageContent,
   StoreSettings,
@@ -75,6 +79,8 @@ export const DEFAULT_FEATURE_FLAGS: Required<StoreFeatureFlags> = {
   enableWeightScale: true,
   enableVillageBatches: true,
   enableVipWallet: true,
+  enableHallsAndTables: false,
+  enableBlindShiftClose: false,
 };
 
 export function getResolvedFeatureFlags(
@@ -95,6 +101,10 @@ export function getResolvedFeatureFlags(
       raw?.enableVipWallet ??
       settings?.pageContent?.enableVipWallet ??
       DEFAULT_FEATURE_FLAGS.enableVipWallet,
+    enableHallsAndTables:
+      raw?.enableHallsAndTables ?? DEFAULT_FEATURE_FLAGS.enableHallsAndTables,
+    enableBlindShiftClose:
+      raw?.enableBlindShiftClose ?? DEFAULT_FEATURE_FLAGS.enableBlindShiftClose,
   };
 }
 
@@ -475,5 +485,351 @@ export function getResolvedPageContent(settings?: StoreSettings | null): StorePa
       Array.isArray(pc.footerFeatures) && pc.footerFeatures.length > 0
         ? pc.footerFeatures
         : DEFAULT_PAGE_CONTENT.footerFeatures,
+  };
+}
+
+export const DEFAULT_RECEIPT_CONFIG: Required<ReceiptConfig> = {
+  paperWidthMm: 80,
+  headerStyle: 'classic',
+  dividerStyle: 'dashed',
+  fontSizeMode: 'normal',
+
+  // Header lines
+  showLogo: true,
+  logoUrl: '/images/brand/hafsa-logo-icon.png',
+  logoSizePx: 48,
+  showStoreName: true,
+  customStoreName: '',
+  showHeaderSubtitle: true,
+  headerSubtitle: '',
+  showInvoiceTitle: true,
+  invoiceTitle: '',
+  showAddress: true,
+  customAddress: '',
+  showPhone: true,
+  customPhone: '',
+
+  // Meta lines
+  showOrderNumber: true,
+  showOrderTime: true,
+  showCashierName: false,
+  showCustomerInfo: true,
+  showCustomerName: true,
+  showPaymentMethod: true,
+  showCustomerPhone: true,
+  showCustomerGovernorate: true,
+  showCustomerAddress: true,
+
+  // Items table
+  showItemWeight: true,
+  showItemDetails: true,
+  showQuantityColumn: true,
+  showUnitPriceColumn: true,
+
+  // Totals & payment lines
+  showItemCount: true,
+  showSubtotal: true,
+  showDiscount: true,
+  showVipRedeemed: true,
+  showShippingCost: true,
+  totalLabel: 'الإجمالي المطلوب:',
+  showPaymentBreakdown: true,
+  showCashTenderedAndChange: true,
+  showVipCashback: true,
+  showTaxDetails: true,
+
+  // Bottom lines
+  showReturnPolicy: false,
+  returnPolicyText: 'الاستبدال أو الاسترجاع خلال 24 ساعة بأصل الفاتورة وفي نفس حالة الشراء.',
+  showBarcode: true,
+  showQrCode: true,
+  qrCodeUrl: 'https://hafsahnuts.com',
+  qrCodeCaption: 'امسح الكود للطلب الأونلاين — hafsahnuts.com',
+  showPromoLine: true,
+  promoLine: 'اطلب أونلاين من hafsahnuts.com وخد 5% كاش باك في محفظتك!',
+  showFooterMessage: true,
+  footerMessage: 'شكراً لتسوقكم معنا • نتشرف بخدمتكم دائماً',
+};
+
+export interface ReceiptDesignPreset {
+  id: 'supermarket_classic' | 'boutique_framed' | 'compact_express_58';
+  name: string;
+  description: string;
+  badge: string;
+  config: Partial<ReceiptConfig>;
+}
+
+export const RECEIPT_DESIGN_PRESETS: ReceiptDesignPreset[] = [
+  {
+    id: 'supermarket_classic',
+    name: 'سوبرماركت كلاسيكي',
+    description: 'رول 80 مم قياسي بشعار المتجر وجدول 4 أعمدة وباركود ورمز QR.',
+    badge: '80 مم • متوازن',
+    config: {
+      paperWidthMm: 80,
+      headerStyle: 'classic',
+      dividerStyle: 'dashed',
+      fontSizeMode: 'normal',
+      showLogo: true,
+      logoSizePx: 48,
+      showInvoiceTitle: false,
+      showReturnPolicy: false,
+      showUnitPriceColumn: true,
+      showQuantityColumn: true,
+      showItemDetails: true,
+      showBarcode: true,
+      showQrCode: true,
+    },
+  },
+  {
+    id: 'boutique_framed',
+    name: 'إطار فاخر مميز',
+    description: 'ترويسة مؤطرة بوضوح مع فواصل مزدوجة وخط أكبر وسياسة استبدال واضحة.',
+    badge: '80 مم • رسمي',
+    config: {
+      paperWidthMm: 80,
+      headerStyle: 'boxed',
+      dividerStyle: 'double',
+      fontSizeMode: 'large',
+      showLogo: true,
+      logoSizePx: 56,
+      showInvoiceTitle: true,
+      invoiceTitle: 'فاتورة مبيعات معتمدة',
+      showReturnPolicy: true,
+      returnPolicyText: 'الاستبدال أو الاسترجاع خلال 24 ساعة بأصل الفاتورة وفي نفس حالة الشراء.',
+      showUnitPriceColumn: true,
+      showQuantityColumn: true,
+      showItemDetails: true,
+      showBarcode: true,
+      showQrCode: true,
+    },
+  },
+  {
+    id: 'compact_express_58',
+    name: 'مختصر سريع (58 مم)',
+    description: 'مصمم لطابعات 58 مم الضيقة لتوفير الورق بدون عمود سعر الوحدة وبخط مضغوط.',
+    badge: '58 مم • اقتصادي',
+    config: {
+      paperWidthMm: 58,
+      headerStyle: 'minimal',
+      dividerStyle: 'dashed',
+      fontSizeMode: 'compact',
+      showLogo: false,
+      logoSizePx: 38,
+      showInvoiceTitle: true,
+      invoiceTitle: 'بون مبيعات',
+      showReturnPolicy: false,
+      showUnitPriceColumn: false,
+      showQuantityColumn: true,
+      showItemDetails: true,
+      showBarcode: true,
+      showQrCode: false,
+    },
+  },
+];
+
+export function getResolvedReceiptConfig(
+  settings?: StoreSettings | null
+): Required<ReceiptConfig> {
+  const raw = settings?.receiptConfig;
+  const fallbackWidth: 58 | 80 = settings?.thermalPaperWidthMm === 58 ? 58 : 80;
+  const paperWidthMm: 58 | 80 =
+    raw?.paperWidthMm === 58 || raw?.paperWidthMm === 80
+      ? raw.paperWidthMm
+      : fallbackWidth;
+
+  const validHeaderStyles: ReceiptHeaderStyle[] = ['classic', 'boxed', 'minimal'];
+  const headerStyle: ReceiptHeaderStyle =
+    raw?.headerStyle && validHeaderStyles.includes(raw.headerStyle)
+      ? raw.headerStyle
+      : DEFAULT_RECEIPT_CONFIG.headerStyle;
+
+  const validDividerStyles: ReceiptDividerStyle[] = ['dashed', 'solid', 'double'];
+  const dividerStyle: ReceiptDividerStyle =
+    raw?.dividerStyle && validDividerStyles.includes(raw.dividerStyle)
+      ? raw.dividerStyle
+      : DEFAULT_RECEIPT_CONFIG.dividerStyle;
+
+  const validFontModes: ReceiptFontSizeMode[] = ['compact', 'normal', 'large'];
+  const fontSizeMode: ReceiptFontSizeMode =
+    raw?.fontSizeMode && validFontModes.includes(raw.fontSizeMode)
+      ? raw.fontSizeMode
+      : DEFAULT_RECEIPT_CONFIG.fontSizeMode;
+
+  const parsedLogoSize = Number(raw?.logoSizePx);
+  const logoSizePx =
+    Number.isFinite(parsedLogoSize) && parsedLogoSize >= 28 && parsedLogoSize <= 84
+      ? Math.round(parsedLogoSize)
+      : DEFAULT_RECEIPT_CONFIG.logoSizePx;
+
+  const legacyCustomerInfo =
+    typeof raw?.showCustomerInfo === 'boolean'
+      ? raw.showCustomerInfo
+      : DEFAULT_RECEIPT_CONFIG.showCustomerInfo;
+
+  const resolvedReturnPolicyText =
+    typeof raw?.returnPolicyText === 'string'
+      ? raw.returnPolicyText
+      : DEFAULT_RECEIPT_CONFIG.returnPolicyText;
+
+  return {
+    paperWidthMm,
+    headerStyle,
+    dividerStyle,
+    fontSizeMode,
+    showLogo: typeof raw?.showLogo === 'boolean' ? raw.showLogo : DEFAULT_RECEIPT_CONFIG.showLogo,
+    logoUrl:
+      typeof raw?.logoUrl === 'string' && raw.logoUrl.trim()
+        ? raw.logoUrl.trim()
+        : DEFAULT_RECEIPT_CONFIG.logoUrl,
+    logoSizePx,
+    showStoreName:
+      typeof raw?.showStoreName === 'boolean'
+        ? raw.showStoreName
+        : DEFAULT_RECEIPT_CONFIG.showStoreName,
+    customStoreName:
+      typeof raw?.customStoreName === 'string'
+        ? raw.customStoreName
+        : DEFAULT_RECEIPT_CONFIG.customStoreName,
+    showHeaderSubtitle:
+      typeof raw?.showHeaderSubtitle === 'boolean'
+        ? raw.showHeaderSubtitle
+        : DEFAULT_RECEIPT_CONFIG.showHeaderSubtitle,
+    headerSubtitle:
+      typeof raw?.headerSubtitle === 'string'
+        ? raw.headerSubtitle
+        : DEFAULT_RECEIPT_CONFIG.headerSubtitle,
+    showInvoiceTitle:
+      typeof raw?.showInvoiceTitle === 'boolean'
+        ? raw.showInvoiceTitle
+        : DEFAULT_RECEIPT_CONFIG.showInvoiceTitle,
+    invoiceTitle:
+      typeof raw?.invoiceTitle === 'string'
+        ? raw.invoiceTitle
+        : DEFAULT_RECEIPT_CONFIG.invoiceTitle,
+    showAddress:
+      typeof raw?.showAddress === 'boolean' ? raw.showAddress : DEFAULT_RECEIPT_CONFIG.showAddress,
+    customAddress:
+      typeof raw?.customAddress === 'string'
+        ? raw.customAddress
+        : DEFAULT_RECEIPT_CONFIG.customAddress,
+    showPhone:
+      typeof raw?.showPhone === 'boolean' ? raw.showPhone : DEFAULT_RECEIPT_CONFIG.showPhone,
+    customPhone:
+      typeof raw?.customPhone === 'string'
+        ? raw.customPhone
+        : DEFAULT_RECEIPT_CONFIG.customPhone,
+    showOrderNumber:
+      typeof raw?.showOrderNumber === 'boolean'
+        ? raw.showOrderNumber
+        : DEFAULT_RECEIPT_CONFIG.showOrderNumber,
+    showOrderTime:
+      typeof raw?.showOrderTime === 'boolean'
+        ? raw.showOrderTime
+        : DEFAULT_RECEIPT_CONFIG.showOrderTime,
+    showCashierName:
+      typeof raw?.showCashierName === 'boolean'
+        ? raw.showCashierName
+        : DEFAULT_RECEIPT_CONFIG.showCashierName,
+    showCustomerInfo: legacyCustomerInfo,
+    showCustomerName:
+      typeof raw?.showCustomerName === 'boolean' ? raw.showCustomerName : legacyCustomerInfo,
+    showPaymentMethod:
+      typeof raw?.showPaymentMethod === 'boolean'
+        ? raw.showPaymentMethod
+        : DEFAULT_RECEIPT_CONFIG.showPaymentMethod,
+    showCustomerPhone:
+      typeof raw?.showCustomerPhone === 'boolean' ? raw.showCustomerPhone : legacyCustomerInfo,
+    showCustomerGovernorate:
+      typeof raw?.showCustomerGovernorate === 'boolean'
+        ? raw.showCustomerGovernorate
+        : legacyCustomerInfo,
+    showCustomerAddress:
+      typeof raw?.showCustomerAddress === 'boolean' ? raw.showCustomerAddress : legacyCustomerInfo,
+    showItemWeight:
+      typeof raw?.showItemWeight === 'boolean'
+        ? raw.showItemWeight
+        : DEFAULT_RECEIPT_CONFIG.showItemWeight,
+    showItemDetails:
+      typeof raw?.showItemDetails === 'boolean'
+        ? raw.showItemDetails
+        : DEFAULT_RECEIPT_CONFIG.showItemDetails,
+    showQuantityColumn:
+      typeof raw?.showQuantityColumn === 'boolean'
+        ? raw.showQuantityColumn
+        : DEFAULT_RECEIPT_CONFIG.showQuantityColumn,
+    showUnitPriceColumn:
+      typeof raw?.showUnitPriceColumn === 'boolean'
+        ? raw.showUnitPriceColumn
+        : DEFAULT_RECEIPT_CONFIG.showUnitPriceColumn,
+    showItemCount:
+      typeof raw?.showItemCount === 'boolean'
+        ? raw.showItemCount
+        : DEFAULT_RECEIPT_CONFIG.showItemCount,
+    showSubtotal:
+      typeof raw?.showSubtotal === 'boolean'
+        ? raw.showSubtotal
+        : DEFAULT_RECEIPT_CONFIG.showSubtotal,
+    showDiscount:
+      typeof raw?.showDiscount === 'boolean'
+        ? raw.showDiscount
+        : DEFAULT_RECEIPT_CONFIG.showDiscount,
+    showVipRedeemed:
+      typeof raw?.showVipRedeemed === 'boolean'
+        ? raw.showVipRedeemed
+        : DEFAULT_RECEIPT_CONFIG.showVipRedeemed,
+    showShippingCost:
+      typeof raw?.showShippingCost === 'boolean'
+        ? raw.showShippingCost
+        : DEFAULT_RECEIPT_CONFIG.showShippingCost,
+    totalLabel:
+      typeof raw?.totalLabel === 'string' && raw.totalLabel.trim()
+        ? raw.totalLabel
+        : DEFAULT_RECEIPT_CONFIG.totalLabel,
+    showPaymentBreakdown:
+      typeof raw?.showPaymentBreakdown === 'boolean'
+        ? raw.showPaymentBreakdown
+        : DEFAULT_RECEIPT_CONFIG.showPaymentBreakdown,
+    showCashTenderedAndChange:
+      typeof raw?.showCashTenderedAndChange === 'boolean'
+        ? raw.showCashTenderedAndChange
+        : DEFAULT_RECEIPT_CONFIG.showCashTenderedAndChange,
+    showVipCashback:
+      typeof raw?.showVipCashback === 'boolean'
+        ? raw.showVipCashback
+        : DEFAULT_RECEIPT_CONFIG.showVipCashback,
+    showTaxDetails:
+      typeof raw?.showTaxDetails === 'boolean'
+        ? raw.showTaxDetails
+        : DEFAULT_RECEIPT_CONFIG.showTaxDetails,
+    showReturnPolicy:
+      typeof raw?.showReturnPolicy === 'boolean'
+        ? raw.showReturnPolicy
+        : Boolean(raw?.returnPolicyText && raw.returnPolicyText.trim()),
+    returnPolicyText: resolvedReturnPolicyText,
+    showBarcode:
+      typeof raw?.showBarcode === 'boolean' ? raw.showBarcode : DEFAULT_RECEIPT_CONFIG.showBarcode,
+    showQrCode:
+      typeof raw?.showQrCode === 'boolean' ? raw.showQrCode : DEFAULT_RECEIPT_CONFIG.showQrCode,
+    qrCodeUrl:
+      typeof raw?.qrCodeUrl === 'string' ? raw.qrCodeUrl : DEFAULT_RECEIPT_CONFIG.qrCodeUrl,
+    qrCodeCaption:
+      typeof raw?.qrCodeCaption === 'string'
+        ? raw.qrCodeCaption
+        : DEFAULT_RECEIPT_CONFIG.qrCodeCaption,
+    showPromoLine:
+      typeof raw?.showPromoLine === 'boolean'
+        ? raw.showPromoLine
+        : DEFAULT_RECEIPT_CONFIG.showPromoLine,
+    promoLine:
+      typeof raw?.promoLine === 'string' ? raw.promoLine : DEFAULT_RECEIPT_CONFIG.promoLine,
+    showFooterMessage:
+      typeof raw?.showFooterMessage === 'boolean'
+        ? raw.showFooterMessage
+        : DEFAULT_RECEIPT_CONFIG.showFooterMessage,
+    footerMessage:
+      typeof raw?.footerMessage === 'string'
+        ? raw.footerMessage
+        : DEFAULT_RECEIPT_CONFIG.footerMessage,
   };
 }

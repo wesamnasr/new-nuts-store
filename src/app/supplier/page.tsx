@@ -646,7 +646,7 @@ export default function DedicatedSupplierPortalPage() {
 
       {/* Main Top Header */}
       <header className="bg-white text-[#231710] border-b border-[#E8E0D5] sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 min-h-[68px] py-2 flex items-center justify-between gap-3">
+        <div className="w-full max-w-none px-4 sm:px-5 min-h-[56px] py-2 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 bg-[#FAF6F0] text-[#231710] rounded-xl flex items-center justify-center border border-[#E8E0D5] shrink-0">
               <Truck className="w-5 h-5 text-[#231710]" />
@@ -706,8 +706,8 @@ export default function DedicatedSupplierPortalPage() {
         </div>
       </header>
 
-      {/* Main Workspace Body */}
-      <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-5 space-y-5">
+      {/* Main Workspace Body — Full Fluid Width */}
+      <main className="w-full max-w-none px-4 sm:px-5 py-4 space-y-4">
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div className="bg-white p-4 rounded-2xl border border-[#E8E0D5] space-y-1">

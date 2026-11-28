@@ -21,6 +21,9 @@ export const AUDIT_ACTION_LABELS_AR: Record<AuditActionType, string> = {
   system_reset: 'تصفير العمليات التجريبية',
   system_backup: 'تصدير نسخة احتياطية كاملة',
   system_restore: 'استعادة نسخة احتياطية للنظام',
+  warehouse_transfer: 'تحويل مخزني بين المخازن',
+  bom_update: 'تحديث شجرة المكونات (BOM)',
+  erp_master_update: 'تحديث البيانات الأساسية (ERP)',
 };
 
 const SENSITIVE_KEY_PATTERN = /password|secret|token|hash|pin/i;

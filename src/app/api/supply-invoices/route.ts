@@ -73,19 +73,24 @@ export async function GET(request: Request) {
 
     // Supplier gets their own invoices (multi-supplier isolation)
     if (auth.role === 'supplier') {
-      const primarySupplierUser = (db.settings?.supplierUsername || 'supplier_arafat')
+      const primarySupplierUser = (db.settings?.supplierUsername || 'sup')
         .trim()
         .toLowerCase();
       const callerUsername = (auth.username || primarySupplierUser).trim().toLowerCase();
       const isPrimarySupplier =
-        callerUsername === primarySupplierUser || callerUsername === 'supplier_arafat';
+        callerUsername === primarySupplierUser ||
+        callerUsername === 'sup' ||
+        callerUsername === 'supplier_arafat';
 
       const scopedInvoices = invoices.filter((inv) => {
         const invOwner = (inv.supplierId || '').trim().toLowerCase();
         if (invOwner === callerUsername) return true;
         if (
           isPrimarySupplier &&
-          (!invOwner || invOwner === primarySupplierUser || invOwner === 'supplier_arafat')
+          (!invOwner ||
+            invOwner === primarySupplierUser ||
+            invOwner === 'sup' ||
+            invOwner === 'supplier_arafat')
         ) {
           return true;
         }
@@ -241,7 +246,7 @@ export async function POST(request: Request) {
         body.supplierId ||
         (auth.role === 'supplier' ? auth.username : undefined) ||
         db.settings?.supplierUsername ||
-        'supplier_arafat';
+        'sup';
       const supplierName =
         body.supplierName ||
         (auth.role === 'supplier' ? auth.displayName : undefined) ||

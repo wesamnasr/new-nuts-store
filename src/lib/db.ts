@@ -93,36 +93,36 @@ function syncStaffAccounts(parsed: DatabaseSchema): void {
     {
       id: 'staff-primary-super_admin',
       role: 'super_admin',
-      username: settings.adminUsername || 'admin_hafsa',
-      rawPassword: settings.adminPassword || 'Hafsa@Admin2026',
+      username: settings.adminUsername || 'admin',
+      rawPassword: settings.adminPassword || '123456',
       defaultDisplayName: 'إدارة النظام (المدير العام)',
     },
     {
       id: 'staff-primary-accountant',
       role: 'accountant',
-      username: settings.accountantUsername || 'accountant_fin',
-      rawPassword: settings.accountantPassword || 'Acc#Fin2026',
+      username: settings.accountantUsername || 'acc',
+      rawPassword: settings.accountantPassword || '123456',
       defaultDisplayName: 'المحاسب المالي الرئيسي',
     },
     {
       id: 'staff-primary-cashier',
       role: 'cashier',
-      username: settings.cashierUsername || 'cashier_pos',
-      rawPassword: settings.cashierPassword || 'Cash#Pos2026',
+      username: settings.cashierUsername || 'cash',
+      rawPassword: settings.cashierPassword || '123456',
       defaultDisplayName: 'كاشير نقطة البيع (أساسي)',
     },
     {
       id: 'staff-primary-supplier',
       role: 'supplier',
-      username: settings.supplierUsername || 'supplier_arafat',
-      rawPassword: settings.supplierPassword || 'Sup#Arafat2026',
+      username: settings.supplierUsername || 'sup',
+      rawPassword: settings.supplierPassword || '123456',
       defaultDisplayName: 'مسؤول التوريد والمخزون الرئيسي',
     },
     {
       id: 'staff-primary-delivery_rider',
       role: 'delivery_rider',
-      username: settings.riderUsername || 'rider_delivery',
-      rawPassword: settings.riderPassword || 'Rider#Hafsa2026',
+      username: settings.riderUsername || 'rider',
+      rawPassword: settings.riderPassword || '123456',
       defaultDisplayName: 'مندوب التوصيل الرئيسي',
     },
   ];
@@ -177,7 +177,7 @@ function syncStaffAccounts(parsed: DatabaseSchema): void {
     nextAccounts.push({
       ...acc,
       username: uname,
-      passwordHash: hashPasswordScrypt(acc.passwordHash || 'Hafsa@Staff2026'),
+      passwordHash: hashPasswordScrypt(acc.passwordHash || '123456'),
       active: acc.active !== false,
       isPrimary: false,
       displayName: acc.displayName?.trim() || uname,
@@ -200,16 +200,16 @@ export function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
     parsed.products = structuredClone(initialDatabase.products);
     parsed.settings = {
       ...structuredClone(initialDatabase.settings),
-      adminUsername: parsed.settings?.adminUsername || 'admin_hafsa',
-      adminPassword: parsed.settings?.adminPassword || 'Hafsa@Admin2026',
-      supplierUsername: parsed.settings?.supplierUsername || 'supplier_arafat',
-      supplierPassword: parsed.settings?.supplierPassword || 'Sup#Arafat2026',
-      cashierUsername: parsed.settings?.cashierUsername || 'cashier_pos',
-      cashierPassword: parsed.settings?.cashierPassword || 'Cash#Pos2026',
-      accountantUsername: parsed.settings?.accountantUsername || 'accountant_fin',
-      accountantPassword: parsed.settings?.accountantPassword || 'Acc#Fin2026',
-      riderUsername: parsed.settings?.riderUsername || 'rider_delivery',
-      riderPassword: parsed.settings?.riderPassword || 'Rider#Hafsa2026',
+      adminUsername: parsed.settings?.adminUsername || 'admin',
+      adminPassword: parsed.settings?.adminPassword || '123456',
+      supplierUsername: parsed.settings?.supplierUsername || 'sup',
+      supplierPassword: parsed.settings?.supplierPassword || '123456',
+      cashierUsername: parsed.settings?.cashierUsername || 'cash',
+      cashierPassword: parsed.settings?.cashierPassword || '123456',
+      accountantUsername: parsed.settings?.accountantUsername || 'acc',
+      accountantPassword: parsed.settings?.accountantPassword || '123456',
+      riderUsername: parsed.settings?.riderUsername || 'rider',
+      riderPassword: parsed.settings?.riderPassword || '123456',
     };
   }
 
@@ -217,16 +217,16 @@ export function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
     if (!alreadySeeded && parsed.settings.storeName === 'محمصة الواحة الذهبية') {
       parsed.settings = {
         ...structuredClone(initialDatabase.settings),
-        adminUsername: parsed.settings.adminUsername || 'admin_hafsa',
-        adminPassword: parsed.settings.adminPassword || 'Hafsa@Admin2026',
-        supplierUsername: parsed.settings.supplierUsername || 'supplier_arafat',
-        supplierPassword: parsed.settings.supplierPassword || 'Sup#Arafat2026',
-        cashierUsername: parsed.settings.cashierUsername || 'cashier_pos',
-        cashierPassword: parsed.settings.cashierPassword || 'Cash#Pos2026',
-        accountantUsername: parsed.settings.accountantUsername || 'accountant_fin',
-        accountantPassword: parsed.settings.accountantPassword || 'Acc#Fin2026',
-        riderUsername: parsed.settings.riderUsername || 'rider_delivery',
-        riderPassword: parsed.settings.riderPassword || 'Rider#Hafsa2026',
+        adminUsername: parsed.settings.adminUsername || 'admin',
+        adminPassword: parsed.settings.adminPassword || '123456',
+        supplierUsername: parsed.settings.supplierUsername || 'sup',
+        supplierPassword: parsed.settings.supplierPassword || '123456',
+        cashierUsername: parsed.settings.cashierUsername || 'cash',
+        cashierPassword: parsed.settings.cashierPassword || '123456',
+        accountantUsername: parsed.settings.accountantUsername || 'acc',
+        accountantPassword: parsed.settings.accountantPassword || '123456',
+        riderUsername: parsed.settings.riderUsername || 'rider',
+        riderPassword: parsed.settings.riderPassword || '123456',
       };
       parsed.categories = structuredClone(initialDatabase.categories);
       parsed.shippingRates = structuredClone(initialDatabase.shippingRates);
@@ -234,35 +234,67 @@ export function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
     }
     parsed.settings.pageContent = getResolvedPageContent(parsed.settings);
     parsed.settings.themeConfig = getResolvedThemeConfig(parsed.settings);
-    if (!parsed.settings.adminUsername || parsed.settings.adminUsername === 'admin') {
-      parsed.settings.adminUsername = 'admin_hafsa';
+    if (!parsed.settings.adminUsername || parsed.settings.adminUsername === 'admin_hafsa') {
+      parsed.settings.adminUsername = 'admin';
     }
-    if (!parsed.settings.adminPassword || parsed.settings.adminPassword === 'admin') {
-      parsed.settings.adminPassword = 'Hafsa@Admin2026';
+    if (
+      !parsed.settings.adminPassword ||
+      parsed.settings.adminPassword === 'admin' ||
+      parsed.settings.adminPassword === 'Hafsa@Admin2026'
+    ) {
+      parsed.settings.adminPassword = '123456';
     }
-    if (!parsed.settings.supplierUsername || parsed.settings.supplierUsername === 'supplier') {
-      parsed.settings.supplierUsername = 'supplier_arafat';
+    if (
+      !parsed.settings.supplierUsername ||
+      parsed.settings.supplierUsername === 'supplier' ||
+      parsed.settings.supplierUsername === 'supplier_arafat'
+    ) {
+      parsed.settings.supplierUsername = 'sup';
     }
-    if (!parsed.settings.supplierPassword || parsed.settings.supplierPassword === 'supplier') {
-      parsed.settings.supplierPassword = 'Sup#Arafat2026';
+    if (
+      !parsed.settings.supplierPassword ||
+      parsed.settings.supplierPassword === 'supplier' ||
+      parsed.settings.supplierPassword === 'Sup#Arafat2026'
+    ) {
+      parsed.settings.supplierPassword = '123456';
     }
-    if (!parsed.settings.cashierUsername || parsed.settings.cashierUsername === 'cashier') {
-      parsed.settings.cashierUsername = 'cashier_pos';
+    if (
+      !parsed.settings.cashierUsername ||
+      parsed.settings.cashierUsername === 'cashier' ||
+      parsed.settings.cashierUsername === 'cashier_pos'
+    ) {
+      parsed.settings.cashierUsername = 'cash';
     }
-    if (!parsed.settings.cashierPassword || parsed.settings.cashierPassword === 'cashier') {
-      parsed.settings.cashierPassword = 'Cash#Pos2026';
+    if (
+      !parsed.settings.cashierPassword ||
+      parsed.settings.cashierPassword === 'cashier' ||
+      parsed.settings.cashierPassword === 'Cash#Pos2026'
+    ) {
+      parsed.settings.cashierPassword = '123456';
     }
-    if (!parsed.settings.accountantUsername || parsed.settings.accountantUsername === 'accountant') {
-      parsed.settings.accountantUsername = 'accountant_fin';
+    if (
+      !parsed.settings.accountantUsername ||
+      parsed.settings.accountantUsername === 'accountant' ||
+      parsed.settings.accountantUsername === 'accountant_fin'
+    ) {
+      parsed.settings.accountantUsername = 'acc';
     }
-    if (!parsed.settings.accountantPassword || parsed.settings.accountantPassword === 'accountant') {
-      parsed.settings.accountantPassword = 'Acc#Fin2026';
+    if (
+      !parsed.settings.accountantPassword ||
+      parsed.settings.accountantPassword === 'accountant' ||
+      parsed.settings.accountantPassword === 'Acc#Fin2026'
+    ) {
+      parsed.settings.accountantPassword = '123456';
     }
-    if (!parsed.settings.riderUsername || parsed.settings.riderUsername === 'rider') {
-      parsed.settings.riderUsername = 'rider_delivery';
+    if (!parsed.settings.riderUsername || parsed.settings.riderUsername === 'rider_delivery') {
+      parsed.settings.riderUsername = 'rider';
     }
-    if (!parsed.settings.riderPassword || parsed.settings.riderPassword === 'rider') {
-      parsed.settings.riderPassword = 'Rider#Hafsa2026';
+    if (
+      !parsed.settings.riderPassword ||
+      parsed.settings.riderPassword === 'rider' ||
+      parsed.settings.riderPassword === 'Rider#Hafsa2026'
+    ) {
+      parsed.settings.riderPassword = '123456';
     }
     delete (parsed.settings as any).customerUsername;
     delete (parsed.settings as any).customerPassword;
@@ -391,6 +423,70 @@ export function normalizeDatabase(parsed: DatabaseSchema): DatabaseSchema {
   }
   if (!Array.isArray(parsed.auditLogs)) {
     parsed.auditLogs = [];
+  }
+  if (!Array.isArray(parsed.warehouses) || parsed.warehouses.length === 0) {
+    parsed.warehouses = [
+      { id: 'wh-pos', code: 'WH-POS', name: 'صالة العرض وبار البيع', isPosBranch: true, active: true },
+      { id: 'wh-main', code: 'WH-MAIN', name: 'المخزن الرئيسي (التوريد)', isMainStore: true, active: true },
+    ];
+  }
+  if (!Array.isArray(parsed.warehouseTransfers)) {
+    parsed.warehouseTransfers = [];
+  }
+  if (!Array.isArray(parsed.bomRecipes)) {
+    parsed.bomRecipes = [];
+  }
+  if (!Array.isArray(parsed.prepMethods) || parsed.prepMethods.length === 0) {
+    parsed.prepMethods = [
+      { id: 'pm-1', name: 'تحميص فاتح', groupName: 'درجة التحميص', extraPrice: 0, active: true },
+      { id: 'pm-2', name: 'تحميص وسط', groupName: 'درجة التحميص', extraPrice: 0, active: true },
+      { id: 'pm-3', name: 'تحميص غامق', groupName: 'درجة التحميص', extraPrice: 0, active: true },
+      { id: 'pm-4', name: 'سادة صافي', groupName: 'التحويج', extraPrice: 0, active: true },
+      { id: 'pm-5', name: 'محوج مخصوص (حبهان ومستكة)', groupName: 'التحويج', extraPrice: 15, active: true },
+      { id: 'pm-6', name: 'طحن ناعم (تركي)', groupName: 'درجة الطحن', extraPrice: 0, active: true },
+      { id: 'pm-7', name: 'محمص مملح', groupName: 'المكسرات واللب', extraPrice: 0, active: true },
+      { id: 'pm-8', name: 'بدون ملح (صحي)', groupName: 'المكسرات واللب', extraPrice: 0, active: true },
+    ];
+  }
+  if (!Array.isArray(parsed.productAddons) || parsed.productAddons.length === 0) {
+    parsed.productAddons = [
+      { id: 'ad-1', name: 'حبهان أخضر إضافي', extraPrice: 15, extraCost: 8, active: true },
+      { id: 'ad-2', name: 'مستكة وقرنفل', extraPrice: 10, extraCost: 5, active: true },
+      { id: 'ad-3', name: 'شوت إسبريسو إضافي', extraPrice: 15, extraCost: 6, active: true },
+      { id: 'ad-4', name: 'تغليف هدايا فاخر وكارت إهداء', extraPrice: 25, extraCost: 12, active: true },
+    ];
+  }
+  if (!Array.isArray(parsed.deliveryCompanies)) {
+    parsed.deliveryCompanies = [
+      { id: 'dc-1', name: 'توصيل الفرع المباشر', commissionPercent: 0, active: true },
+    ];
+  }
+  if (!Array.isArray(parsed.employees)) {
+    parsed.employees = [];
+  }
+  if (!Array.isArray(parsed.diningHalls) || parsed.diningHalls.length === 0) {
+    parsed.diningHalls = [
+      {
+        id: 'hall-bar',
+        name: 'بار القهوة والزجاج',
+        active: true,
+        tables: [
+          { id: 'tbl-1', name: 'كرسي / طاولة 1', capacity: 2, active: true },
+          { id: 'tbl-2', name: 'كرسي / طاولة 2', capacity: 2, active: true },
+          { id: 'tbl-3', name: 'كرسي / طاولة 3', capacity: 2, active: true },
+          { id: 'tbl-4', name: 'كرسي / طاولة 4', capacity: 2, active: true },
+        ],
+      },
+    ];
+  }
+  if (!Array.isArray(parsed.expenseCategories) || parsed.expenseCategories.length === 0) {
+    parsed.expenseCategories = [
+      { id: 'ec-1', key: 'raw_materials', label: 'خامات وتوريدات', active: true },
+      { id: 'ec-2', key: 'packaging', label: 'أكياس وعبوات تغليف', active: true },
+      { id: 'ec-3', key: 'utilities', label: 'كهرباء ومرافق وغاز', active: true },
+      { id: 'ec-4', key: 'delivery_rider', label: 'طيارين وتوصيل طلبات', active: true },
+      { id: 'ec-5', key: 'other', label: 'مصروفات تشغيلية أخرى', active: true },
+    ];
   }
   parsed.isSeeded = true;
 
@@ -668,7 +764,8 @@ async function fetchPostgresStateOnce(pgUrl: string): Promise<DatabaseSchema> {
       Array.isArray(parsed.categories) &&
       parsed.categories.some((c) => c.id === 'cat-snacks') &&
       Boolean(parsed.settings?.adminUsername) &&
-      parsed.settings?.adminPassword !== 'admin';
+      parsed.settings?.adminPassword !== 'admin' &&
+      parsed.settings?.adminPassword !== 'Hafsa@Admin2026';
 
     const normalized = normalizeDatabase(parsed);
 
